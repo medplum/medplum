@@ -9,13 +9,13 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 import { withTestContext } from '../../test.setup';
-import { getGlobalSystemRepo } from '../repo';
+import { getTestProjectSystemRepo } from '../repository/test-utils';
 import type { PgQueryable } from '../sql';
 import type { AddressTableRow } from './address';
 import { AddressTable } from './address';
 
 describe('Address Lookup Table', () => {
-  const systemRepo = getGlobalSystemRepo();
+  const systemRepo = getTestProjectSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

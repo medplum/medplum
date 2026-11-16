@@ -263,6 +263,9 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
   const medplum = useMedplum();
   const [performingLab, privateSetPerformingLab] = useState<LabOrganization | undefined>();
   const [performingLabAccountNumber, privateSetPerformingLabAccountNumber] = useState<string | undefined>();
+  const [performingLabPhysicianAccountNumber, privateSetPerformingLabPhysicianAccountNumber] = useState<
+    string | undefined
+  >();
   const [testsAndMetadata, dispatchTests] = useReducer(testsReducer, {
     specimenCollectedDateTime: undefined,
     selectedTests: INITIAL_TESTS,
@@ -376,6 +379,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     const cloned = deepClone({
       performingLab,
       performingLabAccountNumber,
+      performingLabPhysicianAccountNumber,
       selectedTests: testsAndMetadata.selectedTests,
       testMetadata: testsAndMetadata.testMetadata,
       diagnoses,
@@ -393,6 +397,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
   }, [
     performingLab,
     performingLabAccountNumber,
+    performingLabPhysicianAccountNumber,
     testsAndMetadata.selectedTests,
     testsAndMetadata.testMetadata,
     testsAndMetadata.specimenCollectedDateTime,
@@ -457,6 +462,9 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       setPerformingLabAccountNumber: (newAccountNumber: string | undefined) => {
         privateSetPerformingLabAccountNumber(newAccountNumber);
       },
+      setPerformingLabPhysicianAccountNumber: (newAccountNumber: string | undefined) => {
+        privateSetPerformingLabPhysicianAccountNumber(newAccountNumber);
+      },
       addTest: (test: TestCoding) => {
         dispatchTests({ type: 'add', test });
       },
@@ -512,6 +520,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
           requester: requesterRef,
           performingLab: state.performingLab,
           performingLabAccountNumber: state.performingLabAccountNumber,
+          performingLabPhysicianAccountNumber: state.performingLabPhysicianAccountNumber,
           selectedTests: state.selectedTests,
           testMetadata: state.testMetadata,
           diagnoses: state.diagnoses,
@@ -527,6 +536,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
           requestingLocation: requestingLocationRef,
           performingLab: state.performingLab,
           performingLabAccountNumber: state.performingLabAccountNumber,
+          performingLabPhysicianAccountNumber: state.performingLabPhysicianAccountNumber,
           selectedTests: state.selectedTests,
           testMetadata: state.testMetadata,
           diagnoses: state.diagnoses,

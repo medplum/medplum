@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString, resolveId } from '@medplum/core';
-import type { BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
+import type { AccessPolicy, BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { getProjectSystemRepo } from '../fhir/repo';
+import { createTestProject, getSuperAdminAccessToken, withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -69,7 +70,7 @@ describe('Client admin', () => {
     const { project } = await createTestProject();
 
     // As a superadmin, create a new client
-    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const superAdminAccessToken = await getSuperAdminAccessToken();
     const res = await request(app)
       .post('/admin/projects/' + project.id + '/client')
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
@@ -101,5 +102,146 @@ describe('Client admin', () => {
     const projectId = resolveId(clientMembership.project);
 
     expect(projectId).toBe(project.id);
+  });
+
+  test('Cannot override server-controlled fields', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        projectName: 'Bob Project',
+        email: `bob${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Attempt to override "meta" and "resourceType" via the request body
+    const otherProjectId = randomUUID();
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Bob client',
+        resourceType: 'Patient',
+        meta: {
+          project: otherProjectId,
+          tag: [{ system: 'http://example.com', code: 'test' }],
+        },
+      });
+    expect(res).toHaveStatus(201);
+    expect(res.body.resourceType).toBe('ClientApplication');
+    expect(res.body.secret).toHaveLength(64);
+
+    // The client stays in the caller's project, and the caller-supplied tag is preserved
+    expect(res.body.meta.project).toBe(project.id);
+    expect(res.body.meta.tag).toStrictEqual([{ system: 'http://example.com', code: 'test' }]);
+
+    // The project admin can still read the client
+    const res2 = await request(app)
+      .get('/fhir/R4/ClientApplication/' + res.body.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.id).toBe(res.body.id);
+
+    // ...and still find it by search
+    const res3 = await request(app)
+      .get('/fhir/R4/ClientApplication?name=Bob client')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.entry?.map((e: BundleEntry<ClientApplication>) => e.resource?.id)).toContain(res.body.id);
+  });
+
+  test('Create client with caller-supplied secret', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Dave',
+        lastName: 'Jones',
+        projectName: 'Dave Project',
+        email: `dave${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Dave client', secret: 'dave-client-secret' });
+    expect(res).toHaveStatus(201);
+    expect(res.body.secret).toBe('dave-client-secret');
+    expect(res.body.meta.project).toBe(project.id);
+  });
+
+  test('Applies ClientApplication defaultAccessPolicies when no access policy is provided', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Erin',
+        lastName: 'Jones',
+        projectName: 'Erin Project',
+        email: `erin${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'ClientApplication');
+    expect(defaultPolicy).toBeDefined();
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const customPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      meta: { project: project.id },
+      name: 'Custom Client Policy',
+      resource: [{ resourceType: 'Patient' }],
+    });
+
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Default policy client' });
+    expect(res1).toHaveStatus(201);
+    const membership1 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'ClientApplication/' + res1.body.id }],
+    });
+    expect(membership1?.accessPolicy?.reference).toBe(defaultPolicy?.accessPolicy.reference);
+
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Custom policy client', accessPolicy: createReference(customPolicy) });
+    expect(res2).toHaveStatus(201);
+    const membership2 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'ClientApplication/' + res2.body.id }],
+    });
+    expect(membership2?.accessPolicy?.reference).toBe(getReferenceString(customPolicy));
+
+    // Super admins creating a client in another project also get that project's default
+    const superAdminAccessToken = await getSuperAdminAccessToken();
+    const res3 = await request(app)
+      .post('/admin/projects/' + project.id + '/client')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .type('json')
+      .send({ name: 'Super admin client' });
+    expect(res3).toHaveStatus(201);
+    const membership3 = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'ClientApplication/' + res3.body.id }],
+    });
+    expect(membership3?.accessPolicy?.reference).toBe(defaultPolicy?.accessPolicy.reference);
+  });
+
+  test('Project admin cannot create client in another project', async () => {
+    const { project: otherProject } = await createTestProject();
+    const { accessToken } = await createTestProject({ membership: { admin: true }, withAccessToken: true });
+
+    const res = await request(app)
+      .post('/admin/projects/' + otherProject.id + '/client')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({ name: 'Cross project client' });
+    expect(res).toHaveStatus(403);
   });
 });

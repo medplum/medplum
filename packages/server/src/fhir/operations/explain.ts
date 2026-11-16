@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, getSearchResourceTypes, parseSearchRequest } from '@medplum/core';
+import { allOk, forbidden, getSearchResourceTypes, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { RepositoryMode } from '@medplum/fhir-router';
 import type { Project, Reference } from '@medplum/fhirtypes';
-import { requireSuperAdmin } from '../../context';
+import type { AuthenticatedRequestContext } from '../../context';
+import { getAuthenticatedContext, requireSuperAdmin } from '../../context';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { repoAccess } from '../repository/access-tracker';
 import { getCount, getSelectQueryForSearch } from '../search';
@@ -36,7 +37,7 @@ const operation = makeOperationDefinition(
 );
 
 export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> {
-  const ctx = requireSuperAdmin();
+  const ctx = requireExplainAccess();
   const params = parseInputParameters<{
     query: string;
     project?: Reference<Project>;
@@ -108,4 +109,26 @@ function formatQueryParam(param: any): string {
     return param.toString();
   }
   return `'${typeof param === 'string' ? escapeUnicode(param) : param}'`;
+}
+
+/**
+ * Requires a super-admin caller while preserving the effective repository for delegated requests.
+ * Unlike other privileged operations, $explain intentionally uses On-Behalf-Of to show the query
+ * plan produced by the delegated user's access policy.
+ * @returns The authenticated request context.
+ */
+function requireExplainAccess(): AuthenticatedRequestContext {
+  const ctx = getAuthenticatedContext();
+
+  if (ctx.authState.onBehalfOfMembership) {
+    // if onBehalfOf, must check if the actor's project is a super admin
+    if (!ctx.authState.project.superAdmin) {
+      throw new OperationOutcomeError(forbidden);
+    }
+  } else {
+    // if no onBehalfOfMembership, just check for super admin
+    return requireSuperAdmin();
+  }
+
+  return ctx;
 }

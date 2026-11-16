@@ -14,6 +14,8 @@ export interface ResourceTypeInputProps {
   readonly maxValues?: number;
   readonly onChange?: (value: ResourceType | undefined) => void;
   readonly disabled?: boolean;
+  /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
 }
 
 export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
@@ -44,6 +46,7 @@ export function ResourceTypeInput(props: ResourceTypeInputProps): JSX.Element {
       maxValues={props.maxValues ?? 1}
       clearable={false}
       withHelpText={false}
+      withinPortal={props.withinPortal}
     />
   );
 }

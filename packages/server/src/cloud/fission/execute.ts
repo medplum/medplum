@@ -3,6 +3,7 @@
 import { Hl7Message, createReference, normalizeErrorString } from '@medplum/core';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+import { buildTraceparent } from '../../util/tracing';
 import { executeFissionFunction } from './utils';
 
 /**
@@ -22,6 +23,7 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
     contentType,
     secrets,
     traceId,
+    traceparent: buildTraceparent(traceId),
     headers,
   };
 

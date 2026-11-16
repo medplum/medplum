@@ -329,6 +329,23 @@ const scheduleServiceTypeLink: Schedule =
   };
 // end-block scheduleServiceTypeLink
 
+// A Schedule that can be booked for every HealthcareService, without referencing any of them.
+const scheduleAllServiceTypes: Schedule =
+  // start-block scheduleAllServiceTypes
+  {
+    resourceType: 'Schedule',
+    id: 'dr-smith-schedule',
+    comment: "Dr. Smith's availability, for any service type",
+    actor: [{ reference: 'Practitioner/dr-smith' }],
+    serviceType: [
+      {
+        text: 'All service types',
+        coding: [{ system: 'https://medplum.com/fhir/CodeSystem/scheduling-service-type', code: 'all' }],
+      },
+    ],
+  };
+// end-block scheduleAllServiceTypes
+
 // A Schedule that overrides only `availability`, inheriting everything else from the HealthcareService.
 const scheduleOverride: Schedule =
   // start-block scheduleOverride
@@ -384,6 +401,53 @@ const scheduleOverride: Schedule =
     ],
   };
 // end-block scheduleOverride
+
+// A Schedule that allows overbooking by setting slotCapacity above 1.
+const overbookingSchedule: Schedule =
+  // start-block overbookingSchedule
+  {
+    resourceType: 'Schedule',
+    id: 'dr-chen-group-visit-schedule',
+    active: true,
+    comment: 'Dr. Chen - Group Visit (up to 8 patients per slot)',
+    actor: [{ reference: 'Practitioner/dr-chen' }],
+    serviceType: [
+      {
+        coding: [{ code: 'group-visit' }],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/service-type-reference',
+            valueReference: {
+              reference: 'HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672',
+              display: 'Group Visit',
+            },
+          },
+        ],
+      },
+    ],
+    extension: [
+      {
+        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+        extension: [
+          {
+            // required: identifies which HealthcareService these parameters override
+            url: 'service',
+            valueReference: {
+              reference: 'HealthcareService/f44bbf25-bf57-4263-8f10-be060cc91672',
+              display: 'Group Visit',
+            },
+          },
+          {
+            // Up to 8 appointments may occupy the same time. The default is 1 (no
+            // overbooking). Do not use in conjunction with bufferBefore / bufferAfter.
+            url: 'slotCapacity',
+            valuePositiveInt: 8,
+          },
+        ],
+      },
+    ],
+  };
+// end-block overbookingSchedule
 
 // A Slot that blocks time for a specific service type.
 const slotBlocking: Slot =
@@ -909,7 +973,8 @@ const seedBundle: Bundle =
   // start-block seedBundle
   {
     resourceType: 'Bundle',
-    // type: transaction so a bad entry rolls back instead of silently partial-committing
+    // Linked-resource request format only. Hosted processing is not atomic.
+    // Inspect every entry; do not blindly rerun POST creates after a partial failure.
     type: 'transaction',
     entry: [
       {
@@ -1115,7 +1180,9 @@ console.log(
   scheduleAvailability,
   healthcareServiceServiceLevel,
   scheduleServiceTypeLink,
+  scheduleAllServiceTypes,
   scheduleOverride,
+  overbookingSchedule,
   slotBlocking,
   actorTimezone,
   multiTimezoneSchedule,

@@ -3,12 +3,12 @@
 import type { CapabilityStatementRestResource } from '@medplum/fhirtypes';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { buildCapabilityStatement } from './metadata';
 import { loadStructureDefinitions } from './structure';
 
 describe('CapabilityStatement', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
 
   beforeAll(async () => {
     loadStructureDefinitions();
@@ -40,6 +40,22 @@ describe('CapabilityStatement', () => {
       name: 'assemble',
       definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
     });
+  });
+
+  test.each([
+    ['CodeSystem', ['lookup', 'validate-code', 'subsumes']],
+    ['ValueSet', ['expand', 'validate-code']],
+    ['ConceptMap', ['translate']],
+  ])('Terminology service capabilities for %s', (type, operations) => {
+    // See: https://hl7.org/fhir/R4/terminology-service.html#4.6.1
+    const resource = getResource(type);
+    expect(resource?.interaction?.map((i) => i.code)).toEqual(expect.arrayContaining(['read', 'search-type']));
+    expect(resource?.searchParam?.map((p) => p.name)).toEqual(
+      expect.arrayContaining(['url', 'version', 'name', 'title', 'status'])
+    );
+    expect(resource?.operation).toStrictEqual(
+      operations.map((name) => ({ name, definition: `http://hl7.org/fhir/OperationDefinition/${type}-${name}` }))
+    );
   });
 
   test('Include resource types', () => {

@@ -1,15 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference } from '@medplum/core';
-import type { Binary, DicomInstance, DicomSeries, DicomStudy } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, Operator } from '@medplum/core';
+import type { Binary, DicomInstance, DicomSeries, DicomStudy, Reference } from '@medplum/fhirtypes';
 import dcmjs from 'dcmjs';
 import type { Request, Response } from 'express';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { Response as SuperAgentResponse } from 'superagent';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import type { Repository } from '../fhir/repo';
+import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { createTestProject } from '../test.setup';
 import { handleSearchSeries } from './qido-rs';
@@ -22,17 +25,23 @@ const { DicomDict, DicomMetaDictionary } = data;
 describe('DICOM Routes', () => {
   const app = express();
   let accessToken: string;
+  let projectId: string;
+  let issuer: string;
+  let repo: Repository;
+  let getProjectScopedAccessToken: (projectId: string) => Promise<string>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    issuer = config.issuer;
 
     const testProject = await createTestProject({
       withAccessToken: true,
+      withClient: true,
       withRepo: true,
     });
 
-    const repo = testProject.repo;
+    repo = testProject.repo;
 
     const binary = await repo.createResource<Binary>({
       resourceType: 'Binary',
@@ -97,6 +106,21 @@ describe('DICOM Routes', () => {
     });
 
     accessToken = testProject.accessToken;
+    projectId = testProject.project.id;
+
+    const { client, login } = testProject;
+    getProjectScopedAccessToken = (scopedProjectId: string) =>
+      generateAccessToken(
+        {
+          login_id: login.id,
+          sub: client.id,
+          username: client.id,
+          client_id: client.id,
+          profile: `${client.resourceType}/${client.id}`,
+          scope: login.scope as string,
+        },
+        { issuer: `${issuer}projects/${scopedProjectId}/` }
+      );
   });
 
   afterAll(async () => {
@@ -109,6 +133,33 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
+  });
+
+  test('Get studies with /api prefix', async () => {
+    const res = await request(app)
+      .get(`/api/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(200);
+    expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
+  });
+
+  test('Get studies with project-scoped URL', async () => {
+    const scopedAccessToken = await getProjectScopedAccessToken(projectId);
+    for (const prefix of [`/projects/${projectId}`, `/api/projects/${projectId}`]) {
+      const res = await request(app)
+        .get(`${prefix}/dicomweb/studies`)
+        .set('Authorization', 'Bearer ' + scopedAccessToken);
+      expect(res).toHaveStatus(200);
+      expect(res.headers['content-type']).toContain(ContentType.DICOM_JSON);
+    }
+  });
+
+  test('Cannot use another project scope', async () => {
+    const otherProjectId = randomUUID();
+    const res = await request(app)
+      .get(`/projects/${otherProjectId}/dicomweb/studies`)
+      .set('Authorization', 'Bearer ' + (await getProjectScopedAccessToken(otherProjectId)));
+    expect(res).toHaveStatus(403);
   });
 
   test('Create study wrong content-type', async () => {
@@ -353,6 +404,14 @@ describe('DICOM Routes', () => {
     expect(series).toHaveStatus(200);
     // NumberOfSeriesRelatedInstances (0020,1209), also computed rather than sent.
     expect((series.body as Record<string, { Value?: unknown[] }>[])[0]['00201209'].Value).toStrictEqual(['1']);
+
+    // The stored file and the instance reference each other
+    const instance = await repo.searchOne<DicomInstance>({
+      resourceType: 'DicomInstance',
+      filters: [{ code: 'sop-instance-uid', operator: Operator.EXACT, value: '1.2.826.0.1.3680043.10.543.1' }],
+    });
+    const raw = await repo.readReference<Binary>(instance?.raw as Reference<Binary>);
+    expect(raw.securityContext?.reference).toStrictEqual(getReferenceString(instance as DicomInstance));
   });
 
   test('Create study with multiple instances in one request', async () => {

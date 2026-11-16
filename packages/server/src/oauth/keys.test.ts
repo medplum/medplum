@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import {
   generateAccessToken,
   generateIdToken,
@@ -41,7 +41,7 @@ describe('Keys', () => {
     expect.assertions(2);
 
     try {
-      await initKeys(undefined as unknown as MedplumServerConfig);
+      await initKeys(undefined as unknown as ServerConfig);
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Invalid server configuration');
     }
@@ -58,7 +58,7 @@ describe('Keys', () => {
     expect.assertions(3);
 
     try {
-      await initKeys({} as unknown as MedplumServerConfig);
+      await initKeys({} as unknown as ServerConfig);
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing issuer');
     }

@@ -11,10 +11,12 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
+import { sendVerificationEmail } from './newuser';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 /*
@@ -36,6 +38,7 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
 export const googleValidator = makeValidationMiddleware([
   body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
   body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
+  body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
 ]);
 
 /**
@@ -72,6 +75,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
     if (projects.length === 1) {
       projectId = projects[0].id;
+    } else {
+      getLogger().warn('Google client ID matches multiple projects', {
+        googleClientId,
+        projectIds: projects.map((p) => p.id),
+      });
     }
   }
 
@@ -100,8 +108,8 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const existingUser = await getUserByEmail(email, projectId);
-  if (!existingUser) {
+  let user = await getUserByEmail(email, projectId);
+  if (!user) {
     if (!req.body.createUser) {
       sendOutcome(res, badRequest('User not found'));
       return;
@@ -112,13 +120,25 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       return;
     }
     const systemRepo = getGlobalSystemRepo();
-    await systemRepo.createResource<User>({
+    user = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
       email,
+      // Google has already established that the user owns this address, so accept its
+      // assertion rather than asking for a second proof. Anything but a verified claim
+      // is falsy here and falls through to the email verification below.
+      emailVerified: claims.email_verified,
       project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
+      meta: projectId && projectId !== 'new' ? { project: projectId } : undefined,
     });
+  } else if (claims.email_verified && !user.emailVerified) {
+    // Accept Google's assertion for accounts that predate it too, so a user invited or
+    // provisioned before this is not left permanently unverified. Only ever upgrades: a
+    // user who verified with Medplum is never downgraded by a false or missing claim.
+    user = await getGlobalSystemRepo().patchResource<User>('User', user.id, [
+      { op: 'add', path: '/emailVerified', value: true },
+    ]);
   }
 
   const login = await tryLogin({
@@ -133,11 +153,24 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
+    redirectUri: req.body.redirectUri,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',
     pictureUrl: claims.picture,
   });
+
+  if (
+    getConfig().requireVerifiedEmailForProjectCreation &&
+    req.body.createUser &&
+    projectId === 'new' &&
+    !user.emailVerified
+  ) {
+    await sendVerificationEmail(user, login);
+    res.status(200).json({ login: login.id, emailVerificationRequired: true });
+    return;
+  }
+
   await sendLoginResult(res, login);
 }
 

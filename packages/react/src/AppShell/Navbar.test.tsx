@@ -169,6 +169,34 @@ describe('Navbar', () => {
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 
+  test('Opens the user menu', async () => {
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum} navigate={navigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={toggleMock}
+              closeNavbar={closeMock}
+              userMenuEnabled={true}
+              version="test.version"
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+
+    expect(screen.queryByText('Sign out')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
+    });
+    expect(await screen.findByText('Sign out')).toBeInTheDocument();
+  });
+
   test('Highlighted link', async () => {
     await setup('/link1');
 

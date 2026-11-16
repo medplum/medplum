@@ -4,7 +4,15 @@ import { Button, Paper, ScrollArea, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import type { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import { Document, LinkTabs, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
+import {
+  Document,
+  InfoBarSkeleton,
+  LinkTabs,
+  OperationOutcomeAlert,
+  PatientHeader,
+  useMedplum,
+  useResource,
+} from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Outlet, useParams } from 'react-router';
@@ -15,7 +23,9 @@ import { SpecimenHeader } from '../components/SpecimenHeader';
 import { getPatient, getSpecimen } from '../utils';
 import { cleanResource } from './utils';
 
-function getTabs(resourceType: string): string[] {
+const MEMBERSHIP_PROFILE_TYPES = ['Bot', 'ClientApplication', 'Patient', 'Practitioner', 'RelatedPerson'];
+
+function getTabs(resourceType: string, options: { isAdmin: boolean }): string[] {
   const result = ['Timeline'];
 
   if (resourceType === 'Bot') {
@@ -58,7 +68,13 @@ function getTabs(resourceType: string): string[] {
     result.push('Payload');
   }
 
-  result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
+  result.push('Details');
+
+  if (options.isAdmin && MEMBERSHIP_PROFILE_TYPES.includes(resourceType)) {
+    result.push('Membership');
+  }
+
+  result.push('Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
 
   if (resourceType === 'Patient') {
     result.push('Accounts', 'Export');
@@ -73,7 +89,8 @@ export function ResourcePage(): JSX.Element | null {
   const reference = { reference: resourceType + '/' + id };
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const value = useResource(reference, setOutcome);
-  const tabs = getTabs(resourceType);
+  const isAdmin = medplum.isProjectAdmin() || medplum.isSuperAdmin();
+  const tabs = getTabs(resourceType, { isAdmin });
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
@@ -139,16 +156,15 @@ export function ResourcePage(): JSX.Element | null {
         />
       )}
       {value && <QuickServiceRequests value={value} />}
-      {value && (
-        <Paper>
-          {patient && <PatientHeader patient={patient} />}
-          {specimen && <SpecimenHeader specimen={specimen} />}
-          {resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
-          <ScrollArea>
-            <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs} />
-          </ScrollArea>
-        </Paper>
-      )}
+      <Paper>
+        {!value && <InfoBarSkeleton withAvatar={resourceType === 'Patient'} />}
+        {patient && <PatientHeader patient={patient} />}
+        {specimen && <SpecimenHeader specimen={specimen} />}
+        {value && resourceType !== 'Patient' && <ResourceHeader resource={reference} />}
+        <ScrollArea>
+          <LinkTabs baseUrl={`/${resourceType}/${id}`} tabs={tabs} />
+        </ScrollArea>
+      </Paper>
       <Outlet />
     </>
   );

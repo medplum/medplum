@@ -627,5 +627,65 @@ describe('update-bucket-policies command', () => {
         Version: '2012-10-17',
       });
     });
+    describe('Storage GuardDuty on-demand only', () => {
+      const principal = { AWS: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity oai-123' };
+      const allow = {
+        Effect: 'Allow',
+        Principal: principal,
+        Action: ['s3:GetObject*', 's3:GetBucket*', 's3:List*'],
+        Resource: ['arn:aws:s3:::storage.test.medplum.com', 'arn:aws:s3:::storage.test.medplum.com/*'],
+      };
+      const gate = (Sid: string, Condition: Record<string, Record<string, string>>): Record<string, unknown> => ({
+        Sid,
+        Effect: 'Deny',
+        Principal: principal,
+        Action: ['s3:GetObject', 's3:GetObjectVersion'],
+        Resource: 'arn:aws:s3:::storage.test.medplum.com/*',
+        Condition,
+      });
+      const blanketGate = gate('GuardDutyMalwareProtectionReadGate', {
+        StringNotEquals: { 's3:ExistingObjectTag/GuardDutyMalwareScanStatus': 'NO_THREATS_FOUND' },
+      });
+      const threatsFoundGate = gate('GuardDutyMalwareProtectionThreatsFoundGate', {
+        StringEquals: { 's3:ExistingObjectTag/GuardDutyMalwareScanStatus': 'THREATS_FOUND' },
+      });
+
+      const update = (): Promise<void> =>
+        updateBucketPolicy(
+          'Storage',
+          { PhysicalResourceId: 'storage.test.medplum.com' } as StackResource,
+          { PhysicalResourceId: 'dist-123' } as StackResource,
+          { PhysicalResourceId: 'oai-123' } as StackResource,
+          { dryrun: true, guarddutyMalwareProtection: true, guarddutyOnDemandOnly: true }
+        );
+
+      test('Only denies objects tagged THREATS_FOUND', async () => {
+        console.log = vi.fn();
+        await update();
+        expect(JSON.parse((console.log as Mock).mock.calls[1][0] as string)).toEqual({
+          Version: '2012-10-17',
+          Statement: [allow, threatsFoundGate],
+        });
+      });
+
+      test('Replaces an existing blanket gate', async () => {
+        console.log = vi.fn();
+        s3Mock.on(GetBucketPolicyCommand).resolvesOnce({
+          Policy: JSON.stringify({ Version: '2012-10-17', Statement: [allow, blanketGate] }),
+        });
+        await update();
+        expect(JSON.parse((console.log as Mock).mock.calls[1][0] as string)).toEqual({
+          Version: '2012-10-17',
+          Statement: [allow, threatsFoundGate],
+        });
+      });
+
+      test('Throws when already up to date', async () => {
+        s3Mock.on(GetBucketPolicyCommand).resolvesOnce({
+          Policy: JSON.stringify({ Version: '2012-10-17', Statement: [allow, threatsFoundGate] }),
+        });
+        await expect(update()).rejects.toThrow('Storage bucket already has policy statement');
+      });
+    });
   });
 });

@@ -11,13 +11,25 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
   readonly searchCriteria?: Record<string, string>;
+  /** The search parameter, with any modifier, that the typed text is sent as (e.g. `name:contains`). Defaults to one chosen by resource type. */
+  readonly searchParam?: string;
   readonly placeholder?: string;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
+  /**
+   * Names the field for assistive technology, for use instead of a visible `label` (don't pass both). The name
+   * goes on the search box and on a group around the whole field, which keeps the chosen resource named while the
+   * search box is hidden (disabled or once a resource is chosen).
+   */
+  readonly 'aria-label'?: AsyncAutocompleteProps<T>['aria-label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
+  /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
+  /** Whether to show a button that clears the whole selection. Defaults to true. */
+  readonly clearable?: boolean;
 }
 
 /**
@@ -42,14 +54,18 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       name={props.name}
       defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
       searchCriteria={props.searchCriteria}
+      searchParam={props.searchParam}
       placeholder={props.placeholder}
       required={props.required}
       itemComponent={props.itemComponent}
       onChange={handleChange}
       disabled={props.disabled}
       label={props.label}
+      aria-label={props['aria-label']}
       error={props.error}
+      withinPortal={props.withinPortal}
       maxValues={1}
+      clearable={props.clearable}
     />
   );
 }

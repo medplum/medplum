@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Notifications } from '@mantine/notifications';
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { PatientSummaryProps } from './PatientSummary';
-import { PatientSummary } from './PatientSummary';
+import { PatientSummary, PatientSummarySkeleton } from './PatientSummary';
 import type { PatientSummarySectionConfig } from './PatientSummary.types';
 import {
   AllergiesSection,
@@ -39,6 +40,140 @@ describe('PatientSummary', () => {
     await setup({ patient: HomerSimpson });
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('Links the header when headerLink is provided', async () => {
+    await setup({ patient: HomerSimpson, headerLink: HomerSimpson });
+
+    expect(screen.getByRole('link', { name: /Homer Simpson/ })).toHaveAttribute('href', `/Patient/${HomerSimpson.id}`);
+  });
+
+  test('Renders a static header when headerLink is omitted', async () => {
+    await setup({ patient: HomerSimpson });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Homer Simpson/ })).toBeNull();
+  });
+
+  test('Reflects patient updates made through the client', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} />
+        </MedplumProvider>
+      );
+    });
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      await client.updateResource({ ...HomerSimpson, name: [{ given: ['Max'], family: 'Power' }] });
+    });
+
+    expect(screen.getByText('Max Power')).toBeInTheDocument();
+    expect(screen.queryByText('Homer Simpson')).toBeNull();
+  });
+
+  test('Ignores updates to other patients', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} />
+        </MedplumProvider>
+      );
+    });
+
+    await act(async () => {
+      await client.updateResource({
+        ...HomerSimpson,
+        id: 'other-patient',
+        name: [{ given: ['Max'], family: 'Power' }],
+      });
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByText('Max Power')).toBeNull();
+  });
+
+  test('Refresh reloads the patient and section data', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <PatientSummary patient={HomerSimpson} sections={[AllergiesSection]} />
+        </MedplumProvider>
+      );
+    });
+    expect(screen.queryByText('Shellfish')).toBeNull();
+
+    await client.createResource({
+      resourceType: 'AllergyIntolerance',
+      patient: createReference(HomerSimpson),
+      code: { text: 'Shellfish' },
+    });
+    const searchSpy = vi.spyOn(client, 'searchResources');
+    const readSpy = vi.spyOn(client, 'readResource');
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Patient actions'));
+    });
+    const refreshItem = await screen.findByRole('menuitem', { name: 'Refresh' });
+    await act(async () => {
+      fireEvent.click(refreshItem);
+    });
+
+    expect(await screen.findByText('Shellfish')).toBeInTheDocument();
+    expect(searchSpy).toHaveBeenCalledWith(
+      'AllergyIntolerance',
+      expect.any(Object),
+      expect.objectContaining({ cache: 'reload' })
+    );
+    expect(readSpy).toHaveBeenCalledWith('Patient', HomerSimpson.id, expect.objectContaining({ cache: 'reload' }));
+  });
+
+  test('Shows an error when refreshing the patient fails', async () => {
+    const client = new MockClient();
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={client}>
+          <Notifications />
+          <PatientSummary patient={HomerSimpson} sections={[AllergiesSection]} />
+        </MedplumProvider>
+      );
+    });
+    vi.spyOn(client, 'readResource').mockRejectedValueOnce(new Error('Network down'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Patient actions'));
+    });
+    const refreshItem = await screen.findByRole('menuitem', { name: 'Refresh' });
+    await act(async () => {
+      fireEvent.click(refreshItem);
+    });
+
+    expect(await screen.findByText('Network down')).toBeInTheDocument();
+  });
+
+  test('Shows skeleton while loading, then hides it', async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <PatientSummary patient={createReference(HomerSimpson)} />
+      </MedplumProvider>
+    );
+
+    expect(screen.getByTestId('patient-summary-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('Homer Simpson')).toBeNull();
+
+    await waitFor(() => screen.getByText('Homer Simpson'));
+    await waitFor(() => expect(screen.queryByTestId('patient-summary-sections-skeleton')).toBeNull());
+    expect(screen.queryByTestId('patient-summary-skeleton')).toBeNull();
+    expect(screen.getByText('Allergies')).toBeInTheDocument();
+  });
+
+  test('Renders skeleton', () => {
+    render(<PatientSummarySkeleton sections={2} />);
+    expect(screen.getByTestId('patient-summary-skeleton')).toBeInTheDocument();
   });
 
   test('Renders with gender missing', async () => {
@@ -597,8 +732,8 @@ describe('PatientSummary', () => {
       );
     });
 
-    // When patient can't be resolved, the component returns null
     expect(container.querySelector('.panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('patient-summary-skeleton')).toBeNull();
   });
 
   test('Renders with onClickResource callback', async () => {

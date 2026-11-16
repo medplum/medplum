@@ -136,6 +136,8 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
    */
   readonly defaultValue?: (T | Reference<T>)[];
   readonly searchCriteria?: Record<string, string>;
+  /** The search parameter, with any modifier, that the typed text is sent as (e.g. `name:contains`). Defaults to one chosen by resource type. */
+  readonly searchParam?: string;
   readonly placeholder?: string;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
@@ -143,16 +145,26 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly onChange?: (value: T[]) => void;
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
+  /**
+   * Names the field for assistive technology, for use instead of a visible `label` (don't pass both). The name
+   * goes on the search box and on a group around the whole field, which keeps the chosen resources named while the
+   * search box is hidden (disabled or at `maxValues`).
+   */
+  readonly 'aria-label'?: AsyncAutocompleteProps<T>['aria-label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
   /** Maximum number of resources that can be selected. Defaults to uncapped. */
   readonly maxValues?: number;
+  /** Render the options dropdown inside the DOM tree (not a portal); defaults to portalled. */
+  readonly withinPortal?: boolean;
+  /** Whether to show a button that clears the whole selection. Defaults to true. */
+  readonly clearable?: boolean;
 }
 
 export function MultiResourceInput<T extends Resource = Resource>(
   props: MultiResourceInputProps<T>
 ): JSX.Element | null {
   const medplum = useMedplum();
-  const { resourceType, searchCriteria } = props;
+  const { resourceType, searchCriteria, searchParam } = props;
   const ItemComponent = props.itemComponent ?? DefaultResourceItemComponent;
   const onChange = props.onChange;
 
@@ -197,9 +209,8 @@ export function MultiResourceInput<T extends Resource = Resource>(
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<T[]> => {
-      const searchCode = getSearchParamForResourceType(resourceType);
       const searchParams = new URLSearchParams({
-        [searchCode]: input ?? '',
+        [searchParam ?? getSearchParamForResourceType(resourceType)]: input ?? '',
         _count: '10',
         ...searchCriteria,
       });
@@ -207,7 +218,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       const resources = await medplum.searchResources(resourceType, searchParams, { signal });
       return resources as unknown as T[];
     },
-    [medplum, resourceType, searchCriteria]
+    [medplum, resourceType, searchCriteria, searchParam]
   );
 
   const handleChange = useCallback(
@@ -230,6 +241,7 @@ export function MultiResourceInput<T extends Resource = Resource>(
       disabled={props.disabled}
       name={props.name}
       label={props.label}
+      aria-label={props['aria-label']}
       error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
@@ -239,7 +251,8 @@ export function MultiResourceInput<T extends Resource = Resource>(
       toOption={toOption}
       loadOptions={loadValues}
       onChange={handleChange}
-      clearable
+      withinPortal={props.withinPortal}
+      clearable={props.clearable ?? true}
     />
   );
 }

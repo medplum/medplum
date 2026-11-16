@@ -17,6 +17,7 @@ import { getProjectSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
+import { buildTraceparent } from '../util/tracing';
 import type { BotExecutionContext, BotExecutionResult } from './types';
 
 /*
@@ -69,6 +70,9 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   const systemRepo = await getProjectSystemRepo(runAs.project);
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl });
+  if (binary.meta?.project !== bot.meta?.project) {
+    return { success: false, logResult: 'Executable code is not in the bot project' };
+  }
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);
   const botConsole = new MockConsole();
@@ -94,6 +98,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       contentType,
       secrets: request.secrets,
       traceId,
+      traceparent: buildTraceparent(traceId),
       headers,
       defaultHeaders: request.defaultHeaders,
       responseStream: request.responseStream,
@@ -114,14 +119,16 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, responseStream } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, traceparent, headers, defaultHeaders, responseStream } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
       fetch: function(url, options = {}) {
         options.headers ||= {};
         options.headers['X-Trace-Id'] = traceId;
-        options.headers['traceparent'] = traceId;
+        if (traceparent) {
+          options.headers['traceparent'] = traceparent;
+        }
         return fetch(url, options);
       },
     });

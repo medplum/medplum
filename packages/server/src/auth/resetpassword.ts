@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter } from '@medplum/core';
-import { allOk, badRequest, concatUrls, createReference, Operator, resolveId } from '@medplum/core';
+import type { Filter, WithId } from '@medplum/core';
+import { allOk, badRequest, concatUrls, createReference, escapeSearchValue, Operator, resolveId } from '@medplum/core';
 import type { Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -13,6 +13,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
+import { getSecurityRequestExpiration, supersedePriorSecurityRequests } from './securityrequest';
 
 export const resetPasswordValidator = makeValidationMiddleware([
   body('email')
@@ -34,7 +35,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     {
       code: 'email',
       operator: Operator.EXACT,
-      value: email, // Set the email value for exact matching
+      value: escapeSearchValue(email), // Set the email value for exact matching
     },
   ];
 
@@ -109,10 +110,13 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  */
 export async function resetPassword(
   systemRepo: SystemRepository,
-  user: User,
+  user: WithId<User>,
   type: UserSecurityRequest['type'],
   redirectUri?: string
 ): Promise<string> {
+  // Invalidate any prior requests of this type, so that only the newest link works
+  await supersedePriorSecurityRequests(systemRepo, user, type);
+
   // Create the password change request
   const { id, secret } = await systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
@@ -120,6 +124,7 @@ export async function resetPassword(
     type,
     user: createReference(user),
     secret: generateSecret(16),
+    expiresAt: getSecurityRequestExpiration(type),
     redirectUri,
   });
 

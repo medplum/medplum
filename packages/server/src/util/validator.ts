@@ -18,3 +18,18 @@ export function makeValidationMiddleware(runners: ContextRunner[]): RequestHandl
     next();
   };
 }
+
+/**
+ * Validates the request and sends an error response if there are validation errors.
+ * @param req - The Express request object.
+ * @param res - The Express response object.
+ * @returns True if there were validation errors and a response was sent.
+ */
+export function sendValidationErrors(req: Request, res: Response): boolean {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    sendOutcome(res, invalidRequest(errors));
+    return true;
+  }
+  return false;
+}

@@ -109,18 +109,6 @@
       "dist": "dist/epic/epic-query-patient.js"
     },
     {
-      "name": "metriport-patient-bot",
-      "id": "",
-      "source": "src/metriport-bots/metriport-patient-bot.ts",
-      "dist": "dist/metriport-bots/metriport-patient-bot.js"
-    },
-    {
-      "name": "metriport-consolidated-data-webhook",
-      "id": "",
-      "source": "src/metriport-bots/metriport-consolidated-data-webhook.ts",
-      "dist": "dist/metriport-bots/metriport-consolidated-data-webhook.js"
-    },
-    {
       "name": "twilio-voice-webhook",
       "id": "",
       "source": "src/twilio/voice-webhook.ts",

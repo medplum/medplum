@@ -1,20 +1,37 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
-import { capitalize, DEFAULT_SEARCH_COUNT, evalFhirPathTyped, formatDateTime, Operator } from '@medplum/core';
-import type { Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { ComboboxData, ComboboxItem } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
+import type { Filter, InternalSchemaElement, SearchRequest, SortRule } from '@medplum/core';
+import {
+  capitalize,
+  DEFAULT_SEARCH_COUNT,
+  evalFhirPathTyped,
+  formatDateTime,
+  getDisplayString,
+  isProfileResource,
+  Operator,
+  PropertyType,
+} from '@medplum/core';
+import type { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { ResourceName } from '../ResourceName/ResourceName';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import classes from './SearchControl.module.css';
 import type { SearchControlField } from './SearchControlField';
 
-const searchParamToOperators: Record<string, Operator[]> = {
+type SearchParamType = SearchParameter['type'] | 'fulltext' | 'datetime';
+
+const searchParamToOperators: Partial<Record<SearchParamType, Operator[]>> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   fulltext: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
   token: [Operator.EQUALS, Operator.NOT, Operator.TEXT],
   reference: [Operator.EQUALS, Operator.NOT],
-  numeric: [
+  number: [
     Operator.EQUALS,
     Operator.NOT_EQUALS,
     Operator.GREATER_THAN,
@@ -433,6 +450,21 @@ export function toggleSort(definition: SearchRequest, key: string): SearchReques
   return setSort(definition, key, desc);
 }
 
+/** The sort {@link SearchControl} applies when a search has no sort rules: Last Updated, newest first. */
+export const DEFAULT_SORT_RULES: readonly SortRule[] = [{ code: '_lastUpdated', descending: true }];
+
+/**
+ * Returns true when two lists of sort rules sort the same way. A missing `descending` counts as ascending.
+ * @param a - The first sort rules.
+ * @param b - The second sort rules.
+ * @returns True if both lists have the same codes and directions in the same order.
+ */
+export function isSameSort(a: readonly SortRule[], b: readonly SortRule[]): boolean {
+  return (
+    a.length === b.length && a.every((rule, i) => rule.code === b[i].code && !!rule.descending === !!b[i].descending)
+  );
+}
+
 export function getSortField(definition: SearchRequest): string | undefined {
   const sortRules = definition.sortRules;
   if (!sortRules || sortRules.length === 0) {
@@ -456,7 +488,7 @@ export function isSortDescending(definition: SearchRequest): boolean {
  * @returns The list of operators that can be used for the search parameter.
  */
 export function getSearchOperators(searchParam: SearchParameter): Operator[] | undefined {
-  return searchParamToOperators[searchParam.type as string];
+  return searchParamToOperators[searchParam.type];
 }
 
 /**
@@ -520,15 +552,60 @@ export function isMetaSearchParam(code: string): boolean {
 }
 
 /**
- * Returns a display label for a search parameter code.
- *
- * Meta fields keep their underscore-prefixed code so they don't collide with same-named
- * elements (e.g. `ProjectMembership.project` vs `_project`).
+ * Returns a display label for a search parameter code. Metadata codes keep their
+ * underscore-prefixed code so they never share a label with a same-named element
+ * (e.g. `ProjectMembership.project` vs `_project`).
  * @param code - The search parameter code.
  * @returns The display label for the search parameter.
  */
 export function buildSearchParamFieldLabel(code: string): string {
   return isMetaSearchParam(code) ? code : buildFieldNameString(code);
+}
+
+/**
+ * Splits search parameter codes into resource fields and `_`-prefixed metadata, each sorted by label.
+ * @param codes - The search parameter codes.
+ * @returns The field and metadata codes.
+ */
+export function partitionSearchParams(codes: string[]): { fields: string[]; metadata: string[] } {
+  const byLabel = (a: string, b: string): number =>
+    buildSearchParamFieldLabel(a).localeCompare(buildSearchParamFieldLabel(b));
+  return {
+    fields: codes.filter((code) => !isMetaSearchParam(code)).sort(byLabel),
+    metadata: codes.filter((code) => isMetaSearchParam(code)).sort(byLabel),
+  };
+}
+
+/**
+ * Builds grouped Select options (Fields, then Metadata) for choosing a search parameter.
+ * @param searchParams - The resource type's search parameters, keyed by code.
+ * @returns The grouped Select data.
+ */
+export function getSearchParamSelectData(searchParams: Record<string, SearchParameter>): ComboboxData {
+  const { fields, metadata } = partitionSearchParams(Object.keys(searchParams));
+  const toItems = (codes: string[]): ComboboxItem[] =>
+    codes.map((code) => ({ value: code, label: buildSearchParamFieldLabel(code) }));
+  return [
+    ...(fields.length > 0 ? [{ group: 'Fields', items: toItems(fields) }] : []),
+    ...(metadata.length > 0 ? [{ group: 'Metadata', items: toItems(metadata) }] : []),
+  ];
+}
+
+/**
+ * Sort direction labels by search parameter type: dates oldest/newest, numbers smallest/largest, else A/Z.
+ * @param type - The search parameter type.
+ * @returns The ascending and descending labels.
+ */
+export function getSortDirectionLabels(type: string | undefined): { asc: string; desc: string } {
+  switch (type) {
+    case 'date':
+      return { asc: 'Oldest to Newest', desc: 'Newest to Oldest' };
+    case 'number':
+    case 'quantity':
+      return { asc: 'Smallest to Largest', desc: 'Largest to Smallest' };
+    default:
+      return { asc: 'A to Z', desc: 'Z to A' };
+  }
 }
 
 /**
@@ -551,6 +628,10 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
     return formatDateTime(resource.meta?.lastUpdated);
   }
 
+  if (key === 'name' && isProfileResource(resource)) {
+    return renderNameWithAvatar(resource);
+  }
+
   // Priority 1: InternalSchemaElement by exact match
   if (`${resource.resourceType}.${field.name}` === field.elementDefinition?.path) {
     return renderPropertyValue(resource, field.elementDefinition);
@@ -563,6 +644,61 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
 
   // We don't know how to render this field definition
   return null;
+}
+
+/**
+ * Renders a person-like resource's name column as its avatar next to its display name.
+ * @param resource - The Patient, Practitioner or RelatedPerson.
+ * @returns The avatar + name element.
+ */
+function renderNameWithAvatar(resource: Resource): JSX.Element {
+  return (
+    <Group gap="xs" wrap="nowrap">
+      <ResourceAvatar value={resource} radius="xl" size={28} />
+      <Text size="sm" truncate>
+        {getDisplayString(resource)}
+      </Text>
+    </Group>
+  );
+}
+
+/**
+ * Renders references as an avatar/name link and `status` fields as a colored badge.
+ * @param propertyType - The FHIR property type of the value.
+ * @param value - The value to render.
+ * @param code - The field's element name or search parameter code (used to detect status fields).
+ * @returns A rich display element, or undefined to fall back to {@link ResourcePropertyDisplay}.
+ */
+function renderRichValue(propertyType: string, value: unknown, code: string): JSX.Element | undefined {
+  if (propertyType === PropertyType.Reference && !Array.isArray(value)) {
+    return <ReferenceAvatarLink value={value as Reference} />;
+  }
+  if (code === 'status' && typeof value === 'string') {
+    return (
+      <StatusBadge
+        status={value}
+        variant="light"
+        classNames={{ root: classes.statusBadge, label: classes.statusBadgeLabel }}
+      />
+    );
+  }
+  return undefined;
+}
+
+function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Element {
+  const name = value.display || <ResourceName value={value} />;
+  return (
+    <Group gap="xs" wrap="nowrap">
+      <ResourceAvatar value={value} radius="xl" size={28} />
+      {value.reference ? (
+        <MedplumLink to={value} size="sm" className={classes.nameLink}>
+          {name}
+        </MedplumLink>
+      ) : (
+        <Text size="sm">{name}</Text>
+      )}
+    </Group>
+  );
 }
 
 /**
@@ -579,15 +715,17 @@ function renderPropertyValue(resource: Resource, elementDefinition: InternalSche
   }
 
   return (
-    <ResourcePropertyDisplay
-      path={elementDefinition.path}
-      property={elementDefinition}
-      propertyType={propertyType}
-      value={value}
-      maxWidth={200}
-      ignoreMissingValues={true}
-      link={false}
-    />
+    renderRichValue(propertyType, value, path) ?? (
+      <ResourcePropertyDisplay
+        path={elementDefinition.path}
+        property={elementDefinition}
+        propertyType={propertyType}
+        value={value}
+        maxWidth={200}
+        ignoreMissingValues={true}
+        link={false}
+      />
+    )
   );
 }
 
@@ -605,16 +743,23 @@ function renderSearchParameterValue(resource: Resource, searchParam: SearchParam
 
   return (
     <>
-      {value.map((v, index) => (
-        <ResourcePropertyDisplay
-          key={`${index}-${value.length}`}
-          propertyType={v.type}
-          value={v.value}
-          maxWidth={200}
-          ignoreMissingValues={true}
-          link={false}
-        />
-      ))}
+      {value.map((v, index) => {
+        const key = `${index}-${value.length}`;
+        const rich = renderRichValue(v.type, v.value, searchParam.code);
+        if (rich) {
+          return <span key={key}>{rich}</span>;
+        }
+        return (
+          <ResourcePropertyDisplay
+            key={key}
+            propertyType={v.type}
+            value={v.value}
+            maxWidth={200}
+            ignoreMissingValues={true}
+            link={false}
+          />
+        );
+      })}
     </>
   );
 }

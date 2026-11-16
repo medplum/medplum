@@ -1,10 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError, singularize } from '@medplum/core';
+import {
+  badRequest,
+  ContentType,
+  flatMapFilter,
+  isNotFound,
+  notFound,
+  OperationOutcomeError,
+  singularize,
+} from '@medplum/core';
 import type { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { getAuthenticatedContext } from '../context';
+import { readAsyncJob } from './operations/utils/asyncjobexecutor';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
 // Bulk Data API
@@ -19,7 +28,7 @@ async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport>
   const { repo } = getAuthenticatedContext();
   let resource: AsyncJob | BulkDataExport;
   try {
-    resource = await repo.readResource<AsyncJob>('AsyncJob', id);
+    resource = await readAsyncJob(id);
   } catch (err: unknown) {
     if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
       resource = await repo.readResource<BulkDataExport>('BulkDataExport', id);
@@ -38,6 +47,9 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
 
   if (bulkDataExport.status === 'cancelled') {
     res.status(404).json(notFound);
+    return;
+  } else if (bulkDataExport.status === 'error') {
+    res.status(400).json(badRequest('Bulk export failed'));
     return;
   } else if (bulkDataExport.status !== 'completed') {
     res.status(202).end();

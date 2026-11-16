@@ -99,6 +99,11 @@ export class FileSystemStorage extends BaseBinaryStorage {
   }
 
   private getPath(key: string): string {
-    return resolve(this.baseDir, key.replace('binary/', ''));
+    const baseDir = resolve(this.baseDir);
+    const fullPath = resolve(baseDir, key.replace('binary/', ''));
+    if (!fullPath.startsWith(baseDir + sep)) {
+      throw new Error('Invalid storage key');
+    }
+    return fullPath;
   }
 }

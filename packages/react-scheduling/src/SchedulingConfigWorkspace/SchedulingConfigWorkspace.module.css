@@ -1,0 +1,32 @@
+/* SchedulingConfigWorkspace.module.css */
+
+.root {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  width: 100%;
+}
+
+.sidebar {
+  /*
+   * Keep the section headers' visually hidden labels inside this scroll container. Escaping it, the ones below
+   * a long list stretched the page, which then scrolled as a whole.
+   */
+  position: relative;
+  flex-shrink: 0;
+  width: calc(300px + var(--mantine-spacing-sm));
+  padding-block: var(--mantine-spacing-md);
+  /* Room for an overlay scrollbar, which takes no layout space and would cover the + buttons. */
+  padding-right: var(--mantine-spacing-sm);
+  overflow-y: auto;
+}
+
+.detail {
+  /* Keep absolutely positioned accessibility labels inside this scroll container. */
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: var(--mantine-spacing-md) 0 var(--mantine-spacing-md) var(--mantine-spacing-md);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}

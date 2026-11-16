@@ -22,7 +22,7 @@ import {
   formatReferenceString,
   getExtensionValue,
   getReferenceString,
-  getScheduleParameters,
+  getScheduleSchedulingParameters,
   getSchedulingTimezone,
   hasSchedulingParameters,
   serviceTypeIncludesService,
@@ -141,7 +141,7 @@ export function ScheduleSettings(props: { schedule: Schedule }): JSX.Element | n
         {services?.map((service) => {
           const schedulable = hasSchedulingParameters(service);
           const enabled = serviceTypeIncludesService(schedule.serviceType, service);
-          const overriding = enabled && getScheduleParameters(schedule, service, 'availability').length > 0;
+          const overriding = enabled && getScheduleSchedulingParameters(schedule, service, 'availability').length > 0;
           return (
             <Group key={service.id} justify="space-between">
               <Tooltip

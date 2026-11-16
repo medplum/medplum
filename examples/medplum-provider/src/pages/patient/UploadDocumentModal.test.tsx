@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { DocumentReference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { showErrorNotification } from '../../utils/notifications';
 import type { UploadDocumentModalProps } from './UploadDocumentModal';
 import { UploadDocumentModal } from './UploadDocumentModal';
@@ -27,9 +27,7 @@ describe('UploadDocumentModal', () => {
   const setup = (props: Partial<UploadDocumentModalProps> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <UploadDocumentModal opened={true} onClose={vi.fn()} patient={HomerSimpson} onCreated={vi.fn()} {...props} />
-        </MantineProvider>
+        <UploadDocumentModal opened={true} onClose={vi.fn()} patient={HomerSimpson} onCreated={vi.fn()} {...props} />
       </MedplumProvider>
     );
   };
@@ -164,5 +162,40 @@ describe('UploadDocumentModal', () => {
       expect(showErrorNotification).toHaveBeenCalled();
     });
     expect(createResource).not.toHaveBeenCalled();
+  });
+
+  test('shows an error and keeps the modal open when the attachment upload fails', async () => {
+    const user = userEvent.setup();
+    const onCreated = vi.fn();
+    const failure = new Error('Storage unavailable');
+    vi.spyOn(medplum, 'createAttachment').mockRejectedValue(failure);
+    const createResource = vi.spyOn(medplum, 'createResource');
+
+    setup({ onCreated });
+    selectFile(new File(['data'], 'report.pdf', { type: 'application/pdf' }));
+    await user.click(screen.getByRole('button', { name: 'Upload' }));
+
+    await waitFor(() => expect(showErrorNotification).toHaveBeenCalledWith(failure));
+    expect(createResource).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
+  });
+
+  test('highlights the dropzone while dragging and accepts a dropped file', () => {
+    setup();
+    const dropzone = screen
+      .getByText('Drag a file here or click to browse')
+      .closest('div[class*="dropzone"]') as Element;
+
+    fireEvent.dragOver(dropzone);
+    expect(dropzone.className).toMatch(/dropzoneDragging/);
+    fireEvent.dragLeave(dropzone);
+    expect(dropzone.className).not.toMatch(/dropzoneDragging/);
+
+    fireEvent.dragOver(dropzone);
+    fireEvent.drop(dropzone, { dataTransfer: { files: [new File(['data'], 'scan.png', { type: 'image/png' })] } });
+    expect(screen.getByText('scan.png')).toBeInTheDocument();
+    expect(dropzone.className).not.toMatch(/dropzoneDragging/);
+    expect(screen.getByRole('button', { name: 'Upload' })).toBeEnabled();
   });
 });

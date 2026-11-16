@@ -3,12 +3,18 @@
 import type { WithId } from '@medplum/core';
 import { OperationOutcomeError, badRequest } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
-import MailComposer from 'nodemailer/lib/mail-composer/index.js';
-import type Mail from 'nodemailer/lib/mailer';
-import type { Address } from 'nodemailer/lib/mailer';
+import dns from 'node:dns';
+import net from 'node:net';
+import type { Address, SendMailOptions } from 'nodemailer';
+import MailComposer from 'nodemailer/lib/mail-composer';
+import type { SMTPTransportGetSocket } from 'nodemailer/lib/smtp-transport';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import { getLogger } from '../logger';
+import { isUnsafeIpAddress } from '../util/url';
+
+export const PROJECT_SMTP_TIMEOUT_MS = 20_000;
+export const PROJECT_SMTP_SOCKET_TIMEOUT_MS = 120_000;
 
 export interface ProjectSmtpConfig extends MedplumSmtpConfig {
   fromAddress: string;
@@ -64,6 +70,58 @@ export function getProjectSmtpConfig(project: WithId<Project>): ProjectSmtpConfi
 }
 
 /**
+ * Returns a nodemailer `getSocket` hook that opens the connection to the project SMTP host.
+ * Every address the host resolves to must be allowed; the connection may use any of them.
+ * Resolving and connecting must finish within the transport's `connectionTimeout`.
+ * @param projectId - The project ID, for logging.
+ * @returns The `getSocket` hook.
+ */
+export function getProjectSmtpSocket(projectId: string): SMTPTransportGetSocket {
+  const invalidHost = (): OperationOutcomeError => {
+    getLogger().warn('Project SMTP is misconfigured', { projectId, invalid: 'smtpHost' });
+    return new OperationOutcomeError(badRequest('Project SMTP configuration is incomplete or invalid'));
+  };
+
+  // autoSelectFamily makes net.connect() request every address and try them in turn
+  const lookup: net.LookupFunction = (hostname, options, callback) => {
+    dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
+      if (err) {
+        callback(err, []);
+      } else if (addresses.length === 0 || addresses.some(({ address }) => isUnsafeIpAddress(address))) {
+        callback(invalidHost(), []);
+      } else {
+        callback(null, addresses);
+      }
+    });
+  };
+
+  return (options, callback) => {
+    const host = options.host ?? '';
+    // net.connect() skips the lookup for IP literals
+    if (net.isIP(host) && isUnsafeIpAddress(host)) {
+      callback(invalidHost());
+      return;
+    }
+
+    const socket = net.connect({ host, port: Number(options.port), lookup, autoSelectFamily: true });
+    const timer = setTimeout(
+      () => socket.destroy(Object.assign(new Error('Connection timeout'), { code: 'ETIMEDOUT' })),
+      options.connectionTimeout ?? PROJECT_SMTP_TIMEOUT_MS
+    );
+    const onError = (err: Error): void => {
+      clearTimeout(timer);
+      callback(err);
+    };
+    socket.once('error', onError);
+    socket.once('connect', () => {
+      clearTimeout(timer);
+      socket.removeListener('error', onError);
+      callback(null, { connection: socket });
+    });
+  };
+}
+
+/**
  * Returns true if email sending is configured on this server (SMTP or AWS SES).
  * @returns True if email is configured.
  */
@@ -82,7 +140,7 @@ export function isEmailConfigured(): boolean {
  * @param projectSmtp - Optional project SMTP configuration.
  * @returns The from address to use.
  */
-export function getFromAddress(options: Mail.Options, projectSmtp?: ProjectSmtpConfig): string {
+export function getFromAddress(options: SendMailOptions, projectSmtp?: ProjectSmtpConfig): string {
   const config = getConfig();
   const approvedSenderEmails = projectSmtp ? projectSmtp.approvedSenderEmails : config.approvedSenderEmails;
   const defaultFrom = projectSmtp ? projectSmtp.fromAddress : config.supportEmail;
@@ -141,7 +199,7 @@ export function applyFromDisplayName(fromAddress: string, appName: string | unde
  * @param input - nodemailer address input.
  * @returns Array of string addresses.
  */
-export function buildAddresses(input: string | Address | (string | Address)[] | undefined): string[] | undefined {
+export function buildAddresses(input: SendMailOptions['from']): string[] | undefined {
   if (!input) {
     return undefined;
   }
@@ -156,7 +214,7 @@ export function buildAddresses(input: string | Address | (string | Address)[] | 
  * @param address - nodemailer address input.
  * @returns String address.
  */
-export function addressToString(address: (string | Address)[] | Address | string | undefined): string | undefined {
+export function addressToString(address: SendMailOptions['from']): string | undefined {
   if (!address) {
     return undefined;
   }
@@ -195,7 +253,7 @@ export function extractEmailFromAddress(address: string | undefined): string | u
  * @param options - The nodemailer options.
  * @returns The raw email message.
  */
-export function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
+export function buildRawMessage(options: SendMailOptions): Promise<Uint8Array> {
   const msg = new MailComposer(options);
   return new Promise((resolve, reject) => {
     msg.compile().build((err, message) => {

@@ -279,10 +279,7 @@ export const medplumEslintConfig = [
       'coverage',
       'dist',
       'node_modules',
-      'packages/docs/build/',
-      'packages/docs/markdown-to-mdx.cjs',
-      'packages/docs/docusaurus.config.js',
-      'packages/docs/sidebars.js',
+      'packages/docs/public/',
       'packages/eslint-config/index.cjs',
       'packages/expo-medplum-polyfills/build',
       'packages/generator/output/',
@@ -293,7 +290,6 @@ export const medplumEslintConfig = [
       '**/coverage/',
       '**/dist/',
       '**/node_modules/',
-      '**/babel.config.*',
       '**/jest.sequencer.*',
       '**/postcss.config.*',
       '**/rollup.config.*',
@@ -313,6 +309,37 @@ export const medplumEslintConfig = [
       'medplum/no-transaction-callback-invoking-repo': 'error',
     },
   },
+  {
+    // Workers act as a job's user only via runJobInAuthenticatedContext. runInAuthenticatedContext
+    // alone would retry a job whose auth state was revoked instead of failing it; the other imports
+    // skip the revocation check entirely.
+    files: ['packages/server/src/workers/**/*.ts'],
+    ignores: ['packages/server/src/workers/utils.ts', '**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)context$',
+              importNames: ['runInAuthenticatedContext', 'AuthenticatedRequestContext'],
+              message: 'Use runJobInAuthenticatedContext',
+            },
+            {
+              regex: '(^|/)fhir/accesspolicy$',
+              importNames: ['getRepoForLogin'],
+              message: 'Use runJobInAuthenticatedContext',
+            },
+            {
+              regex: '(^|/)request-context-store$',
+              importNames: ['requestContextStore'],
+              message: 'Use runJobInAuthenticatedContext or tryRunInRequestContext',
+            },
+          ],
+        },
+      ],
+    },
+  },
   /**
    * vite.config.ts and vitest.config.ts are often outside package tsconfig include (e.g. rootDir src);
    * skip type-aware parsing.
@@ -320,7 +347,7 @@ export const medplumEslintConfig = [
    * we don't need type checking for vite.config.ts or vitest.config.ts files
    */
   {
-    files: ['**/vite.config.ts', '**/vitest.config.ts'],
+    files: ['**/vite.config.ts', '**/vite.*.config.ts', '**/vitest.config.ts'],
     extends: [tseslint.configs.disableTypeChecked],
   },
 ];

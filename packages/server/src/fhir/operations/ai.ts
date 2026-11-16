@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, forbidden, isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
+import type { Login, OperationDefinitionParameter, ParametersParameter } from '@medplum/fhirtypes';
 import type { Response as ExpressResponse, Request } from 'express';
-import type { AiContext, AiResult } from '../../ai/openai';
+import type { AiApi, AiContext, AiResult } from '../../ai/openai';
 import { callOpenAi, streamOpenAi } from '../../ai/openai';
+import { hasSmartResourceScopes } from '../../auth/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { sendOutcome } from '../outcomes';
@@ -41,6 +42,18 @@ const operation = makeOperationDefinition(
       ),
       param('in', 'tools', 'string', 'JSON string containing the tools array (optional)'),
       param('in', 'temperature', 'decimal', 'Sampling temperature (optional)'),
+      param(
+        'in',
+        'reasoning_effort',
+        'string',
+        'Reasoning effort for reasoning models: none, minimal, low, medium, high or xhigh (optional). Sent as reasoning_effort on chat completions and as reasoning.effort on the Responses API.'
+      ),
+      param(
+        'in',
+        'api',
+        'code',
+        'Which OpenAI endpoint to call: chat or responses (optional). By default chat is used, except that tools together with a reasoning_effort other than none route to responses, which chat completions rejects.'
+      ),
       param('out', 'content', 'string', 'AI response content'),
       param('out', 'tool_calls', 'string', 'JSON string containing tool calls array'),
       param('out', 'provider', 'string', 'Which provider answered, and therefore whose schema raw follows'),
@@ -59,7 +72,17 @@ type AIOperationParameters = {
   model: string;
   tools?: string;
   temperature?: number;
+  reasoning_effort?: string;
+  api?: string;
 };
+
+const AI_APIS: readonly AiApi[] = ['chat', 'responses'];
+
+const REASONING_EFFORTS: readonly string[] = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+
+function isAiApi(value: string): value is AiApi {
+  return (AI_APIS as readonly string[]).includes(value);
+}
 
 export const aiOperationHandler = async (req: Request, res: ExpressResponse): Promise<void> => {
   const fhirRequest: FhirRequest = {
@@ -92,6 +115,20 @@ export const aiOperationHandler = async (req: Request, res: ExpressResponse): Pr
 };
 
 /**
+ * Returns true if the AI operation supports the caller's account type.
+ * @param profileReference - The caller's profile reference.
+ * @param login - The caller's login.
+ * @returns True if the account type is supported.
+ */
+function isSupportedAiCaller(profileReference: string | undefined, login: Login): boolean {
+  const profileType = profileReference?.split('/')[0];
+  if (profileType === 'Patient' || profileType === 'RelatedPerson') {
+    return false;
+  }
+  return !hasSmartResourceScopes(login);
+}
+
+/**
  * Implements FHIR AI operation.
  * Supports both regular and streaming responses based on Accept header.
  * @param req - The incoming request.
@@ -106,6 +143,10 @@ export async function aiOperation(
 ): Promise<FhirResponse | undefined> {
   const ctx = getAuthenticatedContext();
   if (!ctx.project.features?.includes('ai')) {
+    return [forbidden];
+  }
+
+  if (!isSupportedAiCaller(ctx.profile.reference, ctx.login)) {
     return [forbidden];
   }
 
@@ -141,11 +182,25 @@ export async function aiOperation(
     }
   }
 
+  if (params.api !== undefined && !isAiApi(params.api)) {
+    return [badRequest(`Unsupported api: ${params.api}. Expected one of ${AI_APIS.join(', ')}`)];
+  }
+
+  if (params.reasoning_effort !== undefined && !REASONING_EFFORTS.includes(params.reasoning_effort)) {
+    return [
+      badRequest(
+        `Unsupported reasoning_effort: ${params.reasoning_effort}. Expected one of ${REASONING_EFFORTS.join(', ')}`
+      ),
+    ];
+  }
+
   const context: AiContext = {
     messages,
     model: params.model,
     tools,
     temperature: params.temperature,
+    reasoningEffort: params.reasoning_effort,
+    api: params.api,
     apiKey,
     baseUrl,
   };

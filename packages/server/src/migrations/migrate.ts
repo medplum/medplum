@@ -288,6 +288,26 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
     });
   }
 
+  if (resourceType === 'Task') {
+    tableDefinition.indexes.push({
+      indexNameSuffix: 'not_completed_idx',
+      indexType: 'gin',
+      columns: ['projectId', 'status', '___tag', '__code'],
+      where: "(deleted = false) AND (status <> 'completed'::text)",
+      fastupdate: false,
+    });
+  }
+
+  if (resourceType === 'Encounter') {
+    tableDefinition.indexes.push({
+      indexNameSuffix: 'unfinished_idx',
+      indexType: 'gin',
+      columns: ['projectId', 'status', '___tag', '__class', '__type'],
+      where: "(deleted = false) AND (status <> 'finished'::text)",
+      fastupdate: false,
+    });
+  }
+
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
   result.tables.push(
@@ -348,7 +368,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       tableDefinition.columns.push(column);
     }
 
-    for (const index of getSearchParameterIndexes(searchParam, impl)) {
+    for (const index of getSearchParameterIndexes(resourceType, searchParam, impl)) {
       const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
       if (existing) {
         continue;
@@ -421,10 +441,100 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
   }
 }
 
+interface SearchParameterIndexVariant {
+  prefix?: string[];
+  suffix?: string[];
+  indexTypes?: IndexType[];
+}
+
+const Unmodified: SearchParameterIndexVariant = {};
+const ProjectScoped: SearchParameterIndexVariant = { prefix: ['projectId'] };
+
+/**
+ * Per-resource index variants, keyed by search parameter code. The listed variants replace the defaults
+ * from {@link getSearchParameterIndexVariants}, so include `Unmodified` to keep the plain indexes as well.
+ */
+const SearchParameterIndexVariants: Partial<Record<ResourceType, Record<string, SearchParameterIndexVariant[]>>> = {
+  Observation: {
+    subject: [Unmodified, { suffix: ['date'] }],
+    category: [ProjectScoped],
+    code: [ProjectScoped],
+    'value-quantity': [ProjectScoped],
+    status: [ProjectScoped],
+  },
+  Task: {
+    _tag: [ProjectScoped],
+    'authored-on': [ProjectScoped],
+    code: [ProjectScoped],
+    'due-date': [ProjectScoped],
+    priority: [ProjectScoped],
+    status: [{ prefix: ['projectId'], suffix: ['lastUpdated'] }],
+  },
+  Appointment: {
+    'appointment-type': [ProjectScoped],
+    status: [ProjectScoped],
+  },
+  Communication: {
+    category: [ProjectScoped],
+    medium: [ProjectScoped],
+    received: [ProjectScoped],
+    status: [ProjectScoped],
+    topic: [ProjectScoped],
+  },
+  DocumentReference: {
+    status: [ProjectScoped],
+    category: [ProjectScoped],
+    type: [ProjectScoped],
+  },
+  Encounter: {
+    status: [ProjectScoped],
+    class: [ProjectScoped],
+    _tag: [ProjectScoped],
+  },
+};
+
+function getSearchParameterIndexVariants(
+  resourceType: string,
+  searchParam: SearchParameter,
+  impl: SearchParameterImplementation
+): SearchParameterIndexVariant[] {
+  const override = SearchParameterIndexVariants[resourceType as ResourceType]?.[searchParam.code];
+  if (override) {
+    return override;
+  }
+  if (
+    (impl.searchStrategy === 'column' || impl.searchStrategy === 'range-column') &&
+    !impl.array &&
+    (searchParam.code === 'date' || searchParam.code === 'sent')
+  ) {
+    // Don't add Project scope to range indexes yet
+    return [Unmodified, { ...ProjectScoped, indexTypes: ['btree'] }];
+  }
+  return [Unmodified];
+}
+
+function applyIndexVariant(index: IndexDefinition, variant: SearchParameterIndexVariant): IndexDefinition {
+  assert(
+    !variant.suffix?.length || index.indexType === 'btree',
+    `Index suffix columns are only supported on btree indexes, got ${index.indexType}`
+  );
+  return { ...index, columns: [...(variant.prefix ?? EMPTY), ...index.columns, ...(variant.suffix ?? EMPTY)] };
+}
+
 function getSearchParameterIndexes(
+  resourceType: string,
   searchParam: SearchParameter,
   impl: SearchParameterImplementation
 ): IndexDefinition[] {
+  const baseIndexes = getBaseSearchParameterIndexes(impl);
+  return getSearchParameterIndexVariants(resourceType, searchParam, impl).flatMap((variant) =>
+    baseIndexes
+      .filter((index) => !variant.indexTypes || variant.indexTypes.includes(index.indexType))
+      .map((index) => applyIndexVariant(index, variant))
+  );
+}
+
+function getBaseSearchParameterIndexes(impl: SearchParameterImplementation): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column':
       return [
@@ -439,8 +549,8 @@ function getSearchParameterIndexes(
           indexType: 'gin',
         },
       ];
-    case 'range-column': {
-      const indexes: IndexDefinition[] = [
+    case 'range-column':
+      return [
         // legacy index prior to range-column search strategy
         { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
         {
@@ -448,19 +558,8 @@ function getSearchParameterIndexes(
           indexType: 'gist',
         },
       ];
-      // legacy index prior to range-column search strategy
-      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
-        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
-      }
-      return indexes;
-    }
-    case 'column': {
-      const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
-      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
-        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
-      }
-      return indexes;
-    }
+    case 'column':
+      return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
     case 'lookup-table':
       return impl.sortColumnName ? [{ columns: [impl.sortColumnName], indexType: 'btree' }] : [];
     default:
@@ -484,9 +583,14 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
+    result.indexes = result.indexes.filter((i) => !(i.columns.length === 1 && i.columns[0] === 'projectId'));
     result.indexes.push(
       { columns: ['project', 'email'], indexType: 'btree', unique: true },
-      { columns: ['project', 'externalId'], indexType: 'btree', unique: true }
+      { columns: ['project', 'externalId'], indexType: 'btree', unique: true },
+      {
+        columns: ['projectId', { expression: 'lower(email) text_pattern_ops', name: 'emailLowerPattern' }],
+        indexType: 'btree',
+      }
     );
   }
 
@@ -576,7 +680,7 @@ function buildIdentifierTable(result: SchemaDefinition): void {
 }
 
 function buildHumanNameTable(result: SchemaDefinition): void {
-  buildLookupTable(
+  const tableDefinition = buildLookupTable(
     result,
     'HumanName',
     ['name', 'given', 'family'],
@@ -613,6 +717,17 @@ function buildHumanNameTable(result: SchemaDefinition): void {
       },
     ]
   );
+
+  // Unscoped btree indexes stay for searches without a project filter; a multicolumn GIN index serves conditions
+  // on any subset of its columns, so the scoped GIN indexes replace the unscoped ones
+  tableDefinition.columns.push({ name: 'projectId', type: 'UUID', notNull: true });
+  tableDefinition.indexes = tableDefinition.indexes.flatMap((index) => {
+    if (index.columns[0] === 'resourceId') {
+      return [index];
+    }
+    const scoped = applyIndexVariant(index, ProjectScoped);
+    return index.indexType === 'gin' ? [scoped] : [index, scoped];
+  });
 }
 
 function buildLookupTable(
@@ -620,7 +735,7 @@ function buildLookupTable(
   tableName: string,
   columns: string[],
   additionalIndexes?: IndexDefinition[]
-): void {
+): TableDefinition {
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [{ name: 'resourceId', type: 'UUID', notNull: true }],
@@ -637,17 +752,14 @@ function buildLookupTable(
   }
 
   result.tables.push(tableDefinition);
+  return tableDefinition;
 }
 
 function buildCodingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'Coding',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
@@ -656,7 +768,6 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'language', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
       {
         columns: ['system', 'code'],
         indexType: 'btree',
@@ -727,11 +838,7 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'CodeSystem_Property',
     columns: [
-      {
-        name: 'id',
-        type: 'BIGSERIAL',
-        primaryKey: true,
-      },
+      { name: 'id', type: 'BIGSERIAL', primaryKey: true },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'type', type: 'TEXT', notNull: true },
@@ -880,7 +987,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'DROP_INVALID_INDEX': {
-        await fns.dropInvalidIndexConcurrently(client, results, action.indexName);
+        await fns.dropInvalidIndexConcurrently(client, results, action.schemaName, action.indexName);
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -922,6 +1029,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
   b.newLine();
 
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gist;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
   b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pgstattuple;`);
   b.newLine();
@@ -956,7 +1064,7 @@ export function writePostDeployActionsToBuilder(b: FileBuilder, actions: Migrati
   b.newLine();
   b.append('export const migration: CustomPostDeployMigration = {');
   b.append("  type: 'custom',");
-  b.append('  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),');
+  b.append('  prepareJobData: prepareCustomMigrationJobData,');
   b.append('  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),');
   b.append('};');
   b.newLine();
@@ -1051,7 +1159,9 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
         break;
       }
       case 'DROP_INVALID_INDEX': {
-        b.appendNoWrap(`await fns.dropInvalidIndexConcurrently(client, results, ${JSON.stringify(action.indexName)});`);
+        b.appendNoWrap(
+          `await fns.dropInvalidIndexConcurrently(client, results, '${action.schemaName}', '${action.indexName}');`
+        );
         break;
       }
       case 'REINDEX_CONCURRENTLY': {
@@ -1271,9 +1381,9 @@ export function generateIndexesActions(
     assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
-    const matchingStartIndexes = startTable.indexes.filter(
-      (i) => !matchedIndexes.has(i) && indexDefinitionsEqual(i, targetIndex)
-    );
+    // A physical index can satisfy multiple structurally identical target declarations, such as a unique index
+    // declaration that duplicates a primary key. Preserve that compatibility while preferring the expected name.
+    const matchingStartIndexes = startTable.indexes.filter((i) => indexDefinitionsEqual(i, targetIndex));
     // REINDEX CONCURRENTLY can leave a duplicate _ccnew/_ccold index behind after a failure. Prefer the expected
     // name, then any established legacy name, so the temporary copy is the index classified as unmatched.
     const startIndex =
@@ -1358,27 +1468,19 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
     return tableName + '_pkey';
   }
 
-  if (
-    index.columns.length === 2 &&
-    isString(index.columns[0]) &&
-    isString(index.columns[1]) &&
-    index.columns[1] === `${index.columns[0]}Sort`
-  ) {
-    return (
-      applyAbbreviations(tableName, TableNameAbbreviations) +
-      '_' +
-      applyAbbreviations(index.columns[0], ColumnNameAbbreviations) +
-      '_sorted_idx'
-    );
+  let columnNames = index.columns.map((c) => (typeof c === 'string' ? c : c.name));
+  let suffix = index.indexNameSuffix ?? 'idx';
+
+  // Range indexes end with (value, valueSort); name them by the value column, after any prefix columns
+  const [value, sort] = index.columns.slice(-2);
+  if (index.columns.length >= 2 && isString(value) && isString(sort) && sort === `${value}Sort`) {
+    columnNames = columnNames.slice(0, -1);
+    suffix = 'sorted_idx';
   }
 
   let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
-
-  indexName += index.columns
-    .map((c) => (typeof c === 'string' ? c : c.name))
-    .map((c) => applyAbbreviations(c, ColumnNameAbbreviations))
-    .join('_');
-  indexName += '_' + (index.indexNameSuffix ?? 'idx');
+  indexName += columnNames.map((c) => applyAbbreviations(c, ColumnNameAbbreviations)).join('_');
+  indexName += '_' + suffix;
 
   assert(indexName.length <= 63, 'Index name too long: ' + indexName);
   return indexName;
@@ -1426,6 +1528,11 @@ function buildIndexSql(
     result += ')';
   }
 
+  if (index.fastupdate !== undefined) {
+    assert(index.indexType === 'gin', `fastupdate is only supported for GIN indexes: ${indexName}`);
+    result += ` WITH (fastupdate = ${index.fastupdate ? 'on' : 'off'})`;
+  }
+
   if (index.where) {
     result += ' WHERE (';
     result += index.where;
@@ -1436,6 +1543,11 @@ function buildIndexSql(
 }
 
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  // An unspecified fastupdate means "no opinion", so it only differs when both sides set it
+  if (a.fastupdate !== undefined && b.fastupdate !== undefined && a.fastupdate !== b.fastupdate) {
+    return false;
+  }
+
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
       ...d,
@@ -1448,6 +1560,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
       indexNameOverride: undefined,
       indexNameSuffix: undefined,
       indexdef: undefined,
+      fastupdate: undefined,
     };
   });
 

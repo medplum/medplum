@@ -9,15 +9,26 @@ import { useMedplum, useResourceModified } from '@medplum/react';
 import type { DateTimeRange } from '@medplum/react-scheduling';
 import { Calendar, getEffectiveAvailability, useSchedulingResources } from '@medplum/react-scheduling';
 import type { JSX } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import { encounterUrl } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './ScheduleDetails.module.css';
+
+// We don't display `cancelled` or `entered-in-error` appointments
+const APPOINTMENT_STATUSES: Appointment['status'][] = [
+  'proposed',
+  'pending',
+  'booked',
+  'arrived',
+  'fulfilled',
+  'noshow',
+  'checked-in',
+  'waitlist',
+];
 
 export interface ScheduleDetailsProps {
   schedule: WithId<Schedule>;
@@ -40,6 +51,7 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
 
   const { slots, appointments, loading } = useSchedulingResources([schedule], range, {
     onError: showErrorNotification,
+    appointmentStatuses: APPOINTMENT_STATUSES,
   });
 
   const practitioner = schedule.actor.find((actor) => isReference<Practitioner>(actor, 'Practitioner'));
@@ -130,19 +142,6 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
     [medplum, navigate, handleSelectAppointment]
   );
 
-  // Omit any "entered-in-error" slots; merge overlapping blocks into
-  // contiguous blocks to reduce visual noise
-  const finalSlots = useMemo(() => {
-    const filtered = (slots ?? []).filter((slot) => slot.status !== 'entered-in-error');
-    return mergeOverlappingSlots(filtered);
-  }, [slots]);
-
-  // Omit any "cancelled" appointments
-  const finalAppointments = useMemo(
-    () => (appointments ?? []).filter((appointment) => appointment.status !== 'cancelled'),
-    [appointments]
-  );
-
   return (
     <>
       <div className={classes.container}>
@@ -153,8 +152,8 @@ export function ScheduleDetails(props: ScheduleDetailsProps): JSX.Element | null
               onSelectInterval={handleSelectInterval}
               onSelectAppointment={handleSelectAppointment}
               onSelectSlot={handleSelectSlot}
-              slots={finalSlots}
-              appointments={finalAppointments}
+              slots={slots}
+              appointments={appointments}
               onRangeChange={setRange}
               onDoubleClickAppointment={handleDoubleClickAppointment}
               availableTime={availableTime}

@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { DeleteFunctionCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
-import { createReference } from '@medplum/core';
-import type { Bot, Patient } from '@medplum/fhirtypes';
+import type { Bot, Patient, Subscription } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
+import { getDispatchQueue } from './dispatch';
 import { findAndExecDispatchJob } from './test-utils';
 
 describe('Dispatch Worker', () => {
@@ -21,12 +22,8 @@ describe('Dispatch Worker', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    const botProjectDetails = await createTestProject({ withClient: true });
-    botRepo = new Repository({
-      extendedMode: true,
-      projects: [botProjectDetails.project],
-      author: createReference(botProjectDetails.client),
-    });
+    const botProjectDetails = await createTestProject({ withClient: true, withRepo: true });
+    botRepo = botProjectDetails.repo;
   });
 
   afterAll(async () => {
@@ -170,5 +167,21 @@ describe('Dispatch Worker', () => {
     );
 
     errorSpy.mockRestore();
+  });
+
+  test('does not enqueue dispatch jobs for cache-only resources', async () => {
+    const subscription = await withTestContext(() =>
+      botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      })
+    );
+    await withTestContext(() => botRepo.deleteResource('Subscription', subscription.id));
+
+    const enqueued = (getDispatchQueue().add as Mock).mock.calls.map(([, data]) => data);
+    expect(enqueued).not.toContainEqual(expect.objectContaining({ id: subscription.id }));
   });
 });

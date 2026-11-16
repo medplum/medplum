@@ -5,7 +5,7 @@ import type { JsonWebKey } from '@medplum/fhirtypes';
 import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import { randomBytes, randomUUID } from 'node:crypto';
-import type { MedplumServerConfig } from '../config/types';
+import type { ServerConfig } from '../config/utils';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
@@ -115,7 +115,7 @@ let jsonWebKey: JsonWebKey | undefined;
 let jsonWebKeys: JsonWebKey[] = [];
 let defaultSigningKey: KeyLike | undefined;
 
-export async function initKeys(config: MedplumServerConfig): Promise<void> {
+export async function initKeys(config: ServerConfig): Promise<void> {
   issuer = undefined;
   jsonWebKey = undefined;
   jsonWebKeys = [];

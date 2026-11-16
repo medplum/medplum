@@ -22,6 +22,7 @@ const medplum = new MedplumClient({
 });
 
 const theme = createTheme({
+  activeClassName: '',
   headings: {
     sizes: {
       h1: {

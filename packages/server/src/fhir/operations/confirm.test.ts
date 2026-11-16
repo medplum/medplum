@@ -1,22 +1,37 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, isDefined, isResource } from '@medplum/core';
-import type { Appointment, Bundle, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import {
+  createReference,
+  isDefined,
+  isResource,
+  RecurringAppointmentSeriesIdentifierSystem,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
+import type {
+  Appointment,
+  Bundle,
+  CodeableConcept,
+  HealthcareService,
+  Practitioner,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getGlobalSystemRepo } from '../../fhir/repo';
+import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import { MAX_OCCURRENCE_COUNT } from './utils/recurrence';
 
-const systemRepo = getGlobalSystemRepo();
 const app = express();
 const request = supertest(app);
 
 describe('Appointment/:id/$confirm', () => {
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: TestProjectResult<{ withAccessToken: true; withRepo: true }>;
+  let systemRepo: SystemRepository;
   let practitioner: WithId<Practitioner>;
   let schedule: WithId<Schedule>;
 
@@ -25,7 +40,8 @@ describe('Appointment/:id/$confirm', () => {
     // try to be more resilient to concurrent tests touching the same tables
     config.transactionAttempts = 5;
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    project = await createTestProject({ withAccessToken: true, withRepo: true });
+    systemRepo = project.repo.getSystemRepo();
 
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
@@ -43,20 +59,24 @@ describe('Appointment/:id/$confirm', () => {
     await shutdownApp();
   });
 
-  async function makeSlot(status: Slot['status'] = 'busy-tentative'): Promise<WithId<Slot>> {
+  async function makeSlot(
+    status: Slot['status'] = 'busy-tentative',
+    slotSchedule: WithId<Schedule> = schedule
+  ): Promise<WithId<Slot>> {
     return systemRepo.createResource<Slot>({
       resourceType: 'Slot',
       status,
       start: '2026-05-15T14:00:00Z',
       end: '2026-05-15T15:00:00Z',
-      schedule: createReference(schedule),
+      schedule: createReference(slotSchedule),
       meta: { project: project.project.id },
     });
   }
 
   async function makeAppointment(
     status: Appointment['status'],
-    slots: WithId<Slot>[] = []
+    slots: WithId<Slot>[] = [],
+    serviceType?: CodeableConcept[]
   ): Promise<WithId<Appointment>> {
     // Appointments that are not proposed/cancelled/waitlist require start and end
     const noStartEnd: Appointment['status'][] = ['proposed', 'cancelled', 'waitlist'];
@@ -65,8 +85,20 @@ describe('Appointment/:id/$confirm', () => {
       resourceType: 'Appointment',
       status,
       ...(needsDates ? { start: '2026-05-15T14:00:00Z', end: '2026-05-15T15:00:00Z' } : {}),
+      ...(serviceType ? { serviceType } : {}),
       participant: [{ actor: createReference(practitioner), status: 'accepted' }],
       slot: slots.map((slot) => createReference(slot)),
+      meta: { project: project.project.id },
+    });
+  }
+
+  async function makeHealthcareService(code: string, opts?: { active?: boolean }): Promise<WithId<HealthcareService>> {
+    const active = opts?.active;
+    return systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: code,
+      ...(active === undefined ? {} : { active }),
+      type: [{ coding: [{ system: 'https://example.com/fhir', code }] }],
       meta: { project: project.project.id },
     });
   }
@@ -199,6 +231,202 @@ describe('Appointment/:id/$confirm', () => {
     }
   );
 
+  test('Returns 400 when the HealthcareService is inactive', async () => {
+    const healthcareService = await makeHealthcareService('inactive-visit-type', { active: false });
+    const slot = await makeSlot('busy-tentative');
+    const appointment = await makeAppointment('pending', [slot], toServiceTypeCodeableConcepts(healthcareService));
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'HealthcareService is inactive' },
+          expression: ['Appointment.serviceType[0]'],
+        },
+      ],
+    });
+    expect(response).toHaveStatus(400);
+
+    // The appointment and its slot were left untouched
+    expect(await systemRepo.readResource<Appointment>('Appointment', appointment.id)).toHaveProperty(
+      'status',
+      'pending'
+    );
+    expect(await systemRepo.readResource<Slot>('Slot', slot.id)).toHaveProperty('status', 'busy-tentative');
+  });
+
+  test('Reports the path of the serviceType concept holding the inactive service reference', async () => {
+    // Concepts without a service reference are skipped by reference extraction, so the
+    // reported path must come from the concept's own index, not its position among the
+    // extracted references
+    const healthcareService = await makeHealthcareService('second-concept-visit-type', { active: false });
+    const appointment = await makeAppointment(
+      'pending',
+      [],
+      [
+        { coding: [{ system: 'https://example.com/fhir', code: 'unreferenced-visit-type' }] },
+        ...toServiceTypeCodeableConcepts(healthcareService),
+      ]
+    );
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          details: { text: 'HealthcareService is inactive' },
+          expression: ['Appointment.serviceType[1]'],
+        },
+      ],
+    });
+    expect(response).toHaveStatus(400);
+  });
+
+  test('Succeeds when the HealthcareService is explicitly active', async () => {
+    const healthcareService = await makeHealthcareService('active-visit-type', { active: true });
+    const appointment = await makeAppointment('pending', [], toServiceTypeCodeableConcepts(healthcareService));
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response).toHaveStatus(200);
+  });
+
+  test('Succeeds when the HealthcareService omits the active field', async () => {
+    const healthcareService = await makeHealthcareService('implicitly-active-visit-type');
+    const appointment = await makeAppointment('pending', [], toServiceTypeCodeableConcepts(healthcareService));
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response).toHaveStatus(200);
+  });
+
+  test('Returns 400 when the HealthcareService has been deleted', async () => {
+    // A service we cannot read is not a service we can confirm an appointment against
+    const deletedService = await makeHealthcareService('deleted-visit-type');
+    const serviceType = toServiceTypeCodeableConcepts(deletedService);
+    const appointment = await makeAppointment('pending', [], serviceType);
+    await systemRepo.deleteResource('HealthcareService', deletedService.id);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          details: { text: 'Loading HealthcareService failed' },
+          expression: ['Appointment.serviceType[0]'],
+        },
+      ],
+    });
+    expect(response).toHaveStatus(400);
+    expect(await systemRepo.readResource<Appointment>('Appointment', appointment.id)).toHaveProperty(
+      'status',
+      'pending'
+    );
+  });
+
+  test('Returns 400 when the HealthcareService is hidden by an access policy', async () => {
+    const restricted = await createTestProject({
+      withAccessToken: true,
+      accessPolicy: {
+        resource: [{ resourceType: 'Appointment' }, { resourceType: 'Slot' }, { resourceType: 'Practitioner' }],
+      },
+    });
+    const restrictedPractitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: restricted.project.id },
+    });
+    const hiddenService = await systemRepo.createResource<HealthcareService>({
+      resourceType: 'HealthcareService',
+      name: 'hidden-visit-type',
+      type: [{ coding: [{ system: 'https://example.com/fhir', code: 'hidden-visit-type' }] }],
+      meta: { project: restricted.project.id },
+    });
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'pending',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      serviceType: toServiceTypeCodeableConcepts(hiddenService),
+      participant: [{ actor: createReference(restrictedPractitioner), status: 'accepted' }],
+      meta: { project: restricted.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${restricted.accessToken}`);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          details: { text: 'Loading HealthcareService failed' },
+          expression: ['Appointment.serviceType[0]'],
+        },
+      ],
+    });
+    expect(response).toHaveStatus(400);
+    expect(await systemRepo.readResource<Appointment>('Appointment', appointment.id)).toHaveProperty(
+      'status',
+      'pending'
+    );
+  });
+
+  test('Returns 400 when a slot is on an inactive Schedule', async () => {
+    const inactiveSchedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      active: false,
+      actor: [createReference(practitioner)],
+      meta: { project: project.project.id },
+    });
+    const activeSlot = await makeSlot('busy-tentative');
+    const inactiveSlot = await makeSlot('busy-tentative', inactiveSchedule);
+    const appointment = await makeAppointment('pending', [activeSlot, inactiveSlot]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'Schedule is inactive' },
+          expression: ['Appointment.slot[1].schedule'],
+        },
+      ],
+    });
+    expect(response).toHaveStatus(400);
+
+    // The appointment and its slots were left untouched
+    expect(await systemRepo.readResource<Appointment>('Appointment', appointment.id)).toHaveProperty(
+      'status',
+      'pending'
+    );
+    expect(await systemRepo.readResource<Slot>('Slot', activeSlot.id)).toHaveProperty('status', 'busy-tentative');
+    expect(await systemRepo.readResource<Slot>('Slot', inactiveSlot.id)).toHaveProperty('status', 'busy-tentative');
+  });
+
   test('Returns 404 when appointment does not exist', async () => {
     const response = await request
       .post('/fhir/R4/Appointment/00000000-0000-0000-0000-000000000000/$confirm')
@@ -227,5 +455,128 @@ describe('Appointment/:id/$confirm', () => {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'Loading slots failed' } }],
     });
+  });
+
+  test('Returns 400 for occurrences=all on an appointment outside a series', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'all' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toEqual('Appointment is not part of a recurring series');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Returns 400 for an unknown occurrences', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'every-other' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Returns 400 for occurrences=this-and-following on an appointment without a start', async () => {
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'proposed',
+      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'no-start-series' }],
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'this-and-following' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+  });
+
+  test('Returns 400 for occurrences=all on a series identifier the search would misread', async () => {
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'pending',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'one,two' }],
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      slot: [createReference(await makeSlot('busy-tentative'))],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'all' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toContain('cannot be searched');
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Refuses to confirm more occurrences of a series than $book creates', async () => {
+    const occurrences: WithId<Appointment>[] = [];
+    for (let week = 0; week <= MAX_OCCURRENCE_COUNT; week++) {
+      occurrences.push(
+        await systemRepo.createResource<Appointment>({
+          resourceType: 'Appointment',
+          status: 'proposed',
+          start: new Date(Date.UTC(2026, 4, 15 + 7 * week, 14)).toISOString(),
+          end: new Date(Date.UTC(2026, 4, 15 + 7 * week, 15)).toISOString(),
+          identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'oversized-series' }],
+          participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+          meta: { project: project.project.id },
+        })
+      );
+    }
+    const confirm = (appointment: WithId<Appointment>, occurrences: string): ReturnType<typeof request.post> =>
+      request
+        .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: occurrences }] });
+    const readStatuses = (): Promise<Appointment['status'][]> =>
+      Promise.all(
+        occurrences.map(async (a) => (await systemRepo.readResource<Appointment>('Appointment', a.id)).status)
+      );
+
+    const refused = await confirm(occurrences[0], 'all');
+    expect(refused).toHaveStatus(400);
+    expect(refused.body.issue[0].details.text).toEqual(
+      `At most ${MAX_OCCURRENCE_COUNT} occurrences of a series can be confirmed at once`
+    );
+    expect(refused.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect(await readStatuses()).toEqual(occurrences.map(() => 'proposed'));
+
+    // The limit counts the occurrences found, so the ones following the first still fit.
+    const confirmed = await confirm(occurrences[1], 'this-and-following');
+    expect(confirmed).toHaveStatus(200);
+    expect(await readStatuses()).toEqual(['proposed', ...occurrences.slice(1).map(() => 'booked')]);
+  });
+
+  test('Succeeds as a batch entry without a resource', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post('/fhir/R4')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ request: { method: 'POST', url: `Appointment/${appointment.id}/$confirm` } }],
+      });
+
+    expect(response).toHaveStatus(200);
+    expect((response.body as Bundle).entry?.[0]?.response?.status).toBe('200');
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('booked');
   });
 });

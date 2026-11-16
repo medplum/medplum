@@ -37,6 +37,7 @@ export interface BuildClaimArgs {
  * The billing provider (`Claim.provider`) is the given billing Organization when
  * provided (organization billing), falling back to the practitioner (individual
  * billing). The practitioner is always the rendering provider on `Claim.careTeam`.
+ * The encounter's first location, when set, is the claim's service facility.
  *
  * @param args - Patient, encounter, practitioner, charge items, conditions, insurance, and billing organization.
  * @returns An unpersisted Claim resource.
@@ -51,6 +52,9 @@ export function buildClaimFromEncounter(args: BuildClaimArgs): Claim {
     created: new Date().toISOString(),
     patient: createReference(patient),
     provider: billingOrganization ?? createReference(practitioner),
+    // Always present so a stale facility on a stored claim is overridden when the claim is regenerated
+    // by spreading this over it; JSON serialization drops the undefined key.
+    facility: encounter.location?.[0]?.location,
     careTeam: [
       {
         sequence: 1,

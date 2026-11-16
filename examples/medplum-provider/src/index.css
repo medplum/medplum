@@ -1,7 +1,3 @@
-.mantine-ActionIcon-root:active {
-  transform: none;
-}
-
 /* Pill-style tabs used across Tasks, Messages, Labs, and Patient tabs */
 .pill-tabs .mantine-Tabs-list {
   display: flex;

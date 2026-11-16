@@ -1,0 +1,96 @@
+/* Wraps an appointment event's lines: lays them out as the event itself would, and fills the
+ * event. */
+.eventContent {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: inherit;
+  align-items: inherit;
+  gap: inherit;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Where the card is placed from: over the whole event, without taking its pointer. */
+.anchor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The service type keeps to one line, cut short with an ellipsis: in a time grid so the patient
+ * under it shows on a half-hour event, and on a month's row so the time beside it stays whole.
+ * Nested, to outrank CalendarBase's wrapping titles and FullCalendar's titles giving way first. */
+.eventContent .title {
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 550;
+}
+
+.eventContent .time,
+.eventContent[data-time-grid] .title {
+  flex-shrink: 0;
+}
+
+.eventContent :is(.title, .patient, .time) {
+  font-size: 12px;
+  line-height: calc(14 / 12);
+}
+
+.eventContent[data-time-grid]:not([data-one-line]) .title {
+  padding-block: 3px 2px;
+}
+
+.eventContent:not([data-time-grid]) :is(.title, .time) {
+  padding: 0;
+}
+
+.eventContent:is(:not([data-time-grid]), [data-one-line]) {
+  align-items: center;
+  gap: 0;
+
+  .title::after {
+    content: '';
+    display: inline-block;
+    width: 4px;
+  }
+}
+
+.eventContent[data-one-line] {
+  flex-direction: row;
+
+  .title {
+    position: static !important;
+    flex-shrink: 1;
+  }
+
+  .patient {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .recurring {
+    position: absolute;
+    inset-inline-end: 0;
+  }
+
+  &:has(.recurring) {
+    padding-inline-end: 1.25em;
+  }
+}
+
+/* Floated, so a title cut short with an ellipsis gives way to it. */
+.recurring {
+  float: right;
+  margin-inline-start: 0.25em;
+  margin-top: 0.075em;
+}
+
+:global(.dayGridMonth) .recurring {
+  margin-top: calc((14px - 1em) / 2);
+  margin-inline-end: 4px;
+}

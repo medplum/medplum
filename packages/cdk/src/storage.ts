@@ -14,7 +14,7 @@ import {
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
 import { addGuardDutyMalwareProtectionReadGate, buildGuardDutyMalwareProtection } from './guardduty';
-import { grantBucketAccessToOriginAccessIdentity } from './oai';
+import { acknowledgeImportedBucketPolicyWarning, grantBucketAccessToOriginAccessIdentity } from './oai';
 import { buildWaf } from './waf';
 
 /**
@@ -42,11 +42,13 @@ export class Storage extends Construct {
         encryption: s3.BucketEncryption.S3_MANAGED,
         enforceSSL: true,
         versioned: true,
+        lifecycleRules: buildBotInputLifecycleRules(config.storageBotInputExpirationDays),
       });
 
       if (config.guardDutyMalwareProtectionEnabled) {
         buildGuardDutyMalwareProtection(this, 'StorageGuardDuty', {
           bucket: this.storageBucket,
+          onDemandOnly: config.guardDutyMalwareProtectionOnDemandOnly,
         });
       }
 
@@ -152,7 +154,11 @@ export class Storage extends Construct {
       );
 
       if (config.guardDutyMalwareProtectionEnabled) {
-        addGuardDutyMalwareProtectionReadGate(this.storageBucket, [this.originAccessIdentity.grantPrincipal]);
+        addGuardDutyMalwareProtectionReadGate(
+          this.storageBucket,
+          [this.originAccessIdentity.grantPrincipal],
+          config.guardDutyMalwareProtectionOnDemandOnly
+        );
       }
 
       // CloudFront distribution
@@ -173,6 +179,7 @@ export class Storage extends Construct {
           : undefined,
         logFilePrefix: config.storageLoggingPrefix,
       });
+      acknowledgeImportedBucketPolicyWarning(this.distribution);
 
       // DNS
       if (!config.skipDns) {
@@ -188,4 +195,32 @@ export class Storage extends Construct {
       }
     }
   }
+}
+
+/**
+ * Lifecycle rules that delete the bot inputs the server writes under `bot/` when `storeBotInput` is enabled.
+ * The bucket is versioned, so expiring an object only adds a delete marker; the noncurrent version is removed a day
+ * later, and the second rule removes the delete marker once it is the only version left.
+ * @param expirationDays - Days after creation to expire bot inputs; undefined disables the rules.
+ * @returns The lifecycle rules, or undefined when disabled.
+ */
+function buildBotInputLifecycleRules(expirationDays: number | undefined): s3.LifecycleRule[] | undefined {
+  if (expirationDays === undefined) {
+    return undefined;
+  }
+  // Must match the key prefix in writeBotInputToStorage (packages/server/src/bots/utils.ts)
+  const prefix = 'bot/';
+  return [
+    {
+      id: 'ExpireBotInput',
+      prefix,
+      expiration: Duration.days(expirationDays),
+      noncurrentVersionExpiration: Duration.days(1),
+    },
+    {
+      id: 'ExpireBotInputDeleteMarkers',
+      prefix,
+      expiredObjectDeleteMarker: true,
+    },
+  ];
 }

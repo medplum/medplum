@@ -7,30 +7,49 @@
  */
 
 import {
+  AccessPolicyInteraction,
+  badRequest,
   ContentType,
   deepClone,
   EMPTY,
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
+  OperationOutcomeError,
+  projectAdminResourceTypes,
   readInteractions,
   splitN,
 } from '@medplum/core';
-import type { AccessPolicy, AccessPolicyResource, Patient, Reference } from '@medplum/fhirtypes';
+import type { AccessPolicy, AccessPolicyResource, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import qs from 'node:querystring';
 import { getConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { getProjectScopedUrl } from '../util/url';
 import type { PopulatedAccessPolicy } from './accesspolicy';
 
+export const SMART_SCOPES_SUPPORTED = [
+  'patient/*.rs',
+  'user/*.cruds',
+  'openid',
+  'fhirUser',
+  'launch',
+  'launch/patient',
+  'offline_access',
+  'online_access',
+];
+
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
+
+const missingPatientContext = 'Missing patient context for patient/ scope';
+
+// `Type/id`, with the FHIR id format; excludes search syntax such as `,` (OR) and `\` (escape)
+const literalReferenceFormat = /^[A-Z][A-Za-z]*\/[A-Za-z0-9\-.]{1,64}$/;
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
   readonly resourceType: string;
   readonly scope: string;
-  readonly criteria?: string;
+  readonly params?: [string, string][];
 }
 
 /**
@@ -66,16 +85,7 @@ export function smartConfigurationHandler(req: Request, res: Response): void {
         OAuthSigningAlgorithm.RS384,
         OAuthSigningAlgorithm.ES384,
       ],
-      scopes_supported: [
-        'patient/*.rs',
-        'user/*.cruds',
-        'openid',
-        'fhirUser',
-        'launch',
-        'launch/patient',
-        'offline_access',
-        'online_access',
-      ],
+      scopes_supported: SMART_SCOPES_SUPPORTED,
       response_types_supported: ['code'],
       introspection_endpoint: getProjectScopedUrl(req.originalUrl, config.baseUrl, config.introspectUrl),
       capabilities: [
@@ -150,18 +160,13 @@ export function parseSmartScopeString(scope: string): SmartScope | undefined {
     return undefined;
   }
 
-  let criteria: string | undefined;
-  if (query) {
-    // Parse and normalize query parameters, without affecting string encoding, for safety
-    const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
-    criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
-  }
+  const params = query ? [...new URLSearchParams(query)] : [];
 
   return {
     permissionType: match[1] as 'patient' | 'user' | 'system',
     resourceType: match[2],
     scope: normalizeV2ScopeString(match[3]),
-    criteria,
+    params: params.length > 0 ? params : undefined,
   };
 }
 
@@ -181,8 +186,9 @@ function normalizeV2ScopeString(str: string): string {
 /**
  * Applies SMART scopes to an AccessPolicy.
  * If there are no SMART scopes, the AccessPolicy is returned unmodified.
- * If there is no access policy, a new one is created.
- * Otherwise, the AccessPolicy is modified to only include the SMART scopes.
+ * Otherwise, each resource entry of the AccessPolicy is narrowed by each matching SMART scope,
+ * producing one output entry per (entry, scope) pair; entries matching no SMART scope are removed.
+ * Narrowing only adds search filters or removes interactions, so it never widens access.
  * @param accessPolicy - The original access policy.
  * @param authState - The user's authentication state.
  * @returns Updated access policy with the OAuth scope(s) applied.
@@ -194,83 +200,157 @@ export function applySmartScopes(accessPolicy: PopulatedAccessPolicy, authState:
     // No SMART scopes, so no changes to the access policy
     return accessPolicy;
   }
-  let context: Reference<Patient> | undefined;
-  if (authState.smartAppLaunch?.patient) {
-    context = authState.smartAppLaunch?.patient;
-  } else if (authState.membership.profile.reference?.startsWith('Patient/')) {
-    context = authState.membership.profile as Reference<Patient>;
+  const context = getPatientContext(authState);
+  if (!context && smartScopes.some((scope) => scope.permissionType === 'patient')) {
+    // `patient/` scopes are scoped to a single patient compartment, which cannot be resolved without a context
+    throw new OperationOutcomeError(badRequest(missingPatientContext));
   }
 
   // Build an access policy that is the intersection of the existing access policy and the SMART scopes
   return intersectSmartScopes(accessPolicy, smartScopes, context);
 }
 
+/**
+ * Resolves the Patient context for the login, from the SMART App Launch context or the user's own profile.
+ * @param authState - The user's authentication state.
+ * @returns The Patient context reference string, if a valid one is available.
+ */
+function getPatientContext(authState: AuthState): string | undefined {
+  const membership = authState.onBehalfOfMembership ?? authState.membership;
+  for (const candidate of [authState.smartAppLaunch?.patient, membership.profile]) {
+    const reference = getLiteralReference(candidate);
+    if (reference?.startsWith('Patient/')) {
+      return reference;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Returns the reference string if it is a single literal `Type/id` reference, which is safe to use as a search value.
+ * Any other string could be parsed as search syntax, e.g. `Patient/a,Patient/b` would match either Patient.
+ * @param reference - The reference to check.
+ * @returns The reference string, or undefined if it is not a single literal reference.
+ */
+function getLiteralReference(reference: Reference | undefined): string | undefined {
+  const value = reference?.reference;
+  return value && literalReferenceFormat.test(value) ? value : undefined;
+}
+
 function intersectSmartScopes(
   accessPolicy: AccessPolicy,
-  smartScope: SmartScope[],
-  context?: Reference<Patient>
+  smartScopes: SmartScope[],
+  context?: string
 ): PopulatedAccessPolicy {
   const result: PopulatedAccessPolicy = { ...accessPolicy, resource: [] };
-  for (const policy of accessPolicy.resource ?? EMPTY) {
-    if (policy.resourceType === '*') {
-      for (const scope of smartScope) {
-        const merged = mergeAccessPolicyWithScope(policy, scope, context);
-        if (merged) {
-          merged.resourceType = scope.resourceType;
-          result.resource.push(merged);
-        }
-      }
-    } else {
-      for (const scope of getScopesForResourceType(smartScope, policy.resourceType)) {
-        const merged = mergeAccessPolicyWithScope(policy, scope, context);
-        if (merged) {
-          result.resource.push(merged);
-        }
+  for (const entry of accessPolicy.resource ?? EMPTY) {
+    const isWildcard = entry.resourceType === '*';
+    // A wildcard entry is expanded to each scope's resource type; it never covers project admin resource types
+    const scopes = isWildcard
+      ? smartScopes.filter((s) => !projectAdminResourceTypes.includes(s.resourceType))
+      : getScopesForResourceType(smartScopes, entry.resourceType);
+    for (const scope of scopes) {
+      const narrowed = narrowEntry(entry, isWildcard ? scope.resourceType : entry.resourceType, scope, context);
+      if (narrowed) {
+        result.resource.push(narrowed);
       }
     }
   }
   return result;
 }
 
-const readOnlyScope = /^[rs]+$/;
-function mergeAccessPolicyWithScope(
-  policy: AccessPolicyResource,
-  scope: SmartScope,
-  context?: Reference<Patient>
-): AccessPolicyResource | undefined {
-  const result = deepClone(policy);
-  if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
-    result.criteria = result.criteria.replace('*', scope.resourceType);
-  }
+/**
+ * FHIR interactions granted by each SMART v2 permission letter.
+ * See: https://hl7.org/fhir/smart-app-launch/STU2.2/scopes-and-launch-context.html#scopes-for-requesting-fhir-resources
+ */
+const scopePermissionInteractions = {
+  c: [AccessPolicyInteraction.CREATE],
+  r: [AccessPolicyInteraction.READ, AccessPolicyInteraction.VREAD, AccessPolicyInteraction.HISTORY],
+  u: [AccessPolicyInteraction.UPDATE],
+  d: [AccessPolicyInteraction.DELETE],
+  s: [AccessPolicyInteraction.SEARCH],
+} satisfies Record<'c' | 'r' | 'u' | 'd' | 's', AccessPolicyInteraction[]>;
+const allInteractions = Object.values(AccessPolicyInteraction);
 
-  if (readOnlyScope.exec(scope.scope)) {
-    result.readonly = true;
-    result.interaction = result.interaction?.filter((interaction) => readInteractions.includes(interaction));
-    if (result.interaction?.length === 0) {
-      return undefined;
-    }
+/**
+ * Narrows an AccessPolicy resource entry by a single SMART scope.
+ * @param entry - The original AccessPolicy resource entry.
+ * @param resourceType - The resource type of the narrowed entry.
+ * @param scope - The SMART scope to apply.
+ * @param context - The Patient context, required for `patient/` scopes.
+ * @returns The narrowed entry, or undefined if the scope grants no access within the entry.
+ */
+function narrowEntry(
+  entry: AccessPolicyResource,
+  resourceType: string,
+  scope: SmartScope,
+  context?: string
+): AccessPolicyResource | undefined {
+  if (!scope.scope) {
+    // A scope with no permissions grants no access
+    return undefined;
   }
-  if (scope.criteria) {
-    appendCriteria(result, scope.criteria);
+  const params = getEntryParams(entry);
+  if (!params) {
+    return undefined;
+  }
+  for (const [key, value] of scope.params ?? []) {
+    params.append(key, value);
   }
   if (scope.permissionType === 'patient') {
-    if (context) {
-      appendCriteria(result, `_compartment=${context.reference}`);
+    if (!context) {
+      // Should be unreachable: applySmartScopes rejects `patient/` scopes without a context
+      throw new OperationOutcomeError(badRequest(missingPatientContext));
     }
+    params.append('_compartment', context);
+  }
+
+  const result = deepClone(entry);
+  delete result.compartment;
+  result.resourceType = resourceType;
+  if (params.size > 0) {
+    result.criteria = `${resourceType}?${params.toString()}`;
+  } else {
+    delete result.criteria;
+  }
+
+  // Restrict the entry to what it already permits and the scope's permission letters grant
+  const granted = Object.entries(scopePermissionInteractions)
+    .filter(([letter]) => scope.scope.includes(letter))
+    .flatMap(([, interactions]) => interactions);
+  const permitted = entry.interaction ?? (entry.readonly ? readInteractions : allInteractions);
+  result.interaction = permitted.filter((interaction) => granted.includes(interaction));
+  if (result.interaction.length === 0) {
+    return undefined;
   }
   return result;
 }
 
-function appendCriteria(policy: AccessPolicyResource, criteria: string): void {
-  if (!policy.criteria) {
-    policy.criteria = `${policy.resourceType}?${criteria}`;
-  } else if (policy.criteria.endsWith('&')) {
-    policy.criteria += criteria;
-  } else {
-    policy.criteria += '&' + criteria;
+/**
+ * Returns the search filters already enforced by an AccessPolicy resource entry.
+ * @param entry - The AccessPolicy resource entry.
+ * @returns The entry's filters, or undefined if the entry cannot be safely narrowed.
+ */
+function getEntryParams(entry: AccessPolicyResource): URLSearchParams | undefined {
+  if (entry.criteria && !entry.criteria.startsWith(entry.resourceType + '?')) {
+    // Rejected by the repository; must not be repaired into usable criteria
+    return undefined;
   }
+  // Same segment parseSearchRequest() reads; anything after a second '?' is ignored there too
+  const params = new URLSearchParams(entry.criteria?.split('?')[1]);
+  if (entry.compartment) {
+    // The repository ignores criteria on an entry with the deprecated compartment, so it must become a filter
+    const compartment = getLiteralReference(entry.compartment);
+    if (!compartment) {
+      return undefined;
+    }
+    params.append('_compartment', compartment);
+  }
+  return params;
 }
 
 function getScopesForResourceType(scopes: SmartScope[], resourceType: string): SmartScope[] {
-  return scopes.filter((s) => s.resourceType === resourceType || s.resourceType === '*');
+  // Project admin resource types are only covered by scopes that name them
+  const wildcardMatches = !projectAdminResourceTypes.includes(resourceType);
+  return scopes.filter((s) => s.resourceType === resourceType || (wildcardMatches && s.resourceType === '*'));
 }

@@ -4,6 +4,7 @@ import {
   Button,
   Checkbox,
   Code,
+  CopyButton,
   Divider,
   Grid,
   Group,
@@ -124,8 +125,22 @@ export function SuperAdminPage(): JSX.Element {
           : undefined
       )
       .then((params) => {
+        const statsText = params.parameter?.find((p) => p.name === 'tableString')?.valueString ?? '';
         setModalTitle('Database Stats');
-        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
+        setModalContent(
+          <Stack>
+            <Group justify="flex-end">
+              <CopyButton value={statsText}>
+                {({ copied, copy }) => (
+                  <Button variant="light" size="xs" color={copied ? 'teal' : 'blue'} onClick={copy}>
+                    {copied ? 'Copied' : 'Copy to clipboard'}
+                  </Button>
+                )}
+              </CopyButton>
+            </Group>
+            <pre>{statsText}</pre>
+          </Stack>
+        );
         open();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));

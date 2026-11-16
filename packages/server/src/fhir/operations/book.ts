@@ -7,7 +7,8 @@ import { getAuthenticatedContext } from '../../context';
 import { withPath } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { createProposedAppointment } from './utils/scheduling';
+import { expandRecurrence } from './utils/recurrence';
+import { createProposedAppointments } from './utils/scheduling';
 
 const bookOperation = makeOperationDefinition(
   { scope: 'type', resource: 'Appointment' },
@@ -28,6 +29,8 @@ type BookParameters = {
 /**
  * Handles HTTP requests for the Appointment $book operation.
  *
+ * Books one appointment or, given a weekly `recurrenceTemplate`, all or none of its series.
+ *
  * Endpoints:
  *   [fhir base]/Appointment/$book
  *
@@ -38,9 +41,9 @@ type BookParameters = {
 export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<BookParameters>(bookOperation, req);
-  const bundle = await createProposedAppointment(
+  const bundle = await createProposedAppointments(
     ctx.repo,
-    withPath(params.appointment, 'Parameters.appointment'),
+    expandRecurrence(withPath(params.appointment, 'Parameters.appointment')),
     (appointment) => {
       // Create appointment with "booked" status
       appointment.status = 'booked';

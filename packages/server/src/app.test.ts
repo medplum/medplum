@@ -11,11 +11,12 @@ import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { getProjectSystemRepo } from './fhir/repo';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { generateAccessToken } from './oauth/keys';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
-import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
+import { createTestProject, deleteRedisKeys, getSuperAdminAccessToken, initTestAuth } from './test.setup';
 
 describe('App', () => {
   let stdOutSpy: MockInstance;
@@ -164,6 +165,58 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  describe('request correlation', () => {
+    let app: express.Express;
+
+    beforeEach(async () => {
+      app = express();
+      const config = await loadTestConfig();
+      await initApp(app, config);
+    });
+
+    afterEach(async () => {
+      await shutdownApp();
+    });
+
+    test('Echoes a server-minted X-Request-Id', async () => {
+      const res = await request(app).get('/');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-request-id']).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(res.headers['x-trace-id']).toMatch(/^[0-9a-f]{32}$/);
+    });
+
+    test('Mints a distinct request ID per request', async () => {
+      const res1 = await request(app).get('/');
+      const res2 = await request(app).get('/');
+      expect(res1.headers['x-request-id']).not.toBe(res2.headers['x-request-id']);
+    });
+
+    test('Does not adopt a caller-supplied X-Request-Id', async () => {
+      const res = await request(app).get('/').set('X-Request-Id', 'caller-supplied-id');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-request-id']).not.toBe('caller-supplied-id');
+    });
+
+    test('Echoes the trace ID from traceparent', async () => {
+      const traceId = '4bf92f3577b34da6a3ce929d0e0e4736';
+      const res = await request(app).get('/').set('traceparent', `00-${traceId}-3456789012345678-01`);
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-trace-id']).toBe(traceId);
+    });
+
+    test('Normalizes a UUID x-trace-id', async () => {
+      const res = await request(app).get('/').set('X-Trace-Id', '4bf92f35-77b3-4da6-a3ce-929d0e0e4736');
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-trace-id']).toBe('4bf92f3577b34da6a3ce929d0e0e4736');
+    });
+
+    test('Ignores an unsafe x-trace-id', async () => {
+      const res = await request(app).get('/').set('X-Trace-Id', 'a'.repeat(65));
+      expect(res).toHaveStatus(200);
+      expect(res.headers['x-trace-id']).toMatch(/^[0-9a-f]{32}$/);
+    });
+  });
+
   describe('loggingMiddleware', () => {
     let app: express.Express;
 
@@ -286,6 +339,34 @@ describe('App', () => {
       expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
     });
 
+    test('Logs caller identity on authentication error', async () => {
+      const { accessToken, login, project, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        membership: { admin: true },
+      });
+      const other = await createTestProject({ withClient: true });
+      const onBehalfOf = getReferenceString(other.membership);
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-On-Behalf-Of', onBehalfOf);
+      expect(res1).toHaveStatus(400);
+
+      const logObjs = stdOutSpy.mock.calls.map((call) => JSON.parse(call[0]));
+      const callerLog = logObjs.find((obj) => obj.msg === 'Authentication failed for known caller');
+      const servedLog = logObjs.find((obj) => obj.msg === 'Request served');
+      expect(callerLog).toMatchObject({
+        requestId: res1.headers['x-request-id'],
+        login: login.id,
+        project: project.id,
+        membership: membership.id,
+        onBehalfOf,
+      });
+      expect(servedLog).toMatchObject({ requestId: res1.headers['x-request-id'], status: 400 });
+    });
+
     test('Route parsing error', async () => {
       const accessToken = await initTestAuth();
       const res1 = await request(app)
@@ -294,6 +375,99 @@ describe('App', () => {
         .set('Content-Type', ContentType.FHIR_JSON)
         .send();
       expect(res1).toHaveStatus(400);
+    });
+
+    test('X-Medplum-Log-Tag on unauthenticated request', async () => {
+      const res = await request(app).get('/').set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(200);
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj.logTag).toBe('my-end-user-1234');
+    });
+
+    test('X-Medplum-Log-Tag on authenticated request', async () => {
+      const accessToken = await initTestAuth();
+      (process.stdout.write as Mock).mockClear();
+
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(200);
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj.logTag).toBe('my-end-user-1234');
+    });
+
+    test('X-Medplum-Log-Tag rejects an unusable value', async () => {
+      const res = await request(app).get('/').set('X-Medplum-Log-Tag', 'a'.repeat(129));
+      expect(res).toHaveStatus(400);
+      expect((res.body as OperationOutcome).issue[0].details?.text).toStrictEqual(
+        'Invalid X-Medplum-Log-Tag header: expected 1 to 128 characters of printable ASCII'
+      );
+
+      // The request is still logged, so an operator can see the rejection
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj).toMatchObject({ status: 400 });
+      expect(logObj.logTag).toBeUndefined();
+    });
+
+    test('X-Medplum-Log-Tag is rejected before authentication', async () => {
+      // The header is a request shape error, so it does not depend on a valid token
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer invalid')
+        .set('X-Medplum-Log-Tag', 'a'.repeat(129));
+      expect(res).toHaveStatus(400);
+      expect((res.body as OperationOutcome).issue[0].details?.text).toStrictEqual(
+        'Invalid X-Medplum-Log-Tag header: expected 1 to 128 characters of printable ASCII'
+      );
+    });
+
+    test('X-Medplum-Log-Tag does not reach AuditEvent log lines', async () => {
+      // AuditEvents are serialized FHIR resources written straight to stdout, not log lines built
+      // from the request logger's metadata, so they carry no logTag. Correlate them with the
+      // requestId and traceId in the tracing extension instead.
+      getConfig().logAuditEvents = true;
+      const accessToken = await initTestAuth();
+      (process.stdout.write as Mock).mockClear();
+
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(200);
+
+      const auditLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('"resourceType":"AuditEvent"'));
+      expect(auditLines.length).toBeGreaterThan(0);
+      for (const line of auditLines) {
+        expect(JSON.parse(line[0]).logTag).toBeUndefined();
+      }
+    });
+
+    test('X-Medplum-Log-Tag on authentication error', async () => {
+      const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
+
+      // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
+      await (await getProjectSystemRepo(project)).deleteResource(membership.resourceType, membership.id);
+      (process.stdout.write as Mock).mockClear();
+
+      const res = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-Log-Tag', 'my-end-user-1234');
+      expect(res).toHaveStatus(400);
+
+      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
+      expect(logLines).toHaveLength(1);
+      const logObj = JSON.parse(logLines[0][0]);
+      expect(logObj.logTag).toBe('my-end-user-1234');
     });
   });
 
@@ -325,6 +499,20 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('Invalid compressed body', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app)
+      .post('/')
+      .set('Content-Type', ContentType.JSON)
+      .set('Content-Encoding', 'br')
+      .send(Buffer.from('not brotli'));
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Decompression failed'));
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('Database disconnect', async () => {
     const app = express();
     const config = await loadTestConfig();
@@ -332,7 +520,7 @@ describe('App', () => {
 
     const loggerError = vi.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -341,7 +529,7 @@ describe('App', () => {
     const app = express();
     const config = await loadTestConfig();
     await initApp(app, config);
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     config.database.queryTimeout = 1;
     await initApp(app, config);
@@ -385,6 +573,47 @@ describe('App', () => {
       url: 'https://medplum.com/fhir/StructureDefinition/rate-limit-reset',
       valueUnsignedInt: 60,
     });
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('MFA rate limit', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultMfaRateLimit = 1;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'mfa-rate-limit:';
+    await initApp(app, config);
+
+    expect(await request(app).post('/auth/mfa/verify').send({})).toHaveStatus(400);
+    expect(await request(app).post('/auth/mfa/verify').send({})).toHaveStatus(429);
+
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.each([
+    ['/auth/login', '/AUTH/LOGIN'],
+    ['/auth/login', '/auth/login/'],
+    ['/auth/login', '/API/Projects/123/Auth/Login/'],
+    ['/auth/newuser', '/Auth/NewUser'],
+    ['/auth/mfa/verify', '/AUTH/MFA/VERIFY/'],
+  ])('Rate limit for %s also applies to %s', async (path, variant) => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultLoginRateLimit = 1;
+    config.defaultMfaRateLimit = 1;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'path-variant-rate-limit:';
+    await initApp(app, config);
+
+    expect(await request(app).post(path).send({})).toHaveStatus(400);
+    expect(await request(app).post(variant).send({})).toHaveStatus(429);
+
     await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });

@@ -1,8 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference } from '@medplum/core';
-import type { ContactPoint, Parameters, Practitioner, Project, User } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, Operator } from '@medplum/core';
+import type {
+  ContactPoint,
+  Login,
+  Parameters,
+  Practitioner,
+  Project,
+  User,
+  UserSecurityRequest,
+} from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -10,7 +21,7 @@ import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
-import { createTestProject } from '../../test.setup';
+import { createTestProject, getSuperAdminTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 
 describe('User/$update-email', () => {
@@ -18,9 +29,11 @@ describe('User/$update-email', () => {
   let repo: Repository;
   let project: WithId<Project>;
   let accessToken: string;
+  let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.emailProvider = 'awsses';
     await initApp(app, config);
 
     ({ project, accessToken, repo } = await createTestProject({
@@ -34,6 +47,40 @@ describe('User/$update-email', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  beforeEach(() => {
+    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
+  });
+
+  afterEach(() => {
+    mockSESv2Client.restore();
+  });
+
+  async function inviteTestUser(): Promise<WithId<User>> {
+    const { user } = await inviteUser({
+      project,
+      email: `user+${randomUUID()}@example.com`,
+      password: randomUUID(),
+      sendEmail: false,
+      resourceType: 'Practitioner',
+      firstName: 'Test',
+      lastName: 'User',
+      scope: 'project',
+    });
+    return user;
+  }
+
+  async function findSecurityRequest(
+    user: WithId<User>,
+    type: UserSecurityRequest['type']
+  ): Promise<UserSecurityRequest | undefined> {
+    const requests = await repo.searchResources<UserSecurityRequest>({
+      resourceType: 'UserSecurityRequest',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
+    });
+    return requests.find((r) => r.type === type);
+  }
 
   test('Updates user email and profile email', async () => {
     const email = `user+${randomUUID()}@example.com`;
@@ -58,7 +105,7 @@ describe('User/$update-email', () => {
       .send({
         resourceType: 'Parameters',
         parameter: [
-          { name: 'email', valueString: newEmail },
+          { name: 'email', valueString: newEmail.toUpperCase() },
           { name: 'skipEmailVerification', valueBoolean: true },
         ],
       } satisfies Parameters);
@@ -82,23 +129,24 @@ describe('User/$update-email', () => {
     });
 
     const newEmail = `user+${randomUUID()}@example.com`;
-    const res = await request(app)
-      .post(`/fhir/R4/User/${user.id}/$update-email`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('X-Medplum', 'extended')
-      .send({
-        resourceType: 'Parameters',
-        parameter: [
-          { name: 'email', valueString: newEmail },
-          { name: 'updateProfileTelecom', valueBoolean: true },
-          { name: 'skipEmailVerification', valueBoolean: true },
-        ],
-      } satisfies Parameters);
-    expect(res).toHaveStatus(200);
-    const updated = res.body as User;
-
-    expect(updated.email).toStrictEqual(newEmail);
+    // Repeating the same email leaves the profile as it was after the first call
+    for (let i = 0; i < 2; i++) {
+      const res = await request(app)
+        .post(`/fhir/R4/User/${user.id}/$update-email`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('X-Medplum', 'extended')
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'email', valueString: newEmail },
+            { name: 'updateProfileTelecom', valueBoolean: true },
+            { name: 'skipEmailVerification', valueBoolean: true },
+          ],
+        } satisfies Parameters);
+      expect(res).toHaveStatus(200);
+      expect((res.body as User).email).toStrictEqual(newEmail);
+    }
 
     const practitioner = await repo.readResource<Practitioner>('Practitioner', profile.id);
     expect(practitioner.telecom).toStrictEqual(
@@ -226,10 +274,7 @@ describe('User/$update-email', () => {
     });
 
     // User Super Admin to call operation
-    const { accessToken: superAdminToken } = await createTestProject({
-      withAccessToken: true,
-      project: { superAdmin: true },
-    });
+    const { accessToken: superAdminToken } = await getSuperAdminTestProject();
 
     const newEmail = `user+${randomUUID()}@example.com`;
     const res = await request(app)
@@ -257,5 +302,100 @@ describe('User/$update-email', () => {
         { use: 'work', system: 'email', value: newEmail },
       ])
     );
+  });
+
+  test('Sends verification email by default', async () => {
+    const user = await inviteTestUser();
+    const login = await repo.getSystemRepo().createResource<Login>({
+      resourceType: 'Login',
+      user: createReference(user),
+      authMethod: 'password',
+      authTime: new Date().toISOString(),
+    });
+    const newEmail = `user+${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$update-email`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'email', valueString: newEmail }],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+    expect((res.body as User).emailVerified).toBe(false);
+
+    const securityRequest = await findSecurityRequest(user, 'verify-email');
+    expect(securityRequest).toBeDefined();
+    expect(securityRequest?.used).toBeFalsy();
+    expect((await findSecurityRequest(user, 'invite'))?.used).toBe(true);
+    expect((await repo.getSystemRepo().readResource<Login>('Login', login.id)).revoked).toBe(true);
+
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(1);
+    const input = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    expect(input.Destination?.ToAddresses).toStrictEqual([newEmail]);
+  });
+
+  test('Reports a send failure after the email is updated', async () => {
+    mockSESv2Client.on(SendEmailCommand).rejects(new Error('SES unavailable'));
+    const user = await inviteTestUser();
+    const newEmail = `user+${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$update-email`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'email', valueString: newEmail }],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(500);
+    expect(res.body.issue[0].details.text).toBe('Email updated, but the verification email could not be sent');
+
+    expect((await repo.readResource<User>('User', user.id)).email).toBe(newEmail);
+    expect((await findSecurityRequest(user, 'verify-email'))?.used).toBeFalsy();
+  });
+
+  test('Creates verification request without sending email when sendEmail is false', async () => {
+    const user = await inviteTestUser();
+    const newEmail = `user+${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$update-email`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'email', valueString: newEmail },
+          { name: 'sendEmail', valueBoolean: false },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+    expect((res.body as User).emailVerified).toBe(false);
+
+    const securityRequest = await findSecurityRequest(user, 'verify-email');
+    expect(securityRequest).toBeDefined();
+    expect(securityRequest?.used).toBeFalsy();
+
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
+  });
+
+  test('Skips verification request entirely when skipEmailVerification is true', async () => {
+    const user = await inviteTestUser();
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$update-email`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'email', valueString: `user+${randomUUID()}@example.com` },
+          { name: 'skipEmailVerification', valueBoolean: true },
+          { name: 'sendEmail', valueBoolean: false },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+
+    expect(await findSecurityRequest(user, 'verify-email')).toBeUndefined();
+    expect((await findSecurityRequest(user, 'invite'))?.used).toBe(true);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 });

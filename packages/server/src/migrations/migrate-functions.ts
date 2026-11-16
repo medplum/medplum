@@ -3,8 +3,9 @@
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { escapeIdentifier } from 'pg';
 import type { UpdateQuery } from '../fhir/sql';
-import { isValidPostgresIdentifier, PUBLIC_SCHEMA, SqlBuilder } from '../fhir/sql';
+import { isValidPostgresIdentifier, SqlBuilder } from '../fhir/sql';
 import { globalLogger } from '../logger';
+import { getConnectionShardId } from '../sharding/connection-shard-id';
 import { getCheckConstraints } from './migrate';
 import { getColumns } from './migrate-utils';
 import type { CheckConstraintDefinition, MigrationActionResult } from './types';
@@ -54,13 +55,17 @@ export async function reindexConcurrently(
 export async function dropInvalidIndexConcurrently(
   client: PoolClient,
   results: MigrationActionResult[],
+  schemaName: string,
   indexName: string
 ): Promise<void> {
+  if (!isValidPostgresIdentifier(schemaName)) {
+    throw new Error(`Invalid PostgreSQL schema name: ${schemaName}`);
+  }
   if (!isValidPostgresIdentifier(indexName)) {
     throw new Error(`Invalid PostgreSQL index name: ${indexName}`);
   }
 
-  const qualifiedIndexName = `${escapeIdentifier(PUBLIC_SCHEMA)}.${escapeIdentifier(indexName)}`;
+  const qualifiedIndexName = `${escapeIdentifier(schemaName)}.${escapeIdentifier(indexName)}`;
   const indexResult = await client.query<{
     is_valid: boolean;
     is_primary: boolean;
@@ -84,7 +89,7 @@ export async function dropInvalidIndexConcurrently(
     JOIN pg_class index_class ON index_class.oid = i.indexrelid
     JOIN pg_namespace index_namespace ON index_namespace.oid = index_class.relnamespace
     WHERE index_namespace.nspname = $1 AND index_class.relname = $2`,
-    [PUBLIC_SCHEMA, indexName]
+    [schemaName, indexName]
   );
 
   if (indexResult.rows.length === 0) {
@@ -162,7 +167,7 @@ export async function idempotentCreateIndex(
     const dropQuery = `DROP INDEX IF EXISTS ${escapeIdentifier(indexName)}`;
     await client.query(dropQuery);
     const durationMs = Date.now() - start;
-    globalLogger.debug('Dropped invalid index', { indexName, durationMs });
+    globalLogger.debug('Dropped invalid index', { shardId: getConnectionShardId(client), indexName, durationMs });
     results.push({ name: dropQuery, durationMs });
     exists = false;
   }
@@ -172,7 +177,7 @@ export async function idempotentCreateIndex(
     const start = Date.now();
     await client.query(createIndexSql);
     const durationMs = Date.now() - start;
-    globalLogger.debug('Created index', { indexName, durationMs });
+    globalLogger.debug('Created index', { shardId: getConnectionShardId(client), indexName, durationMs });
     results.push({ name: createIndexSql, durationMs });
   }
 }
@@ -186,7 +191,7 @@ export async function analyzeTable(
   const analyzeQuery = `ANALYZE ${escapeIdentifier(tableName)}`;
   await client.query(analyzeQuery);
   const durationMs = Date.now() - start;
-  globalLogger.debug('Analyzed table', { tableName, durationMs });
+  globalLogger.debug('Analyzed table', { shardId: getConnectionShardId(client), tableName, durationMs });
   actions.push({ name: analyzeQuery, durationMs });
 }
 

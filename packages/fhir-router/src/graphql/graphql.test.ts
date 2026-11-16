@@ -124,24 +124,19 @@ describe('GraphQL', () => {
     expect(outcome).toMatchObject(badRequest('GraphQL syntax error.'));
   });
 
-  test('Introspection forbidden', async () => {
-    // https://graphql.org/learn/introspection/
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
-    const [outcome] = await graphqlHandler(
-      makeSimpleRequest('POST', '/fhir/R4/$graphql', {
-        query: `{
-          __schema {
-            types {
-              name
-            }
-          }
-        }`,
-      }),
-      repo,
-      fhirRouter
-    );
-    expect(outcome).toMatchObject(forbidden);
-  });
+  test.each<string>([`{ __schema {types {name} } }`, `{ __type(name:"Patient") { fields {name} } }`])(
+    'Introspection forbidden',
+    async (query) => {
+      // https://graphql.org/learn/introspection/
+      const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+      const [outcome] = await graphqlHandler(
+        makeSimpleRequest('POST', '/fhir/R4/$graphql', { query }),
+        repo,
+        fhirRouter
+      );
+      expect(outcome).toMatchObject(forbidden);
+    }
+  );
 
   test('Introspection allowed', async () => {
     // https://graphql.org/learn/introspection/
@@ -155,6 +150,22 @@ describe('GraphQL', () => {
         }`,
     });
     const fhirRouter = new FhirRouter({ introspectionEnabled: true });
+    const res = await graphqlHandler(request, repo, fhirRouter);
+
+    expect(res[0]).toMatchObject(allOk);
+  });
+
+  test('Allows value introspection', async () => {
+    // https://graphql.org/learn/introspection/
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Patient(id: "${randomUUID()}") {
+          id
+          name { __typename given }
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
     const res = await graphqlHandler(request, repo, fhirRouter);
 
     expect(res[0]).toMatchObject(allOk);
@@ -439,6 +450,28 @@ describe('GraphQL', () => {
     const data = (res[1] as any).data;
     expect(data.PatientList).toBeDefined();
     expect(data.PatientList[0].ObservationList).toBeDefined();
+  });
+
+  test('Reverse lookup on contained resource with invalid id', async () => {
+    const parent = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      contained: [{ resourceType: 'Patient', id: 'not valid' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Patient(id: "${parent.id}") {
+          contained {
+            ... on Patient {
+              ObservationList(_reference: subject) { id }
+            }
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect((res[1] as any).errors[0].message).toBe('Invalid reference');
   });
 
   test('Reverse lookup without _reference', async () => {

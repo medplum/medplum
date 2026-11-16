@@ -55,6 +55,7 @@ export type * from './Count.d.ts';
 export type * from './Coverage.d.ts';
 export type * from './CoverageEligibilityRequest.d.ts';
 export type * from './CoverageEligibilityResponse.d.ts';
+export type * from './Cron.d.ts';
 export type * from './DataRequirement.d.ts';
 export type * from './DetectedIssue.d.ts';
 export type * from './Device.d.ts';

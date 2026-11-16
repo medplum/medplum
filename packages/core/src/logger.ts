@@ -133,16 +133,52 @@ export class Logger implements ILogger {
       }
     }
 
-    this.write(
-      JSON.stringify({
-        level: LogLevelNames[level],
-        timestamp: new Date().toISOString(),
-        msg: this.prefix ? `${this.prefix}${msg}` : msg,
-        ...processedData,
-        ...this.metadata,
-      })
-    );
+    const entry = {
+      level: LogLevelNames[level],
+      timestamp: new Date().toISOString(),
+      msg: this.prefix ? `${this.prefix}${msg}` : msg,
+      ...processedData,
+      ...this.metadata,
+    };
+
+    let serialized: string;
+    try {
+      serialized = JSON.stringify(entry);
+    } catch {
+      // Log data may contain circular references (e.g. HTTP request/response objects attached to errors)
+      try {
+        serialized = JSON.stringify(entry, getCircularReplacer());
+      } catch (err) {
+        // Last resort (e.g. BigInt values or throwing toJSON); logging must never throw
+        serialized = JSON.stringify({
+          level: entry.level,
+          timestamp: entry.timestamp,
+          msg: entry.msg,
+          logError: String(err),
+          ...this.metadata,
+        });
+      }
+    }
+    this.write(serialized);
   }
+}
+
+function getCircularReplacer(): (this: unknown, key: string, value: unknown) => unknown {
+  const ancestors: unknown[] = [];
+  return function (this: unknown, _key: string, value: unknown): unknown {
+    if (typeof value !== 'object' || value === null) {
+      return value;
+    }
+    // `this` is the object containing `value`; unwind ancestors to it
+    while (ancestors.length > 0 && ancestors[ancestors.length - 1] !== this) {
+      ancestors.pop();
+    }
+    if (ancestors.includes(value)) {
+      return '[Circular]';
+    }
+    ancestors.push(value);
+    return value;
+  };
 }
 
 export function parseLogLevel(level: string): LogLevel {

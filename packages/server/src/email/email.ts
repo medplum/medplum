@@ -1,17 +1,27 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { EMPTY, normalizeErrorString } from '@medplum/core';
+import { badRequest, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { Binary, Project } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
 import type { MedplumSmtpConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { applyFromDisplayName, getFromAddress, getProjectAppName, getProjectSmtpConfig } from './utils';
+import { safeFetch } from '../util/url';
+import {
+  applyFromDisplayName,
+  getFromAddress,
+  getProjectAppName,
+  getProjectSmtpConfig,
+  getProjectSmtpSocket,
+  PROJECT_SMTP_SOCKET_TIMEOUT_MS,
+  PROJECT_SMTP_TIMEOUT_MS,
+} from './utils';
 
 /**
  * Sends an email using the AWS SES service.
@@ -38,6 +48,7 @@ export async function sendEmail(repo: Repository, options: Mail.Options, project
   // Disable file access
   // "if set to true then fails with an error when a node tries to load content from a file"
   options.disableFileAccess = true;
+  options.disableUrlAccess = true;
 
   globalLogger.info('Sending email', { to: options.to, subject: options.subject, projectId: project?.id });
 
@@ -91,6 +102,21 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
     // And then delete the original path
     delete attachment.path;
   }
+
+  // Same pattern nodemailer uses to treat a path as a URL
+  if (/^https?:\/\//i.test(path)) {
+    // safeFetch blocks private, link-local, and metadata addresses, including on redirect
+    const response = await safeFetch(path, { signal: AbortSignal.timeout(30_000) }).catch((err: Error) => {
+      throw new OperationOutcomeError(
+        badRequest('Failed to fetch attachment: ' + normalizeErrorString(err.cause ?? err))
+      );
+    });
+    if (!response.ok) {
+      throw new OperationOutcomeError(badRequest(`Failed to fetch attachment: HTTP ${response.status}`));
+    }
+    attachment.content = Buffer.from(await response.arrayBuffer());
+    delete attachment.path;
+  }
 }
 
 /**
@@ -104,7 +130,7 @@ async function sendEmailViaSmtp(
   options: Mail.Options,
   projectId?: string
 ): Promise<void> {
-  const transport = createTransport({
+  const transportOptions: SMTPTransport.Options = {
     host: smtpConfig.host,
     port: smtpConfig.port,
     secure: smtpConfig.secure,
@@ -112,7 +138,16 @@ async function sendEmailViaSmtp(
       user: smtpConfig.username,
       pass: smtpConfig.password,
     },
-  });
+  };
+  if (projectId) {
+    if (!getConfig().allowUnsafeOutbound) {
+      transportOptions.getSocket = getProjectSmtpSocket(projectId);
+    }
+    transportOptions.connectionTimeout = PROJECT_SMTP_TIMEOUT_MS;
+    transportOptions.greetingTimeout = PROJECT_SMTP_TIMEOUT_MS;
+    transportOptions.socketTimeout = PROJECT_SMTP_SOCKET_TIMEOUT_MS;
+  }
+  const transport = createTransport(transportOptions);
   try {
     await transport.sendMail(options);
   } catch (err) {

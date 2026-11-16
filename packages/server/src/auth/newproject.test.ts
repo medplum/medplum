@@ -29,6 +29,7 @@ describe('New project', () => {
   beforeEach(async () => {
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
     getConfig().registerEnabled = undefined;
+    getConfig().newProjectRegistrationEnabled = undefined;
     fetchMock.mockClear();
     setupRecaptchaMock(true);
   });
@@ -387,7 +388,44 @@ describe('New project', () => {
       projectName: 'Hamilton Project',
     });
     expect(res2).toHaveStatus(400);
-    expect(res2.body).toMatchObject(badRequest('Email verification is required to create a project'));
+    expect(res2.body).toMatchObject(
+      badRequest('Email verification is required to create a project. Check your email for a verification link.')
+    );
+  });
+
+  test('Require verified email - sends a verification link', async () => {
+    getConfig().requireVerifiedEmailForProjectCreation = true;
+    const sendEmailSpy = vi.spyOn(emailModule, 'sendEmail').mockResolvedValue(undefined);
+    try {
+      const email = `alex${randomUUID()}@example.com`;
+      const res1 = await request(app).post('/auth/newuser').type('json').send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+      expect(res1).toHaveStatus(200);
+      sendEmailSpy.mockClear();
+
+      // Blocked, but the user is now told how to unblock themselves
+      const res2 = await request(app).post('/auth/newproject').type('json').send({
+        login: res1.body.login,
+        projectName: 'Hamilton Project',
+      });
+      expect(res2).toHaveStatus(400);
+
+      const verifyCall = sendEmailSpy.mock.calls.find((call) => call[1]?.subject === 'Medplum Email Verification');
+      expect(verifyCall).toBeDefined();
+      expect(verifyCall?.[1].to).toBe(email);
+      // The link returns to the registration flow carrying this login, so the user
+      // resumes project creation instead of starting over
+      expect(verifyCall?.[1].text).toContain('verifyemail/');
+    } finally {
+      sendEmailSpy.mockRestore();
+    }
   });
 
   test('Require verified email - allowed', async () => {
@@ -416,6 +454,34 @@ describe('New project', () => {
       projectName: 'Hamilton Project',
     });
     expect(res2).toHaveStatus(200);
+  });
+
+  test('Login for an existing project', async () => {
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res1).toHaveStatus(200);
+
+    // Simulate a login that was started for an existing project
+    await getGlobalSystemRepo().patchResource('Login', res1.body.login, [
+      { op: 'add', path: '/project', value: { reference: `Project/${randomUUID()}` } },
+    ]);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject(badRequest('Invalid project'));
   });
 
   test('Register disabled', async () => {
@@ -457,5 +523,31 @@ describe('New project', () => {
     });
     expect(res4).toHaveStatus(400);
     expect(res4.body).toMatchObject(badRequest('Registration is disabled'));
+  });
+
+  test('New project registration disabled', async () => {
+    getConfig().newProjectRegistrationEnabled = false;
+
+    // New users can still register
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res1).toHaveStatus(200);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject(badRequest('New project registration is disabled'));
   });
 });

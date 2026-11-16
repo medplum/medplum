@@ -12,7 +12,7 @@ import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
  * Written out rather than loaded from `@medplum/definitions` the way the tests do:
  * `readJson` reads from disk, and there is no disk in a browser.
  */
-const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
+export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
   resourceType: 'Bundle',
   type: 'collection',
   entry: [
@@ -89,6 +89,20 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'HealthcareService-active',
+        url: 'http://hl7.org/fhir/SearchParameter/HealthcareService-active',
+        name: 'active',
+        status: 'draft',
+        description: 'The Healthcare Service is currently marked as active',
+        code: 'active',
+        base: ['HealthcareService'],
+        type: 'token',
+        expression: 'HealthcareService.active',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'HealthcareService-name',
         url: 'http://hl7.org/fhir/SearchParameter/HealthcareService-name',
         name: 'name',
@@ -140,6 +154,34 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         base: ['Patient'],
         type: 'date',
         expression: 'Patient.birthDate',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Patient-identifier',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-identifier',
+        name: 'identifier',
+        status: 'active',
+        description: 'A patient identifier',
+        code: 'identifier',
+        base: ['Patient'],
+        type: 'token',
+        expression: 'Patient.identifier',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Patient-deceased',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-deceased',
+        name: 'deceased',
+        status: 'active',
+        description: 'This patient has been marked as deceased, or as a death date entered',
+        code: 'deceased',
+        base: ['Patient'],
+        type: 'token',
+        expression: 'Patient.deceased.exists() and Patient.deceased != false',
       },
     },
     {
@@ -271,6 +313,34 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Appointment-status',
+        url: 'http://hl7.org/fhir/SearchParameter/Appointment-status',
+        name: 'status',
+        status: 'draft',
+        description: 'The overall status of the appointment',
+        code: 'status',
+        base: ['Appointment'],
+        type: 'token',
+        expression: 'Appointment.status',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Appointment-slot',
+        url: 'http://hl7.org/fhir/SearchParameter/Appointment-slot',
+        name: 'slot',
+        status: 'draft',
+        description: 'The slots that this appointment is filling',
+        code: 'slot',
+        base: ['Appointment'],
+        type: 'reference',
+        expression: 'Appointment.slot',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Slot-schedule',
         url: 'http://hl7.org/fhir/SearchParameter/Slot-schedule',
         name: 'schedule',
@@ -294,6 +364,20 @@ const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         base: ['Slot'],
         type: 'date',
         expression: 'Slot.start',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Slot-end',
+        url: 'https://medplum.com/fhir/SearchParameter/Slot-end',
+        name: 'end',
+        status: 'draft',
+        description: 'The end time of the Slot',
+        code: 'end',
+        base: ['Slot'],
+        type: 'date',
+        expression: 'Slot.end',
       },
     },
     {

@@ -1,0 +1,261 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Paper } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import {
+  createReference,
+  RecurrenceIdExtensionURI,
+  SchedulingExternalUrlURI,
+  SchedulingMedicalNecessityURI,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
+import type { Appointment } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { useState } from 'react';
+import { APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM } from '../../constants';
+import {
+  withCancelStub,
+  withConfirmStub,
+  withFindStub,
+  withFixtures,
+  withMockedDate,
+  withRescheduleStub,
+  withValueSets,
+  withValueSetStub,
+} from '../../stories/decorators';
+import {
+  AuthorizationFixtures,
+  AuthorizationValueSets,
+  DIAGNOSIS_VALUE_SET,
+  DiagnosisCodes,
+  DrChenPractitioner,
+  ElderJordanPatient,
+  InfusionService,
+  MilesCooperPatient,
+  PatientFixtures,
+  PROCEDURE_VALUE_SET,
+  ProcedureCodes,
+  RiveraImagingAppointment,
+  RiveraImagingHeldSlots,
+  SchedulingFixtures,
+} from '../../stories/scheduling';
+import { AppointmentDetails } from './AppointmentDetails';
+
+const CancelledAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-cancelled',
+  status: 'cancelled',
+  cancelationReason: {
+    coding: [
+      {
+        system: APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM,
+        code: 'pat-fb',
+        display: 'Patient: Feeling Better',
+      },
+    ],
+  },
+};
+
+/** Held through `$hold`, waiting to be confirmed. */
+const PendingAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-pending',
+  status: 'pending',
+};
+
+/** Booked for a visit type asking for procedure and diagnosis codes and a medical necessity attestation. */
+const AuthorizedAppointment: WithId<Appointment> = {
+  resourceType: 'Appointment',
+  id: 'appt-chen-infusion-tue',
+  status: 'booked',
+  start: '2020-05-05T14:00:00Z',
+  end: '2020-05-05T15:00:00Z',
+  serviceType: [...toServiceTypeCodeableConcepts(InfusionService), { coding: [ProcedureCodes[0]] }],
+  reasonCode: [{ coding: [DiagnosisCodes[0]] }],
+  extension: [{ url: SchedulingMedicalNecessityURI, valueBoolean: true }],
+  participant: [
+    { status: 'accepted', actor: createReference(ElderJordanPatient) },
+    { status: 'accepted', actor: createReference(DrChenPractitioner) },
+  ],
+};
+
+// A later visit of a weekly series, which carries its place in it but not the count.
+const RecurringAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-recurring',
+  extension: [{ url: RecurrenceIdExtensionURI, valuePositiveInt: 2 }],
+};
+
+const ExternalAppointment: WithId<Appointment> = {
+  ...RiveraImagingAppointment,
+  id: 'appt-rivera-imaging-tue-external',
+  extension: [
+    {
+      url: SchedulingExternalUrlURI,
+      valueUrl: 'https://foomedical.com/appointments?date=05%2F05%2F2020&mrn=123',
+    },
+  ],
+};
+
+// The schedules, the visit type and the actors as well as the visits themselves: moving
+// a visit searches against all of them.
+const STORY_FIXTURES = [
+  ...SchedulingFixtures,
+  ...PatientFixtures,
+  MilesCooperPatient,
+  ...RiveraImagingHeldSlots,
+  RiveraImagingAppointment,
+  CancelledAppointment,
+  PendingAppointment,
+  ...AuthorizationFixtures,
+  AuthorizedAppointment,
+];
+
+export default {
+  title: 'Medplum/SchedulingWorkspace/AppointmentDetails',
+  component: AppointmentDetails,
+  decorators: [
+    // Mock out the `$cancel` operation in our MockClient
+    withCancelStub(),
+    withConfirmStub(),
+    // Rescheduling searches with `$find` and writes with `$reschedule`, neither of
+    // which MockClient answers either.
+    withRescheduleStub(),
+    withFindStub(),
+    // We use a ValueSet (`appointment-cancellation-reason`) that is not
+    // preloaded in the MockClient, so we set up a value set stub.
+    withValueSetStub(),
+    withFixtures(STORY_FIXTURES),
+    withMockedDate,
+  ],
+  parameters: {
+    skipDefaultSeeding: true,
+  },
+} as Meta;
+
+/**
+ * Everything on file for one visit, and controls for managing the visit.
+ *
+ * - Cancelling: "Cancel Appointment" turns the view over to a page of its own, which
+ *   requires selecting a `cancelationReason` from the `appointment-cancellation-reason`
+ *   value set before it can be confirmed, and sends it as part of a `$cancel` request.
+ *   "Back" returns to the details without cancelling anything, and without keeping the
+ *   reason that was chosen.
+ *
+ * - Rescheduling: swaps this view for the form that moves the visit, opened on the
+ *   visit type and the actors it is held on now — Dr. Rivera, Ultrasound 1 and Exam
+ *   Room A, read back off the Slots it holds. Change any of the actors, or none of
+ *   them, find a time, and `$reschedule` moves the visit to it. The search ignores this
+ *   appointment's own Slots, so the hour it already occupies is offered again: that
+ *   is what makes "same time, different room" findable. The visit type is shown but
+ *   not editable — a move never changes what a visit is.
+ *
+ *   The times lie beside that form rather than under it, so this panel widens while the
+ *   search is open — `onToggleTimeFinder` is what tells a host when to make the room.
+ *   The `SchedulingWorkspace` widens its drawer on the same signal.
+ *
+ * @returns The story.
+ */
+export const Basic = (): JSX.Element => {
+  const [appointment, setAppointment] = useState<WithId<Appointment>>(RiveraImagingAppointment);
+  const [searching, setSearching] = useState(false);
+
+  return (
+    <Paper withBorder p="md" maw={searching ? 800 : 460}>
+      <AppointmentDetails
+        appointment={appointment}
+        onCancelled={setAppointment}
+        onRescheduled={(reschedule) => setAppointment(reschedule.appointments[0])}
+        onToggleTimeFinder={setSearching}
+      />
+    </Paper>
+  );
+};
+
+/**
+ * A visit that has already been called off: `$cancel` would refuse it, so there is no
+ * button and it says as much.
+ *
+ * @returns The story.
+ */
+export const Cancelled = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails appointment={CancelledAppointment} />
+  </Paper>
+);
+
+/**
+ * A visit whose visit type asked for procedure codes, diagnosis codes, and a medical
+ * necessity attestation when it was booked. All three are editable here.
+ *
+ * @returns The story.
+ */
+export const AuthorizationDetails = (): JSX.Element => {
+  const [appointment, setAppointment] = useState<WithId<Appointment>>(AuthorizedAppointment);
+  return (
+    <Paper withBorder p="md" maw={460}>
+      <AppointmentDetails
+        appointment={appointment}
+        procedureBinding={PROCEDURE_VALUE_SET}
+        diagnosisBinding={DIAGNOSIS_VALUE_SET}
+        onUpdated={setAppointment}
+      />
+    </Paper>
+  );
+};
+AuthorizationDetails.decorators = [withValueSets(AuthorizationValueSets)];
+
+/**
+ * A visit held but not yet confirmed. "Confirm" sends it through `$confirm`, which books
+ * it, so the badge turns to `booked` and the button goes.
+ *
+ * @returns The story.
+ */
+export const Pending = (): JSX.Element => {
+  const [appointment, setAppointment] = useState<WithId<Appointment>>(PendingAppointment);
+  return (
+    <Paper withBorder p="md" maw={320}>
+      <AppointmentDetails
+        appointment={appointment}
+        onConfirmed={(confirmation) => setAppointment(confirmation.appointments[0])}
+      />
+    </Paper>
+  );
+};
+
+/**
+ * A visit synced with an external system, which links to it there.
+ *
+ * @returns The story.
+ */
+export const ExternalLink = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails appointment={ExternalAppointment} />
+  </Paper>
+);
+
+/**
+ * A visit that ended more than 12 hours ago, which can no longer be changed. Only the link
+ * to it in the external system is left.
+ *
+ * @returns The story.
+ */
+export const PastEditWindow = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails
+      appointment={{ ...ExternalAppointment, start: '2020-05-01T14:00:00Z', end: '2020-05-01T15:00:00Z' }}
+    />
+  </Paper>
+);
+
+/**
+ * One visit of a weekly series booked through `$book`, which says where it falls in it.
+ *
+ * @returns The story.
+ */
+export const Recurring = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails appointment={RecurringAppointment} />
+  </Paper>
+);

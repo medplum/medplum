@@ -5,7 +5,8 @@ import simpleVars from 'postcss-simple-vars';
 
 const config = {
   plugins: [
-    mantinePreset(),
+    // Leave light-dark() native, as our packages' own builds publish it.
+    mantinePreset({ features: { lightDarkFunction: false } }),
     simpleVars({
       variables: {
         'mantine-breakpoint-xs': '36em',

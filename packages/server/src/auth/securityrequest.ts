@@ -1,0 +1,156 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import {
+  badRequest,
+  getReferenceString,
+  getStatus,
+  isOperationOutcome,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
+import type { SystemRepository } from '../fhir/repo';
+
+/**
+ * Returns how long a request of the given type stays valid, in milliseconds.
+ * @param type - The request type, absent on requests created before the field existed.
+ * @returns The validity window in milliseconds.
+ */
+function getExpirationMs(type: UserSecurityRequest['type']): number {
+  // Requests predating the `type` field are treated as password resets, the shortest window.
+  return USER_SECURITY_REQUEST_EXPIRATION_MS[type ?? 'reset'];
+}
+
+/**
+ * Returns the expiration timestamp to store on a newly created UserSecurityRequest.
+ * @param type - The type of request being created.
+ * @returns The expiration as an ISO 8601 instant.
+ */
+export function getSecurityRequestExpiration(type: UserSecurityRequest['type']): string {
+  return new Date(Date.now() + getExpirationMs(type)).toISOString();
+}
+
+/**
+ * Returns whether a security request is past its expiration and can no longer be used.
+ *
+ * Requests created before `expiresAt` existed do not carry the field, so they fall back to their
+ * creation time plus the window for their type. That retires previously unlimited tokens as soon
+ * as this code is deployed. A request with no timestamps at all, or an unparseable one, is treated
+ * as expired.
+ * @param securityRequest - The request to check.
+ * @returns True if the request has expired.
+ */
+export function isSecurityRequestExpired(securityRequest: UserSecurityRequest): boolean {
+  const expiresAt = securityRequest.expiresAt
+    ? new Date(securityRequest.expiresAt).getTime()
+    : new Date(securityRequest.meta?.lastUpdated ?? 0).getTime() + getExpirationMs(securityRequest.type);
+  // An unparseable timestamp yields NaN, which loses every comparison, so check for it explicitly
+  return Number.isNaN(expiresAt) || Date.now() >= expiresAt;
+}
+
+/**
+ * Marks a security request as used, guarded by its version ID.
+ *
+ * `ifMatch` makes this a compare-and-swap: of several concurrent requests carrying the same
+ * token, exactly one gets past this point and the rest see "Already used".
+ * @param systemRepo - The system repository to use.
+ * @param securityRequest - The request to consume.
+ */
+export async function consumeSecurityRequest(
+  systemRepo: SystemRepository,
+  securityRequest: WithId<UserSecurityRequest>
+): Promise<void> {
+  try {
+    await systemRepo.updateResource<UserSecurityRequest>(
+      { ...securityRequest, used: true },
+      { ifMatch: securityRequest.meta?.versionId }
+    );
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && isOperationOutcome(err.outcome) && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Already used'));
+    }
+    throw err;
+  }
+}
+
+/**
+ * Marks all of the user's prior unused requests of the given type as used.
+ *
+ * Issuing a new request invalidates the ones it replaces, so an older link that reached the
+ * wrong inbox cannot be redeemed after the user asks for a new one.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose prior requests should be superseded.
+ * @param type - The type of request being superseded.
+ */
+export async function supersedePriorSecurityRequests(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  type: UserSecurityRequest['type']
+): Promise<void> {
+  await retireSecurityRequests(systemRepo, user, (securityRequest) => securityRequest.type === type);
+}
+
+/**
+ * The longest time that a security request of any type stays valid, in milliseconds.
+ */
+const MAX_EXPIRATION_MS = Math.max(...Object.values(USER_SECURITY_REQUEST_EXPIRATION_MS));
+
+/**
+ * Marks all of the user's unused requests that match the predicate as used.
+ *
+ * Walks every request updated within the longest validity window, rather than a fixed number of
+ * the most recent ones, so that a burst of newer requests cannot leave an older one redeemable.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose requests should be retired.
+ * @param predicate - Returns true for requests that should be retired.
+ */
+async function retireSecurityRequests(
+  systemRepo: SystemRepository,
+  user: WithId<User>,
+  predicate: (securityRequest: UserSecurityRequest) => boolean
+): Promise<void> {
+  const since = new Date(Date.now() - MAX_EXPIRATION_MS).toISOString();
+  await systemRepo.processAllResources<UserSecurityRequest>(
+    {
+      resourceType: 'UserSecurityRequest',
+      count: 1000,
+      sortRules: [{ code: '_lastUpdated' }],
+      filters: [
+        { code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) },
+        { code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since },
+      ],
+    },
+    async (securityRequest) => {
+      if (!securityRequest.used && predicate(securityRequest)) {
+        // Patch rather than update, so that a request being consumed concurrently is not clobbered
+        await systemRepo.patchResource<UserSecurityRequest>('UserSecurityRequest', securityRequest.id, [
+          { op: 'add', path: '/used', value: true },
+        ]);
+      }
+    }
+  );
+}
+
+/**
+ * Marks all of the user's unused password requests (invite and reset) as used.
+ *
+ * Called when the user's password changes, so that links issued before the change cannot be used to
+ * replace the new password.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose password requests should be retired.
+ */
+export async function retirePasswordSecurityRequests(systemRepo: SystemRepository, user: WithId<User>): Promise<void> {
+  // Matches what /auth/setpassword accepts: every type except verify-email, including requests without a type
+  await retireSecurityRequests(systemRepo, user, (securityRequest) => securityRequest.type !== 'verify-email');
+}
+
+/**
+ * Marks all of the user's unused security requests as used.
+ * @param systemRepo - The system repository to use.
+ * @param user - The user whose requests should be retired.
+ */
+export async function retireAllSecurityRequests(systemRepo: SystemRepository, user: WithId<User>): Promise<void> {
+  await retireSecurityRequests(systemRepo, user, () => true);
+}

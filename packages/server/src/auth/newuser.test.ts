@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { Operator, badRequest } from '@medplum/core';
-import type { OperationOutcome, User } from '@medplum/fhirtypes';
+import type { OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -16,6 +17,16 @@ import { registerNew } from './register';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
+
+async function enableOpenRegistration(project: WithId<Project>): Promise<void> {
+  await withTestContext(async () => {
+    const systemRepo = await getProjectSystemRepo(project);
+    await systemRepo.updateResource({
+      ...project,
+      setting: [...(project.setting ?? []), { name: 'openPatientRegistration', valueBoolean: true }],
+    });
+  });
+}
 
 describe('New user', () => {
   let prevRecaptchaSecretKey: string | undefined;
@@ -225,8 +236,8 @@ describe('New user', () => {
         email,
         password,
       });
-      // As a super admin, set the recaptcha site key
-      // and the default access policy
+      // As a super admin, set the recaptcha site key and enable open registration.
+      // The project already has a Patient entry in defaultAccessPolicies.
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
@@ -238,9 +249,7 @@ describe('New user', () => {
             recaptchaSecretKey,
           },
         ],
-        defaultPatientAccessPolicy: {
-          reference: 'AccessPolicy/' + randomUUID(),
-        },
+        setting: [{ name: 'openPatientRegistration', valueBoolean: true }],
       });
       return project;
     });
@@ -315,7 +324,7 @@ describe('New user', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSiteKey');
   });
 
-  test('Custom recaptcha client missing access policy', async () => {
+  test('Custom recaptcha client rejects registration when open registration is disabled', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
@@ -330,13 +339,10 @@ describe('New user', () => {
         email,
         password,
       });
-      // As a super admin, set the recaptcha site key
-      // but *not* the access policy (remove the default patient access policy
-      // that is automatically provisioned on project creation)
+      // Recaptcha is configured, but openPatientRegistration is not set.
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
-        defaultPatientAccessPolicy: undefined,
         site: [
           {
             name: 'Test Site',
@@ -467,6 +473,9 @@ describe('New user', () => {
     );
     expect(reg3).toBeDefined();
 
+    await enableOpenRegistration(reg2.project);
+    await enableOpenRegistration(reg3.project);
+
     // Try to register as a patient in Project P2
     const res1 = await request(app)
       .post('/auth/newuser')
@@ -586,6 +595,7 @@ describe('New user', () => {
     const { project } = await withTestContext(() =>
       registerNew({ firstName: 'Owner', lastName: 'Owner', projectName: 'MetaProjectTest', email, password })
     );
+    await enableOpenRegistration(project);
 
     // Register a new user into that project via the self-registration endpoint
     const newEmail = `patient${randomUUID()}@example.com`;

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { QueryTypes } from '@medplum/core';
+import type { MedplumRequestOptions, QueryTypes } from '@medplum/core';
 import { resolveId } from '@medplum/core';
 import type { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 /** Descriptor for a single FHIR search that a section needs. */
@@ -28,6 +28,7 @@ export interface PatientSummaryData {
   readonly sectionData: SectionResults[];
   readonly loading: boolean;
   readonly error: Error | undefined;
+  readonly refresh: () => void;
 }
 
 /**
@@ -85,7 +86,7 @@ function buildSectionsFingerprint(
  * sections whose searches fail gracefully receive empty arrays.
  * @param patient - The patient or patient reference to fetch data for.
  * @param sections - The section configs defining which searches to execute.
- * @returns Section data, loading state, and any error.
+ * @returns Section data, loading state, any error, and a refresh callback.
  */
 export function usePatientSummaryData(
   patient: Patient | Reference<Patient>,
@@ -95,6 +96,7 @@ export function usePatientSummaryData(
   const [sectionData, setSectionData] = useState<SectionResults[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
+  const [refreshCount, setRefreshCount] = useState(0);
 
   // Stabilize sections reference: only change when the search configuration actually changes.
   const sectionsFingerprint = buildSectionsFingerprint(sections);
@@ -112,6 +114,7 @@ export function usePatientSummaryData(
     let stale = false;
     const ref = `Patient/${patientId}`;
     const searchMeta = { _count: 100, _sort: '-_lastUpdated' };
+    const options: MedplumRequestOptions | undefined = refreshCount > 0 ? { cache: 'reload' } : undefined;
 
     // Collect unique searches and build a mapping from deduplication key to index
     const uniqueSearches: FhirSearchDescriptor[] = [];
@@ -156,7 +159,8 @@ export function usePatientSummaryData(
           // String query — _count and _sort are appended automatically; do not include them in the query string.
           return medplum.searchResources(
             search.resourceType,
-            `${patientParam}=${ref}&${search.query}&_count=100&_sort=-_lastUpdated`
+            `${patientParam}=${ref}&${search.query}&_count=100&_sort=-_lastUpdated`,
+            options
           );
         } else if (search.query instanceof URLSearchParams) {
           search.query.forEach((value, key) => {
@@ -175,7 +179,7 @@ export function usePatientSummaryData(
         }
       }
 
-      return medplum.searchResources(search.resourceType, { ...searchMeta, ...baseQuery });
+      return medplum.searchResources(search.resourceType, { ...searchMeta, ...baseQuery }, options);
     });
 
     setLoading(true);
@@ -223,7 +227,9 @@ export function usePatientSummaryData(
     return () => {
       stale = true;
     };
-  }, [medplum, patientId, stableSections]);
+  }, [medplum, patientId, stableSections, refreshCount]);
 
-  return { sectionData, loading, error };
+  const refresh = useCallback(() => setRefreshCount((count) => count + 1), []);
+
+  return { sectionData, loading, error, refresh };
 }

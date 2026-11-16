@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
+import { RecurrenceTemplateExtensionURI } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getServiceDurationMinutes } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import { buildFindBundle, buildProposedAppointment } from './scheduling';
@@ -50,6 +51,7 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
   const scheduleReferences = url.searchParams.getAll('schedule');
   const serviceReference = url.searchParams.get('service-type-reference') ?? '';
   const count = Number(url.searchParams.get('_count') ?? '20');
+  const occurrenceCount = Number(url.searchParams.get('occurrence-count') ?? '1');
 
   if (options.empty || scheduleReferences.length === 0 || Number.isNaN(start.getTime())) {
     return buildFindBundle([]);
@@ -70,15 +72,24 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
     if (appointments.length >= count) {
       break;
     }
-    appointments.push(
-      buildProposedAppointment({
-        start: slotStart.toISOString(),
-        durationMinutes,
-        scheduleReferences,
-        actorReferences,
-        serviceId: serviceReference.split('/')[1],
-      })
-    );
+    const proposal = buildProposedAppointment({
+      start: slotStart.toISOString(),
+      durationMinutes,
+      scheduleReferences,
+      actorReferences,
+      serviceId: serviceReference.split('/')[1],
+    });
+    if (occurrenceCount > 1) {
+      // Only the count, of the template `$find` describes a series with.
+      proposal.extension = [
+        ...(proposal.extension ?? []),
+        {
+          url: RecurrenceTemplateExtensionURI,
+          extension: [{ url: 'occurrenceCount', valuePositiveInt: occurrenceCount }],
+        },
+      ];
+    }
+    appointments.push(proposal);
   }
 
   return buildFindBundle(appointments);

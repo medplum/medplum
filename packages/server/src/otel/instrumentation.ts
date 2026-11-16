@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { Span } from '@opentelemetry/api';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
@@ -25,7 +24,6 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import type { ClientRequest, IncomingMessage, ServerResponse } from 'node:http';
 
@@ -68,7 +66,7 @@ export function initOpenTelemetry(): void {
     propagators: [new AWSXRayPropagator(), new W3CTraceContextPropagator()],
   });
 
-  let traceExporter: SpanExporter | undefined = undefined;
+  let traceExporter: OTLPTraceExporter | undefined = undefined;
   if (OTLP_TRACES_ENDPOINT) {
     traceExporter = new OTLPTraceExporter({ url: OTLP_TRACES_ENDPOINT });
   }
@@ -108,9 +106,6 @@ export function initOpenTelemetry(): void {
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     }),
     new DataloaderInstrumentation(),
-    new BullMQInstrumentation({
-      requireParentSpanForPublish: true,
-    }),
   ];
 
   sdk = new NodeSDK({

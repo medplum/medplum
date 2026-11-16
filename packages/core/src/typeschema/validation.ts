@@ -63,6 +63,13 @@ export const fhirTypeToJsType = {
 
 const fhirPathCache = new LRUCache<FhirPathAtom>(1_000);
 
+// FHIR integer is −2,147,483,648..2,147,483,647; positiveInt is 1..2,147,483,647; unsignedInt is 0..2,147,483,647.
+// @see https://hl7.org/fhir/R4/datatypes.html#integer
+const FHIR_INTEGER_MIN = -2_147_483_648;
+const FHIR_INTEGER_MAX = 2_147_483_647;
+const FHIR_POSITIVE_INT_MIN = 1;
+const FHIR_UNSIGNED_INT_MIN = 0;
+
 /**
  * Returns true if the type code is a primitive type.
  * @param code - The type code to check.
@@ -405,6 +412,10 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
+    if (reference.reference === 'system' && field.path === 'AuditEvent.agent.who') {
+      return;
+    }
+
     const targetProfiles = field.type.find((t) => t.code === 'Reference')?.targetProfile;
     if (!targetProfiles) {
       // No required target profiles
@@ -586,6 +597,8 @@ class ResourceValidator implements CrawlerVisitor {
     const regex = validationRegexes[type];
     if (regex && !regex.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
+    } else if ((type === 'date' || type === 'dateTime' || type === 'instant') && !isValidCalendarDate(str)) {
+      this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' value'));
     }
   }
 
@@ -594,12 +607,36 @@ class ResourceValidator implements CrawlerVisitor {
       this.issues.push(createStructureIssue(path, 'Invalid numeric value'));
     } else if (isIntegerType(type) && !Number.isInteger(n)) {
       this.issues.push(createStructureIssue(path, 'Expected number to be an integer'));
-    } else if (type === PropertyType.positiveInt && n <= 0) {
-      this.issues.push(createStructureIssue(path, 'Expected number to be positive'));
-    } else if (type === PropertyType.unsignedInt && n < 0) {
-      this.issues.push(createStructureIssue(path, 'Expected number to be non-negative'));
+    } else if (type === PropertyType.integer && (n < FHIR_INTEGER_MIN || n > FHIR_INTEGER_MAX)) {
+      this.issues.push(
+        createStructureIssue(path, `Expected number to be in the range ${FHIR_INTEGER_MIN}..${FHIR_INTEGER_MAX}`)
+      );
+    } else if (type === PropertyType.positiveInt && (n < FHIR_POSITIVE_INT_MIN || n > FHIR_INTEGER_MAX)) {
+      this.issues.push(
+        createStructureIssue(path, `Expected number to be in the range ${FHIR_POSITIVE_INT_MIN}..${FHIR_INTEGER_MAX}`)
+      );
+    } else if (type === PropertyType.unsignedInt && (n < FHIR_UNSIGNED_INT_MIN || n > FHIR_INTEGER_MAX)) {
+      this.issues.push(
+        createStructureIssue(path, `Expected number to be in the range ${FHIR_UNSIGNED_INT_MIN}..${FHIR_INTEGER_MAX}`)
+      );
     }
   }
+}
+
+/**
+ * Checks that the day exists in its month, e.g. rejects 2023-02-29.
+ * Assumes the input already matched the date, dateTime, or instant regex.
+ * @param str - The date, dateTime, or instant string.
+ * @returns True if the day is valid or not present.
+ */
+export function isValidCalendarDate(str: string): boolean {
+  if (str.length < 10) {
+    return true;
+  }
+  const year = Number.parseInt(str.substring(0, 4), 10);
+  const month = Number.parseInt(str.substring(5, 7), 10);
+  const day = Number.parseInt(str.substring(8, 10), 10);
+  return day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 function isIntegerType(propertyType: string): boolean {

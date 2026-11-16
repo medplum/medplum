@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ModalProps as MantineModalProps } from '@mantine/core';
 import { Modal as MantineModal } from '@mantine/core';
+import { IconX } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { Form } from '../Form/Form';
@@ -20,22 +21,27 @@ const formStyle: CSSProperties = {
 
 /**
  * Props for {@link Modal}.
- * @property children - Modal body, rendered in the scrolling region between the header and the
- * footer.
- * @property actions - Buttons pinned to the bottom edge of the modal above a full-bleed border.
- * They stretch to the full width with the primary action first; wrap them in a
- * `Group justify="flex-end"` for a right-aligned row instead. Omit for modals that only display
- * content - the footer and its border are then not rendered.
- * @property onSubmit - Wraps the body and the footer in a {@link Form}, so a `SubmitButton` in
- * `actions` submits the named inputs in `children`. A `SubmitButton` without this has no form to
- * submit and does nothing.
- * @property bodyHeight - Fixed body height as a CSS length, e.g. `'60vh'`, for modals whose content
- * is a fixed layout rather than a form that should size to its fields. Omit to size to the content.
  */
 export interface ModalProps extends Omit<MantineModalProps, 'children' | 'onSubmit' | 'scrollAreaComponent'> {
+  /** Modal body, rendered in the scrolling region between the header and the footer. */
   readonly children: ReactNode;
+  /**
+   * Buttons pinned to the bottom edge of the modal above a full-bleed border.
+   * They stretch to the full width with the primary action first; wrap them in a
+   * `Group justify="flex-end"` for a right-aligned row instead. Omit for modals that only display
+   * content - the footer and its border are then not rendered.
+   */
   readonly actions?: ReactNode;
+  /**
+   * Wraps the body and the footer in a {@link Form}, so a `SubmitButton` in
+   * `actions` submits the named inputs in `children`. A `SubmitButton` without this has no form to
+   * submit and does nothing.
+   */
   readonly onSubmit?: (formData: Record<string, string>) => Promise<void> | void;
+  /**
+   * Fixed body height as a CSS length, e.g. `'60vh'`, for modals whose content
+   * is a fixed layout rather than a form that should size to its fields. Omit to size to the content.
+   */
   readonly bodyHeight?: string;
 }
 
@@ -77,7 +83,12 @@ export function Modal(props: ModalProps): JSX.Element {
       centered={centered}
       padding={padding}
       radius={radius}
-      closeButtonProps={{ 'aria-label': 'Close', radius: 'xl', ...closeButtonProps }}
+      closeButtonProps={{
+        'aria-label': 'Close',
+        radius: 'xl',
+        icon: <IconX size={16} stroke={2} />,
+        ...closeButtonProps,
+      }}
       classNames={{
         ...classNames,
         // The slot rules are scoped under `.modal` in the CSS module, so the root class has to
@@ -86,6 +97,7 @@ export function Modal(props: ModalProps): JSX.Element {
         content: cx(classes.content, classNames?.content),
         header: cx(classes.header, classNames?.header),
         title: cx(classes.title, classNames?.title),
+        close: cx(classes.close, classNames?.close),
         body: cx(classes.body, classNames?.body),
       }}
       style={bodyHeight ? [style, { '--medplum-modal-body-height': bodyHeight }] : style}

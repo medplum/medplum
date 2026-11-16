@@ -201,7 +201,7 @@ describe('Patient $match Operation', () => {
     const bundle = matchRes.body as Bundle<Patient>;
     expect(bundle.total).toBeGreaterThan(0);
     const topEntry = bundle.entry?.[0];
-    expect(topEntry?.search?.score).toBeCloseTo(3 / 11);
+    expect(topEntry?.search?.score).toBeCloseTo(3 / 12);
     expect(topEntry?.search?.extension?.find((e) => e.url.endsWith('match-grade'))?.valueCode).toBe('possible');
     expect(topEntry?.search?.extension?.some((e) => e.url.endsWith('cms-match-combination'))).toBe(false);
   });
@@ -470,6 +470,71 @@ describe('Patient $match Operation', () => {
 
       expect(res).toHaveStatus(200);
       expect((res.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
+    });
+
+    test('finds and releases a candidate whose DOB is one day off (rule 01, DOB*)', async () => {
+      const family = `CmsDobTolerance${Date.now()}`;
+      const street = '48 Brattle Street';
+      const created = await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Theodora'] }],
+        birthDate: '1980-04-10',
+        address: [{ line: [street] }],
+      });
+      expect(created).toHaveStatus(201);
+
+      // No identifier or telecom, so the candidate can only be found by the name + DOB range search
+      const res = await cmsMatch({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Theodora'] }],
+        birthDate: '1980-04-11',
+        address: [{ line: [street] }],
+      });
+
+      expect(res).toHaveStatus(200);
+      const bundle = res.body as Bundle<Patient>;
+      expect(bundle.entry).toHaveLength(1);
+      const entry = bundle.entry?.[0];
+      expect(entry?.resource?.id).toBe(created.body.id);
+      const ext = entry?.search?.extension ?? [];
+      expect(ext.find((e) => e.url.endsWith('cms-match-combination'))?.valueString).toBe('01');
+      expect(ext.find((e) => e.url.endsWith('cms-match-type'))?.valueCode).toBe('fuzzy');
+    });
+
+    test('requires an exact first name when another candidate shares the DOB (twin guardrail)', async () => {
+      const family = `CmsTwin${Date.now()}`;
+      const birthDate = '2015-05-05';
+      const ssn = { system: 'http://hl7.org/fhir/sid/us-ssn', value: '321-54-8765' };
+      const jayden = await createPatient({
+        resourceType: 'Patient',
+        name: [{ family, given: ['Jayden'] }],
+        birthDate,
+        identifier: [ssn],
+      });
+      expect(jayden).toHaveStatus(201);
+
+      // "Jaydan" is one edit from "Jayden", so fuzzy First Name + Last Name + DOB + SSN Last 4 qualifies (rule 04)
+      const query: Patient = {
+        resourceType: 'Patient',
+        name: [{ family, given: ['Jaydan'] }],
+        birthDate,
+        identifier: [ssn],
+      };
+      const before = await cmsMatch(query);
+      expect(before).toHaveStatus(200);
+      const beforeEntries = (before.body as Bundle<Patient>).entry ?? [];
+      expect(beforeEntries.map((e) => e.resource?.id)).toStrictEqual([jayden.body.id]);
+      expect(
+        beforeEntries[0].search?.extension?.find((e) => e.url.endsWith('cms-match-combination'))?.valueString
+      ).toBe('04');
+
+      // A twin sharing the DOB means the fuzzy first name can no longer be trusted
+      const twin = await createPatient({ resourceType: 'Patient', name: [{ family, given: ['Brandon'] }], birthDate });
+      expect(twin).toHaveStatus(201);
+
+      const after = await cmsMatch(query);
+      expect(after).toHaveStatus(200);
+      expect((after.body as Bundle<Patient>).entry ?? []).toHaveLength(0);
     });
   });
 });

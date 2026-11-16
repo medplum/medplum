@@ -1,15 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { resolveId } from '@medplum/core';
+import type { Project } from '@medplum/fhirtypes';
 import { runInLambda } from '../cloud/aws/execute';
 import { runInLambdaStreaming } from '../cloud/aws/executestreaming';
 import { executeFissionBot } from '../cloud/fission/execute';
+import { getConfig } from '../config/loader';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { recordHistogramValue } from '../otel/otel';
 import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
 import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult } from './types';
 import {
   getBotAccessToken,
   getBotSecrets,
-  isBotEnabled,
+  isBotEnabledForProject,
+  logBotCallerSmartScopes,
   normalizeBotExecutionResult,
   writeBotInputToStorage,
 } from './utils';
@@ -29,12 +34,21 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   let result: BotExecutionResult;
 
   const execStart = process.hrtime.bigint();
-  if (await isBotEnabled(bot)) {
-    await writeBotInputToStorage(request);
+  // The bot runs with runAs's identity in runAs's project, so that is the project entitled to
+  // run bots -- not the one that happens to own the bot.
+  const project =
+    request.runAsProject && request.runAsProject.id === resolveId(runAs.project)
+      ? request.runAsProject
+      : await getGlobalSystemRepo().readReference<Project>(runAs.project);
+  if (isBotEnabledForProject(project)) {
+    if (getConfig().storeBotInput) {
+      await writeBotInputToStorage(request);
+    }
 
+    logBotCallerSmartScopes(request);
     const context: BotExecutionContext = {
       ...request,
-      accessToken: await getBotAccessToken(runAs),
+      accessToken: await getBotAccessToken(bot, runAs),
       secrets: await getBotSecrets(bot, runAs),
     };
 
@@ -64,6 +78,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
 
   await createBotAuditEvent(
     request,
+    project,
     startTime,
     result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
     result.logResult

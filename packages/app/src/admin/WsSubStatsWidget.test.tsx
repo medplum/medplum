@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, forbidden } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
@@ -41,10 +40,8 @@ describe('WsSubStatsWidget', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter>
-          <MantineProvider>
-            <Notifications />
-            <WsSubStatsWidget />
-          </MantineProvider>
+          <Notifications />
+          <WsSubStatsWidget />
         </MemoryRouter>
       </MedplumProvider>
     );

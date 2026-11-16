@@ -63,6 +63,7 @@ export class BackEnd extends Construct {
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
   workersParameter?: ssm.StringParameter;
+  blockedEmailDomainsParameter?: ssm.StringParameter;
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
@@ -360,32 +361,14 @@ export class BackEnd extends Construct {
         // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
-          resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
-        }),
-
-        // S3 Tables: Read table bucket config and write table data
-        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3tables.html
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
           actions: [
-            's3tables:CreateNamespace',
-            's3tables:CreateTable',
-            's3tables:GetNamespace',
-            's3tables:GetTable',
-            's3tables:GetTableBucket',
-            's3tables:GetTableData',
-            's3tables:GetTableEncryption',
-            's3tables:GetTableMetadataLocation',
-            's3tables:ListNamespaces',
-            's3tables:ListTables',
-            's3tables:PutTableData',
-            's3tables:UpdateTableMetadataLocation',
+            's3:GetObject',
+            's3:PutObject',
+            's3:DeleteObject',
+            // Binary $scan reads GuardDuty scan result tags and marks pending scans
+            ...(config.guardDutyMalwareProtectionEnabled ? ['s3:GetObjectTagging', 's3:PutObjectTagging'] : []),
           ],
-          resources: [
-            `arn:aws:s3tables:${region}:${accountNumber}:bucket/*`,
-            `arn:aws:s3tables:${region}:${accountNumber}:bucket/*/table/*`,
-          ],
+          resources: [`arn:aws:s3:::${config.storageBucketName}/*`],
         }),
 
         // IAM: Pass role to innvoke lambda functions
@@ -471,6 +454,18 @@ export class BackEnd extends Construct {
       ],
     });
 
+    if (config.guardDutyMalwareProtectionEnabled) {
+      // Binary $scan: request on-demand scans
+      // https://docs.aws.amazon.com/guardduty/latest/ug/malware-protection-s3-on-demand.html
+      this.taskRolePolicies.addStatements(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['guardduty:SendObjectMalwareScan'],
+          resources: ['*'],
+        })
+      );
+    }
+
     // Task Role
     this.taskRole = new iam.Role(this, 'TaskExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
@@ -549,6 +544,7 @@ export class BackEnd extends Construct {
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
       minHealthyPercent: 100, // 50% is the default
+      circuitBreaker: { enable: true, rollback: true },
     });
 
     // Add autoscaling
@@ -572,6 +568,7 @@ export class BackEnd extends Construct {
 
     // Load Balancer
     const loadBalancingAlgorithm = resolveLoadBalancingAlgorithmType(config.loadBalancerAlgorithm);
+    const sslPolicy = (config.loadBalancerSslPolicy as elbv2.SslPolicy | undefined) ?? elbv2.SslPolicy.RECOMMENDED_TLS;
 
     this.loadBalancer = this.createLoadBalancer(
       config.stackName,
@@ -579,6 +576,7 @@ export class BackEnd extends Construct {
       config.apiPort,
       config.apiInternetFacing !== false,
       config.apiSslCertArn,
+      sslPolicy,
       config.loadBalancerLoggingPrefix,
       config.apiWafIpSetArn,
       config.wafLogGroupName,
@@ -595,6 +593,7 @@ export class BackEnd extends Construct {
         config.apiPort,
         config.mtlsInternetFacing !== false,
         config.mtlsSslCertArn,
+        sslPolicy,
         config.loadBalancerLoggingPrefix,
         config.mtlsWafIpSetArn,
         config.wafLogGroupName,
@@ -705,6 +704,15 @@ export class BackEnd extends Construct {
       stringValue: this.botLambdaRole.roleArn,
     });
 
+    if (config.blockedEmailDomains) {
+      this.blockedEmailDomainsParameter = new ssm.StringParameter(this, 'BlockedEmailDomains', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/blockedEmailDomains`,
+        description: 'Blocked email domains',
+        stringValue: config.blockedEmailDomains,
+      });
+    }
+
     // Workers configuration
     if (config.workers) {
       this.workersParameter = new ssm.StringParameter(this, 'WorkersParameter', {
@@ -734,7 +742,7 @@ export class BackEnd extends Construct {
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
-      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/([^:@]+)[:@](.+)$`
     );
     const nameTagMatches = ecrImageUriRegex.exec(imageName);
     const serverImageName = nameTagMatches?.[1];
@@ -906,6 +914,7 @@ export class BackEnd extends Construct {
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
       minHealthyPercent: 100, // 50% is the default
+      circuitBreaker: { enable: true, rollback: true },
     });
 
     // Add dependencies - same as primary service
@@ -987,6 +996,7 @@ export class BackEnd extends Construct {
    * @param port - The port for the target group health checks and Fargate container (default: config.apiPort).
    * @param internetFacing - Whether the load balancer is internet-facing (default: config.apiInternetFacing).
    * @param certificateArn - The ARN of the SSL certificate for the HTTPS listener.
+   * @param sslPolicy - The ELB security policy for the HTTPS listener.
    * @param loadBalancerLoggingPrefix - Optional prefix for load balancer access log object keys.
    * @param wafIpSetArn - Optional WAF IP set ARN.
    * @param wafLogGroupName - Optional WAF log group name.
@@ -1001,6 +1011,7 @@ export class BackEnd extends Construct {
     port: number,
     internetFacing: boolean,
     certificateArn: string,
+    sslPolicy: elbv2.SslPolicy,
     loadBalancerLoggingPrefix: string | undefined,
     wafIpSetArn: string | undefined,
     wafLogGroupName: string | undefined,
@@ -1037,7 +1048,7 @@ export class BackEnd extends Construct {
     loadBalancer.addListener(`${namePrefix}HttpsListener`, {
       port: 443,
       certificates: [{ certificateArn }],
-      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+      sslPolicy,
       defaultAction: elbv2.ListenerAction.forward([targetGroup]),
       mutualAuthentication,
     });

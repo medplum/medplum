@@ -157,6 +157,128 @@ describe('useEncounterChart', () => {
     });
   });
 
+  test('creates a clinical impression when the encounter has none', async () => {
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+    const createSpy = vi.spyOn(medplum, 'createResourceIfNoneExist');
+
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.clinicalImpression?.id).toBeDefined();
+    });
+
+    expect(createSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'ClinicalImpression',
+        status: 'in-progress',
+        subject: { reference: 'Patient/patient-123' },
+        encounter: { reference: 'Encounter/encounter-123' },
+      }),
+      'encounter=Encounter/encounter-123'
+    );
+    expect(result.current.clinicalImpression?.status).toBe('in-progress');
+  });
+
+  test('does not create a clinical impression when the encounter has no subject', async () => {
+    const encounterWithoutSubject: WithId<Encounter> = {
+      ...mockEncounter,
+      id: 'encounter-no-subject',
+      subject: undefined,
+    };
+    await medplum.createResource(encounterWithoutSubject);
+    await medplum.createResource(mockPractitioner);
+    const searchSpy = vi.spyOn(medplum, 'searchResources');
+    const createSpy = vi.spyOn(medplum, 'createResourceIfNoneExist');
+
+    const { result } = renderHook(() => useEncounterChart(encounterWithoutSubject), { wrapper });
+
+    await waitFor(() => {
+      expect(searchSpy).toHaveBeenCalledWith(
+        'ClinicalImpression',
+        'encounter=Encounter/encounter-no-subject',
+        expect.any(Object)
+      );
+    });
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(result.current.clinicalImpression).toBeUndefined();
+  });
+
+  test('ignores results that resolve after the hook unmounts', async () => {
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+
+    const resolveSearches: ((value: never[]) => void)[] = [];
+    vi.spyOn(medplum, 'searchResources').mockImplementation(
+      () =>
+        new Promise<never[]>((resolve) => {
+          resolveSearches.push(resolve);
+        }) as any
+    );
+    const createSpy = vi.spyOn(medplum, 'createResourceIfNoneExist');
+
+    const { result, unmount } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
+
+    await waitFor(() => {
+      expect(medplum.searchResources).toHaveBeenCalledWith(
+        'ClinicalImpression',
+        expect.any(String),
+        expect.any(Object)
+      );
+    });
+
+    unmount();
+    await act(async () => {
+      resolveSearches.forEach((resolve) => resolve([]));
+    });
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(result.current.tasks).toEqual([]);
+    expect(result.current.clinicalImpression).toBeUndefined();
+  });
+
+  test('ignores a clinical impression created after the hook unmounts', async () => {
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+
+    let resolveCreate: (value: ClinicalImpression) => void = () => undefined;
+    const createSpy = vi.spyOn(medplum, 'createResourceIfNoneExist').mockImplementation(
+      () =>
+        new Promise<ClinicalImpression>((resolve) => {
+          resolveCreate = resolve;
+        }) as any
+    );
+
+    const { result, unmount } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
+
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalled();
+    });
+
+    unmount();
+    await act(async () => {
+      resolveCreate({ ...mockClinicalImpression, id: 'late-impression' });
+    });
+
+    expect(result.current.clinicalImpression).toBeUndefined();
+  });
+
+  test('does not create a clinical impression when one already exists', async () => {
+    await medplum.createResource(mockEncounter);
+    await medplum.createResource(mockPractitioner);
+    await medplum.createResource(mockClinicalImpression);
+    const createSpy = vi.spyOn(medplum, 'createResourceIfNoneExist');
+
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.clinicalImpression?.id).toBe('clinical-impression-123');
+    });
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
   test('fetches practitioner from encounter participant', async () => {
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockPractitioner);

@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { WithId } from '@medplum/core';
-import { createReference, isGone, normalizeOperationOutcome } from '@medplum/core';
+import { createReference, isGone, isNotFound, normalizeOperationOutcome } from '@medplum/core';
 import type { Binary, DicomInstance } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
+import { getRepoForProject } from '../fhir/accesspolicy';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
+import type { ProjectJobTarget } from './base';
+import { getJobSystemRepo, getProjectJobTarget } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { defaultQueueOptions, getWorkerBullmqConfig, queueRegistry, trackJobMetrics } from './utils';
 
@@ -27,6 +28,7 @@ const { DicomMetadataListener } = utilities;
  */
 
 export interface DicomJobData {
+  readonly target: ProjectJobTarget;
   readonly id: string;
   readonly requestId?: string;
   readonly traceId?: string;
@@ -81,9 +83,14 @@ export function getDicomQueue(): Queue<DicomJobData> | undefined {
  * @param previousVersion - The previous version of the resource, if available
  */
 export async function addDicomJobs(resource: WithId<DicomInstance>, previousVersion: DicomInstance): Promise<void> {
+  if (!resource.meta?.project) {
+    return;
+  }
+
   if (resource.raw?.reference !== previousVersion?.raw?.reference) {
     const ctx = tryGetRequestContext();
     await addDicomJobData({
+      target: getProjectJobTarget(resource),
       id: resource.id,
       requestId: ctx?.requestId,
       traceId: ctx?.traceId,
@@ -107,7 +114,7 @@ async function addDicomJobData(job: DicomJobData): Promise<void> {
  * @param job - The DICOM processor job details.
  */
 export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
+  const systemRepo = await getJobSystemRepo(job.data.target);
   const log = getLogger();
   const { id } = job.data;
 
@@ -123,8 +130,25 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
     throw err;
   }
 
+  const projectId = resource.meta?.project;
+  if (!projectId) {
+    log.info('DICOM instance has no project', { id });
+    return;
+  }
+
   try {
-    const binary = await systemRepo.readReference(resource.raw);
+    // Read the raw file with the instance's project access, because the reference is user-supplied
+    using projectRepo = await getRepoForProject(projectId);
+    let binary: WithId<Binary>;
+    try {
+      binary = await projectRepo.readReference(resource.raw);
+    } catch (err) {
+      if (isNotFound(normalizeOperationOutcome(err))) {
+        log.info('DICOM instance raw Binary not found', { id });
+        return;
+      }
+      throw err;
+    }
     const stream = await getBinaryStorage().readBinary(binary);
     const listener = new DicomMetadataListener();
     listener.startObject({});

@@ -31,6 +31,7 @@ export async function initApp(): Promise<void> {
   });
 
   const theme = createTheme({
+    activeClassName: '',
     headings: {
       sizes: {
         h1: {

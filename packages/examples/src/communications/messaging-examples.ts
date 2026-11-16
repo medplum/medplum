@@ -7,7 +7,7 @@
 // start-block imports
 import type { BotEvent } from '@medplum/core';
 import { ContentType, formatHumanName, getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
-import type { Appointment, Bundle, Communication, Patient } from '@medplum/fhirtypes';
+import type { Communication, Patient } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -99,8 +99,8 @@ const threadWithReadState = {
 };
 // end-block threadHeaderWithReadExtensionTs
 // Satisfy TS6133 (unused variable); value only used for doc block extraction
-// eslint-disable-next-line no-void
-void threadWithReadState;
+
+console.log(threadWithReadState);
 
 // start-block updateThreadReadStateTs
 // Option B: Find this participant's read-state block by URL, update lastRead and lastReadAt, then PUT
@@ -152,8 +152,8 @@ const readReceiptTask = await medplum.createResource({
 });
 // end-block createReadReceiptTaskTs
 // Satisfy TS6133 (unused variable); value only used for doc block extraction
-// eslint-disable-next-line no-void
-void readReceiptTask;
+
+console.log(readReceiptTask);
 
 // start-block markReadReceiptTaskTs
 // Option C: Mark read-receipt Task completed when user reads the message
@@ -415,10 +415,10 @@ const walkthroughFirstMessage = await medplum.createResource({
   sent: '2024-04-10T10:00:00.000Z',
 });
 // end-block createYourFirstThreadHeaderAndFirstMessageTs
-// eslint-disable-next-line no-void
-void createdThreadHeader;
-// eslint-disable-next-line no-void
-void walkthroughFirstMessage;
+
+console.log(createdThreadHeader);
+
+console.log(walkthroughFirstMessage);
 
 // start-block createYourFirstThreadReplyFromAnotherUserTs
 // In production this createResource call would run as another user (e.g. patient portal) with their own MedplumClient session.
@@ -440,8 +440,8 @@ const walkthroughSecondMessage = await medplum.createResource({
   sent: '2024-04-10T10:05:00.000Z',
 });
 // end-block createYourFirstThreadReplyFromAnotherUserTs
-// eslint-disable-next-line no-void
-void walkthroughSecondMessage;
+
+console.log(walkthroughSecondMessage);
 
 // start-block createYourFirstThreadReplyInResponseToTs
 // Use when the user explicitly replies to one message (not required for linear chat).
@@ -457,8 +457,8 @@ const walkthroughReplyInResponseTo = await medplum.createResource({
   inResponseTo: [{ reference: `Communication/${walkthroughSecondMessage.id}` }],
 });
 // end-block createYourFirstThreadReplyInResponseToTs
-// eslint-disable-next-line no-void
-void walkthroughReplyInResponseTo;
+
+console.log(walkthroughReplyInResponseTo);
 
 // start-block filterByPatientTs
 // Filter threads to a specific patient
@@ -513,27 +513,6 @@ emitter.addEventListener('message', (event) => {
 });
 // end-block subscribeThreadMessagesTs
 
-// start-block poolTasksTs
-// Task-based routing: find unclaimed Tasks in a pool by performer role
-await medplum.search('Task', {
-  performer: 'http://snomed.info/sct|17561000',
-  'owner:missing': true,
-  _include: 'Task:focus',
-});
-// end-block poolTasksTs
-
-/*
-// start-block poolTasksCli
-medplum get 'Task?performer=http://snomed.info/sct|17561000&owner:missing=true&_include=Task:focus'
-// end-block poolTasksCli
-
-// start-block poolTasksCurl
-curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2Fsct%7C17561000&owner:missing=true&_include=Task:focus' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block poolTasksCurl
-*/
-
 // start-block messageWithTextAndAttachment
 const attachment = await medplum.createAttachment({
   data: file,
@@ -555,259 +534,6 @@ const mixedMessage = await medplum.createResource({
 // end-block messageWithTextAndAttachment
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
 [mixedMessage];
-// start-block createTaskForThreadTs
-const task = await medplum.createResource({
-  resourceType: 'Task',
-  status: 'requested',
-  intent: 'order',
-  priority: 'routine',
-  focus: { reference: `Communication/${threadHeader.id}` },
-  for: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
-  performerType: [
-    {
-      coding: [
-        {
-          system: 'http://snomed.info/sct',
-          code: '224535009',
-          display: 'Registered nurse',
-        },
-      ],
-    },
-  ],
-  requester: { reference: 'Practitioner/doctor-alice-smith' },
-  authoredOn: new Date().toISOString(),
-});
-// end-block createTaskForThreadTs
-
-// start-block claimTaskTs
-await medplum.patchResource('Task', task.id, [
-  { op: 'replace', path: '/status', value: 'accepted' },
-  {
-    op: 'replace',
-    path: '/owner',
-    value: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
-  },
-]);
-// end-block claimTaskTs
-
-// start-block queryUnclaimedTasksTs
-await medplum.search('Task', {
-  performer: 'http://snomed.info/sct|224535009',
-  status: 'requested',
-});
-// end-block queryUnclaimedTasksTs
-
-/*
-// start-block queryUnclaimedTasksCli
-medplum get 'Task?performer=http://snomed.info/sct|224535009&status=requested'
-// end-block queryUnclaimedTasksCli
-
-// start-block queryUnclaimedTasksCurl
-curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2Fsct%7C224535009&status=requested' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block queryUnclaimedTasksCurl
-*/
-
-// start-block rerouteToProviderTs
-await medplum.patchResource('Task', task.id, [
-  {
-    op: 'replace',
-    path: '/owner',
-    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
-  },
-  {
-    op: 'remove',
-    path: '/performerType',
-  },
-]);
-
-await medplum.patchResource('Communication', threadHeader.id, [
-  { op: 'replace', path: '/recipient', value: [{ reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' }] },
-]);
-// end-block rerouteToProviderTs
-
-// start-block rerouteToPoolTs
-await medplum.patchResource('Task', task.id, [
-  { op: 'remove', path: '/owner' },
-  { op: 'replace', path: '/status', value: 'requested' },
-  {
-    op: 'add',
-    path: '/performerType',
-    value: [
-      {
-        coding: [
-          {
-            system: 'http://snomed.info/sct',
-            code: '17561000',
-            display: 'Cardiologist',
-          },
-        ],
-      },
-    ],
-  },
-]);
-
-await medplum.patchResource('Communication', threadHeader.id, [{ op: 'remove', path: '/recipient' }]);
-// end-block rerouteToPoolTs
-
-// start-block rerouteWithNoteTs
-await medplum.patchResource('Task', task.id, [
-  {
-    op: 'replace',
-    path: '/owner',
-    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
-  },
-  {
-    op: 'add',
-    path: '/note/-',
-    value: {
-      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
-      time: new Date().toISOString(),
-      text: 'Rerouting to cardiology — patient has new cardiac symptoms',
-    },
-  },
-]);
-// end-block rerouteWithNoteTs
-
-// start-block rerouteProvenanceTs
-await medplum.createResource({
-  resourceType: 'Provenance',
-  target: [{ reference: `Task/${task.id}` }],
-  recorded: new Date().toISOString(),
-  agent: [
-    {
-      who: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
-    },
-  ],
-  reason: [
-    {
-      coding: [
-        {
-          system: 'https://medplum.com/CodeSystem/reroute-reason',
-          code: 'specialty-referral',
-          display: 'Specialty referral',
-        },
-      ],
-    },
-  ],
-});
-// end-block rerouteProvenanceTs
-
-// start-block simpleRerouteTs
-await medplum.patchResource('Task', task.id, [
-  { op: 'replace', path: '/owner', value: { reference: 'Practitioner/dr-cardio' } },
-]);
-// end-block simpleRerouteTs
-
-// start-block dualTaskRerouteTs
-const newTask = await medplum.createResource({
-  resourceType: 'Task',
-  status: 'requested',
-  intent: 'order',
-  priority: task.priority,
-  focus: task.focus,
-  for: task.for,
-  owner: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
-  requester: { reference: 'Practitioner/doctor-gregory-house' },
-  authoredOn: new Date().toISOString(),
-  note: [
-    {
-      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
-      time: new Date().toISOString(),
-      text: 'Rerouted from original Task — needs cardiology review',
-    },
-  ],
-});
-
-await medplum.patchResource('Task', task.id, [
-  { op: 'replace', path: '/status', value: 'cancelled' },
-  {
-    op: 'add',
-    path: '/note/-',
-    value: {
-      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
-      time: new Date().toISOString(),
-      text: 'Rerouted to Dr. Cardio — see new Task',
-    },
-  },
-]);
-// end-block dualTaskRerouteTs
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
-[newTask];
-
-// start-block oooRerouteTs
-// Bot: reroute Tasks to the pool when the assigned provider is out of office.
-// Uses Appointment $find to check availability at message receive time.
-export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
-  const message = event.input;
-  const threadRef = message.partOf?.[0]?.reference;
-  if (!threadRef) {
-    return;
-  }
-
-  const openTasks = await medplum.searchResources('Task', {
-    focus: threadRef,
-    status: 'requested,accepted',
-  });
-
-  if (openTasks.length === 0) {
-    return;
-  }
-
-  const rerouteTask = openTasks[0];
-  if (!rerouteTask.id) {
-    return;
-  }
-  const ownerRef = rerouteTask.owner?.reference;
-  if (!ownerRef) {
-    return;
-  }
-
-  const schedules = await medplum.searchResources('Schedule', {
-    actor: ownerRef,
-  });
-
-  if (schedules.length === 0) {
-    return;
-  }
-
-  const schedule = schedules[0];
-  if (!schedule.id) {
-    return;
-  }
-
-  const now = new Date();
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-  const params = new URLSearchParams({
-    start: now.toISOString(),
-    end: oneHourLater.toISOString(),
-    schedule: `Schedule/${schedule.id}`,
-  });
-  const bundle: Bundle<Appointment> = await medplum.get(medplum.fhirUrl('Appointment', `$find?${params}`));
-
-  if (bundle.entry && bundle.entry.length > 0) {
-    return;
-  }
-
-  // Provider is unavailable — reroute Task back to the pool
-  const threadHeaderId = threadRef.split('/')[1];
-  await medplum.patchResource('Task', rerouteTask.id, [
-    { op: 'remove', path: '/owner' },
-    { op: 'replace', path: '/status', value: 'requested' },
-    {
-      op: 'add',
-      path: '/note/-',
-      value: {
-        text: `Auto-rerouted: ${rerouteTask.owner?.display ?? ownerRef} is currently unavailable`,
-        time: now.toISOString(),
-      },
-    },
-  ]);
-  await medplum.patchResource('Communication', threadHeaderId, [{ op: 'remove', path: '/recipient' }]);
-}
-// end-block oooRerouteTs
-
 // start-block subscriptionOooRerouteTs
 await medplum.createResource({
   resourceType: 'Subscription',

@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { getResourceTypes } from '@medplum/core';
-import type { AsyncJob } from '@medplum/fhirtypes';
 import type { ReindexPostDeployMigration } from '../../workers/reindex';
 import { prepareReindexJobData, ReindexJob } from '../../workers/reindex';
 
@@ -12,7 +10,7 @@ const maxResourceVersion = 5;
 
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
-  prepareJobData(asyncJob: WithId<AsyncJob>) {
+  prepareJobData(ctx) {
     const resourceTypes = getResourceTypes().filter((rt) => rt !== 'Binary');
 
     // move typically larger resource types to be handled last to
@@ -22,10 +20,10 @@ export const migration: ReindexPostDeployMigration = {
     moveValueToEnd(resourceTypes, 'AuditEvent');
     moveValueToEnd(resourceTypes, 'Observation');
 
-    return prepareReindexJobData(resourceTypes, asyncJob.id, { maxResourceVersion });
+    return prepareReindexJobData(ctx, resourceTypes, { maxResourceVersion });
   },
-  run: async (repo, job, jobData) => {
-    return new ReindexJob(repo).execute(job, jobData);
+  run: async (_repo, job, jobData) => {
+    return (await ReindexJob.create(jobData)).execute(job);
   },
 };
 

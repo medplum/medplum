@@ -222,6 +222,19 @@ describe('Reference checks', () => {
       // User reference should validate
       membership = await repo.updateResource({ ...membership, invitedBy: createReference(user) });
       expect(membership.invitedBy?.reference).toStrictEqual(getReferenceString(user));
+
+      // Only validated for super admins
+      const missing = { reference: 'User/' + randomUUID() };
+      membership = await repo.updateResource({ ...membership, invitedBy: missing });
+      expect(membership.invitedBy).toStrictEqual(missing);
+
+      const superAdminRepo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: { ...project, superAdmin: true },
+        userConfig: {} as UserConfiguration,
+      });
+      await expect(superAdminRepo.updateResource(membership)).rejects.toThrow('Invalid reference (Not found)');
     }));
 
   test('Check references with non-literal reference', () =>

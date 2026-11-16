@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { Project } from '@medplum/fhirtypes';
+import type { Project, UserSecurityRequest } from '@medplum/fhirtypes';
 
 /**
  * The hardcoded ID for the base FHIR R4 Project.
@@ -35,6 +35,35 @@ export const WEBSOCKET_SUB_PUBLISH_CHANNEL = 'medplum:subscriptions:r4:websocket
  * How long a single-use email MFA code remains valid before it expires, in milliseconds.
  */
 export const EMAIL_MFA_CODE_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes
+
+/** How long a login can confirm the authenticator (TOTP) secret offered to it for enrollment. */
+export const TOTP_ENROLLMENT_EXPIRATION_MS = 20 * 60 * 1000; // 20 minutes
+
+/** Maximum age and failed-attempt window for a password login awaiting MFA. */
+export const MFA_LOGIN_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Maximum age of an authorization code, measured from the Login's last update, before the
+ * authorization_code grant rejects it. RFC 6749 section 4.1.2 recommends at most ten minutes.
+ */
+export const AUTH_CODE_EXPIRATION_MS = 10 * 60 * 1000; // 10 minutes
+
+/** Maximum MFA attempts accepted for one login and one user during the MFA window. */
+export const MFA_LOGIN_ATTEMPT_LIMIT = 5;
+export const MFA_USER_ATTEMPT_LIMIT = 20;
+
+/**
+ * How long a UserSecurityRequest remains valid before it expires, in milliseconds, by request type.
+ *
+ * Password reset links get a short window because they hand over control of the account.
+ * Invite and email verification links are mailed to people who may not act on them right away,
+ * so they get a longer one.
+ */
+export const USER_SECURITY_REQUEST_EXPIRATION_MS: Record<NonNullable<UserSecurityRequest['type']>, number> = {
+  reset: 60 * 60 * 1000, // 1 hour
+  invite: 7 * 24 * 60 * 60 * 1000, // 7 days
+  'verify-email': 7 * 24 * 60 * 60 * 1000, // 7 days
+};
 
 /**
  * Minimum accepted password length, in bytes.

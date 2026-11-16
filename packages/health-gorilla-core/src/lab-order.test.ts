@@ -17,6 +17,7 @@ import {
   HEALTH_GORILLA_SYSTEM,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
 import type { PartialLabOrderInputs } from './lab-order';
@@ -257,6 +258,44 @@ describe('createLabOrderBundle', () => {
     expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
+    ]);
+  });
+
+  test<TestContext>('Specify Physician Account Number', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+    const selectedTests: TestCoding[] = [];
+    const testMetadata: Record<string, LabOrderTestMetadata> = {};
+    for (const code of TEST_CODES) {
+      selectedTests.push({ code });
+      testMetadata[code] = {};
+    }
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      performingLab,
+      performingLabAccountNumber: '123456',
+      performingLabPhysicianAccountNumber: '654321',
+      selectedTests,
+      testMetadata,
+      diagnoses: [],
+      billingInformation: {
+        billTo: 'customer-account',
+      },
+    });
+    const txnResponse = await medplum.executeBatch(bundle);
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+    expect(orderServiceRequest.extension).toStrictEqual([
+      { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
+      { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
+      { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN, valueString: '654321' },
     ]);
   });
 

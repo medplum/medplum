@@ -15,6 +15,9 @@ import { getCacheRedis } from '../../redis';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
+import { normalizeShardId, PLACEHOLDER_SHARD_ID } from '../sharding';
+
+const shardId = normalizeShardId(PLACEHOLDER_SHARD_ID);
 
 const app = express();
 let practitioner: Practitioner;
@@ -44,6 +47,7 @@ describe('GraphQL', () => {
       practitioner = aliceRegistration.profile as Practitioner;
 
       const aliceRepo = new Repository({
+        routing: { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
         author: createReference(aliceRegistration.profile),
         projects: [aliceRegistration.project],
       });
@@ -1141,8 +1145,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1155,8 +1159,8 @@ describe('GraphQL', () => {
   });
 
   test('GraphQL in batch users writer', async () => {
-    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+    const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
     const batch: Bundle = {
       resourceType: 'Bundle',

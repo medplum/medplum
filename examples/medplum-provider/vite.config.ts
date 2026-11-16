@@ -17,6 +17,7 @@ if (!existsSync(path.join(import.meta.dirname, '.env'))) {
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
     '@medplum/core': path.resolve(import.meta.dirname, '../../packages/core/src'),
+    '@medplum/dosespot-core': path.resolve(import.meta.dirname, '../../packages/dosespot-core/src'),
     '@medplum/dosespot-react': path.resolve(import.meta.dirname, '../../packages/dosespot-react/src'),
     '@medplum/scriptsure-react': path.resolve(import.meta.dirname, '../../packages/scriptsure-react/src'),
     '@medplum/react': path.resolve(import.meta.dirname, '../../packages/react/src'),
@@ -31,6 +32,9 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
 export default defineConfig({
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
   plugins: [react()],
+  build: {
+    cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari17.5', 'ios17.5'], // Native `light-dark()` support
+  },
   server: {
     host: 'localhost',
     port: 3001,
@@ -43,6 +47,7 @@ export default defineConfig({
     alias,
   },
   test: {
+    maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test.setup.ts',

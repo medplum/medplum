@@ -26,6 +26,7 @@ describe('FHIR Repo', () => {
 
     ({ project, repo } = await createTestProject({
       withRepo: true,
+      membership: { admin: true },
       project: {
         setting: [{ name: 'preCommitSubscriptionsEnabled', valueBoolean: true }],
       },

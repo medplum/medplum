@@ -24,6 +24,7 @@ import type {
 import type { IncomingHttpHeaders } from 'node:http';
 import type { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import type { FhirRepository } from './repo';
+import { RepositoryMode } from './repo';
 import type { HttpMethod, RouteResult } from './urlrouter';
 
 const maxUpdates = 50;
@@ -41,6 +42,8 @@ export interface BundlePreprocessInfo {
   requiresStrongTransaction: boolean;
   updates: number;
   resourceTypes: Set<ResourceType>;
+  /** True if every entry is a read, search, or history interaction. */
+  readOnly: boolean;
 }
 
 /**
@@ -65,12 +68,26 @@ export interface BatchInitialState {
   bundleInfo: BundlePreprocessInfo;
   resolvedIdentities: Record<string, string>;
   /**
+   * The resource IDs assigned during preprocessing, keyed by their entry index in the original bundle.
+   */
+  assignedIds: Record<number, string>;
+  /**
    * Result entries produced during preprocessing itself (i.e. error responses for malformed
    * entries in a non-transaction bundle), keyed by their index in the original bundle. These
    * entries are never re-processed, so they are captured here rather than in per-entry progress.
    */
   preprocessResults: Record<number, BundleEntry>;
 }
+
+const readOnlyInteractions = new Set<RestInteraction>([
+  'read',
+  'vread',
+  'search-system',
+  'search-type',
+  'history-system',
+  'history-type',
+  'history-instance',
+]);
 
 /**
  * Processes a FHIR batch request.
@@ -125,6 +142,7 @@ export class BatchProcessor {
   private readonly bundle: Bundle;
   private readonly req: FhirRequest;
   private resolvedIdentities: Record<string, string>;
+  private assignedIds: Record<number, string>;
   private bundleInfo: BundlePreprocessInfo | undefined;
 
   /** The state mutated through processing (and preprocessing) */
@@ -143,6 +161,7 @@ export class BatchProcessor {
     this.bundle = bundle;
     this.req = req;
     this.resolvedIdentities = Object.create(null);
+    this.assignedIds = Object.create(null);
     this.state = {
       position: 0,
       resultEntries: new Array(bundle.entry?.length ?? 0),
@@ -173,6 +192,7 @@ export class BatchProcessor {
   ): BatchProcessor {
     const processor = new BatchProcessor(router, repo, initialState.bundle, req);
     processor.resolvedIdentities = initialState.resolvedIdentities;
+    processor.assignedIds = initialState.assignedIds;
     processor.bundleInfo = {
       ...initialState.bundleInfo,
     };
@@ -185,11 +205,17 @@ export class BatchProcessor {
    * @returns The bundle response.
    */
   async run(): Promise<Bundle> {
+    // preprocess() dispatches the pre-event, so it is not repeated per transaction attempt below.
     await this.preprocess();
     const bundleInfo = this.bundleInfo as BundlePreprocessInfo;
 
     if (!this.isTransaction()) {
-      return this.processEntriesAndBuild();
+      if (this.bundle.type === 'batch' && bundleInfo.readOnly && this.req.config?.readonlyBatchOnReader) {
+        this.repo.setMode(RepositoryMode.READER);
+      }
+      const result = await this.processEntriesAndBuild();
+      this.dispatchPostEvent();
+      return result;
     }
 
     // withTransaction re-runs this callback on a retryable failure (e.g. a serialization conflict,
@@ -201,7 +227,7 @@ export class BatchProcessor {
     // Preprocessing (ID assignment, conditional-URL rewriting) is intentionally NOT redone, so
     // reprocessed entries reuse the same resource IDs and remain idempotent across attempts.
     const preTransactionState = cloneState(this.state);
-    return this.repo.withTransaction(
+    const result = await this.repo.withTransaction(
       (txRepo) =>
         this.withRepo(txRepo, () => {
           this.state = cloneState(preTransactionState);
@@ -212,6 +238,8 @@ export class BatchProcessor {
         resourceTypes: bundleInfo.resourceTypes,
       }
     );
+    this.dispatchPostEvent();
+    return result;
   }
 
   /**
@@ -221,6 +249,11 @@ export class BatchProcessor {
    * For the re-entrant flow, the returned {@link BatchInitialState} should be persisted to
    * durable storage before processing entries so that the processor can be rehydrated via
    * {@link BatchProcessor.fromState} after a restart.
+   *
+   * Dispatches the pre-batch telemetry event once the bundle is known to be well formed. This is
+   * the one step both flows perform exactly once — a transaction retry reuses the existing
+   * preprocessing, and a resumed async job enters through {@link BatchProcessor.fromState} — so
+   * the event describes the bundle once however it is processed.
    * @returns The durable initial state for the batch.
    */
   async preprocess(): Promise<BatchInitialState> {
@@ -243,6 +276,8 @@ export class BatchProcessor {
       }
     }
 
+    this.dispatchPreEvent();
+
     // Capture any result entries produced during preprocessing itself (error responses for
     // malformed entries). These are never re-processed, so they belong in the initial state.
     const preprocessResults: Record<number, BundleEntry> = Object.create(null);
@@ -260,8 +295,10 @@ export class BatchProcessor {
         resourceTypes: this.bundleInfo.resourceTypes,
         requiresStrongTransaction: this.bundleInfo.requiresStrongTransaction,
         updates: this.bundleInfo.updates,
+        readOnly: this.bundleInfo.readOnly,
       },
       resolvedIdentities: this.resolvedIdentities,
+      assignedIds: this.assignedIds,
       preprocessResults,
     };
   }
@@ -303,12 +340,14 @@ export class BatchProcessor {
     return out;
   }
 
+  /**
+   * Processes remaining entries. Re-run per attempt for transactions, so emit no telemetry.
+   * @returns The response bundle.
+   */
   private async processEntriesAndBuild(): Promise<Bundle> {
-    this.dispatchPreEvent();
     while (this.hasMoreEntries()) {
       await this.processNextEntryImpl();
     }
-    this.dispatchPostEvent();
     return this.buildResultBundle();
   }
 
@@ -322,6 +361,14 @@ export class BatchProcessor {
     this.router.dispatchEvent(preEvent);
   }
 
+  /**
+   * Dispatches the post-batch telemetry event, closing out the pre-event sent by
+   * {@link BatchProcessor.preprocess}.
+   *
+   * Only the one-shot {@link BatchProcessor.run} flow uses this. The re-entrant flow spans multiple
+   * processors, so no single instance knows when the batch is finished or what every run before it
+   * produced; its driver emits the terminal event itself once the job reaches a terminal state.
+   */
   private dispatchPostEvent(): void {
     const postEvent: BatchEvent = {
       type: 'batch',
@@ -394,6 +441,7 @@ export class BatchProcessor {
     const resourceTypes = new Set<ResourceType>();
     let requiresStrongTransaction = false;
     let updates = 0;
+    let readOnly = true;
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
@@ -446,6 +494,7 @@ export class BatchProcessor {
         // Conditional delete requires strong (serializable) transaction
         requiresStrongTransaction = true;
       }
+      readOnly &&= readOnlyInteractions.has(interaction);
       bucketedEntries[interaction].push(i);
     }
 
@@ -458,6 +507,7 @@ export class BatchProcessor {
       requiresStrongTransaction,
       updates,
       resourceTypes,
+      readOnly,
     };
   }
 
@@ -481,7 +531,7 @@ export class BatchProcessor {
 
     let resolved: { placeholder: string; reference: string } | undefined;
     try {
-      resolved = await this.resolveIdentity(entry, `Bundle.entry[${index}]`);
+      resolved = await this.resolveIdentity(entry, index);
     } catch (err: any) {
       if (err instanceof OperationOutcomeError) {
         return err.outcome;
@@ -504,7 +554,7 @@ export class BatchProcessor {
     return undefined;
   }
 
-  private async resolveIdentity(entry: BundleEntry, path: string): Promise<BundleEntryIdentity | undefined> {
+  private async resolveIdentity(entry: BundleEntry, index: number): Promise<BundleEntryIdentity | undefined> {
     const route = this.getRouteForEntry(entry);
     const interaction = route?.data?.interaction;
     if (!interaction) {
@@ -514,11 +564,11 @@ export class BatchProcessor {
     switch (interaction) {
       case 'create':
         // Ensure that resources to be created have an ID assigned
-        return this.resolveCreateIdentity(entry);
+        return this.resolveCreateIdentity(entry, index);
       case 'delete':
       case 'update':
       case 'patch':
-        return this.resolveModificationIdentity(entry, path);
+        return this.resolveModificationIdentity(entry, index);
       default:
         // Ignore read-only and complex operations
         return undefined;
@@ -529,8 +579,11 @@ export class BatchProcessor {
     return this.router.find(entry.request?.method as HttpMethod, entry.request?.url ?? '');
   }
 
-  private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
+  private async resolveCreateIdentity(entry: BundleEntry, index: number): Promise<BundleEntryIdentity | undefined> {
     const placeholder = entry.fullUrl ?? '';
+    if (entry.resource) {
+      this.assignId(entry.resource, index);
+    }
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
@@ -540,16 +593,21 @@ export class BatchProcessor {
       }
     }
     if (entry.resource) {
-      entry.resource.id = this.repo.generateId();
       return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
     }
     return undefined;
   }
 
+  private assignId(resource: Resource, index: number): void {
+    resource.id = this.repo.generateId();
+    this.assignedIds[index] = resource.id;
+  }
+
   private async resolveModificationIdentity(
     entry: BundleEntry,
-    path: string
+    index: number
   ): Promise<BundleEntryIdentity | undefined> {
+    const path = `Bundle.entry[${index}]`;
     const placeholder = entry.fullUrl ?? '';
     if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
@@ -573,7 +631,7 @@ export class BatchProcessor {
                 throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
               }
 
-              entry.resource.id = this.repo.generateId();
+              this.assignId(entry.resource, index);
               return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
             }
             return undefined;
@@ -650,7 +708,7 @@ export class BatchProcessor {
     const entry = entries[entryIndex];
     const rewritten = this.rewriteIdsInObject(entry);
     try {
-      this.setResult(entryIndex, await this.processBatchEntry(rewritten));
+      this.setResult(entryIndex, await this.processBatchEntry(rewritten, entryIndex));
       this.state.position = n + 1;
     } catch (err: any) {
       if (this.isTransaction()) {
@@ -680,16 +738,19 @@ export class BatchProcessor {
   /**
    * Processes a single entry from a FHIR batch request.
    * @param entry - The bundle entry.
+   * @param entryIndex - The index of the entry in the original bundle.
    * @returns The bundle entry response.
    */
-  private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
+  private async processBatchEntry(entry: BundleEntry, entryIndex: number): Promise<BundleEntry> {
     const route = this.getRouteForEntry(entry);
     if (!route) {
       throw new OperationOutcomeError(notFound);
     }
 
     const request = this.parseBatchRequest(entry, route);
-    const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
+    // Creates use the ID assigned to this entry during preprocessing
+    const assignedId = entry.resource?.id !== undefined && entry.resource.id === this.assignedIds[entryIndex];
+    const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true, assignedId });
 
     if (!isOk(outcome) && this.isTransaction()) {
       throw new OperationOutcomeError(outcome);
@@ -906,7 +967,14 @@ export function buildBatchResponseBundle(
 export interface BatchEvent extends Event {
   bundleType: Bundle['type'];
   count?: number;
+  /** Error messages from the entries processed by this processor. */
   errors?: string[];
+  /**
+   * Total failed entries, when that is known more accurately than `errors`. A re-entrant (async)
+   * batch resumed after a restart only holds the errors from its own run, so its caller supplies
+   * the count from the fully assembled response bundle instead.
+   */
+  errorCount?: number;
   size?: number;
 }
 

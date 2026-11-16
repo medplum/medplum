@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { CPT_COPYRIGHT_NOTICE } from '../../config/constants';
+import { render } from '../../test-utils/render';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { ChargeItemList } from './ChargeItemList';
 
@@ -69,15 +70,13 @@ describe('ChargeItemList', () => {
   const setup = (props: Partial<Parameters<typeof ChargeItemList>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ChargeItemList
-            patient={mockPatient}
-            encounter={mockEncounter}
-            chargeItems={[]}
-            updateChargeItems={vi.fn()}
-            {...props}
-          />
-        </MantineProvider>
+        <ChargeItemList
+          patient={mockPatient}
+          encounter={mockEncounter}
+          chargeItems={[]}
+          updateChargeItems={vi.fn()}
+          {...props}
+        />
       </MedplumProvider>
     );
   };
@@ -94,6 +93,19 @@ describe('ChargeItemList', () => {
     expect(screen.getByText('Charge Items')).toBeInTheDocument();
     expect(screen.getByText('CPT Code')).toBeInTheDocument();
     expect(screen.getByDisplayValue('$100.00')).toBeInTheDocument();
+  });
+
+  test('renders the AMA CPT copyright notice once, under the Charge Items heading', () => {
+    const item2 = { ...mockChargeItem, id: 'charge-456' };
+    setup({ chargeItems: [mockChargeItem, item2] });
+
+    expect(screen.getAllByText(CPT_COPYRIGHT_NOTICE)).toHaveLength(1);
+  });
+
+  test('renders the AMA CPT copyright notice even when there are no charge items', () => {
+    setup({ chargeItems: [] });
+
+    expect(screen.getByText(CPT_COPYRIGHT_NOTICE)).toBeInTheDocument();
   });
 
   test('calculates total price', () => {
@@ -142,6 +154,8 @@ describe('ChargeItemList', () => {
     expect(screen.getByText('Add Charge Item', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
 
     expect(screen.getByText('CPT Code')).toBeInTheDocument();
+    // Scoped to the dialog: the list behind it renders the same notice.
+    expect(within(screen.getByRole('dialog')).getByText(CPT_COPYRIGHT_NOTICE)).toBeInTheDocument();
     expect(screen.getByText('Charge Item Definition')).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
@@ -295,48 +309,28 @@ describe('ChargeItemList', () => {
       fireEvent.keyDown(definitionInput, { key: 'Enter', code: 'Enter' });
     });
 
-    // Wait for definition to be selected and button to be enabled
-    await waitFor(
-      () => {
-        const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
-        const submitButton = addButtons.find((btn) => {
-          const htmlBtn = btn as HTMLButtonElement;
-          return htmlBtn.type === 'button' && !htmlBtn.disabled;
-        });
-        return submitButton !== undefined;
-      },
-      { timeout: 5000 }
-    );
+    // Wait for the definition to be selected and the modal's submit button to be enabled
+    const submitButton = within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Charge Item' });
+    await waitFor(() => expect(submitButton).toBeEnabled(), { timeout: 5000 });
+    await user.click(submitButton);
 
-    // Submit the form
-    const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
-    const submitButton = addButtons.find((btn) => {
-      const htmlBtn = btn as HTMLButtonElement;
-      return htmlBtn.type === 'button' && !htmlBtn.disabled;
+    // Verify charge item was created
+    await waitFor(() => {
+      expect(medplum.createResource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'ChargeItem',
+          status: 'planned',
+          code: mockCptCode,
+          definitionCanonical: ['http://example.com/charge-item-def'],
+        })
+      );
+      expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
+      expect(updateChargeItems).toHaveBeenCalledWith([appliedChargeItem]);
     });
 
-    expect(submitButton).toBeDefined();
-    if (submitButton) {
-      await user.click(submitButton);
-
-      // Verify charge item was created
-      await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalledWith(
-          expect.objectContaining({
-            resourceType: 'ChargeItem',
-            status: 'planned',
-            code: mockCptCode,
-            definitionCanonical: ['http://example.com/charge-item-def'],
-          })
-        );
-        expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
-        expect(updateChargeItems).toHaveBeenCalledWith([appliedChargeItem]);
-      });
-
-      // Verify modal closed
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      });
-    }
+    // Verify modal closed
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 });

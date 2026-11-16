@@ -134,7 +134,7 @@ export async function conceptMapImportHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('ConceptMap to import into must be specified', `Parameters.parameter.where(name = 'url')`)];
   }
 
-  if (!repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, conceptMap)) {
+  if (!(await repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'ConceptMap', conceptMap.id))) {
     return [forbidden];
   }
 

@@ -1,11 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValueWithPath, ValidatorOptions } from '@medplum/core';
-import { getReferenceString, OperationOutcomeError, Operator, validateResource } from '@medplum/core';
+import {
+  badRequest,
+  getReferenceString,
+  isResource,
+  isValidCronString,
+  OperationOutcomeError,
+  Operator,
+  validateResource,
+} from '@medplum/core';
 import type {
   CodeableConcept,
   Coding,
+  Cron,
   OperationOutcomeIssue,
+  Reference,
   Resource,
   StructureDefinition,
   ValueSet,
@@ -17,7 +27,6 @@ import { validateResourceWithJsonSchema } from '../jsonschema';
 import { findTerminologyResource } from '../operations/utils/terminology';
 import { validateCodingInValueSet } from '../operations/valuesetvalidatecode';
 import type { Repository } from '../repo';
-import { cacheProfile, getCachedProfile } from './profile-cache';
 
 /**
  * Validates a resource against the current project configuration.
@@ -29,6 +38,11 @@ import { cacheProfile, getCachedProfile } from './profile-cache';
  * @param resource - The candidate resource to validate.
  */
 export async function validateRepositoryResource(repo: Repository, resource: Resource): Promise<void> {
+  if (resource.resourceType === 'Cron') {
+    validateCronString(resource);
+    await validateCronReferences(repo, resource);
+  }
+
   if (repo.getConfig().strictMode) {
     await validateRepositoryResourceStrictly(repo, resource);
   } else {
@@ -43,6 +57,48 @@ export async function validateRepositoryResource(repo: Repository, resource: Res
         resource: getReferenceString(resource),
         err,
       });
+    }
+  }
+}
+
+/**
+ * Rejects a `Cron` whose schedule cannot be parsed.
+ *
+ * The `cron-4` constraint states the same rule, but constraints only warn outside strict mode.
+ * Checking here means a schedule the worker cannot use fails the write instead of silently never firing.
+ * @param cron - The Cron resource being written.
+ */
+function validateCronString(cron: Cron): void {
+  if (cron.cronString && !isValidCronString(cron.cronString)) {
+    throw new OperationOutcomeError(badRequest(`Invalid cron expression: '${cron.cronString}'`, 'Cron.cronString'));
+  }
+}
+
+/**
+ * Rejects a `Cron` whose target or identity the author cannot read.
+ *
+ * Resolving each reference through the author's own repository is the whole check, which is why no
+ * project comparison appears here: `Bot` may come from a linked project that exports it, while
+ * `ProjectMembership` is a project admin type and so never crosses a link -- keeping the access
+ * policy a run assumes inside the Cron's own project. Rejecting on write means a job that could
+ * only ever fail never reaches the scheduler.
+ * @param repo - The repository writing the Cron, carrying the author's access.
+ * @param cron - The Cron resource being written.
+ */
+async function validateCronReferences(repo: Repository, cron: Cron): Promise<void> {
+  // Cardinality and the cron-1/cron-2 constraints already cover a missing or logical reference.
+  const checks: { reference: Reference; path: string }[] = [
+    { reference: cron.targetReference, path: 'Cron.targetReference' },
+    { reference: cron.onBehalfOf, path: 'Cron.onBehalfOf' },
+  ].filter((check) => check.reference?.reference);
+
+  // readReferences resolves both in one pass, and reports only a reference the author cannot reach
+  // as an Error: any other read failure propagates, rather than being blamed on the Cron.
+  const results = await repo.readReferences(checks.map((check) => check.reference));
+  for (let i = 0; i < results.length; i++) {
+    if (!isResource(results[i])) {
+      const { reference, path } = checks[i];
+      throw new OperationOutcomeError(badRequest(`Cannot resolve '${reference.reference}'`, path));
     }
   }
 }
@@ -176,20 +232,8 @@ async function validateTerminology(
 }
 
 async function loadProfile(repo: Repository, url: string): Promise<StructureDefinition | undefined> {
-  const context = repo.getConfig();
-  // Profile fetching/caching should be pushed to a lower level of Repository; as it is, if `repo` has an
-  // AccessPolicy on StructureDefinition hiding fields (that would be a strange choice, but possible), then caching
-  // it here would impact other repositories in the project with different AccessPolicies.
-  if (context.projects?.length) {
-    // Try loading from cache, using all available Project IDs
-    const cachedProfile = await getCachedProfile(context.projects, url);
-    if (cachedProfile) {
-      return cachedProfile;
-    }
-  }
-
-  // Fall back to loading from the DB; descending version sort approximates version resolution for some cases
-  const profile = await repo.searchOne<StructureDefinition>({
+  // Descending version sort approximates version resolution for some cases
+  return repo.searchOne<StructureDefinition>({
     resourceType: 'StructureDefinition',
     filters: [
       {
@@ -209,9 +253,4 @@ async function loadProfile(repo: Repository, url: string): Promise<StructureDefi
       },
     ],
   });
-
-  if (context.projects?.length && profile) {
-    await cacheProfile(profile);
-  }
-  return profile;
 }

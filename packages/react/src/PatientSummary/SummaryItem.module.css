@@ -12,7 +12,7 @@
 }
 
 [data-mantine-color-scheme='dark'] .gradient {
-  background: linear-gradient(to right, transparent, var(--mantine-color-dark-8));
+  background: linear-gradient(to right, transparent, var(--mantine-color-body));
 }
 
 [data-mantine-color-scheme='light'] .gradient {
@@ -35,7 +35,7 @@
 }
 
 [data-mantine-color-scheme='dark'] .container {
-  background: var(--mantine-color-dark-8);
+  background: var(--mantine-color-body);
 }
 
 [data-mantine-color-scheme='light'] .container {
@@ -54,8 +54,8 @@
   justify-content: center;
 }
 
-.item:hover .gradient,
-.item:hover .container {
+.clickable:hover .gradient,
+.clickable:hover .container {
   opacity: 1;
   pointer-events: auto;
 }
@@ -63,6 +63,9 @@
 .item {
   position: relative;
   max-width: 100%;
+}
+
+.clickable {
   cursor: pointer;
 }
 

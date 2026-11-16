@@ -64,8 +64,8 @@ describe('Download Worker', () => {
           url,
           expect.objectContaining({
             headers: {
-              'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
-              traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'x-trace-id': '12345678901234567890123456789012',
+              traceparent: expect.stringMatching(/^00-12345678901234567890123456789012-[0-9a-f]{16}-01$/),
             },
           })
         );
@@ -74,7 +74,7 @@ describe('Download Worker', () => {
         expect(updatedMedia.content?.url).toMatch(/^Binary\//);
         expect(updatedMedia.meta?.author?.reference).toBe('system');
       },
-      { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
+      { traceId: '12345678901234567890123456789012' }
     ));
 
   test('Ignore media missing URL', () =>

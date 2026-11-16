@@ -5,15 +5,16 @@ import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Handler, Request, Response } from 'express';
 import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
-import type { MedplumServerConfig } from './config/types';
+import type { ServerConfig } from './config/utils';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRateLimitRedis } from './redis';
 import { getNormalizedPath } from './util/url';
 
-// There are three separate rate limits:
+// There are four separate rate limits:
 // 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints
-// 2. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
-// 3. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
+// 2. "MFA" rate limit - applies to unauthenticated MFA verification endpoints
+// 3. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
+// 4. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -23,33 +24,43 @@ import { getNormalizedPath } from './util/url';
 
 interface RateLimitCategoryConfig {
   readonly name: string;
-  readonly serverConfigKey: keyof MedplumServerConfig;
+  readonly serverConfigKey: keyof ServerConfig;
   readonly systemSettingName: string;
   readonly defaultLimitPerMinute: number;
-  readonly matchesUrl: (url: string) => boolean;
+  // Request paths are lowercased before matching, so these must be lowercase (enforced in ratelimit.test.ts)
+  readonly paths?: readonly string[];
+  readonly prefixes?: readonly string[];
+  readonly excludedPaths?: readonly string[];
 }
 
-const categories: RateLimitCategoryConfig[] = [
+export const categories: RateLimitCategoryConfig[] = [
   {
     name: 'login',
     serverConfigKey: 'defaultLoginRateLimit',
     systemSettingName: 'loginRateLimit',
     defaultLimitPerMinute: 5,
-    matchesUrl: (url: string) => url === '/auth/login' || url === '/auth/newuser' || url === '/auth/newproject',
+    paths: ['/auth/login', '/auth/newuser', '/auth/newproject'],
+  },
+  {
+    name: 'mfa',
+    serverConfigKey: 'defaultMfaRateLimit',
+    systemSettingName: 'mfaRateLimit',
+    defaultLimitPerMinute: 10,
+    paths: ['/auth/mfa/verify', '/auth/mfa/login-enroll'],
   },
   {
     name: 'auth',
     serverConfigKey: 'defaultAuthRateLimit',
     systemSettingName: 'authRateLimit',
-    defaultLimitPerMinute: 1200,
-    matchesUrl: (url: string) => (url.startsWith('/auth/') || url.startsWith('/oauth2/')) && url !== '/auth/me',
+    defaultLimitPerMinute: 600,
+    prefixes: ['/auth/', '/oauth2/'],
+    excludedPaths: ['/auth/me'],
   },
   {
     name: 'default',
     serverConfigKey: 'defaultRateLimit',
     systemSettingName: 'rateLimit',
-    defaultLimitPerMinute: 60_000,
-    matchesUrl: (_url: string) => true, // Applies to all other paths
+    defaultLimitPerMinute: 60_000, // Applies to all other paths
   },
 ];
 
@@ -60,9 +71,9 @@ type InMemoryBlock = {
 const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 
 let handler: Handler | undefined;
-export function rateLimitHandler(config: MedplumServerConfig): Handler {
+export function rateLimitHandler(config: ServerConfig): Handler {
   if (!handler) {
-    if (config.rateLimitsEnabled === false || config.defaultRateLimit === -1) {
+    if (!config.rateLimitsEnabled || config.defaultRateLimit === -1) {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {
@@ -104,7 +115,7 @@ function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimite
   res.status(429).json(outcome).end();
 }
 
-export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
+export function getRateLimiter(req: Request, config?: ServerConfig): RateLimiterRedis {
   const client = getRateLimitRedis();
   return new RateLimiterRedis({
     keyPrefix: 'medplum:rl:',
@@ -129,7 +140,7 @@ export function closeRateLimiter(): void {
   handler = undefined;
 }
 
-function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): number {
+function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
   const category = getRateLimitCategory(req);
   let limit: number = category.defaultLimitPerMinute;
 
@@ -151,10 +162,17 @@ function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): num
 }
 
 function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
-  const url = getNormalizedPath(req.originalUrl);
+  // Express routing is case-insensitive and ignores one trailing slash
+  let url = getNormalizedPath(req.originalUrl.toLowerCase());
+  if (url.length > 1 && url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
   for (let i = 0; i < categories.length - 1; i++) {
     const category = categories[i];
-    if (category.matchesUrl(url)) {
+    if (
+      !category.excludedPaths?.includes(url) &&
+      (category.paths?.includes(url) || category.prefixes?.some((prefix) => url.startsWith(prefix)))
+    ) {
       return category;
     }
   }

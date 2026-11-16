@@ -6,10 +6,7 @@
  */
 
 import type { PoolClient } from 'pg';
-import * as fns from '../migrate-functions';
 
 // prettier-ignore
-export async function run(client: PoolClient): Promise<void> {
-  const results: { name: string; durationMs: number }[] = [];
-  await fns.query(client, results, `CREATE EXTENSION IF NOT EXISTS pgstattuple`);
+export async function run(_client: PoolClient): Promise<void> {
 }

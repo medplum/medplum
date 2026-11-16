@@ -15,7 +15,7 @@ export const SuggestionsUnavailable = (): JSX.Element => (
   <Document>
     <UnavailableNote
       text="Suggestions unavailable"
-      color="yellow.9"
+      severity="warning"
       message="Value set http://example.com/my-value-set is unavailable"
     />
   </Document>
@@ -25,7 +25,7 @@ export const FieldUnavailable = (): JSX.Element => (
   <Document>
     <UnavailableNote
       text="This field is unavailable."
-      color="red"
+      severity="error"
       message="Value set http://example.com/my-value-set is unavailable"
     />
   </Document>
@@ -36,12 +36,12 @@ export const BothVariants = (): JSX.Element => (
     <Stack>
       <UnavailableNote
         text="Suggestions unavailable"
-        color="yellow.9"
+        severity="warning"
         message="Value set http://example.com/my-value-set is unavailable"
       />
       <UnavailableNote
         text="This field is unavailable."
-        color="red"
+        severity="error"
         message="Value set http://example.com/my-value-set is unavailable"
       />
     </Stack>

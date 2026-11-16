@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Box, Center, Loader, Stack, Text } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
+import { useStabilizedCallback } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -25,18 +26,10 @@ export interface QrCodeScannerProps {
 export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScannerProps): JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const onScanRef = useRef(onScan);
-  const onErrorRef = useRef(onError);
+  const emitScan = useStabilizedCallback(onScan);
+  const emitError = useStabilizedCallback(onError);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    onScanRef.current = onScan;
-  }, [onScan]);
-
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -65,7 +58,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       if (!cancelled) {
         setLoading(false);
         setError(normalizeErrorString(normalized));
-        onErrorRef.current?.(normalized);
+        emitError(normalized);
       }
     }
 
@@ -84,7 +77,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
           const code = jsQr(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
           if (code?.data) {
             scanned = scanOnce;
-            onScanRef.current(code.data);
+            emitScan(code.data);
             if (scanOnce) {
               stopStream();
               return;
@@ -128,7 +121,7 @@ export function QrCodeScanner({ onScan, onError, scanOnce = true }: QrCodeScanne
       cancelAnimationFrame(rafId);
       stopStream();
     };
-  }, [scanOnce]);
+  }, [scanOnce, emitScan, emitError]);
 
   return (
     <Stack gap="sm">

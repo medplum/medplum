@@ -32,7 +32,7 @@ export interface UseMedicationRequestSyncPollingResult {
   allInitiallyUnsyncedSynced: boolean;
 }
 
-const DEFAULT_POLL_MS = 3500;
+export const DEFAULT_POLL_MS = 3500;
 const DEFAULT_MAX_ATTEMPTS = 60;
 
 /**

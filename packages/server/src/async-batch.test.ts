@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { createTestProject } from './test.setup';
-import type { BatchJobData, LegacyBatchJobData, ReentrantBatchJobData } from './workers/batch';
+import type { BatchJobData } from './workers/batch';
 import { getBatchQueue } from './workers/batch';
 
 describe('Async batch handler', () => {
@@ -54,23 +54,8 @@ describe('Async batch handler', () => {
     return queue.add.mock.calls[0][1] as BatchJobData;
   }
 
-  test('Defaults to re-entrant processing', async () => {
+  test('Submits an async batch job', async () => {
     const jobData = await submitAsyncBatch();
-    expect(jobData).toMatchObject<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.any(String) });
-    expect(jobData).not.toHaveProperty('bundle');
-  });
-
-  test('Uses re-entrant processing when opted in explicitly', async () => {
-    const jobData = await submitAsyncBatch([{ name: 'reentrantAsyncBatch', valueBoolean: true }]);
-    expect(jobData).toMatchObject<Partial<ReentrantBatchJobData>>({ asyncJobId: expect.any(String) });
-    expect(jobData).not.toHaveProperty('bundle');
-  });
-
-  test('Uses legacy processing when the setting is false', async () => {
-    const jobData = await submitAsyncBatch([{ name: 'reentrantAsyncBatch', valueBoolean: false }]);
-    expect(jobData).toMatchObject<Partial<LegacyBatchJobData>>({
-      asyncJob: expect.objectContaining({ resourceType: 'AsyncJob' }),
-      bundle,
-    });
+    expect(jobData).toMatchObject<Partial<BatchJobData>>({ tracking: expect.any(Object) });
   });
 });

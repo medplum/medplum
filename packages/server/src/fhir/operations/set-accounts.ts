@@ -19,6 +19,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AsyncJob, Parameters, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { getAsyncJobTracking } from '../../workers/base';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import { CancelledError } from '../../workers/utils';
 import type { Repository, SystemRepository } from '../repo';
@@ -89,18 +90,18 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
 
   const params = parseInputParameters<SetAccountsParameters>(operation, req);
 
-  const { repo } = getAuthenticatedContext();
+  const { repo, authState } = getAuthenticatedContext();
   if (req.headers?.['prefer'] === 'respond-async' && params.propagate) {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(repo);
     const asyncJob = await exec.init(concatUrls(baseUrl, `${resourceType}/${id}/$set-accounts`));
     await exec.run(async () => {
       await addSetAccountsJobData({
-        asyncJob,
+        tracking: getAsyncJobTracking(asyncJob),
         resourceType,
         id,
         accounts: params.accounts,
-        authState: getAuthenticatedContext().authState,
+        authState,
       });
     });
 
@@ -189,8 +190,12 @@ export async function setResourceAccounts(
 
       const bundle = await searchPatientCompartment(userRepo, target, search);
       for (const entry of bundle.entry ?? EMPTY) {
-        const resource = entry.resource;
-        if (resource && resource.resourceType !== 'Patient') {
+        if (!entry.resource || entry.resource.resourceType === 'Patient') {
+          continue;
+        }
+        // read with system repo to restore hidden fields
+        const resource = await systemRepo.readResource(entry.resource.resourceType, entry.resource.id);
+        if (userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource)) {
           await updateCompartmentResource(systemRepo, resource, additions, removals);
           count++;
         }

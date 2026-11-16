@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getDateProperty, Operator } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { createReference, getDateProperty, Operator } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { URL } from 'node:url';
@@ -120,28 +121,44 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   if (prompt !== 'login' && existingLogin) {
+    // Each authorization is its own grant, so create a new Login rather than overwriting per-request
+    // state (code, nonce, PKCE, refresh secret) that the existing session still depends on.
     const systemRepo = getGlobalSystemRepo();
-    const updatedLogin = await systemRepo.updateResource<Login>({
-      ...existingLogin,
+    const newLogin = await systemRepo.createResource<Login>({
+      resourceType: 'Login',
+      basedOn: createReference(existingLogin),
+      client: existingLogin.client,
+      project: existingLogin.project,
+      profileType: existingLogin.profileType,
+      user: existingLogin.user,
+      membership: existingLogin.membership,
+      scope: existingLogin.scope,
+      authMethod: existingLogin.authMethod,
+      authTime: existingLogin.authTime,
+      mfaVerified: existingLogin.mfaVerified,
+      pictureUrl: existingLogin.pictureUrl,
       nonce: params.nonce as string,
       codeChallenge: params.code_challenge ?? existingLogin.codeChallenge,
       codeChallengeMethod: params.code_challenge_method ?? existingLogin.codeChallengeMethod,
       code: generateSecret(16),
+      refreshSecret: existingLogin.refreshSecret ? generateSecret(32) : undefined,
       launch: params.launch ? { reference: `SmartAppLaunch/${params.launch}` } : existingLogin.launch,
+      remoteAddress: req.ip,
+      userAgent: req.get('User-Agent'),
       granted: false,
     });
 
     if (prompt === 'none') {
       // Redirect straight to application without allowing scope changes
       const redirectUrl = new URL(params.redirect_uri as string);
-      redirectUrl.searchParams.append('code', updatedLogin.code as string);
+      redirectUrl.searchParams.append('code', newLogin.code as string);
       redirectUrl.searchParams.append('state', state);
       res.redirect(redirectUrl.toString());
     } else {
       // Redirect to scope selection page to allow consent to updated scopes
-      params.login = updatedLogin.id;
+      params.login = newLogin.id;
       if (!params.scope) {
-        params.scope = updatedLogin.scope;
+        params.scope = newLogin.scope;
       }
       sendSuccessRedirect(req, res, params);
     }
@@ -194,9 +211,8 @@ async function isValidLaunch(launch: string): Promise<boolean> {
  * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
-async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
-  const login = (await getExistingLoginFromIdTokenHint(req)) || (await getExistingLoginFromCookie(req, client));
-
+async function getExistingLogin(req: Request, client: ClientApplication): Promise<WithId<Login> | undefined> {
+  const login = (await getExistingLoginFromIdTokenHint(req, client)) ?? (await getExistingLoginFromCookie(req, client));
   if (!login) {
     return undefined;
   }
@@ -214,9 +230,13 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
 /**
  * Tries to get an existing login based on the "id_token_hint" query string parameter.
  * @param req - The HTTP request.
+ * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
-async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | undefined> {
+async function getExistingLoginFromIdTokenHint(
+  req: Request,
+  client: ClientApplication
+): Promise<WithId<Login> | undefined> {
   const idTokenHint = req.query.id_token_hint as string | undefined;
   if (!idTokenHint) {
     return undefined;
@@ -231,13 +251,25 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
   }
 
   const claims = verifyResult.payload as MedplumIdTokenClaims;
+
+  // Limit to only ID tokens, which are audienced to the client (not the issuer);
+  // also guard against forged `aud` by checking that `refresh_secret` is absent
+  if (claims.aud !== client.id || claims.refresh_secret !== undefined) {
+    return undefined;
+  }
+
   const existingLoginId = claims.login_id as string | undefined;
   if (!existingLoginId) {
     return undefined;
   }
 
   const systemRepo = getGlobalSystemRepo();
-  return systemRepo.readResource<Login>('Login', existingLoginId);
+  try {
+    const login = await systemRepo.readResource<Login>('Login', existingLoginId);
+    return !login.revoked ? login : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -246,7 +278,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
  * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
-async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<Login | undefined> {
+async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<WithId<Login> | undefined> {
   const cookieName = 'medplum-' + client.id;
   const cookieValue = req.cookies[cookieName];
   if (!cookieValue) {

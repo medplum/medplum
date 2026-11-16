@@ -5,6 +5,7 @@ import type {
   Bundle,
   CodeableConcept,
   Coding,
+  DetectedIssue,
   DeviceDeviceName,
   Observation,
   ObservationDefinition,
@@ -87,6 +88,7 @@ import {
   stringify,
   sumBy,
   trimTrailingEmptyElements,
+  tryParseReference,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -128,6 +130,17 @@ describe('Core Utils', () => {
     expect(getReferenceString({ reference: 'Patient/123' })).toBe('Patient/123');
   });
 
+  test('getReferenceString and createReference with a resource that has a reference element', () => {
+    const detectedIssue: DetectedIssue = {
+      resourceType: 'DetectedIssue',
+      id: 'abc',
+      status: 'final',
+      reference: 'https://example.com/x',
+    };
+    expect(getReferenceString(detectedIssue)).toBe('DetectedIssue/abc');
+    expect(createReference(detectedIssue)).toMatchObject({ reference: 'DetectedIssue/abc' });
+  });
+
   test('resolveId', () => {
     expect(resolveId(undefined)).toBeUndefined();
     expect(resolveId({})).toBeUndefined();
@@ -136,19 +149,33 @@ describe('Core Utils', () => {
     expect(resolveId({ reference: 'Patient/123' })).toBe('123');
   });
 
-  test('parseReference', () => {
+  test('parseReference and tryParseReference', () => {
     expect(() => parseReference(undefined)).toThrow(OperationOutcomeError);
-    expect(() => parseReference({})).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ id: '123' })).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
-    expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
-    expect(parseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
+    expect(tryParseReference(undefined)).toBeUndefined();
 
-    // Destructuring test
-    const [resourceType, id] = parseReference({ reference: 'Patient/123' });
-    expect(resourceType).toStrictEqual('Patient');
-    expect(id).toStrictEqual('123');
+    expect(() => parseReference({})).toThrow(OperationOutcomeError);
+    expect(tryParseReference({})).toBeUndefined();
+
+    expect(() => parseReference({ id: '123' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ id: '123' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: 'Patient' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: '/' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: 'Patient/' })).toBeUndefined();
+
+    expect(() => parseReference({ reference: '#contained' })).toThrow(OperationOutcomeError);
+    expect(tryParseReference({ reference: '#contained' })).toBeUndefined();
+
+    expect(parseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
+    expect(tryParseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
+
+    expect(parseReference({ reference: 'Patient/123/_history/1' })).toStrictEqual(['Patient', '123']);
+    expect(tryParseReference({ reference: 'Patient/123/_history/1' })).toStrictEqual(['Patient', '123']);
   });
 
   test('isProfileResource', () => {
@@ -351,6 +378,176 @@ describe('Core Utils', () => {
     expect(trimTrailingEmptyElements([1, 2, 3, null, undefined, ''])).toStrictEqual([1, 2, 3]);
     expect(trimTrailingEmptyElements([1, 2, 3, 0])).toStrictEqual([1, 2, 3, 0]);
     expect(trimTrailingEmptyElements([1, null, 2, null])).toStrictEqual([1, null, 2]);
+  });
+
+  test('getDisplayString for Coverage', () => {
+    const plan: CodeableConcept = { coding: [{ code: 'HIP' }], text: 'health insurance plan policy' };
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Organization/1' }, { reference: 'Organization/2', display: 'Medicare Part B' }],
+        type: plan,
+      })
+    ).toStrictEqual('Medicare Part B');
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Organization/1' }],
+        type: plan,
+      })
+    ).toStrictEqual('health insurance plan policy');
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [
+          { reference: 'Patient/123', display: 'John Smith' },
+          { type: 'RelatedPerson', display: 'Jane Smith' },
+          { reference: 'https://example.org/fhir/Patient/456', display: 'Jim Smith' },
+        ],
+        type: plan,
+      })
+    ).toStrictEqual('health insurance plan policy');
+    expect(
+      getDisplayString({
+        resourceType: 'Coverage',
+        id: '123',
+        status: 'active',
+        beneficiary: { reference: 'Patient/123' },
+        payor: [{ reference: 'Organization/1' }],
+      })
+    ).toStrictEqual('Coverage/123');
+  });
+
+  test('getDisplayString for Immunization', () => {
+    expect(
+      getDisplayString({
+        resourceType: 'Immunization',
+        status: 'completed',
+        patient: { reference: 'Patient/123' },
+        occurrenceDateTime: '2024-10-01',
+        vaccineCode: {
+          coding: [{ system: 'http://hl7.org/fhir/sid/cvx', code: '150', display: 'Influenza, injectable' }],
+        },
+      })
+    ).toStrictEqual('Influenza, injectable');
+    expect(
+      getDisplayString({
+        resourceType: 'Immunization',
+        id: '123',
+        status: 'completed',
+        patient: { reference: 'Patient/123' },
+        occurrenceDateTime: '2024-10-01',
+        vaccineCode: {},
+      })
+    ).toStrictEqual('Immunization/123');
+  });
+
+  test('getDisplayString for medications', () => {
+    const base = {
+      resourceType: 'MedicationRequest',
+      id: '123',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/123' },
+    } as const;
+    expect(getDisplayString({ ...base, medicationCodeableConcept: { text: 'Lisinopril 10 MG' } })).toStrictEqual(
+      'Lisinopril 10 MG'
+    );
+    expect(
+      getDisplayString({ ...base, medicationReference: { reference: 'Medication/456', display: 'Metformin 500 MG' } })
+    ).toStrictEqual('Metformin 500 MG');
+    expect(
+      getDisplayString({
+        ...base,
+        contained: [{ resourceType: 'Medication', id: 'med1', code: { text: 'Atorvastatin 20 MG' } }],
+        medicationReference: { reference: '#med1' },
+      })
+    ).toStrictEqual('Atorvastatin 20 MG');
+    expect(
+      getDisplayString({
+        ...base,
+        contained: [{ resourceType: 'Medication', id: 'other', code: { text: 'Atorvastatin 20 MG' } }],
+        medicationReference: { reference: '#med1' },
+      })
+    ).toStrictEqual('MedicationRequest/123');
+    expect(getDisplayString({ ...base, medicationReference: { reference: 'Medication/456' } })).toStrictEqual(
+      'MedicationRequest/123'
+    );
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationStatement',
+        status: 'active',
+        subject: { reference: 'Patient/123' },
+        contained: [
+          {
+            resourceType: 'Medication',
+            id: 'Medication-Tylenol-1',
+            code: {
+              text: 'Tylenol 650mg',
+              coding: [
+                {
+                  system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                  code: '313782',
+                  display: 'Acetaminophen 325 MG Oral Tablet',
+                },
+              ],
+            },
+          },
+        ],
+        medicationReference: { reference: '#Medication-Tylenol-1' },
+      })
+    ).toStrictEqual('Tylenol 650mg');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationDispense',
+        status: 'completed',
+        medicationCodeableConcept: { text: 'Amoxicillin 500 MG' },
+      })
+    ).toStrictEqual('Amoxicillin 500 MG');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationAdministration',
+        status: 'completed',
+        subject: { reference: 'Patient/123' },
+        effectiveDateTime: '2024-10-01T08:00:00Z',
+        medicationReference: { reference: 'Medication/456', display: 'Ondansetron 4 MG' },
+      })
+    ).toStrictEqual('Ondansetron 4 MG');
+  });
+
+  test('getDisplayString with a missing resource', () => {
+    expect(getDisplayString(undefined)).toBe('');
+    expect(getDisplayString(null as unknown as Resource)).toBe('');
+  });
+
+  test('getDisplayString does not throw on malformed input', () => {
+    const malformed = [
+      { resourceType: 'Device', id: '123', deviceName: [null] },
+      { resourceType: 'Device', id: '123', deviceName: [{ name: 123 }] },
+      { resourceType: 'Patient', id: '123', name: [{ given: 5, prefix: {}, suffix: {} }] },
+      { resourceType: 'DocumentReference', id: '123', description: {} },
+      { resourceType: 'Subscription', id: '123', criteria: {} },
+      { resourceType: 'User', id: '123', email: {} },
+      { resourceType: 'Immunization', id: '123', vaccineCode: { coding: [null, {}] } },
+      { resourceType: 'Coverage', id: '123', payor: [null] },
+      { resourceType: 'Coverage', id: '123', payor: { display: 'Acme' } },
+      { resourceType: 'Coverage', id: '123', payor: [{ display: 123, reference: 456 }] },
+      { resourceType: 'Coverage', id: '123', type: { coding: { code: 'x' } } },
+      { resourceType: 'Immunization', id: '123', vaccineCode: { coding: 'x' } },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { reference: 123 } },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { display: { text: 'x' } } },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { reference: '#med1' }, contained: [null] },
+      { resourceType: 'MedicationRequest', id: '123', medicationReference: { reference: '#med1' }, contained: {} },
+    ] as unknown as Resource[];
+    for (const resource of malformed) {
+      expect(getDisplayString(resource)).toStrictEqual(`${resource.resourceType}/123`);
+    }
   });
 
   test('getImageSrc', () => {

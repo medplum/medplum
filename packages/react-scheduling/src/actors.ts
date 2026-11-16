@@ -1,0 +1,123 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Dereference, WithId } from '@medplum/core';
+import { assertNever, isDefined, isResource, parseReference } from '@medplum/core';
+import type { Appointment, AppointmentParticipant, Patient, Reference, Schedule } from '@medplum/fhirtypes';
+
+/**
+ * A reference to something a Schedule belongs to. The same union an Appointment
+ * accepts as a participant, so an actor can be carried straight across.
+ */
+export type SchedulingActor = Schedule['actor'][number];
+
+/** A loaded actor resource. */
+export type SchedulingActorResource = WithId<Dereference<SchedulingActor>>;
+
+export type SchedulingActorType = SchedulingActorResource['resourceType'];
+
+/**
+ * An actor as a reference, or as the resource when it has already been read.
+ */
+export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
+
+/**
+ * Actor types whose schedules may be offered for booking, in the order they are
+ * asked about.
+ *
+ * Each type becomes its own question, because `$find` intersects the schedules it
+ * is given: a time is offered only when the practitioner *and* the location *and*
+ * the device are all free for it. Asking for *either* of two practitioners is a
+ * second request rather than a second schedule on the same one — see
+ * `getActorCombinations`.
+ *
+ * No one type has to be asked about: a search needs a schedule to book against,
+ * and a room or a device holds one as well as a provider does.
+ *
+ * Does not include `PractitionerRole` to prevent double-booking a `Practitioner`
+ * who holds multiple roles. A practitioner is booked on their `Practitioner`,
+ * but their `PractitionerRole`s still decide which schedules they are eligible
+ * for and where they practice.
+ */
+export const BOOKABLE_ACTOR_TYPES = ['Practitioner', 'Location', 'Device'] as const satisfies SchedulingActorType[];
+
+export type BookableActorType = (typeof BOOKABLE_ACTOR_TYPES)[number];
+
+export function isBookableActorType(value: string | undefined): value is BookableActorType {
+  return BOOKABLE_ACTOR_TYPES.includes(value as BookableActorType);
+}
+
+/**
+ * Extracts the resource type of an actor, given as itself or as a reference.
+ *
+ * Only supports references that may be used for Scheduling operations, which are
+ * those that have a qualified `reference` attribute. The attribute must be present,
+ * and may not be a reference to a "contained" resource (eg. `{ reference: "#cid" }`)
+ *
+ * @param actor - A schedulable resource, or a Reference to one
+ * @returns The type of the actor.
+ */
+export function getActorType(actor: SchedulingActorValue): SchedulingActorType {
+  return isResource(actor) ? actor.resourceType : parseReference(actor)[0];
+}
+
+/**
+ * Provides the label we use for scheduling resource types in this UI
+ *
+ * @param resourceType - A scheduling actor type
+ * @returns The type's label
+ */
+export function getActorTypeLabel(resourceType: SchedulingActorType): string {
+  switch (resourceType) {
+    case 'Device':
+      return 'Device';
+    case 'HealthcareService':
+      return 'Healthcare Service';
+    case 'Location':
+      return 'Room';
+    case 'Patient':
+      return 'Patient';
+    case 'Practitioner':
+      return 'Provider';
+    case 'PractitionerRole':
+      return 'Practitioner Role';
+    case 'RelatedPerson':
+      return 'Related Person';
+  }
+  return assertNever(resourceType);
+}
+
+/**
+ * The appointment's first patient participant.
+ * @param appointment - The appointment being described.
+ * @returns The participant, or undefined when no patient is on it.
+ */
+export function getPatientParticipant(
+  appointment: Appointment
+): (AppointmentParticipant & { actor: Reference<Patient> }) | undefined {
+  return appointment.participant.find(
+    (participant): participant is AppointmentParticipant & { actor: Reference<Patient> } =>
+      participant.actor?.reference?.startsWith('Patient/') === true
+  );
+}
+
+/**
+ * Everyone and everything the visit is held on besides its patients.
+ * @param appointment - The appointment being described.
+ * @returns Their references, once each, in the order the appointment lists them.
+ */
+export function getNonPatientActors(appointment: Appointment): Reference[] {
+  const seen = new Set<string>();
+  return appointment.participant
+    .map((participant) => participant.actor)
+    .filter(isDefined)
+    .filter((actor) => {
+      if (!actor.reference) {
+        return true;
+      }
+      if (actor.reference.startsWith('Patient/') || seen.has(actor.reference)) {
+        return false;
+      }
+      seen.add(actor.reference);
+      return true;
+    });
+}

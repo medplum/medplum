@@ -394,5 +394,17 @@ describe('MemoryRepository', () => {
       const results = await Promise.all([p1, p2]);
       expect(results.map((r) => r.outcome.id)).toEqual(['created', 'ok']);
     });
+
+    test('expungeResource removes current resource and history', async () => {
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const v1 = patient.meta?.versionId as string;
+      const updated = await repo.updateResource<Patient>({ ...patient, name: [{ family: 'Smith' }] });
+
+      await repo.expungeResource('Patient', patient.id);
+
+      await expect(repo.readResource('Patient', patient.id)).rejects.toThrow();
+      await expect(repo.readVersion('Patient', patient.id, v1)).rejects.toThrow();
+      await expect(repo.readVersion('Patient', patient.id, updated.meta?.versionId as string)).rejects.toThrow();
+    });
   });
 });

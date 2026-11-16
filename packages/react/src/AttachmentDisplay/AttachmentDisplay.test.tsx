@@ -108,6 +108,26 @@ describe('AttachmentDisplay', () => {
     expect(await screen.findByTestId('attachment-video')).toBeInTheDocument();
   });
 
+  test('Renders audio', async () => {
+    await setup({
+      value: {
+        contentType: 'audio/mpeg',
+        url: 'https://example.com/test.mp3',
+      },
+    });
+    expect(await screen.findByTestId('attachment-audio')).toBeInTheDocument();
+  });
+
+  test('Renders audio with inline data', async () => {
+    await setup({
+      value: {
+        contentType: 'audio/wav',
+        data: 'YXVkaW8tZGF0YQ==',
+      },
+    });
+    expect(await screen.findByTestId('attachment-audio')).toBeInTheDocument();
+  });
+
   test('Renders PDF', async () => {
     await setup({
       value: {

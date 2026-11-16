@@ -102,6 +102,18 @@ describe('buildRangeColumns', () => {
     }
   });
 
+  test.each([
+    ['2028-05-15T14:30Z', '2028-05-15T14:31:00.000Z'],
+    ['2028-05-15T14:30+05:30', '2028-05-15T09:01:00.000Z'],
+  ])('date time range precision ignores the timezone suffix: %s', (value, expectedEnd) => {
+    expect(parseDateTimeToRange(value).right?.toISOString()).toStrictEqual(expectedEnd);
+  });
+
+  test('approximate range for a future date is not inverted', () => {
+    const range = parseDateTimeToRange(`${new Date().getUTCFullYear() + 2}`, true);
+    expect(range.left?.getTime()).toBeLessThan(range.right?.getTime() as number);
+  });
+
   test.each<[Period, string | undefined, string | undefined]>([
     [
       { start: '2026-04-04T12:34:56Z', end: '2026-04-18T11:22:33.456Z' },
@@ -392,14 +404,29 @@ describe('buildRangeColumnsSearchFilter', () => {
   });
 
   test.each<[Operator, string, string, string[]]>([
-    [Operator.EQUALS, '2026', ' && $1', ['[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z)']],
-    [Operator.EQUALS, '2020-02', ' && $1', ['[2020-02-01T00:00:00.000Z,2020-03-01T00:00:00.000Z)']],
-    [Operator.EQUALS, '2020-02-14', ' && $1', ['[2020-02-14T00:00:00.000Z,2020-02-15T00:00:00.000Z)']],
+    [
+      Operator.EQUALS,
+      '2026',
+      ' <@ $2',
+      ['[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z)', '[2026-01-01T00:00:00.000Z,2027-01-01T00:00:00.000Z)'],
+    ],
+    [
+      Operator.EQUALS,
+      '2020-02',
+      ' <@ $2',
+      ['[2020-02-01T00:00:00.000Z,2020-03-01T00:00:00.000Z)', '[2020-02-01T00:00:00.000Z,2020-03-01T00:00:00.000Z)'],
+    ],
+    [
+      Operator.EQUALS,
+      '2020-02-14T10:30Z',
+      ' <@ $2',
+      ['[2020-02-14T10:30:00.000Z,2020-02-14T10:31:00.000Z)', '[2020-02-14T10:30:00.000Z,2020-02-14T10:31:00.000Z)'],
+    ],
     [
       Operator.NOT_EQUALS,
       '2020',
-      'NOT ("AllergyIntolerance"."__onset" &&',
-      ['[2020-01-01T00:00:00.000Z,2021-01-01T00:00:00.000Z)'],
+      'NOT (("AllergyIntolerance"."__onset" &&',
+      ['[2020-01-01T00:00:00.000Z,2021-01-01T00:00:00.000Z)', '[2020-01-01T00:00:00.000Z,2021-01-01T00:00:00.000Z)'],
     ],
     [Operator.LESS_THAN, '2025-03-02T12:34:56Z', ' && $1', ['(,2025-03-02T12:34:56.000Z)']],
     [Operator.LESS_THAN_OR_EQUALS, '2024-04-04T12:34:56.789Z', ' && $1', ['(,2024-04-04T12:34:56.790Z)']],
@@ -430,6 +457,17 @@ describe('buildRangeColumnsSearchFilter', () => {
     condition.buildSql(sql);
     expect(sql.toString()).toStrictEqual(expect.stringContaining(expectedSql));
     expect(sql.getValues()).toStrictEqual(values);
+  });
+
+  test('equals on a single-valued column checks containment', () => {
+    const birthdate = getSearchParameter('Patient', 'birthdate');
+    if (!birthdate) {
+      throw new Error('Missing search parameter');
+    }
+    const filter: Filter = { code: 'birthdate', operator: Operator.EQUALS, value: '2020' };
+    const sql = new SqlBuilder();
+    buildRangeColumnsSearchFilter('Patient', 'Patient', birthdate, filter).buildSql(sql);
+    expect(sql.toString()).toStrictEqual('"Patient"."__birthdate" <@ $1::daterange');
   });
 
   test('constructs basic numeric range filter', () => {

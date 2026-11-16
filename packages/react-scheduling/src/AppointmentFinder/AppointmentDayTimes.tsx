@@ -15,6 +15,7 @@ export interface AppointmentDayTimesProps {
   readonly onSelectAppointment: (appointment: Appointment) => void;
   /** IANA timezone the times are read in. Defaults to the browser's. */
   readonly timezone?: string;
+  readonly viewerTimezone?: string;
   readonly selected?: Appointment;
 }
 
@@ -28,17 +29,20 @@ export interface AppointmentDayTimesProps {
  * @returns The day's heading and its times.
  */
 export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Element {
-  const { date, groups, onSelectAppointment, timezone, selected } = props;
+  const { date, groups, onSelectAppointment, timezone, viewerTimezone, selected } = props;
 
   return (
     <Stack gap="xs">
-      <Title order={4}>{formatDayHeading(date)}</Title>
+      <Title order={6} size="h4">
+        {formatDayHeading(date)}
+      </Title>
       {groups.length === 0 && <Text c="dimmed">No times are offered on this day.</Text>}
       {groups.map((group) => (
         <AppointmentSlotGroupCard
           key={group.key}
           group={group}
           timezone={timezone}
+          viewerTimezone={viewerTimezone}
           selected={selected}
           onSelectAppointment={onSelectAppointment}
         />

@@ -1,0 +1,6 @@
+{{- /* Page URL without the trailing slash; s3deploy.mjs serves foo/index.html at /foo, matching the Docusaurus URLs */ -}}
+{{- $url := .RelPermalink -}}
+{{- if and (ne $url "/") (hasSuffix $url "/") -}}
+  {{- $url = strings.TrimSuffix "/" $url -}}
+{{- end -}}
+{{- return $url -}}

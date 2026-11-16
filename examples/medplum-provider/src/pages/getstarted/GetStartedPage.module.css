@@ -53,6 +53,11 @@
   flex-direction: column;
 }
 
+/* A disabled button swallows hover events, so let them reach the tooltip's wrapper span instead. */
+.importButton:disabled {
+  pointer-events: none;
+}
+
 .integrationsContainer {
   position: relative;
   min-height: 120px;

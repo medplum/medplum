@@ -71,6 +71,7 @@ export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCar
                 {error?.aoeResponses?.message && <Text c="red">{error.aoeResponses.message}</Text>}
                 <QuestionnaireForm
                   questionnaire={metadata.aoeQuestionnaire}
+                  questionnaireResponse={metadata.aoeResponses}
                   disablePagination
                   excludeButtons
                   onChange={(qr) => {

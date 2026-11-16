@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import type {
   AllergyIntolerance,
   Bundle,
@@ -14,10 +14,11 @@ import type {
 import { MockClient } from '@medplum/mock';
 import type * as MedplumReact from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { SmartHealthLinkImport } from './SmartHealthLinkImport';
 
 // Stand in for the camera so the scan path can be driven without a device. Everything else
@@ -140,10 +141,8 @@ describe('SmartHealthLinkImport', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <SmartHealthLinkImport onImported={onImported} />
-          </MantineProvider>
+          <Notifications />
+          <SmartHealthLinkImport onImported={onImported} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -650,6 +649,35 @@ describe('SmartHealthLinkImport', () => {
       expect(await screen.findByText('Batch failed')).toBeInTheDocument();
       expect(onImported).not.toHaveBeenCalled();
       expect(screen.getByText('Select Records to Import to Existing Profile')).toBeInTheDocument();
+    });
+
+    test('Reports records the server rejected and retargets the created patient', async () => {
+      const created = { ...SHARED_PATIENT, id: 'created-patient' } as WithId<Patient>;
+      const createResource = vi.spyOn(medplum, 'createResource').mockResolvedValue(created);
+      vi.mocked(medplum.executeBatch).mockImplementation(async (transaction) => ({
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: transaction.entry?.map((entry) =>
+          entry.resource?.resourceType === 'AllergyIntolerance'
+            ? { response: { status: '400', outcome: badRequest('Unknown search parameter: date') } }
+            : { response: { status: '201 Created' } }
+        ),
+      }));
+      const onImported = vi.fn();
+      mockOperations({});
+      await goToRecordsStep(onImported);
+
+      await userEvent.click(screen.getByRole('button', { name: 'Create Homer Simpson & Import Records' }));
+
+      expect(await screen.findByText('1 of 2 records could not be imported')).toBeInTheDocument();
+      expect(screen.getByText('Allergy "Peanuts": Unknown search parameter: date')).toBeInTheDocument();
+      expect(screen.getByText(/Saved 1 record to Homer Simpson/)).toBeInTheDocument();
+      expect(onImported).not.toHaveBeenCalled();
+      expect(createResource).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Import Records to Homer Simpson' })).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ignore 1 record and finish' }));
+      expect(onImported).toHaveBeenCalledWith(created);
     });
 
     test('Steps back to an earlier step from the stepper', async () => {

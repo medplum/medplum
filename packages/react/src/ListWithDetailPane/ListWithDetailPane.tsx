@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Center, Divider, Flex, Group, Pagination, ScrollArea, Stack, Tabs, Text } from '@mantine/core';
 import type { Resource } from '@medplum/fhirtypes';
+import { useStabilizedCallback } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import classes from './ListWithDetailPane.module.css';
 import { ListWithDetailPaneSkeleton } from './ListWithDetailPaneSkeleton';
@@ -22,7 +23,7 @@ export interface ListWithDetailPaneItemContext<T extends { id?: string } = Resou
 }
 
 export interface ListWithDetailPaneDetailContext {
-  readonly refresh: () => Promise<void>;
+  readonly refresh?: () => Promise<void>;
 }
 
 /**
@@ -34,11 +35,16 @@ export interface ListWithDetailPaneDetailContext {
  * @param emptyList - Shown when the list is empty. Default: dimmed "No items found".
  * @param skeleton - Shown while loading. Default: built-in skeleton rows.
  * @param listWidth - Sidebar width in pixels. Default 350.
+ * @param listVisible - Whether the list sidebar is shown. Default true. When false the sidebar collapses
+ * (animated) and is removed from the accessibility tree. Controlled — consumers render their own toggle
+ * buttons (typically a collapse icon in `headerActions` and an expand icon somewhere in the detail pane).
  * @param headerActions - Right-aligned slot in the sidebar header row: action buttons, filter popovers.
  * @param selected - The resolved selected item, or undefined when nothing is selected.
  * @param renderDetail - Renders the detail pane for the selected item.
  * @param emptyDetail - Shown when nothing is selected. Default: dimmed prompt.
- * @param refresh - Passed through to the detail render context.
+ * @param listFooter - Pinned below the scrolling list and above the pagination row, e.g. bulk actions
+ * for the current list. Rendered only when the list has finished loading.
+ * @param refresh - Optional. Passed through to the detail render context so the detail pane can refetch the list.
  * @param onSelectFirst - Auto-select escape hatch. Fired with the first item when the list has finished loading
  * (`loading` false) with items while nothing is selected (`selectedKey` undefined). The consumer decides how to
  * navigate (typically with history replace). Pass an id-driven `selectedKey` (e.g. the URL route param) so a
@@ -56,11 +62,13 @@ export interface ListWithDetailPanePropsBase<T extends { id?: string } = Resourc
   readonly emptyList?: ReactNode;
   readonly skeleton?: ReactNode;
   readonly listWidth?: number;
+  readonly listVisible?: boolean;
   readonly headerActions?: ReactNode;
   readonly selected: T | undefined;
   readonly renderDetail: (selected: T, ctx: ListWithDetailPaneDetailContext) => ReactNode;
   readonly emptyDetail?: ReactNode;
-  readonly refresh: () => Promise<void>;
+  readonly listFooter?: ReactNode;
+  readonly refresh?: () => Promise<void>;
   readonly onSelectFirst?: (item: T) => void;
   readonly page?: number;
   readonly pageCount?: number;
@@ -119,6 +127,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     emptyList,
     skeleton,
     listWidth = DEFAULT_LIST_WIDTH,
+    listVisible = true,
     headerText,
     tabs,
     activeTab,
@@ -126,6 +135,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     selected,
     renderDetail,
     emptyDetail,
+    listFooter,
     refresh,
     onSelectFirst,
     page,
@@ -133,20 +143,17 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     onPageChange,
   } = props;
 
-  // Latest-ref pattern: consumers routinely pass onSelectFirst as an inline arrow, and a
-  // changing identity must not refire the auto-select effect (firing on every render
-  // would loop with consumers that navigate on select).
-  const onSelectFirstRef = useRef(onSelectFirst);
-  useEffect(() => {
-    onSelectFirstRef.current = onSelectFirst;
-  });
+  // Consumers routinely pass onSelectFirst as an inline arrow, and a changing identity must not
+  // refire the auto-select effect (firing on every render would loop with consumers that
+  // navigate on select).
+  const selectFirst = useStabilizedCallback(onSelectFirst);
 
   // Auto-select the first item when a load settles with items and no selection intended.
   useEffect(() => {
     if (!loading && selectedKey === undefined && items.length > 0) {
-      onSelectFirstRef.current?.(items[0]);
+      selectFirst(items[0]);
     }
-  }, [loading, selectedKey, items]);
+  }, [loading, selectedKey, items, selectFirst]);
 
   let headerLeft: ReactNode = <span />;
   if (tabs) {
@@ -180,7 +187,13 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
 
   return (
     <Flex direction="row" h="100%" w="100%" className={classes.container}>
-      <Flex direction="column" w={listWidth} h="100%" className={classes.shell}>
+      <Flex
+        direction="column"
+        w={listVisible ? listWidth : 0}
+        h="100%"
+        className={cx(classes.shell, !listVisible && classes.shellHidden)}
+        aria-hidden={!listVisible || undefined}
+      >
         {(tabs || headerActions || headerText) && (
           <>
             <Flex h={HEADER_HEIGHT} align="center" justify="space-between" p="md">
@@ -206,6 +219,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
             </div>
           )}
         </ScrollArea>
+        {!loading && listFooter}
         {onPageChange !== undefined && page !== undefined && pageCount !== undefined && pageCount > 1 && (
           <div className={classes.footer}>
             <Pagination value={page} total={pageCount} onChange={onPageChange} size="sm" siblings={1} boundaries={1} />

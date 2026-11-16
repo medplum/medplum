@@ -1,0 +1,25 @@
+## Usage
+
+Common usage includes:
+
+- the recording of non-prescription and/or recreational drugs
+- the recording of an intake medication list upon admission to hospital
+- the summarization of a patient's "active medications" in a patient profile
+
+A [MedicationStatement](/docs/api/fhir/resources/medicationstatement) may be used to record substance abuse or the use of other agents such as tobacco or alcohol. This would typically be done if these substances are intended to be included in clinical decision support checking (for example, interaction checking) and as part of an active medication list. If the intent is to populate social history and/or to include additional information (for example, desire to quit, amount per day, negative health effects), then it is better to record as an [Observation](/docs/api/fhir/resources/observation) that could then be used to populate Social History.
+
+This resource does not produce a medication list, but it does produce individual medication statements that may be used in the [List](/docs/api/fhir/resources/list) resource to construct various types of medication lists. Note that other medication lists can also be constructed from the other Pharmacy resources (e.g., [MedicationRequest](/docs/api/fhir/resources/medicationrequest), [MedicationAdministration](/docs/api/fhir/resources/medicationadministration)).
+
+A medication statement is not a part of the prescribe -> dispense -> administer sequence, but is a report by a patient, significant other or a clinician that one or more of the prescribe, dispense or administer actions has occurred, resulting is a belief that the patient is, has, or will be using a particular medication.
+
+MedicationStatement is an event resource from a FHIR workflow perspective - see [Workflow Event](https://www.hl7.org/fhir/workflow.html#event)
+
+## Relationships
+
+The [MedicationStatement](/docs/api/fhir/resources/medicationstatement) resource is used to record a medications or substances that the patient reports as being taken, not taking, have taken in the past or may take in the future. It can also be used to record medication use that is derived from other records such as a [MedicationRequest](/docs/api/fhir/resources/medicationrequest). The statement is not used to request or order a medication, supply or device. When requesting medication, supplies or devices when there is a patient focus or instructions regarding their use, a [MedicationRequest](/docs/api/fhir/resources/medicationrequest), [SupplyRequest](/docs/api/fhir/resources/supplyrequest) or [DeviceRequest](/docs/api/fhir/resources/devicerequest) should be used instead
+
+**The [Medication](/docs/api/fhir/resources/medication) domain includes a number of related resources**
+
+<table border="1" cellpadding="1" cellspacing="2" frame="box"><tbody><tr><td><a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a></td><td>An order for both supply of the medication and the instructions for administration of the medicine to a patient.</td></tr><tr><td><a href="/docs/api/fhir/resources/medicationdispense">MedicationDispense</a></td><td>Provision of a supply of a medication with the intention that it is subsequently consumed by a patient (usually in response to a prescription).</td></tr><tr><td><a href="/docs/api/fhir/resources/medicationadministration">MedicationAdministration</a></td><td>When a patient actually consumes a medicine, or it is otherwise administered to them</td></tr><tr><td>MedicationStatement</td><td>This is a record of a medication being taken by a patient or that a medication has been given to a patient, where the record is the result of a report from the patient or another clinician, or derived from supporting information (for example, <a href="/docs/api/fhir/resources/claim">Claim</a>, <a href="/docs/api/fhir/resources/observation">Observation</a> or <a href="/docs/api/fhir/resources/medicationrequest">MedicationRequest</a>). A medication statement is not a part of the prescribe-&gt;dispense-&gt;administer sequence but is a report that such a sequence (or at least a part of it) did take place, resulting in a belief that the patient has received a particular medication.</td></tr></tbody></table>
+
+This resource is distinct from [MedicationRequest](/docs/api/fhir/resources/medicationrequest), [MedicationDispense](/docs/api/fhir/resources/medicationdispense) and [MedicationAdministration](/docs/api/fhir/resources/medicationadministration). Each of those resources refers to specific events - an individual order, an individual provisioning of medication or an individual dosing. [MedicationStatement](/docs/api/fhir/resources/medicationstatement) is a broader assertion covering a wider timespan and is independent of specific events. The existence of resource instances of any of the preceding three types may be used to infer a medication statement. However, medication statements can also be captured on the basis of other information, including an assertion by the patient or a care-giver, the results of a lab test, etc.

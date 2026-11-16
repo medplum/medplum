@@ -3,18 +3,23 @@
 
 import type {
   MedicationCartClearRequest,
+  MedicationCartContentsRequest,
+  MedicationCartContentsResponse,
   MedicationCartManageResponse,
   MedicationCartRemoveRequest,
   MedicationCheckoutRequest,
   MedicationCheckoutResponse,
 } from '@medplum/core';
 import {
+  INVALID_MEDICATION_CART_CONTENTS_RESPONSE,
   INVALID_MEDICATION_CART_RESPONSE,
   INVALID_MEDICATION_CHECKOUT_RESPONSE,
   isResource,
   medicationCartClearRequestToParameters,
+  medicationCartContentsRequestToParameters,
   medicationCartRemoveRequestToParameters,
   medicationCheckoutRequestToParameters,
+  parametersToMedicationCartContentsResponse,
   parametersToMedicationCartManageResponse,
   parametersToMedicationCheckoutResponse,
 } from '@medplum/core';
@@ -43,13 +48,20 @@ export interface UseMedicationCartReturn {
   removeFromCart: (input: MedicationCartRemoveRequest) => Promise<MedicationCartManageResponse>;
   /** Remove every item from the patient's vendor cart. */
   clearCart: (input: MedicationCartClearRequest) => Promise<MedicationCartManageResponse>;
+  /**
+   * Read the patient's cart as the **vendor** holds it, reconciled against the
+   * local draft lines. Use this rather than counting drafts whenever the number
+   * is shown to a prescriber: drafts alone are a lower bound.
+   */
+  getCart: (input: MedicationCartContentsRequest) => Promise<MedicationCartContentsResponse>;
 }
 
 /**
  * Vendor-neutral hook for the full **medication cart** lifecycle: add a draft
  * line (`createResource`), check out a set of drafts into the vendor's batch
- * approval queue (`$checkout-medications`), and remove/clear cart lines
- * (`$remove-cart-medication` / `$clear-cart`).
+ * approval queue (`$checkout-medications`), remove/clear cart lines
+ * (`$remove-cart-medication` / `$clear-cart`), and read the vendor's own view of
+ * the cart (`$get-cart`).
  *
  * Cart checkout / remove / clear hit project-scoped **FHIR custom operations**
  * whose backing Bot is chosen at deploy time via an `OperationDefinition`
@@ -68,7 +80,7 @@ export interface UseMedicationCartReturn {
  * decoded by the matching `@medplum/core` helpers. Per-line outcomes arrive in
  * `response.items`.
  *
- * @returns Cart add / checkout / remove / clear callbacks plus `adding` state.
+ * @returns Cart add / checkout / remove / clear / read callbacks plus `adding` state.
  */
 export function useMedicationCart(): UseMedicationCartReturn {
   const medplum = useMedplum();
@@ -132,5 +144,17 @@ export function useMedicationCart(): UseMedicationCartReturn {
     [medplum]
   );
 
-  return { addToCart, adding, checkout, removeFromCart, clearCart };
+  const getCart = useCallback(
+    async (input: MedicationCartContentsRequest): Promise<MedicationCartContentsResponse> => {
+      const url = medplum.fhirUrl('MedicationRequest', '$get-cart');
+      const response = await medplum.post(url, medicationCartContentsRequestToParameters(input));
+      if (!isResource<Parameters>(response, 'Parameters')) {
+        throw new Error(INVALID_MEDICATION_CART_CONTENTS_RESPONSE);
+      }
+      return parametersToMedicationCartContentsResponse(response);
+    },
+    [medplum]
+  );
+
+  return { addToCart, adding, checkout, removeFromCart, clearCart, getCart };
 }

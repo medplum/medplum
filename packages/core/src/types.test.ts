@@ -10,11 +10,14 @@ import type {
   HumanName,
   Identifier,
   Patient,
+  Practitioner,
   Quantity,
   Reference,
+  Resource,
+  Task,
 } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
-import type { TypedValue } from './types';
+import type { Dereference, TypedValue } from './types';
 import {
   getElementDefinitionFromElements,
   getElementDefinitionTypeName,
@@ -199,5 +202,57 @@ describe('Type Utils', () => {
   ])('formatTypedValue()', (value, expected) => {
     const actual = stringifyTypedValue(value);
     expect(actual).toStrictEqual(expected);
+  });
+
+  // `Dereference` is a type-only utility, so these assertions are enforced by `tsc`
+  // at build time rather than by Vitest at runtime.
+  describe('Dereference', () => {
+    test('extracts the target of a Reference', () => {
+      expectTypeOf<Dereference<Reference<Patient>>>().toEqualTypeOf<Patient>();
+    });
+
+    test('preserves a multi-target Reference as a union', () => {
+      expectTypeOf<Dereference<Reference<Patient | Practitioner>>>().toEqualTypeOf<Patient | Practitioner>();
+    });
+
+    test('distributes over a union of References', () => {
+      expectTypeOf<Dereference<Reference<Patient> | Reference<Practitioner>>>().toEqualTypeOf<Patient | Practitioner>();
+    });
+
+    test('preserves null and undefined from an optional Reference', () => {
+      expectTypeOf<Dereference<Reference<Patient> | undefined>>().toEqualTypeOf<Patient | undefined>();
+      expectTypeOf<Dereference<Reference<Patient> | null>>().toEqualTypeOf<Patient | null>();
+      // An optional FHIR reference field carries its optionality through
+      expectTypeOf<Extract<Dereference<Task['owner']>, undefined>>().toEqualTypeOf<undefined>();
+    });
+
+    test('falls back to Resource for an unparameterized Reference', () => {
+      expectTypeOf<Dereference<Reference>>().toEqualTypeOf<Resource>();
+    });
+
+    test('rejects input that is not a Reference', () => {
+      // @ts-expect-error a resource is not a reference to one
+      expectTypeOf<Dereference<Patient>>().toEqualTypeOf<Patient>();
+      // @ts-expect-error a string is not a reference
+      expectTypeOf<Dereference<string>>().toEqualTypeOf<string>();
+      // @ts-expect-error an array of references has to be indexed first
+      expectTypeOf<Dereference<Reference<Patient>[]>>().toBeArray();
+      // @ts-expect-error the target of a reference is not itself a reference
+      expectTypeOf<Dereference<Dereference<Reference<Patient>>>>().toEqualTypeOf<Patient>();
+    });
+
+    test('resolves an empty union to never', () => {
+      expectTypeOf<Dereference<never>>().toBeNever();
+    });
+
+    test('accepts anything shaped like a Reference', () => {
+      // Every field on `Reference` is optional, including the `resource?: T` that `R` is
+      // inferred from, so a structurally compatible object satisfies the constraint and
+      // then matches with no candidate for `R`, falling back to the default `Resource`.
+      //
+      // In the future it would be nice to find a way to make this stricter; for now this
+      // documents the existing behavior.
+      expectTypeOf<Dereference<Record<string, never>>>().toEqualTypeOf<Resource>();
+    });
   });
 });

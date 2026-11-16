@@ -19,6 +19,7 @@ const options = {
   sourcemap: true,
   external: [
     '@aws-sdk/client-acm',
+    '@aws-sdk/client-ecr',
     '@aws-sdk/client-ssm',
     '@aws-sdk/client-sts',
     'aws-cdk-lib',

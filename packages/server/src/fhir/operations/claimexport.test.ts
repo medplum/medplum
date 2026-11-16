@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, Claim } from '@medplum/fhirtypes';
+import type { Binary, Bundle, Claim } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -94,6 +94,15 @@ describe('CMS 1500 PDF', () => {
     expect(response).toHaveStatus(200);
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
+
+    // content.url is a presigned storage URL of the form /storage/<id>/<versionId>
+    const binaryId = new URL(response.body.content.url).pathname.split('/').filter(Boolean)[1];
+    const binaryRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json');
+    expect(binaryRes).toHaveStatus(200);
+    expect((binaryRes.body as Binary).securityContext?.reference).toStrictEqual(claim.patient.reference);
   });
 
   test('Bad request - claim not found', async () => {
@@ -121,7 +130,69 @@ describe('CMS 1500 PDF', () => {
     expect(response.body.resourceType).toBe('OperationOutcome');
     expect(response.body.issue[0].severity).toBe('error');
   });
+
+  test.each(['oral', 'institutional', 'pharmacy'])(
+    'Bad request - %s claim cannot be exported as CMS-1500 (POST)',
+    async (type) => {
+      const claim = withClaimType(getFixtureClaim(), type);
+
+      const response = await request(app)
+        .post(`/fhir/R4/Claim/$export`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Accept', 'application/fhir+json')
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'resource', resource: claim }],
+        });
+
+      expect(response).toHaveStatus(400);
+      expect(response.body.resourceType).toBe('OperationOutcome');
+      expect(response.body.issue[0].details.text).toContain(`Claim type '${type}' cannot be exported as a CMS-1500`);
+    }
+  );
+
+  test('Bad request - oral claim cannot be exported as CMS-1500 (GET)', async () => {
+    const bundle = structuredClone(fullAnswer);
+    const entry = bundle.entry?.find((e) => e.resource?.resourceType === 'Claim');
+    if (!entry) {
+      throw new Error('fixture has no Claim');
+    }
+    entry.resource = {
+      ...withClaimType(entry.resource as Claim, 'oral'),
+      identifier: [{ value: 'example-claim-oral' }],
+    };
+
+    const bundleRes = await request(app)
+      .post(`/fhir/R4`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(bundle);
+    expect(bundleRes).toHaveStatus(200);
+
+    const searchRes = await request(app)
+      .get(`/fhir/R4/Claim?identifier=example-claim-oral`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json');
+    expect(searchRes).toHaveStatus(200);
+    const claim = searchRes.body.entry[0].resource as Claim;
+
+    const response = await request(app)
+      .get(`/fhir/R4/Claim/${claim.id}/$export`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json');
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toContain('ADA dental claim form');
+  });
 });
+
+function getFixtureClaim(): Claim {
+  return fullAnswer.entry?.find((e) => e.resource?.resourceType === 'Claim')?.resource as Claim;
+}
+
+function withClaimType(claim: Claim, code: string): Claim {
+  return { ...claim, type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/claim-type', code }] } };
+}
 
 export const fullAnswer: Bundle = {
   resourceType: 'Bundle',

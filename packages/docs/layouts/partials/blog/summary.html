@@ -1,0 +1,12 @@
+{{- /* A post in a blog list: title, date and reading time, authors, the text before <!--more-->, and tags */ -}}
+<article class="blog-post-summary">
+  <h2><a href="{{ partial "href" . }}">{{ .Title }}</a></h2>
+  <div class="blog-post-meta">
+    <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
+    &middot; {{ .ReadingTime }} min read
+  </div>
+  {{ partial "blog/authors.html" . }}
+  <div class="blog-post-excerpt">{{ .Summary }}</div>
+  {{ partial "tag-list.html" . }}
+  {{- if .Truncated }}<a class="blog-read-more" href="{{ partial "href" . }}">Read more</a>{{ end }}
+</article>

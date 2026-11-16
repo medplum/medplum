@@ -3,11 +3,13 @@
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { MedplumServerConfig } from '../config/types';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import type { ServerConfig } from '../config/utils';
+import { getShardSystemRepo } from '../fhir/repo';
+import { GLOBAL_SHARD_ID, TODO_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigration,
@@ -19,26 +21,31 @@ import * as migrationUtils from '../migrations/migration-utils';
 import type { PhasalMigration } from '../migrations/types';
 import type { ServerRegistryInfo } from '../server-registry';
 import * as serverRegistry from '../server-registry';
-import { withTestContext } from '../test.setup';
+import { TEST_SHARD_ID, withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
 import { getServerVersion } from '../util/version';
+import { getAsyncJobTracking } from './base';
 import {
   addPostDeployMigrationJobData,
+  initPostDeployMigrationWorker,
   jobProcessor,
   PostDeployMigrationQueueName,
   prepareCustomMigrationJobData,
   prepareDynamicMigrationJobData,
   runCustomMigration,
 } from './post-deploy-migration';
+import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {
-  let config: MedplumServerConfig;
+  let config: ServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
-  const systemRepo = getGlobalSystemRepo();
+  const shardId = TEST_SHARD_ID;
+  // System-owned AsyncJobs live on the global shard, where `getTrackingAsyncJobExecutor` reads them
+  const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
 
   beforeAll(async () => {
-    config = await loadTestConfig();
+    config = await loadTestConfig({ sharded: true });
 
     // initialize everything but workers
     await initAppServices(config);
@@ -113,10 +120,11 @@ describe('Post-Deploy Migration Worker', () => {
 
     // inside of withTestContext, requestId and traceId are set
     await withTestContext(async () => {
-      const data1 = prepareCustomMigrationJobData(asyncJob);
+      const data1 = prepareCustomMigrationJobData({ shardId, asyncJob });
       expect(data1).toEqual({
         type: 'custom',
-        asyncJobId: asyncJob.id,
+        target: { kind: 'shard', shardId },
+        tracking: getAsyncJobTracking(asyncJob),
         requestId: expect.any(String),
         traceId: expect.any(String),
       });
@@ -131,10 +139,11 @@ describe('Post-Deploy Migration Worker', () => {
     });
 
     // outside of withTestContext, requestId and traceId are undefined
-    const data2 = prepareCustomMigrationJobData(asyncJob);
+    const data2 = prepareCustomMigrationJobData({ shardId, asyncJob });
     expect(data2).toEqual({
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: undefined,
       traceId: undefined,
     });
@@ -166,7 +175,7 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({ shardId, asyncJob: mockAsyncJob });
       job = {
         id: '1',
         data: jobData,
@@ -220,7 +229,7 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migration);
+      const jobData: PostDeployJobData = prepareDynamicMigrationJobData({ shardId, asyncJob: mockAsyncJob }, migration);
       job = {
         id: '1',
         data: jobData,
@@ -292,7 +301,7 @@ describe('Post-Deploy Migration Worker', () => {
     const job = await withTestContext(async () => {
       return {
         id: '1',
-        data: prepareDynamicMigrationJobData(mockAsyncJob, migration),
+        data: prepareDynamicMigrationJobData({ shardId, asyncJob: mockAsyncJob }, migration),
         queueName: 'PostDeployMigrationQueue',
       } as unknown as Job<PostDeployJobData>;
     });
@@ -323,7 +332,7 @@ describe('Post-Deploy Migration Worker', () => {
     executeMigrationActionsSpy.mockRestore();
   });
 
-  test('Job processor runs migration when AsyncJob is active', async () => {
+  test('Job processor runs migration', async () => {
     const mockCustomMigration: CustomPostDeployMigration = {
       type: 'custom',
       prepareJobData: vi.fn(),
@@ -347,17 +356,14 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/migrate',
     });
 
-    // temporarily set to {} to appease typescript since it gets set within withTestContext
-    let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
-    await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
-      job = {
-        id: '1',
-        data: jobData,
-        queueName: 'PostDeployMigrationQueue',
-      } as unknown as Job<PostDeployJobData>;
-    });
-    expect(job.data).toBeDefined();
+    const jobData: PostDeployJobData = await withTestContext(async () =>
+      prepareCustomMigrationJobData({ shardId, asyncJob: mockAsyncJob })
+    );
+    const job = {
+      id: '1',
+      data: jobData,
+      queueName: PostDeployMigrationQueueName,
+    } as unknown as Job<PostDeployJobData>;
 
     await jobProcessor(job);
 
@@ -370,6 +376,100 @@ describe('Post-Deploy Migration Worker', () => {
       { name: 'first', part: [{ name: 'durationMs', valueInteger: 111 }] },
       { name: 'second', part: [{ name: 'durationMs', valueInteger: 222 }] },
     ]);
+  });
+
+  test.each<[string, Pick<PostDeployJobData, 'target'> | Record<string, never>]>([
+    ['a TODO shard target', { target: { kind: 'shard', shardId: TODO_SHARD_ID } }],
+    ['no target', {}],
+  ])('Job processor runs a job queued with %s on the global shard', async (_label, legacyTarget) => {
+    const callback = vi.fn(async () => undefined);
+    const mockCustomMigration: CustomPostDeployMigration = {
+      type: 'custom',
+      prepareJobData: vi.fn(),
+      run: vi.fn(async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback)),
+    };
+    const getPostDeployMigrationSpy = vi
+      .spyOn(migrationUtils, 'getPostDeployMigration')
+      .mockReturnValue(mockCustomMigration);
+
+    // dataVersion 1 is already applied everywhere, so marking it complete leaves the shared database unchanged
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      type: 'data-migration',
+      status: 'accepted',
+      dataVersion: 1,
+      minServerVersion: '0.0.0',
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+    const job = {
+      id: '1',
+      data: { type: 'custom', tracking: getAsyncJobTracking(asyncJob), ...legacyTarget },
+      queueName: PostDeployMigrationQueueName,
+    } as unknown as Job<PostDeployJobData>;
+
+    await jobProcessor(job);
+
+    expect(mockCustomMigration.run).toHaveBeenCalledWith(
+      expect.objectContaining({ shardId: GLOBAL_SHARD_ID }),
+      job,
+      expect.objectContaining({ target: { kind: 'shard', shardId: GLOBAL_SHARD_ID } })
+    );
+    expect(callback).toHaveBeenCalled();
+    const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    expect(updatedAsyncJob.status).toBe('completed');
+
+    getPostDeployMigrationSpy.mockRestore();
+  });
+
+  test('Job processor fails a job tracked by a project-owned AsyncJob', () =>
+    withTestContext(async () => {
+      const mockCustomMigration: CustomPostDeployMigration = {
+        type: 'custom',
+        prepareJobData: vi.fn(),
+        run: vi.fn(),
+      };
+      const getPostDeployMigrationSpy = vi
+        .spyOn(migrationUtils, 'getPostDeployMigration')
+        .mockReturnValue(mockCustomMigration);
+
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        meta: { project: randomUUID() },
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/migrate',
+      });
+      const job = {
+        id: '1',
+        data: { type: 'custom', tracking: getAsyncJobTracking(asyncJob), target: { kind: 'shard', shardId } },
+        queueName: PostDeployMigrationQueueName,
+      } as unknown as Job<PostDeployJobData>;
+
+      await expect(jobProcessor(job)).rejects.toThrow(`Unexpected AsyncJob owner for AsyncJob/${asyncJob.id}`);
+
+      expect(mockCustomMigration.run).not.toHaveBeenCalled();
+      await expect(systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id)).resolves.toMatchObject({
+        status: 'error',
+      });
+
+      getPostDeployMigrationSpy.mockRestore();
+    }));
+
+  test('Worker logs async job data', () => {
+    const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
+    initPostDeployMigrationWorker(config);
+    const logFields = loggingSpy.mock.calls.at(-1)?.[2] as (job: Job<PostDeployJobData>) => Record<string, unknown>;
+    const jobData: PostDeployJobData = {
+      type: 'custom',
+      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      tracking: { owner: 'system', asyncJobId: 'tracked-job' },
+    };
+
+    expect(logFields({ data: jobData } as Job<PostDeployJobData>)).toEqual({
+      asyncJob: 'AsyncJob/tracked-job',
+      jobType: 'custom',
+    });
   });
 
   test.each(['some-token', undefined])(
@@ -405,7 +505,7 @@ describe('Post-Deploy Migration Worker', () => {
       // temporarily set to {} to appease typescript since it gets set within withTestContext
       let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
       await withTestContext(async () => {
-        const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+        const jobData: PostDeployJobData = prepareCustomMigrationJobData({ shardId, asyncJob: mockAsyncJob });
         job = new Job(queue, 'PostDeployMigrationJobData', jobData);
         // Since the Job class is fully mocked, we need to set the data property manually
         job.data = jobData;
@@ -472,7 +572,7 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({ shardId, asyncJob: mockAsyncJob });
       job = new Job(queue, 'PostDeployMigrationJobData', jobData);
       // Since the Job class is fully mocked, we need to set the data property manually
       job.data = jobData;
@@ -543,7 +643,7 @@ describe('Post-Deploy Migration Worker', () => {
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData({ shardId, asyncJob: mockAsyncJob });
       job = new Job(queue, 'PostDeployMigrationJobData', jobData);
       // Since the Job class is fully mocked, we need to set the data property manually
       job.data = jobData;
@@ -581,7 +681,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };
@@ -620,7 +721,8 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      asyncJobId: asyncJob.id,
+      target: { kind: 'shard', shardId },
+      tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
     };
@@ -650,5 +752,32 @@ describe('Post-Deploy Migration Worker', () => {
         },
       ],
     });
+  });
+
+  test('Run custom migration rethrows DelayedError without failing the job', async () => {
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 123,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+
+    const jobData: CustomPostDeployMigrationJobData = {
+      type: 'custom',
+      target: { kind: 'shard', shardId },
+      tracking: getAsyncJobTracking(asyncJob),
+      requestId: '123',
+      traceId: '456',
+    };
+
+    await expect(
+      runCustomMigration(systemRepo, undefined, jobData, async () => {
+        throw new DelayedError('Delayed since queue is closing');
+      })
+    ).rejects.toBeInstanceOf(DelayedError);
+
+    const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    expect(updatedJob.status).toBe('accepted');
   });
 });

@@ -14,10 +14,9 @@ import {
   getBotManagementLambdaClient,
 } from '../cloud/aws/lambda';
 import { tryRunInRequestContext } from '../context';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
+import type { AsyncJobTracking } from './base';
+import { getTrackingAsyncJobExecutor } from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -39,7 +38,7 @@ interface ResolvedLambdaCleanerOptions extends LambdaCleanerOptions, DeleteLambd
 }
 
 export interface LambdaCleanerJobData {
-  readonly asyncJob: WithId<AsyncJob>;
+  readonly tracking: AsyncJobTracking;
   readonly options: LambdaCleanerOptions;
   readonly requestId?: string;
   readonly traceId?: string;
@@ -70,11 +69,13 @@ export const initLambdaCleanerWorker: WorkerInitializer = (config, options?: Wor
       ),
       getWorkerBullmqConfig(config, 'lambda-cleaner', queueOptions, { concurrency: 1 })
     );
-    addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => ({
-      asyncJob: `AsyncJob/${job.data.asyncJob.id}`,
-      nameRegex: job.data.options.nameRegex,
-      dryRun: job.data.options.dryRun,
-    }));
+    addVerboseQueueLogging<LambdaCleanerJobData>(queue, worker, (job) => {
+      return {
+        asyncJob: `AsyncJob/${job.data.tracking.asyncJobId}`,
+        nameRegex: job.data.options.nameRegex,
+        dryRun: job.data.options.dryRun,
+      };
+    });
   }
 
   return { queue, worker, name: LambdaCleanerQueueName };
@@ -93,8 +94,7 @@ export async function addLambdaCleanerJobData(jobData: LambdaCleanerJobData): Pr
 }
 
 export async function lambdaCleanerJobProcessor(job: Job<LambdaCleanerJobData>): Promise<WithId<AsyncJob>> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+  const exec = await getTrackingAsyncJobExecutor(job.data.tracking);
   return exec.startAsync(async () => {
     const summary = await execLambdaCleanerJob(job.data.options);
     return formatSummary(summary);

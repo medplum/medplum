@@ -5,11 +5,11 @@ import { ActionIcon, Box, Center, Flex, Skeleton, Stack, Text, ThemeIcon, Toolti
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
-import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { isReference, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import type { Communication, DocumentReference, Patient, Practitioner, Reference, Resource } from '@medplum/fhirtypes';
 import { useThreadInbox } from '@medplum/react-hooks';
 import { IconMessageCircle, IconPlus } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { ListWithDetailPaneTab } from '../../ListWithDetailPane/ListWithDetailPane';
 import { ListWithDetailPane } from '../../ListWithDetailPane/ListWithDetailPane';
@@ -28,6 +28,7 @@ import { ThreadListItem } from './ThreadListItem';
  * @param subject - The default subject when creating a new thread.
  * @param showPatientSummary - Whether to show the patient summary.
  * @param sections - Optional sections configuration for the patient summary.
+ * @param patientHeaderLink - Where the patient summary header navigates when clicked. Omit for a static header.
  * @param onNew - A function to handle a new thread.
  * @param onSelectFirst - Fired with the first thread when the list loads with nothing selected; use it to navigate to that thread (with replace) so the inbox auto-selects it.
  * @param getThreadUri - A function to build thread URIs.
@@ -45,6 +46,10 @@ export interface ThreadInboxProps {
   readonly subject?: Reference<Patient> | Patient;
   readonly showPatientSummary?: boolean;
   readonly sections?: PatientSummarySectionConfig[];
+  readonly patientHeaderMenuItems?: ReactNode;
+  readonly patientHeaderLink?: Resource | Reference | string;
+  readonly onEditPatient?: () => void;
+  readonly onPatientChange?: (patient: Reference<Patient> | undefined) => void;
   readonly onNew: (message: Communication) => void;
   readonly onSelectFirst?: (thread: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
@@ -66,6 +71,10 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     subject,
     showPatientSummary = false,
     sections,
+    patientHeaderMenuItems,
+    patientHeaderLink,
+    onEditPatient,
+    onPatientChange,
     onNew,
     onSelectFirst,
     getThreadUri,
@@ -118,6 +127,12 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     query,
     threadId,
   });
+
+  const threadSubject = selectedThread?.subject;
+  const patientReference = isReference<Patient>(threadSubject, 'Patient') ? threadSubject.reference : undefined;
+  useEffect(() => {
+    onPatientChange?.(patientReference ? { reference: patientReference } : undefined);
+  }, [patientReference, onPatientChange]);
 
   const handleParticipantsChange = useCallback(
     (participants: Reference<Patient | Practitioner>[]) => {
@@ -238,6 +253,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               thread={thread}
               showPatientSummary={showPatientSummary}
               sections={sections}
+              patientHeaderMenuItems={patientHeaderMenuItems}
+              patientHeaderLink={patientHeaderLink}
+              onEditPatient={onEditPatient}
               uploadEnabled={uploadEnabled}
               onViewInDocuments={onViewInDocuments}
               onStatusChange={handleTopicStatusChangeWithErrorHandling}

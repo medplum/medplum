@@ -1,0 +1,9 @@
+{{- /* FHIR reference: a page per resource and data type at /docs/api/fhir/<location>/<name>, rendered by
+  layouts/partials/fhir/page.html from the StructureDefinitions in packages/definitions */ -}}
+{{- range (partialCached "fhir/index.html" .).types -}}
+  {{- $.AddPage (dict
+    "path" (printf "%s/%s" .location (lower .name))
+    "title" .name
+    "params" (dict "fhirType" .name)
+  ) -}}
+{{- end -}}

@@ -1,31 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  ActionIcon,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Group,
-  Modal,
-  Pagination,
-  Paper,
-  ScrollArea,
-  Skeleton,
-  Stack,
-  Tabs,
-  Text,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Box, Button, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { hideNotification, showNotification, updateNotification } from '@mantine/notifications';
-import { getReferenceString } from '@medplum/core';
+import type { MedplumClient, SearchRequest, WithId } from '@medplum/core';
+import { isGone, isNotFound, normalizeOperationOutcome, Operator } from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
   DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
 } from '@medplum/dosespot-react';
 import type { MedicationRequest } from '@medplum/fhirtypes';
-import { Loading, useMedplum } from '@medplum/react';
+import { Loading, Modal, ResourceBoard, useMedplum } from '@medplum/react';
 import {
   SCRIPTSURE_IFRAME_BOT,
   SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS,
@@ -34,8 +19,8 @@ import {
 } from '@medplum/scriptsure-react';
 import { IconPlus, IconShoppingCart, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { MedicationRequestDetails } from '../../components/meds/MedicationRequestDetails';
 import type { MedTab } from '../../components/meds/MedListItem';
 import { MedListItem } from '../../components/meds/MedListItem';
@@ -46,7 +31,6 @@ import { usePatient } from '../../hooks/usePatient';
 import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
 import { showErrorNotification } from '../../utils/notifications';
 import { OrderMedicationPage } from '../meds/OrderMedicationPage';
-import classes from './MedsPage.module.css';
 
 /** Server-side _count for the medication list page. */
 const PAGE_SIZE = 20;
@@ -70,9 +54,28 @@ const STATUS_PARAM_TO_TAB: Record<string, MedTab> = {
 
 const DEFAULT_TAB: MedTab = 'active';
 
+/**
+ * Compact projection for list rows. Never feed a projected row to the details
+ * panel: `resolveSelected` always reads the full resource instead.
+ */
+const LIST_FIELDS = [
+  '_lastUpdated',
+  'status',
+  'intent',
+  'medicationCodeableConcept',
+  'dosageInstruction',
+  'dispenseRequest',
+  'subject',
+  'requester',
+  'authoredOn',
+  'identifier',
+  'extension',
+];
+
 export function MedicationsPage(): JSX.Element {
   const { patientId, medicationRequestId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const medplum = useMedplum();
   const { orderMedication } = useScriptSureOrderMedication();
   const { addToCart, adding, checkout, removeFromCart, clearCart } = useScriptSureCart();
@@ -82,28 +85,32 @@ export function MedicationsPage(): JSX.Element {
   const statusParam = searchParams.get('status') ?? TAB_TO_STATUS_PARAM[DEFAULT_TAB];
   const activeTab: MedTab = STATUS_PARAM_TO_TAB[statusParam] ?? DEFAULT_TAB;
   const offset = Math.max(0, Number.parseInt(searchParams.get('_offset') ?? '0', 10) || 0);
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
-  const setTab = useCallback(
-    (next: MedTab) => {
-      const status = TAB_TO_STATUS_PARAM[next];
-      // Reset paging on tab change so the user lands on page 1 of the new status set.
-      setSearchParams(
-        (prev) => {
-          const updated = new URLSearchParams(prev);
-          updated.set('status', status);
-          updated.delete('_offset');
-          return updated;
-        },
-        { replace: true }
-      );
-    },
-    [setSearchParams]
+  const search = useMemo<SearchRequest>(
+    () => ({
+      resourceType: 'MedicationRequest',
+      filters: [
+        { code: 'subject', operator: Operator.EQUALS, value: `Patient/${patientId}` },
+        { code: 'status', operator: Operator.EQUALS, value: statusParam },
+      ],
+      sortRules: [{ code: '_lastUpdated', descending: true }],
+      count: PAGE_SIZE,
+      offset,
+      total: 'accurate',
+      fields: LIST_FIELDS,
+    }),
+    [patientId, statusParam, offset]
   );
 
-  const setPage = useCallback(
-    (page: number) => {
-      const nextOffset = Math.max(0, (page - 1) * PAGE_SIZE);
+  // Tabs keep the current path (and so the selected order) and reset paging to page 1.
+  const tabUri = useCallback(
+    (tab: MedTab): string => `${location.pathname}?status=${TAB_TO_STATUS_PARAM[tab]}`,
+    [location.pathname]
+  );
+
+  const handleSearchChange = useCallback(
+    (next: SearchRequest) => {
+      const nextOffset = next.offset ?? 0;
       setSearchParams(
         (prev) => {
           const updated = new URLSearchParams(prev);
@@ -120,9 +127,9 @@ export function MedicationsPage(): JSX.Element {
     [setSearchParams]
   );
 
-  const [orders, setOrders] = useState<MedicationRequest[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshList = useCallback((): void => setRefreshKey((k) => k + 1), []);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [newOrderModalOpened, setNewOrderModalOpened] = useState(false);
   const [iframeModalOpened, setIframeModalOpened] = useState(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>();
@@ -146,9 +153,12 @@ export function MedicationsPage(): JSX.Element {
   useEffect(() => {
     iframeUrlRef.current = iframeUrl;
   }, [iframeUrl]);
-  /** MR id for iframe session + polling when URL/detail selection lags behind a new order. */
+  /**
+   * The MR the iframe modal was opened for: it alone drives the session refresh and
+   * sync polling. The URL selection is never used as a fallback, since the Draft tab
+   * auto-selects a row and an order-set launch has no MR of its own.
+   */
   const [iframePollMrId, setIframePollMrId] = useState<string | undefined>();
-  const [fetchedOrder, setFetchedOrder] = useState<MedicationRequest | undefined>();
   /** Draft MR ids the MedCart checkout modal polls for sync after a cart checkout. */
   const [cartWatchIds, setCartWatchIds] = useState<string[]>([]);
   /** Count of draft (cart) MedicationRequests for the patient, shown in the order modal. */
@@ -158,72 +168,42 @@ export function MedicationsPage(): JSX.Element {
   /** MR id whose "remove from cart" request is in flight (drives the row spinner). */
   const [removingId, setRemovingId] = useState<string | undefined>();
 
-  // The tab query intentionally requests a compact `_fields` projection for
-  // list rows. Never use that partial resource for the details panel: changing
-  // tabs would otherwise switch between projected and full resource shapes.
-  const currentOrder = medicationRequestId && fetchedOrder?.id === medicationRequestId ? fetchedOrder : undefined;
-
   const patient = usePatient();
-  const patientReference = useMemo(() => (patient ? getReferenceString(patient) : undefined), [patient]);
+  const patientReference = `Patient/${patientId}`;
   const membership = medplum.getProjectMembership();
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
   const hasScriptSure = hasScriptSureIdentifier(membership);
 
-  const fetchOrders = useCallback(async (): Promise<void> => {
-    if (!patientReference) {
-      showErrorNotification('Patient not found');
-      return;
-    }
-    try {
-      const params = new URLSearchParams({
-        subject: patientReference,
-        status: statusParam,
-        _count: String(PAGE_SIZE),
-        _offset: String(offset),
-        _sort: '-_lastUpdated',
-        _total: 'accurate',
-        _fields:
-          '_lastUpdated,status,intent,medicationCodeableConcept,dosageInstruction,dispenseRequest,subject,requester,authoredOn,identifier,extension',
-      });
-      const bundle = await medplum.search('MedicationRequest', params, { cache: 'no-cache' });
-      const entries: MedicationRequest[] = [];
-      for (const entry of bundle.entry ?? []) {
-        if (entry.resource?.resourceType === 'MedicationRequest') {
-          entries.push(entry.resource);
+  /**
+   * The list rows are a `_fields` projection, so the selection is always read in full
+   * and re-read whenever the list reloads, keeping the details current. A deleted or
+   * missing order (e.g. a cart draft the bot hard-deleted while it was selected) resolves
+   * to nothing rather than toasting, since the stale id is dropped from the URL right after.
+   * Any other failure is rethrown so the board surfaces it.
+   */
+  const resolveSelected = useCallback(
+    async (
+      id: string,
+      _items: WithId<MedicationRequest>[],
+      client: MedplumClient
+    ): Promise<WithId<MedicationRequest> | undefined> => {
+      try {
+        return await client.readResource('MedicationRequest', id, { cache: 'reload' });
+      } catch (err) {
+        const outcome = normalizeOperationOutcome(err);
+        if (isGone(outcome) || isNotFound(outcome)) {
+          return undefined;
         }
+        throw err;
       }
-      setOrders(entries);
-      if (typeof bundle.total === 'number') {
-        setTotal(bundle.total);
-      } else {
-        // Fallback for servers that omit `total`: assume "at least this many" so paging
-        // controls remain visible if the current page is full.
-        setTotal(offset + entries.length + (entries.length === PAGE_SIZE ? 1 : 0));
-      }
-    } catch (error) {
-      showErrorNotification(error);
-    }
-  }, [medplum, patientReference, statusParam, offset]);
+    },
+    []
+  );
 
-  const fetchData = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    try {
-      await fetchOrders();
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchOrders]);
-
-  useEffect(() => {
-    if (patientId) {
-      fetchData().catch(showErrorNotification);
-    }
-  }, [patientId, fetchData]);
-
-  const fetchDataRef = useRef(fetchData);
-  fetchDataRef.current = fetchData;
-
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  /** Drops the selected order from the URL (keeping the tab/page query) so the next item auto-selects. */
+  const clearSelection = useCallback((): void => {
+    navigate(`/Patient/${patientId}/MedicationRequest${location.search}`, { replace: true })?.catch(console.error);
+  }, [navigate, patientId, location.search]);
 
   const getOrderUrl = useCallback(
     (order: MedicationRequest): string => {
@@ -232,23 +212,6 @@ export function MedicationsPage(): JSX.Element {
     },
     [patientId, searchParams]
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    if (medicationRequestId) {
-      medplum
-        .readResource('MedicationRequest', medicationRequestId, { cache: 'reload' })
-        .then((mr) => {
-          if (!cancelled) {
-            setFetchedOrder(mr);
-          }
-        })
-        .catch(showErrorNotification);
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [medicationRequestId, medplum, statusParam]);
 
   useEffect(() => {
     if (!hasDoseSpot || !patient?.id) {
@@ -292,7 +255,7 @@ export function MedicationsPage(): JSX.Element {
             autoClose: 3000,
           });
           medplum.invalidateSearches('MedicationRequest');
-          await fetchDataRef.current();
+          refreshList();
         }
       } catch (err) {
         if (!cancelled) {
@@ -311,54 +274,54 @@ export function MedicationsPage(): JSX.Element {
         hideNotification(notificationId);
       }
     };
-  }, [hasDoseSpot, medplum, patient?.id]);
+  }, [hasDoseSpot, medplum, patient?.id, refreshList]);
 
   const handleOrderMedicationComplete = useCallback(
-    async (result: { launchUrl: string; medicationRequestId?: string }): Promise<void> => {
+    (result: { launchUrl: string; medicationRequestId?: string }): void => {
       setNewOrderModalOpened(false);
       setIframeMode('widget');
       setIframePollMrId(result.medicationRequestId);
       setIframeUrl(result.launchUrl);
       setIframeModalOpened(true);
-      // Switch to the Draft tab (URL-driven) so the just-created draft MR is visible
-      // in the list once the server-side search refreshes.
-      setTab('draft');
-      await fetchData();
-      if (result.medicationRequestId && patientId) {
-        navigate(
-          `/Patient/${patientId}/MedicationRequest/${result.medicationRequestId}?status=${TAB_TO_STATUS_PARAM.draft}`
-        )?.catch(console.error);
-      }
+      // Land on the Draft tab with the just-created draft selected; the URL change reloads the list.
+      refreshList();
+      const path = result.medicationRequestId
+        ? `/Patient/${patientId}/MedicationRequest/${result.medicationRequestId}`
+        : location.pathname;
+      navigate(`${path}?status=${TAB_TO_STATUS_PARAM.draft}`)?.catch(console.error);
     },
-    [fetchData, navigate, patientId, setTab]
+    [navigate, patientId, location.pathname, refreshList]
   );
 
-  const handleOpenScriptSureFromDetails = useCallback(async (): Promise<void> => {
-    if (!patientId || !currentOrder?.id) {
-      return;
-    }
-    try {
-      // Re-opening an existing order from the list opens the full patient
-      // prescriptions/queue iframe rather than the single-order widget. The
-      // widget is only designed for the initial prescribing flow and cannot
-      // approve/deny an order that was added to the queue (issue #9300); the
-      // chart surface handles every state (queued, sent, etc.).
-      const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, {
-        patientId,
-        organization: selectedOrganization,
-      });
-      if (!res?.url) {
-        throw new Error('ScriptSure did not return a prescriptions URL');
+  const handleOpenScriptSureFromDetails = useCallback(
+    async (order: WithId<MedicationRequest>): Promise<void> => {
+      if (!patientId) {
+        return;
       }
-      setIframeMode('chart');
-      setIframePollMrId(currentOrder.id);
-      setIframeUrl(res.url);
-      setIframeModalOpened(true);
-      await fetchData();
-    } catch (e) {
-      showErrorNotification(e);
-    }
-  }, [patientId, currentOrder, medplum, fetchData, selectedOrganization]);
+      try {
+        // Re-opening an existing order from the list opens the full patient
+        // prescriptions/queue iframe rather than the single-order widget. The
+        // widget is only designed for the initial prescribing flow and cannot
+        // approve/deny an order that was added to the queue (issue #9300); the
+        // chart surface handles every state (queued, sent, etc.).
+        const res = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, {
+          patientId,
+          organization: selectedOrganization,
+        });
+        if (!res?.url) {
+          throw new Error('ScriptSure did not return a prescriptions URL');
+        }
+        setIframeMode('chart');
+        setIframePollMrId(order.id);
+        setIframeUrl(res.url);
+        setIframeModalOpened(true);
+        refreshList();
+      } catch (e) {
+        showErrorNotification(e);
+      }
+    },
+    [patientId, medplum, refreshList, selectedOrganization]
+  );
 
   const refreshLaunchUrl = useCallback(async (): Promise<string | undefined> => {
     if (!patientId) {
@@ -373,29 +336,29 @@ export function MedicationsPage(): JSX.Element {
       });
       return res?.url ?? iframeUrlRef.current;
     }
-    const mrId = iframePollMrId ?? currentOrder?.id;
-    if (!mrId) {
+    if (!iframePollMrId) {
       return iframeUrlRef.current;
     }
-    const res = await orderMedication({ patientId, medicationRequestId: mrId, organization: selectedOrganization });
+    const res = await orderMedication({
+      patientId,
+      medicationRequestId: iframePollMrId,
+      organization: selectedOrganization,
+    });
     return res.launchUrl;
-  }, [patientId, currentOrder, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganization]);
+  }, [patientId, iframePollMrId, iframeMode, medplum, orderMedication, selectedOrganization]);
 
-  const handleIframeFhirSynced = useCallback((): void => {
+  const closeIframeModal = useCallback((): void => {
     setIframeModalOpened(false);
     setIframeUrl(undefined);
     setIframePollMrId(undefined);
     setCartWatchIds([]);
-    fetchData().catch(showErrorNotification);
-  }, [fetchData]);
+    refreshList();
+  }, [refreshList]);
 
   // The cart is every draft MedicationRequest for this patient (all pages). The
   // Draft tab list is paginated, but checkout must submit the whole cart so
   // counts stay consistent with Clear cart and the order-modal indicator.
   const fetchAllDraftIds = useCallback(async (): Promise<string[]> => {
-    if (!patientReference) {
-      return [];
-    }
     const ids: string[] = [];
     const pageSize = 100;
     let pageOffset = 0;
@@ -435,9 +398,6 @@ export function MedicationsPage(): JSX.Element {
   // Counts the patient's draft (cart) MRs independent of the active tab, so the
   // order modal can show an accurate "N in cart" even when opened from Active.
   const refreshCartCount = useCallback(async (): Promise<void> => {
-    if (!patientReference) {
-      return;
-    }
     try {
       const bundle = await medplum.search(
         'MedicationRequest',
@@ -460,11 +420,11 @@ export function MedicationsPage(): JSX.Element {
     });
     medplum.invalidateSearches('MedicationRequest');
     if (activeTab !== 'draft') {
-      setTab('draft');
+      navigate(tabUri('draft'), { replace: true })?.catch(console.error);
     }
     refreshCartCount().catch(showErrorNotification);
-    fetchData().catch(showErrorNotification);
-  }, [medplum, activeTab, setTab, fetchData, refreshCartCount]);
+    refreshList();
+  }, [medplum, activeTab, navigate, tabUri, refreshList, refreshCartCount]);
 
   const handleCheckout = useCallback(async (): Promise<void> => {
     const checkoutPatientId = patient?.id;
@@ -501,13 +461,13 @@ export function MedicationsPage(): JSX.Element {
       setIframePollMrId(undefined);
       setIframeUrl(res.approvalUrl);
       setIframeModalOpened(true);
-      await fetchData();
+      refreshList();
     } catch (e) {
       showErrorNotification(e);
     } finally {
       setCheckingOut(false);
     }
-  }, [patient, total, fetchAllDraftIds, checkout, fetchData, selectedOrganization]);
+  }, [patient, total, fetchAllDraftIds, checkout, refreshList, selectedOrganization]);
 
   const handleRemoveFromCart = useCallback(
     async (mrId: string): Promise<void> => {
@@ -536,14 +496,18 @@ export function MedicationsPage(): JSX.Element {
           });
         }
         medplum.invalidateSearches('MedicationRequest');
-        await Promise.all([fetchData(), refreshCartCount()]);
+        if (item?.status !== 'failed' && mrId === medicationRequestId) {
+          clearSelection();
+        }
+        refreshList();
+        await refreshCartCount();
       } catch (e) {
         showErrorNotification(e);
       } finally {
         setRemovingId(undefined);
       }
     },
-    [patient, removeFromCart, medplum, fetchData, refreshCartCount]
+    [patient, removeFromCart, medplum, refreshList, refreshCartCount, medicationRequestId, clearSelection]
   );
 
   const handleClearCart = useCallback(async (): Promise<void> => {
@@ -572,13 +536,18 @@ export function MedicationsPage(): JSX.Element {
         });
       }
       medplum.invalidateSearches('MedicationRequest');
-      await Promise.all([fetchData(), refreshCartCount()]);
+      const removedIds = res.items.filter((i) => i.status !== 'failed').map((i) => i.medicationRequestId);
+      if (medicationRequestId && removedIds.includes(medicationRequestId)) {
+        clearSelection();
+      }
+      refreshList();
+      await refreshCartCount();
     } catch (e) {
       showErrorNotification(e);
     } finally {
       setClearingCart(false);
     }
-  }, [patient, clearCart, medplum, fetchData, refreshCartCount]);
+  }, [patient, clearCart, medplum, refreshList, refreshCartCount, medicationRequestId, clearSelection]);
 
   if (!patient || !patientId) {
     return <Loading />;
@@ -594,174 +563,132 @@ export function MedicationsPage(): JSX.Element {
   // The MedCart widget URL carries a fresh session token from `$checkout-medications`
   // and re-running checkout would re-submit the cart, so that mode never refreshes.
   // Other modes refresh the single-order/chart session token in place.
-  const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId || currentOrder?.id);
+  const canRefreshLaunchUrl = !isCartCheckoutMode && Boolean(iframePollMrId);
   const modalRefreshLaunchUrl = canRefreshLaunchUrl ? refreshLaunchUrl : undefined;
   let medicationRequestIdsToWatch: string[] | undefined;
   if (isCartCheckoutMode) {
     medicationRequestIdsToWatch = cartWatchIds;
   } else {
-    const singleWatchId = iframePollMrId ?? currentOrder?.id;
-    medicationRequestIdsToWatch = singleWatchId ? [singleWatchId] : undefined;
+    medicationRequestIdsToWatch = iframePollMrId ? [iframePollMrId] : undefined;
   }
 
-  return (
-    <Box w="100%" h="100%">
-      <Flex h="100%">
-        <Box w={350} h="100%">
-          <Flex direction="column" h="100%" className={classes.borderRight}>
-            <Paper>
-              <Flex h={64} align="center" justify="space-between" p="md" wrap="wrap" gap="xs">
-                <Group gap="xs">
-                  <Tabs
-                    value={activeTab}
-                    onChange={(v) => setTab((v as MedTab) || DEFAULT_TAB)}
-                    variant="unstyled"
-                    className="pill-tabs"
-                  >
-                    <Tabs.List>
-                      <Tabs.Tab value="active">Active</Tabs.Tab>
-                      <Tabs.Tab value="draft">Draft</Tabs.Tab>
-                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
-                    </Tabs.List>
-                  </Tabs>
-                </Group>
-                <Group gap="xs">
-                  {hasScriptSure && (
-                    <Tooltip label="Order medication" position="bottom" openDelay={500}>
-                      <ActionIcon
-                        radius="xl"
-                        variant="filled"
-                        color="blue"
-                        size={32}
-                        aria-label="Order medication"
-                        onClick={() => {
-                          refreshCartCount().catch(showErrorNotification);
-                          setNewOrderModalOpened(true);
-                        }}
-                      >
-                        <IconPlus size={16} />
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </Group>
-              </Flex>
-            </Paper>
-            <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <ScrollArea style={{ flex: 1 }} p="0.5rem">
-                {loading && <MedListSkeleton />}
-                {!loading && orders.length === 0 && <EmptyMedsState activeTab={activeTab} />}
-                {!loading &&
-                  orders.length > 0 &&
-                  orders.map((item, index) => {
-                    const showCartRow = hasScriptSure && activeTab === 'draft' && typeof item.id === 'string';
-                    const row = (
-                      <MedListItem
-                        item={item}
-                        selectedItem={currentOrder}
-                        activeTab={activeTab}
-                        getItemUrl={getOrderUrl}
-                        medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
-                      />
-                    );
-                    return (
-                      <React.Fragment key={item.id}>
-                        {showCartRow ? (
-                          <Group gap="xs" wrap="nowrap" align="center" pl="0.5rem">
-                            <Box className={classes.cartRowContent}>{row}</Box>
-                            <Tooltip label="Remove from cart" position="left" openDelay={500}>
-                              <ActionIcon
-                                variant="subtle"
-                                color="red"
-                                size="sm"
-                                aria-label="Remove medication from cart"
-                                loading={removingId === item.id}
-                                onClick={() => handleRemoveFromCart(item.id as string).catch(showErrorNotification)}
-                              >
-                                <IconTrash size={14} />
-                              </ActionIcon>
-                            </Tooltip>
-                          </Group>
-                        ) : (
-                          row
-                        )}
-                        {index < orders.length - 1 && (
-                          <Box px="0.5rem">
-                            <Divider />
-                          </Box>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-              </ScrollArea>
-              {!loading && hasScriptSure && activeTab === 'draft' && total > 0 && (
-                <>
-                  <Divider />
-                  <Box p="xs">
-                    <Group justify="flex-end" gap="xs" wrap="nowrap">
-                      <Button
-                        size="xs"
-                        variant="subtle"
-                        color="red"
-                        leftSection={<IconTrash size={14} />}
-                        loading={clearingCart}
-                        onClick={() => handleClearCart().catch(showErrorNotification)}
-                      >
-                        Clear cart ({total})
-                      </Button>
-                      <Button
-                        size="xs"
-                        leftSection={<IconShoppingCart size={14} />}
-                        loading={checkingOut}
-                        disabled={total === 0 || adding}
-                        onClick={() => handleCheckout().catch(showErrorNotification)}
-                      >
-                        Checkout ({total})
-                      </Button>
-                    </Group>
-                  </Box>
-                </>
-              )}
-              {!loading && totalPages > 1 && (
-                <Box p="xs">
-                  <Pagination
-                    size="sm"
-                    value={currentPage}
-                    onChange={setPage}
-                    total={totalPages}
-                    siblings={0}
-                    boundaries={1}
-                  />
-                </Box>
-              )}
-            </Paper>
-          </Flex>
-        </Box>
+  const showCart = hasScriptSure && activeTab === 'draft';
 
-        <Box h="100%" style={{ flex: 1 }} className={classes.borderRight}>
-          {currentOrder ? (
+  const tabs = [
+    { value: 'active', label: 'Active', uri: tabUri('active') },
+    { value: 'draft', label: 'Draft', uri: tabUri('draft') },
+    { value: 'completed', label: 'Completed', uri: tabUri('completed') },
+  ];
+
+  const headerActions = hasScriptSure && (
+    <Tooltip label="Order medication" position="bottom" openDelay={500}>
+      <ActionIcon
+        radius="xl"
+        variant="filled"
+        color="blue"
+        size={32}
+        aria-label="Order medication"
+        onClick={() => {
+          refreshCartCount().catch(showErrorNotification);
+          setNewOrderModalOpened(true);
+        }}
+      >
+        <IconPlus size={16} />
+      </ActionIcon>
+    </Tooltip>
+  );
+
+  const cartFooter = showCart && total > 0 && (
+    <>
+      <Divider />
+      <Box p="xs">
+        <Group justify="flex-end" gap="xs" wrap="nowrap">
+          <Button
+            size="xs"
+            variant="subtle"
+            color="red"
+            leftSection={<IconTrash size={14} />}
+            loading={clearingCart}
+            onClick={() => handleClearCart().catch(showErrorNotification)}
+          >
+            Clear cart ({total})
+          </Button>
+          <Button
+            size="xs"
+            leftSection={<IconShoppingCart size={14} />}
+            loading={checkingOut}
+            disabled={total === 0 || adding}
+            onClick={() => handleCheckout().catch(showErrorNotification)}
+          >
+            Checkout ({total})
+          </Button>
+        </Group>
+      </Box>
+    </>
+  );
+
+  return (
+    <>
+      <ResourceBoard<MedicationRequest>
+        search={search}
+        selectedId={medicationRequestId}
+        reloadKey={refreshKey}
+        resolveSelected={resolveSelected}
+        tabs={tabs}
+        activeTab={activeTab}
+        headerActions={headerActions}
+        renderItem={(item, { selected }) => (
+          <MedListItem
+            item={item}
+            selectedItem={selected ? item : undefined}
+            activeTab={activeTab}
+            getItemUrl={getOrderUrl}
+            medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
+            actions={
+              showCart && (
+                <Tooltip label="Remove from cart" position="left" openDelay={500}>
+                  <ActionIcon
+                    variant="subtle"
+                    color="red"
+                    size="sm"
+                    aria-label="Remove medication from cart"
+                    loading={removingId === item.id}
+                    onClick={() => handleRemoveFromCart(item.id).catch(showErrorNotification)}
+                  >
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              )
+            }
+          />
+        )}
+        emptyList={<EmptyMedsState activeTab={activeTab} />}
+        listFooter={cartFooter}
+        renderDetail={(order) => (
+          <Box key={order.id} flex={1} miw={0} h="100%" style={{ overflow: 'auto' }}>
             <MedicationRequestDetails
-              key={currentOrder.id}
-              medicationRequest={currentOrder}
+              medicationRequest={order}
               medicationOrderExtensions={SCRIPTSURE_MEDICATION_ORDER_EXTENSIONS}
-              onOpenInScriptSure={() => handleOpenScriptSureFromDetails().catch(showErrorNotification)}
+              onOpenInScriptSure={() => handleOpenScriptSureFromDetails(order).catch(showErrorNotification)}
             />
-          ) : (
-            <MedSelectEmpty />
-          )}
-        </Box>
-      </Flex>
+          </Box>
+        )}
+        emptyDetail={<MedSelectEmpty />}
+        onChange={handleSearchChange}
+        onSelectFirst={(order) => navigate(getOrderUrl(order), { replace: true })?.catch(console.error)}
+        onLoad={(_items, loadedTotal) => setTotal(loadedTotal ?? 0)}
+        onError={showErrorNotification}
+      />
 
       <Modal
         opened={newOrderModalOpened}
         onClose={() => setNewOrderModalOpened(false)}
         size="xl"
-        centered
         title="Order medication"
       >
         <OrderMedicationPage
           patient={patient}
-          onOrderComplete={(r) => handleOrderMedicationComplete(r).catch(showErrorNotification)}
+          onOrderComplete={handleOrderMedicationComplete}
           onAddedToCart={handleAddedToCart}
           persistCartDraft={addToCart}
           cartAdding={adding}
@@ -771,20 +698,14 @@ export function MedicationsPage(): JSX.Element {
 
       <PrescriptionIFrameModal
         opened={iframeModalOpened}
-        onClose={() => {
-          setIframeModalOpened(false);
-          setIframeUrl(undefined);
-          setIframePollMrId(undefined);
-          setCartWatchIds([]);
-          fetchData().catch(showErrorNotification);
-        }}
+        onClose={closeIframeModal}
         launchUrl={iframeUrl}
         onRefreshLaunchUrl={modalRefreshLaunchUrl}
         medicationRequestIdsToWatch={medicationRequestIdsToWatch}
-        onFhirSynced={handleIframeFhirSynced}
+        onFhirSynced={closeIframeModal}
         title={modalTitle}
       />
-    </Box>
+    </>
   );
 }
 
@@ -797,22 +718,5 @@ function EmptyMedsState({ activeTab }: { activeTab: MedTab }): JSX.Element {
         </Text>
       </Stack>
     </Flex>
-  );
-}
-
-function MedListSkeleton(): JSX.Element {
-  const widths = ['72%', '65%', '80%', '70%', '68%', '75%'];
-  return (
-    <Stack gap="md" p="md">
-      {widths.map((w, index) => (
-        <Stack key={index}>
-          <Flex direction="column" gap="xs" align="flex-start">
-            <Skeleton height={16} width={w} />
-            <Skeleton height={14} width="55%" />
-          </Flex>
-          <Divider />
-        </Stack>
-      ))}
-    </Stack>
   );
 }

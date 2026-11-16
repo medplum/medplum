@@ -7,6 +7,7 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
+import { TEST_SHARD_ID } from '../../test.setup';
 import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from '../sharding';
 import { RepositoryConnection } from './repository-connection';
 import { RepositoryConnections } from './repository-connections';
@@ -21,7 +22,7 @@ function borrow(shardId: string, client: PoolClient = mockClient()): RepositoryC
 
 describe('RepositoryConnections', () => {
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    const config = await loadTestConfig({ sharded: true });
     await initAppServices(config);
   });
 
@@ -99,9 +100,10 @@ describe('RepositoryConnections', () => {
   });
 
   test('Reports per-shard state when several connections are in transactions at once', async () => {
+    const projectShardId = TEST_SHARD_ID;
     const connections = new RepositoryConnections();
     const globalEntry = connections.entryFor(GLOBAL_SHARD_ID);
-    const projectEntry = connections.entryFor('shard-project');
+    const projectEntry = connections.entryFor(projectShardId);
     expect(globalEntry).not.toBe(projectEntry);
 
     // Each transaction blocks until the other has begun, so both are open simultaneously.
@@ -115,7 +117,7 @@ describe('RepositoryConnections', () => {
         globalStarted.resolve(undefined);
         await projectStarted.promise;
         observed.globalSeesGlobal = connections.peek(GLOBAL_SHARD_ID)?.connection.isInTransaction();
-        observed.globalSeesProject = connections.peek('shard-project')?.connection.isInTransaction();
+        observed.globalSeesProject = connections.peek(projectShardId)?.connection.isInTransaction();
         return 'global success';
       },
       { resourceTypes: ['Patient'], source: 'test.transactionRace.global' }
@@ -126,7 +128,7 @@ describe('RepositoryConnections', () => {
       async () => {
         projectStarted.resolve(undefined);
         await globalStarted.promise;
-        observed.projectSeesProject = connections.peek('shard-project')?.connection.isInTransaction();
+        observed.projectSeesProject = connections.peek(projectShardId)?.connection.isInTransaction();
         return 'project success';
       },
       { resourceTypes: ['Patient'], source: 'test.transactionRace.project' }

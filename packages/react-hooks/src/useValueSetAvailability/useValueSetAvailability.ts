@@ -36,13 +36,16 @@ const EMPTY_URLS: string[] = [];
 /**
  * Probes a set of ValueSet URLs for availability, each with a filter-free, count-limited expansion.
  *
- * A filter-free probe means a 400/404 unambiguously describes the value set itself (unlike a
- * user-typed search, whose 400 can be filter-specific), so the verdict is safe to act on. Repeated
- * probes of the same URL are deduplicated by the `MedplumClient` request cache, which caches
- * rejections too, so many fields bound to the same missing value set cost one request. Recovery
- * after a value set is imported happens on the next mount (i.e. a page refresh) — there is no live
- * subscription. Transient failures (429/5xx/network) resolve as available so a blip never disables
- * a field; only a permanent 400/404 marks a URL unavailable.
+ * A "filter-free probe" means that without any user filters, if we get back a 400/404, it means the
+ * value set itself is unavailable. We only mark a field as truly unavailable if we get back a 400/404;
+ * transient failures (429/5xx/network) will be resolved as available so something like a network blip
+ * will not disable a field and create bad UI behavior.
+ *
+ * Repeated probes of the same URL are deduplicated by the `MedplumClient` request cache, which caches
+ * rejections too, so many fields bound to the same missing value set cost one request in the TTL window.
+ * Recovery after a value set is imported happens on the first mount after that cache entry expires (60s in
+ * the browser by default) — there is no live subscription.
+ *
  * @param urls - The ValueSet URLs to probe. Falsy entries are ignored, and duplicates collapse to a
  * single probe.
  * @returns The availability verdict, with `loading` true until every requested URL has settled.
@@ -69,11 +72,9 @@ export function useValueSetAvailabilities(urls: readonly (string | undefined)[])
     }
 
     let cancelled = false;
-    const controller = new AbortController();
-
     for (const url of uniqueUrls) {
       medplum
-        .valueSetExpand({ url, count: 1 }, { signal: controller.signal })
+        .valueSetExpand({ url, count: 1 })
         .then(() => {
           if (!cancelled) {
             setVerdicts((prev) => ({ ...prev, [url]: true }));
@@ -89,7 +90,6 @@ export function useValueSetAvailabilities(urls: readonly (string | undefined)[])
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
   }, [medplum, uniqueUrls]);
 

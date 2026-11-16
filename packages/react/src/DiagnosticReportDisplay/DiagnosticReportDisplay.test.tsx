@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
+import { createReference, createStaticClient } from '@medplum/core';
 import type { DiagnosticReport, Observation, Reference } from '@medplum/fhirtypes';
-import { HomerDiagnosticReport, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
+import { DrAliceSmith, HomerDiagnosticReport, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import {
   HealthGorillaCholesterolObservation,
@@ -294,6 +294,35 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });
 
+  test('Hides DNR observations', async () => {
+    const dnrObs = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'cancelled',
+      code: { text: 'RBC' },
+      valueString: 'DNR',
+    });
+    const reportedObs = await medplum.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'PROTEIN' },
+      valueString: '1+',
+    });
+    const dnrReport = await medplum.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { text: 'Urinalysis' },
+      subject: createReference(HomerSimpson),
+      result: [createReference(dnrObs), createReference(reportedObs)],
+    });
+
+    await act(async () => {
+      setup({ value: dnrReport });
+    });
+
+    expect(screen.queryByText('DNR')).toBeNull();
+    expect(screen.getByText('1+')).toBeInTheDocument();
+  });
+
   test('Renders specimen note', async () => {
     await act(async () => {
       setup({ value: syntheaReport });
@@ -451,5 +480,31 @@ describe('DiagnosticReportDisplay', () => {
 
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('XYZ')).toBeDefined();
+  });
+
+  // Guards the contract that this component only reads by id, so it can render from resources
+  // gathered up front. The static client rejects searches and writes, which MockClient allows.
+  test('Renders with a static client', async () => {
+    const staticClient = createStaticClient([
+      HealthGorillaQuestDiagnosticReport,
+      HomerSimpson,
+      DrAliceSmith,
+      HealthGorillaQuestServiceRequest,
+      HealthGorillaQuestParentLab,
+      HealthGorillaQuestObservationGroup1,
+      HealthGorillaQuestObservationGroup2,
+      HealthGorillaQuestObservationGroup3,
+    ]);
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={staticClient}>
+          <DiagnosticReportDisplay value={createReference(HealthGorillaQuestDiagnosticReport)} />
+        </MedplumProvider>
+      );
+    });
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 });

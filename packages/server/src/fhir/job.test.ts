@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
-import type { AsyncJob } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { ContentType, createReference, getReferenceString, Logger } from '@medplum/core';
+import type { AsyncJob, Binary } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { runInAuthenticatedContext } from '../context';
+import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
-import { Repository } from './repo';
+import { getProjectSystemRepo } from './repo';
 
 const app = express();
 
@@ -28,14 +28,9 @@ describe('Job status', () => {
   });
 
   beforeEach(async () => {
-    const testProject = await createTestProject({ withAccessToken: true });
+    const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
     accessToken = testProject.accessToken;
-    asyncJobManager = new AsyncJobExecutor(
-      new Repository({
-        projects: [testProject.project],
-        author: { reference: 'User/' + randomUUID() },
-      })
-    );
+    asyncJobManager = new AsyncJobExecutor(testProject.repo);
   });
 
   test('in progress', () =>
@@ -174,4 +169,59 @@ describe('Job status', () => {
         ],
       });
     }));
+
+  test('Job access by other members is logged', async () => {
+    const { project, login, membership, client, repo, accessToken } = await createTestProject({
+      withClient: true,
+      withAccessToken: true,
+      withRepo: true,
+    });
+    const exec = new AsyncJobExecutor(repo);
+    const authState = { login, project, membership, userConfig: { resourceType: 'UserConfiguration' } } as const;
+    const job = await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+      exec.init('http://example.com/')
+    );
+    expect(job.requester?.reference).toStrictEqual(getReferenceString(client));
+    await exec.completeJob();
+    const otherMember = await addTestUser(project);
+    const binaryReader = await addTestUser(project);
+    const binary = await (
+      await getProjectSystemRepo(project)
+    ).createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: ContentType.TEXT,
+      securityContext: createReference(job),
+      meta: { project: project.id },
+    });
+
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      for (const [token, path] of [
+        [accessToken, `/fhir/R4/job/${job.id}/status`],
+        [otherMember.accessToken, `/fhir/R4/AsyncJob/${job.id}`],
+        [otherMember.accessToken, `/fhir/R4/job/${job.id}/status`],
+        [otherMember.accessToken, `/fhir/R4/job/${job.id}/status`],
+        [binaryReader.accessToken, `/fhir/R4/Binary/${binary.id}`],
+      ] as const) {
+        const res = await request(app)
+          .get(path)
+          .set('Authorization', 'Bearer ' + token)
+          .set('Accept', ContentType.FHIR_JSON);
+        expect(res).toHaveStatus(200);
+      }
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob accessed by another user');
+      expect(calls.map(([, data]) => data)).toStrictEqual(
+        [otherMember, binaryReader].map((member) => ({
+          asyncJobId: job.id,
+          projectId: project.id,
+          requester: getReferenceString(client),
+          reader: getReferenceString(member.profile),
+          suppressed: 0,
+        }))
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });

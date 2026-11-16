@@ -6,7 +6,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken } from '../../test.setup';
+import { GLOBAL_SHARD_ID } from '../sharding';
 
 describe('$db-invalid-indexes', () => {
   const app = express();
@@ -21,12 +22,12 @@ describe('$db-invalid-indexes', () => {
   });
 
   afterEach(async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await client.query(`REINDEX INDEX CONCURRENTLY "CarePlan_replaces_idx"`);
   });
 
   test('Success', async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     await client.query(
       `UPDATE pg_index SET indislive = false 
       FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
@@ -34,7 +35,7 @@ describe('$db-invalid-indexes', () => {
       ['CarePlan_replaces_idx']
     );
 
-    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    const accessToken = await getSuperAdminAccessToken();
 
     const res = await request(app)
       .post('/fhir/R4/$db-invalid-indexes')

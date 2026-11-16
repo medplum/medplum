@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { createReference } from '@medplum/core';
 import type { ElementDefinition, Observation, Patient, StructureDefinition, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -10,10 +11,8 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
-import { getGlobalSystemRepo } from '../repo';
 
 describe('Repository validation', () => {
-  const systemRepo = getGlobalSystemRepo();
   const rawUsCorePatientProfile = readFileSync(resolve(__dirname, '../__test__/us-core-patient.json'), 'utf8');
   const usCorePatientProfile = JSON.parse(rawUsCorePatientProfile) as StructureDefinition;
 
@@ -28,7 +27,14 @@ describe('Repository validation', () => {
 
   test('Profile validation', async () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+        withRepo: true,
+      });
+      const { repo: linkingRepo } = await createTestProject({
+        project: { link: [{ project: createReference(project) }] },
+        withRepo: true,
+      });
 
       const profile = { ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() };
       const patient: Patient = {
@@ -54,6 +60,7 @@ describe('Repository validation', () => {
       await expect(repo.createResource(patient)).resolves.toBeTruthy();
       await repo.createResource(profile);
       await expect(repo.createResource(patient)).rejects.toThrow('Missing required property (Patient.gender)');
+      await expect(linkingRepo.createResource(patient)).resolves.toBeTruthy();
     }));
 
   test('Profile update', async () =>
@@ -219,7 +226,7 @@ describe('Repository validation', () => {
         valueBoolean: true,
       };
 
-      await expect(systemRepo.createResource(observation)).resolves.toBeDefined();
+      await expect(repo.getSystemRepo().createResource(observation)).resolves.toBeDefined();
       await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
 
       observation.subject = { identifier: { value: randomUUID() } };

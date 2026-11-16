@@ -54,7 +54,7 @@ describe('MemberDetailsPage', () => {
     expect(screen.getByText('Go to User (change login email)')).toBeInTheDocument();
   });
 
-  test('Shows server-scoped alert for server-scoped user', async () => {
+  test('Shows server-scoped note for a readable server-scoped user', async () => {
     const medplum = createMedplum();
 
     const practitioner = await medplum.createResource<Practitioner>({
@@ -78,8 +78,9 @@ describe('MemberDetailsPage', () => {
 
     renderAppRoutes(medplum, `/admin/users/${membership.id}`);
 
-    expect(await screen.findByText('User Details')).toBeInTheDocument();
-    expect(screen.getByText('This User is server-scoped and cannot be viewed in this project.')).toBeInTheDocument();
+    expect(await screen.findByText('This User is server-scoped.')).toBeInTheDocument();
+    expect(screen.getByText('bob@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('Go to User (change login email)')).not.toBeInTheDocument();
   });
 
   test('Does not show User Details for Bot membership', async () => {

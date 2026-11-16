@@ -1,11 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
-import type { Device, HealthcareServiceAvailableTime, Location, Schedule } from '@medplum/fhirtypes';
+import { useMantineTheme } from '@mantine/core';
+import { createReference, RecurrenceIdExtensionURI, ServiceTypeReferenceURI } from '@medplum/core';
+import type {
+  Appointment,
+  Device,
+  HealthcareService,
+  HealthcareServiceAvailableTime,
+  Location,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MargeSimpson } from '@medplum/mock';
 import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
-import { withMockedDate } from '../stories/decorators';
+import { withFixtures, withMockedDate } from '../stories/decorators';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
 
@@ -353,3 +362,173 @@ export const WithHoursOfAvailability = (): JSX.Element => {
     </div>
   );
 };
+
+const bookedVisit = {
+  resourceType: 'HealthcareService',
+  id: 'booked-visit',
+  name: 'Booked visit',
+} satisfies HealthcareService;
+
+const pendingVisit = {
+  resourceType: 'HealthcareService',
+  id: 'pending-visit',
+  name: 'Pending visit',
+} satisfies HealthcareService;
+
+/**
+ * A half-hour appointment in one theme color, on a day counted from the mocked Monday, May 4,
+ * in the row for the color's place in the theme.
+ * @param color - The theme color the appointment is drawn in, which also names its patient.
+ * @param row - The color's place in the theme.
+ * @param status - Whether the appointment is booked or pending.
+ * @param dayOffset - Days after May 4.
+ * @returns The appointment.
+ */
+function colorAppointment(color: string, row: number, status: 'booked' | 'pending', dayOffset: number): Appointment {
+  const start = new Date(2020, 4, 4 + dayOffset, 6, 30 * row);
+  const service = status === 'booked' ? bookedVisit : pendingVisit;
+  return {
+    resourceType: 'Appointment',
+    id: `${color}-${status}-${dayOffset}`,
+    status,
+    start: start.toISOString(),
+    end: new Date(start.getTime() + 30 * 60_000).toISOString(),
+    serviceType: [
+      {
+        extension: [{ url: ServiceTypeReferenceURI, valueReference: createReference(service) }],
+      },
+    ],
+    participant: [
+      // No such patient is stored, so the event is labeled with the reference's display.
+      { status: 'accepted', actor: { reference: `Patient/${color}`, display: color } },
+    ],
+  };
+}
+
+/**
+ * A half-hour busy slot, held by no appointment, on a day counted from the mocked Monday, May 4.
+ * @param row - The half-hour row it is drawn in, counted from 6am.
+ * @param dayOffset - Days after May 4.
+ * @returns The slot.
+ */
+function busySlot(row: number, dayOffset: number): Slot {
+  const start = new Date(2020, 4, 4 + dayOffset, 6, 30 * row);
+  return {
+    resourceType: 'Slot',
+    id: `busy-${dayOffset}`,
+    status: 'busy',
+    start: start.toISOString(),
+    end: new Date(start.getTime() + 30 * 60_000).toISOString(),
+    schedule: { reference: 'Schedule/blocked-time' },
+  };
+}
+
+export const ThemeColors = (): JSX.Element => {
+  const theme = useMantineTheme();
+  const colors = Object.keys(theme.colors).filter((color) => color !== 'dark' && color !== 'gray');
+  const sources: MultiCalendarSource[] = [
+    ...colors.map((color, row) => ({
+      color,
+      slots: [],
+      appointments: [
+        // Sunday and Monday morning have passed, so these are drawn faded.
+        colorAppointment(color, row, 'booked', -1),
+        colorAppointment(color, row, 'pending', 0),
+        colorAppointment(color, row, 'booked', 1),
+        colorAppointment(color, row, 'pending', 2),
+      ],
+    })),
+    // Blocked time is drawn in gray, whichever source holds it, under the colors on Sunday and Tuesday.
+    { slots: [busySlot(colors.length, -1), busySlot(colors.length, 1)], appointments: [] },
+  ];
+
+  return (
+    <div style={{ height: 700, padding: '1em' }}>
+      <MultiCalendar
+        sources={sources}
+        onSelectAppointment={(appointment) => alert(`Selected Appointment/${appointment.id}`)}
+        onSelectSlot={(slot) => alert(`Selected Slot/${slot.id}`)}
+      />
+    </div>
+  );
+};
+ThemeColors.decorators = [withFixtures([bookedVisit, pendingVisit])];
+
+const followUpVisit = {
+  resourceType: 'HealthcareService',
+  id: 'follow-up-visit',
+  name: 'Medication management follow-up',
+} satisfies HealthcareService;
+
+/**
+ * An appointment for the follow-up visit on Tuesday, May 5.
+ * @param hour - The hour it starts at.
+ * @param minutes - How long it lasts.
+ * @param options - How it differs from a single booked visit.
+ * @param options.recurring - Whether it is an occurrence of a recurring series.
+ * @param options.status - The appointment's status.
+ * @returns The appointment.
+ */
+function followUpAppointment(
+  hour: number,
+  minutes: number,
+  { recurring = false, status = 'booked' }: { recurring?: boolean; status?: Appointment['status'] } = {}
+): Appointment {
+  const start = new Date(2020, 4, 5, hour);
+  return {
+    resourceType: 'Appointment',
+    id: `follow-up-${hour}`,
+    status,
+    start: start.toISOString(),
+    end: new Date(start.getTime() + minutes * 60_000).toISOString(),
+    extension: recurring ? [{ url: RecurrenceIdExtensionURI, valueDateTime: start.toISOString() }] : undefined,
+    serviceType: [
+      {
+        extension: [{ url: ServiceTypeReferenceURI, valueReference: createReference(followUpVisit) }],
+      },
+    ],
+    participant: [{ status: 'accepted', actor: createReference(HomerSimpson) }],
+  };
+}
+
+/**
+ * A quarter-hour of blocked time on Tuesday, May 5.
+ * @param hour - The hour it starts at.
+ * @returns The slot.
+ */
+function shortBlockedSlot(hour: number): Slot {
+  const start = new Date(2020, 4, 5, hour);
+  return {
+    resourceType: 'Slot',
+    id: `short-blocked-${hour}`,
+    status: 'busy-unavailable',
+    start: start.toISOString(),
+    end: new Date(start.getTime() + 15 * 60_000).toISOString(),
+    schedule: createReference(DrAliceSmithSchedule),
+  };
+}
+
+export const ShortAppointments = (): JSX.Element => {
+  const sources: MultiCalendarSource[] = [
+    {
+      schedule: DrAliceSmithSchedule,
+      slots: [shortBlockedSlot(15)],
+      appointments: [
+        followUpAppointment(9, 15, { recurring: true }),
+        followUpAppointment(10, 20),
+        followUpAppointment(11, 25),
+        followUpAppointment(13, 30),
+        followUpAppointment(14, 15, { status: 'pending' }),
+      ],
+    },
+    // A source naming no schedule has no one to name beside blocked time, so its time goes there.
+    { slots: [shortBlockedSlot(16)], appointments: [] },
+  ];
+
+  return (
+    <div style={{ height: 700, padding: '1em' }}>
+      <MultiCalendar sources={sources} />
+    </div>
+  );
+};
+ShortAppointments.decorators = [withFixtures([followUpVisit])];

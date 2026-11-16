@@ -25,14 +25,15 @@ import {
 import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { body, oneOf, validationResult } from 'express-validator';
+import { body, oneOf } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
+import { sendValidationErrors } from '../util/validator';
 import {
   cleanupContextForResource,
   compareAndSetTopicCurrentContext,
@@ -166,9 +167,7 @@ protectedCommonRoutes.post(
     { errorType: 'least_errored' }
   ),
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
 
@@ -194,9 +193,7 @@ protectedCommonRoutes.post(
     body('event.context').notEmpty().withMessage('Missing event.context'),
   ],
   async (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
+    if (sendValidationErrors(req, res)) {
       return;
     }
     await handleContextChangeRequest(req, res);

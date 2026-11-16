@@ -50,7 +50,8 @@ vi.mock('pg', async () => {
       if (sql === mockQueries.GetDataVersionSql) {
         return { rows: [{ dataVersion: mockLatestVersion }] };
       }
-      if (sql.startsWith('SELECT "User"."id"')) {
+      // For the query that checks if a shard is seeded
+      if (sql.startsWith('SELECT "Practitioner"."id"')) {
         return { rows: [{ id: '1', content: '{}' }] };
       }
       if (sql === 'SELECT pg_try_advisory_lock($1)') {
@@ -121,6 +122,14 @@ describe('uncaughtException handler', () => {
       .filter((l) => !baselineRejection.includes(l))
       .forEach((l) => process.off('unhandledRejection', l));
     await shutdownApp();
+  });
+
+  beforeEach(() => {
+    vi.spyOn(loggerModule.globalLogger, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.mocked(loggerModule.globalLogger.error).mockRestore();
   });
 
   test('drains stdout before calling process.exit(1)', async () => {

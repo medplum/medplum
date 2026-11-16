@@ -17576,12 +17576,6 @@
             "documentation" : "External identifier for the value set"
           },
           {
-            "name" : "code",
-            "definition" : "http://hl7.org/fhir/SearchParameter/ValueSet-code",
-            "type" : "token",
-            "documentation" : "This special parameter searches for codes in the value set. See additional notes on the ValueSet resource"
-          },
-          {
             "name" : "context-type-value",
             "definition" : "http://hl7.org/fhir/SearchParameter/conformance-context-type-value",
             "type" : "composite",

@@ -17,6 +17,7 @@ import {
   getDataType,
   getSearchParameter,
   invalidSearchOperator,
+  isChainedSearchFilter,
   isUUID,
   OperationOutcomeError,
   Operator,
@@ -31,12 +32,14 @@ import {
   toPeriod,
   validateResourceType,
 } from '@medplum/core';
-import type { IncludeOptions } from '@medplum/fhir-router';
+import type { IncludeOptions, SearchOptions as RouterSearchOptions } from '@medplum/fhir-router';
 import { getExtraEntries } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, BundleLink, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { systemResourceProjectId } from '../constants';
+import { isChainedSearchDisabled } from './lookups/reference';
 import { clamp } from './operations/utils/parameters';
+import { isPresenceOperator, shouldSearchParameterExist } from './presence';
 import { addRangeColumnsOrderBy, buildRangeColumnsSearchFilter } from './range-column';
 import type { Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
@@ -74,6 +77,12 @@ const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
  */
 export const minCursorBasedSearchPageSize = 20;
 
+const searchInteractions: readonly AccessPolicyInteraction[] = Object.freeze([AccessPolicyInteraction.SEARCH]);
+const searchResultInteractions: readonly AccessPolicyInteraction[] = Object.freeze([
+  AccessPolicyInteraction.READ,
+  AccessPolicyInteraction.SEARCH,
+]);
+
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
   offset: number;
@@ -106,7 +115,7 @@ interface ChainedSearchParameter {
   filter: Filter;
 }
 
-export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
+export interface SearchOptions extends RouterSearchOptions, Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
 
 export async function searchImpl<T extends Resource>(
   repo: Repository,
@@ -121,12 +130,16 @@ export async function searchImpl<T extends Resource>(
   let nextResource: T | undefined;
   if (searchRequest.count > 0) {
     const trackedResourceTypes = new Set<ResourceType>();
-    const builder = getSelectQueryForSearch(repo, searchRequest, { ...options, trackedResourceTypes });
+    const builder = getSelectQueryForSearch(repo, searchRequest, {
+      ...options,
+      trackedResourceTypes,
+      limitModifier: options?.resourceOnly ? 0 : 1,
+    });
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder, trackedResourceTypes));
   }
 
   let total = undefined;
-  if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
+  if (!options?.resourceOnly && (searchRequest.total === 'accurate' || searchRequest.total === 'estimate')) {
     const countResult = await getCount(repo, searchRequest, { rowCount });
     total = countResult.accurate ?? countResult.estimate;
   }
@@ -136,7 +149,7 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, entry, nextResource),
+    link: options?.resourceOnly ? undefined : getSearchLinks(searchRequest, entry, nextResource),
   };
 }
 
@@ -174,28 +187,32 @@ export async function searchByReferenceImpl<T extends Resource>(
       referenceConditions.push(expr);
       builder.whereExpr(expr);
 
-      const column = new Column(undefined, `'${referenceValues[0]}'`, true, 'ref');
+      // IMPORTANT: The "ref" column is the INDEX of the reference value in `referenceValues`,
+      // not the reference value itself. It is a raw SQL column, so it must only ever contain
+      // the integer loop counter set below. Rows are mapped back via `referenceValues[row.ref]`.
+      // The placeholder here, the loop counter, and the row mapping must stay in sync.
+      const column = new Column(undefined, '0', true, 'ref');
       referenceColumns.push(column);
       builder.column(column);
     },
   });
 
   const unionAllBuilder = new UnionAllBuilder();
-  for (const refValue of referenceValues) {
+  for (let i = 0; i < referenceValues.length; i++) {
     // Update each condition with the current reference value
     for (const cond of referenceConditions) {
-      cond.parameter = refValue;
+      cond.parameter = referenceValues[i];
     }
-    // Update each column with the current reference value literal
+    // Update each "ref" column with the INDEX of the current reference value (see IMPORTANT note above)
     for (const column of referenceColumns) {
-      column.actualColumnName = `'${refValue}'`;
+      column.actualColumnName = i.toString();
     }
     unionAllBuilder.add(searchQuery);
   }
 
   const rows: {
     content: string;
-    ref: string;
+    ref: number;
   }[] = await repo.executeSql(
     unionAllBuilder,
     repoAccess.sqlRead(trackedResourceTypes, { source: 'search.searchByReference' })
@@ -208,7 +225,8 @@ export async function searchByReferenceImpl<T extends Resource>(
   for (const row of rows) {
     const resource = JSON.parse(row.content) as WithId<T>;
     removeResourceFields(resource, repo, searchRequest);
-    results[row.ref].push(resource);
+    // "ref" is the index into `referenceValues` assigned in the loop above
+    results[referenceValues[row.ref]].push(resource);
   }
 
   return results;
@@ -449,7 +467,7 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
+  repo.addSecurityFilters(builder, resourceType, searchInteractions);
   addSearchFilters(repo, builder, resourceType, searchRequest, opts?.trackedResourceTypes);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
@@ -462,7 +480,7 @@ function getBaseSelectQueryForResourceType(
 }
 
 function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
-  repo.removeHiddenFields(resource);
+  repo.removeHiddenFields(resource, searchResultInteractions);
   if (searchRequest.fields) {
     const schema = getDataType(resource.resourceType);
     subsetResource(
@@ -499,6 +517,10 @@ function getIncludeOptions(repo: Repository): IncludeOptions {
     // Run sub-searches through the query pipeline directly rather than re-entering
     // `Repository.search()`, which would additionally build bundle links for every sub-search.
     executeSearch: async (searchRequest: SearchRequest): Promise<WithId<Resource>[]> => {
+      // Canonical `_include` target types come from the search parameter definition rather than the request
+      if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, searchRequest.resourceType)) {
+        return [];
+      }
       const trackedResourceTypes = new Set<ResourceType>();
       const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
       const result = await getSearchEntries(
@@ -856,10 +878,6 @@ function addSearchFilters(
   }
 }
 
-export function isChainedSearchFilter(filter: Filter): boolean {
-  return filter.code.startsWith('_has:') || filter.code.includes('.');
-}
-
 export function buildSearchExpression(
   repo: Repository,
   selectQuery: SelectQuery,
@@ -950,7 +968,14 @@ function buildSearchFilterExpression(
     case SearchStrategies.TOKEN_COLUMN:
       return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
     case SearchStrategies.LOOKUP_TABLE:
-      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+      return impl.lookupTable.buildWhere(
+        selectQuery,
+        resourceType,
+        table,
+        param,
+        filter,
+        repo.getSearchProjectIds(resourceType)
+      );
     case SearchStrategies.RANGE_COLUMN:
       if (!repo.supportsRangeSearch()) {
         return buildNormalSearchFilterExpression(
@@ -1086,29 +1111,21 @@ function trySpecialSearchParameter(
 ): Expression | undefined {
   switch (filter.code) {
     case '_id':
-      return buildIdSearchFilter(table, idImpl, filter);
+      return buildUuidSearchFilter(table, idImpl, filter);
     case '_lastUpdated':
       return buildDateSearchFilter(table, lastUpdatedImpl, filter);
     case '_deleted':
       return buildBooleanSearchFilter(table, deletedImpl, filter);
     case '_project': {
-      if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
-        if (
-          (filter.operator === Operator.MISSING && filter.value === 'true') ||
-          (filter.operator === Operator.PRESENT && filter.value !== 'true')
-        ) {
-          // missing
-          return new Condition(new Column(table, 'projectId'), '=', systemResourceProjectId);
-        } else {
-          // present
-          return new Condition(new Column(table, 'projectId'), '!=', systemResourceProjectId);
-        }
+      if (isPresenceOperator(filter)) {
+        const shouldExist = shouldSearchParameterExist(filter.operator, filter.value);
+        return new Condition(new Column(table, 'projectId'), shouldExist ? '!=' : '=', systemResourceProjectId);
       }
 
-      return buildIdSearchFilter(table, projectIdImpl, filter);
+      return buildUuidSearchFilter(table, projectIdImpl, filter);
     }
     case '_compartment': {
-      return buildIdSearchFilter(table, compartmentsImpl, filter);
+      return buildUuidSearchFilter(table, compartmentsImpl, filter);
     }
     case '_filter': {
       const filterExpr = parseFilterParameter(filter.value);
@@ -1242,14 +1259,33 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
 }
 
 /**
- * Adds an ID search filter as "WHERE" clause to the query builder.
+ * Builds a UUID-backed search filter as a SQL expression.
  * @param table - The resource table name or alias.
  * @param impl - The search parameter implementation info.
  * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
-  if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
+function buildUuidSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
+  const column = new Column(table, impl.columnName);
+  if (isPresenceOperator(filter)) {
+    const shouldExist = shouldSearchParameterExist(filter.operator, filter.value);
+    if (impl.array) {
+      return new Condition(
+        column,
+        shouldExist ? 'ARRAY_NOT_EMPTY' : 'ARRAY_EMPTY',
+        undefined,
+        getSearchParamColumnType(impl)
+      );
+    }
+    return new Condition(column, shouldExist ? '!=' : '=', null);
+  }
+
+  if (
+    filter.operator !== Operator.EQUALS &&
+    filter.operator !== Operator.EXACT &&
+    filter.operator !== Operator.NOT &&
+    filter.operator !== Operator.NOT_EQUALS
+  ) {
     throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
   }
 
@@ -1263,7 +1299,7 @@ function buildIdSearchFilter(table: string, impl: ColumnSearchParameterImplement
     }
   }
 
-  return buildCondition(impl, filter, values, new Column(table, impl.columnName));
+  return buildCondition(impl, filter, values, column);
 }
 
 /**
@@ -1624,7 +1660,15 @@ function buildChainedSearch(
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
   // Note that this does slightly change the behavior of the search query: true chained search would require the
   // reference to point to an existing resource, while the rewritten query just matches the reference string
-  if (param.chain.length === 1 && param.filter?.code === '_id' && param.chain[0].direction === Direction.FORWARD) {
+  if (
+    param.chain.length === 1 &&
+    param.filter?.code === '_id' &&
+    param.chain[0].direction === Direction.FORWARD &&
+    (param.filter.operator === Operator.EQUALS ||
+      param.filter.operator === Operator.EXACT ||
+      param.filter.operator === Operator.NOT ||
+      param.filter.operator === Operator.NOT_EQUALS)
+  ) {
     const { targetType, code } = param.chain[0];
     const targetId = param.filter.value;
     return buildSearchFilterExpression(
@@ -1635,6 +1679,13 @@ function buildChainedSearch(
       { code, operator: param.filter.operator, value: `${targetType}/${targetId}` },
       trackedResourceTypes
     );
+  }
+
+  for (const link of param.chain) {
+    const referenceTableType = link.direction === Direction.FORWARD ? link.originType : link.targetType;
+    if (isChainedSearchDisabled(referenceTableType)) {
+      throw new OperationOutcomeError(badRequest(`Chained search is disabled for ${referenceTableType}`));
+    }
   }
 
   return buildChainedSearchUsingReferenceTable(repo, selectQuery, param, trackedResourceTypes);

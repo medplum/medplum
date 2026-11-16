@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import type { BaseLoginRequest, LoginAuthenticationResponse } from '@medplum/core';
-import { normalizeErrorString } from '@medplum/core';
+import { isUUID, normalizeErrorString } from '@medplum/core';
 import type { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -153,10 +153,11 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     // The `useMedplum` hook will return a new instance of the MedplumClient on login
     // We do not want to request the login status again in that case
     // Only request login status once
-    if (loginCode && !loginRequested.current && !login) {
+    // Login IDs are UUIDs, and anything else would change the request path
+    if (loginCode && isUUID(loginCode) && !loginRequested.current && !login) {
       loginRequested.current = true;
       medplum
-        .get('auth/login/' + loginCode)
+        .get('auth/login/' + encodeURIComponent(loginCode))
         .then(handleAuthResponse)
         .catch((err: unknown) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }

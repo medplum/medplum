@@ -13,7 +13,7 @@ import { createTestProject } from '../test.setup';
 const cjsCode = `
 exports.handler = async function (medplum, event) {
   console.log(JSON.stringify(event));
-  return event.input;
+  return event.headers["x-test-return-event"] ? { input: event.input, authorization: event.headers.authorization } : event.input;
 };
 `;
 
@@ -36,7 +36,7 @@ describe('Anonymous webhooks', () => {
   let accessToken: string;
   let bot: WithId<Bot>;
   let botMembership: WithId<ProjectMembership>;
-  let binaryResponseBot: WithId<Bot>;
+  let rawBodyBotMembership: WithId<ProjectMembership>;
   let binaryResponseBotMembership: WithId<ProjectMembership>;
 
   beforeAll(async () => {
@@ -58,105 +58,117 @@ describe('Anonymous webhooks', () => {
     adminMembership = testSetup.membership;
     accessToken = testSetup.accessToken;
 
-    // Create the bot
+    [bot, botMembership] = await createWebhookBot('Alice personal bot', cjsCode);
+    [, rawBodyBotMembership] = await createWebhookBot('Raw body bot', cjsCode, { rawBody: true });
+    [, binaryResponseBotMembership] = await createWebhookBot('Binary response bot', binaryResponseCode);
+  });
+
+  async function createWebhookBot(
+    name: string,
+    code: string,
+    settings?: Partial<Bot>
+  ): Promise<[WithId<Bot>, WithId<ProjectMembership>]> {
     const res1 = await request(app)
-      .post('/admin/projects/' + testSetup.project.id + '/bot')
+      .post('/admin/projects/' + project.id + '/bot')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
-      .send({
-        name: 'Alice personal bot',
-        description: 'Alice bot description',
-        accessPolicy: createReference(testSetup.accessPolicy),
-      });
+      .send({ name, description: `${name} description`, accessPolicy: createReference(accessPolicy) });
     expect(res1).toHaveStatus(201);
-    expect(res1.body.resourceType).toBe('Bot');
-    expect(res1.body.id).toBeDefined();
-    bot = res1.body as WithId<Bot>;
+    const newBot = res1.body as WithId<Bot>;
 
-    // Deploy the bot
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .post(`/fhir/R4/Bot/${newBot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        code: cjsCode,
-      });
+      .send({ code });
     expect(res2).toHaveStatus(200);
 
-    // Get the bot ProjectMembership
     const res3 = await request(app)
-      .get(`/fhir/R4/ProjectMembership?profile=Bot/${bot.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3).toHaveStatus(200);
-    expect(res3.body.entry).toBeDefined();
-    expect(res3.body.entry.length).toBe(1);
-    botMembership = res3.body.entry[0].resource as WithId<ProjectMembership>;
-
-    // Create a bot that returns a binary response with specified content type
-    const res4 = await request(app)
-      .post('/admin/projects/' + testSetup.project.id + '/bot')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .type('json')
-      .send({
-        name: 'Binary response bot',
-        description: 'Binary response bot description',
-        accessPolicy: createReference(testSetup.accessPolicy),
-      });
-    expect(res4).toHaveStatus(201);
-    expect(res4.body.resourceType).toBe('Bot');
-    expect(res4.body.id).toBeDefined();
-    binaryResponseBot = res4.body as WithId<Bot>;
-
-    // Deploy the binary response bot
-    const res5 = await request(app)
-      .post(`/fhir/R4/Bot/${binaryResponseBot.id}/$deploy`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        code: binaryResponseCode,
-      });
-    expect(res5).toHaveStatus(200);
-
-    // Get the bot ProjectMembership for the binary response bot
-    const res6 = await request(app)
-      .get(`/fhir/R4/ProjectMembership?profile=Bot/${binaryResponseBot.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6).toHaveStatus(200);
-    expect(res6.body.entry).toBeDefined();
-    expect(res6.body.entry.length).toBe(1);
-    binaryResponseBotMembership = res6.body.entry[0].resource as WithId<ProjectMembership>;
-
-    // Update the bot to opt-in to public webhook access
-    const res7 = await request(app)
-      .patch(`/fhir/R4/Bot/${bot.id}`)
+      .patch(`/fhir/R4/Bot/${newBot.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.JSON_PATCH)
-      .send([
-        {
+      .send(
+        Object.entries({ publicWebhook: true, ...settings }).map(([key, value]) => ({
           op: 'add',
-          path: '/publicWebhook',
-          value: true,
-        },
-      ]);
-    expect(res7).toHaveStatus(200);
+          path: '/' + key,
+          value,
+        }))
+      );
+    expect(res3).toHaveStatus(200);
 
-    // Do the same for the binary response bot
-    const res8 = await request(app)
-      .patch(`/fhir/R4/Bot/${binaryResponseBot.id}`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send([
-        {
-          op: 'add',
-          path: '/publicWebhook',
-          value: true,
-        },
-      ]);
-    expect(res8).toHaveStatus(200);
-  });
+    const res4 = await request(app)
+      .get(`/fhir/R4/ProjectMembership?profile=Bot/${newBot.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4).toHaveStatus(200);
+    expect(res4.body.entry).toHaveLength(1);
+    return [newBot, res4.body.entry[0].resource as WithId<ProjectMembership>];
+  }
 
   afterAll(async () => {
     await shutdownApp();
+  });
+
+  test.each(['/webhook/', '/api/webhook/', '/projects/{projectId}/webhook/', '/api/projects/{projectId}/webhook/'])(
+    'Preserves parsed JSON by default through VM execution at %s',
+    async (prefix) => {
+      const rawBody = '{ "greeting" : "café 🌍", "escaped": "\\u0061" }\n';
+      const res = await request(app)
+        .post(prefix.replace('{projectId}', project.id) + botMembership.id)
+        .set('Content-Type', ContentType.JSON)
+        .set('x-test-return-event', 'true')
+        .send(rawBody);
+      expect(res).toHaveStatus(200);
+      expect(res.body).toEqual({ input: JSON.parse(rawBody) });
+    }
+  );
+
+  test('Bot.rawBody selects raw or parsed JSON input', async () => {
+    const rawBody = '{ "value": 1.00 }\n';
+    for (const [membership, input] of [
+      [botMembership, { value: 1 }],
+      [rawBodyBotMembership, rawBody],
+    ] as const) {
+      const res = await request(app)
+        .post(`/webhook/${membership.id}`)
+        .set('Content-Type', ContentType.JSON)
+        .set('x-test-return-event', 'true')
+        .send(rawBody);
+      expect(res).toHaveStatus(200);
+      expect(res.body).toEqual({ input });
+    }
+  });
+
+  test('Does not capture raw body for non-JSON webhooks', async () => {
+    const res = await request(app)
+      .post(`/webhook/${botMembership.id}`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('Authorization', 'Bearer webhook-secret')
+      .set('x-test-return-event', 'true')
+      .send('hello');
+    expect(res).toHaveStatus(200);
+    expect(res.type).toBe(ContentType.TEXT);
+    expect(JSON.parse(res.text)).toEqual({ input: 'hello', authorization: 'Bearer webhook-secret' });
+  });
+
+  test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
+    const res = await request(app)
+      .post(`/webhook/${rawBodyBotMembership.id}`)
+      .set('Content-Type', ContentType.FORM_URL_ENCODED)
+      .set('x-test-return-event', 'true')
+      .send('value=1.00');
+    expect(res).toHaveStatus(200);
+    expect(JSON.parse(res.text)).toEqual({ input: { value: '1.00' } });
+  });
+
+  test('Authenticated execute parses the body by default (rawBody not set)', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .set('x-test-return-event', 'true')
+      .send('{ "greeting" : "hello" }');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toEqual({ input: { greeting: 'hello' } });
   });
 
   test('Missing invalid ID', async () => {

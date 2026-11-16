@@ -41,6 +41,11 @@ export interface IndexDefinition {
   primaryKey?: boolean;
   include?: string[];
   where?: string;
+  /**
+   * GIN `fastupdate` storage parameter. Only valid for GIN indexes.
+   * When unset, the server default applies and an existing index's setting is not compared.
+   */
+  fastupdate?: boolean;
   indexNameSuffix?: string;
   indexNameOverride?: string;
   indexdef?: string;
@@ -72,7 +77,7 @@ export type MigrationAction =
   | { type: 'ALTER_COLUMN_TYPE'; tableName: string; columnName: string; columnType: string }
   | { type: 'CREATE_INDEX'; indexName: string; createIndexSql: string }
   | { type: 'DROP_INDEX'; indexName: string }
-  | { type: 'DROP_INVALID_INDEX'; indexName: string }
+  | { type: 'DROP_INVALID_INDEX'; schemaName: string; indexName: string }
   | { type: 'REINDEX_CONCURRENTLY'; target: 'INDEX' | 'TABLE'; name: string }
   | { type: 'ADD_CONSTRAINT'; tableName: string; constraintName: string; constraintExpression: string }
   | { type: 'ANALYZE_TABLE'; tableName: string };

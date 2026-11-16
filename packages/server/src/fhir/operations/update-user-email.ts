@@ -8,15 +8,20 @@ import {
   concatUrls,
   forbidden,
   getReferenceString,
+  normalizeErrorString,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
+import { retireAllSecurityRequests } from '../../auth/securityrequest';
+import { revokeUserLogins } from '../../auth/setpassword';
 import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
+import { getLogger } from '../../logger';
+import { membershipProfileTypes, readMembershipReference } from '../projectmembership';
 import type { Repository } from '../repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
@@ -53,6 +58,15 @@ const op = makeOperationDefinition(
         documentation: 'If true, do not send the verification email and mark the email as non-verified',
       },
       {
+        use: 'in',
+        name: 'sendEmail',
+        type: 'boolean',
+        min: 0,
+        max: '1',
+        documentation:
+          'If false, create the email verification request but do not send the built-in verification email. Default true.',
+      },
+      {
         use: 'out',
         name: 'return',
         type: 'User',
@@ -68,6 +82,7 @@ type InputParams = {
   email: string;
   updateProfileTelecom?: boolean;
   skipEmailVerification?: boolean;
+  sendEmail?: boolean;
 };
 
 const profileTypesWithTelecom: ResourceType[] = ['Patient', 'Practitioner', 'RelatedPerson'];
@@ -85,9 +100,9 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
   return [allOk, user];
 }
 
-async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
+async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<WithId<User>> {
   const systemRepo = await getProjectSystemRepo(project);
-  return systemRepo.withTransaction(
+  const { user: updatedUser, verification } = await systemRepo.withTransaction(
     async (txRepo) => {
       let user = await txRepo.readResource<User>('User', userId);
       if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
@@ -98,46 +113,15 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
       }
 
       const oldEmail = user.email;
-      user.email = params.email;
+      const newEmail = params.email.toLowerCase();
+      user.email = newEmail;
       user.emailVerified = false;
       user = await txRepo.updateResource(user);
 
-      if (!params.skipEmailVerification) {
-        const { id, secret } = await verifyEmail(txRepo, user);
-        const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
+      await retireAllSecurityRequests(txRepo, user); // existing requests were issued for previous address
+      await revokeUserLogins(txRepo, user);
 
-        // Use the target user's own project for project-level SMTP configuration.
-        // A super admin may be operating across projects, so the caller's project is not authoritative.
-        let emailProject: WithId<Project> | undefined;
-        if (user.project) {
-          emailProject =
-            user.project.reference === getReferenceString(project)
-              ? project
-              : await getGlobalSystemRepo().readReference<Project>(user.project);
-        }
-
-        await sendEmail(
-          txRepo,
-          {
-            to: params.email,
-            subject: 'Medplum Email Address Updated',
-            text: [
-              'We received a request to update the email address associated with your Medplum account.',
-              '',
-              'Please click on the following link to verify your ability to receive emails:',
-              '',
-              url,
-              '',
-              'If you received this in error, you can safely ignore it.',
-              '',
-              'Thank you,',
-              'Medplum',
-              '',
-            ].join('\n'),
-          },
-          emailProject
-        );
-      }
+      const verification = params.skipEmailVerification ? undefined : await verifyEmail(txRepo, user);
 
       if (params.updateProfileTelecom && user.project?.reference) {
         // Get membership for Project-scoped User
@@ -150,20 +134,41 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         });
 
         if (membership) {
-          const profile = await txRepo.readReference(membership.profile);
+          const profile = await readMembershipReference(txRepo, membership, membership.profile, membershipProfileTypes);
           if (profileTypesWithTelecom.includes(profile.resourceType)) {
-            await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, params.email);
+            await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, newEmail);
           }
         }
       }
 
-      return user;
+      return { user, verification };
     },
     {
-      resourceTypes: ['ProjectMembership', 'User', 'UserSecurityRequest', ...profileTypesWithTelecom],
+      resourceTypes: ['Login', 'ProjectMembership', 'User', 'UserSecurityRequest', ...profileTypesWithTelecom],
       source: 'updateUserEmail.updateUser',
     }
   );
+
+  // After commit, because the transaction may be retried or rolled back.
+  if (verification && params.sendEmail !== false) {
+    try {
+      await sendVerificationEmail(verification.id, verification.secret, updatedUser, project, systemRepo);
+    } catch (err) {
+      // The change is already committed, so say so rather than surface a bare send error
+      getLogger().warn('Verification email failed', { userId: updatedUser.id, err: normalizeErrorString(err) });
+      throw new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'exception',
+            details: { text: 'Email updated, but the verification email could not be sent' },
+          },
+        ],
+      });
+    }
+  }
+  return updatedUser;
 }
 
 async function updateProfileTelecom(
@@ -179,7 +184,7 @@ async function updateProfileTelecom(
   }
 
   // Mark instances of the previous email as old
-  if (oldEmail) {
+  if (oldEmail && oldEmail !== newEmail) {
     for (const contact of telecom) {
       if (contact.system === 'email' && contact.value === oldEmail) {
         contact.use = 'old';
@@ -189,4 +194,46 @@ async function updateProfileTelecom(
   profile.telecom = telecom;
 
   return repo.updateResource(profile);
+}
+
+async function sendVerificationEmail(
+  id: string,
+  secret: string,
+  user: WithId<User>,
+  project: WithId<Project>,
+  repo: Repository
+): Promise<void> {
+  const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
+
+  // Use the target user's own project for project-level SMTP configuration.
+  // A super admin may be operating across projects, so the caller's project is not authoritative.
+  let emailProject: WithId<Project> | undefined;
+  if (user.project) {
+    emailProject =
+      user.project.reference === getReferenceString(project)
+        ? project
+        : await getGlobalSystemRepo().readReference<Project>(user.project);
+  }
+
+  await sendEmail(
+    repo,
+    {
+      to: user.email,
+      subject: 'Medplum Email Address Updated',
+      text: [
+        'We received a request to update the email address associated with your Medplum account.',
+        '',
+        'Please click on the following link to verify your ability to receive emails:',
+        '',
+        url,
+        '',
+        'If you received this in error, you can safely ignore it.',
+        '',
+        'Thank you,',
+        'Medplum',
+        '',
+      ].join('\n'),
+    },
+    emailProject
+  );
 }

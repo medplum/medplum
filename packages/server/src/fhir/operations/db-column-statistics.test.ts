@@ -10,7 +10,8 @@ import { NIL } from 'uuid';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { initTestAuth } from '../../test.setup';
+import { getSuperAdminAccessToken } from '../../test.setup';
+import { GLOBAL_SHARD_ID } from '../sharding';
 
 describe('getColumnStatisticsHandler', () => {
   const app = express();
@@ -20,7 +21,7 @@ describe('getColumnStatisticsHandler', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { superAdmin: true } });
+    accessToken = await getSuperAdminAccessToken();
   });
 
   afterAll(async () => {
@@ -79,7 +80,7 @@ describe('getColumnStatisticsHandler', () => {
       uuid1 = randomUUID();
       uuid2 = randomUUID();
 
-      const client = getDatabasePool(DatabaseMode.WRITER);
+      const client = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
       await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
       await client.query(`CREATE TABLE ${escapedTableName} (id bigint NOT NULL, aaa UUID[])`);
       await client.query(
