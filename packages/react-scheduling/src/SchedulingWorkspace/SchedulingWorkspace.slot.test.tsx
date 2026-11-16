@@ -5,7 +5,7 @@ import { createReference } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
+import { addDays, formatZonedDateTimeInput } from '../AppointmentFinder/AppointmentFinder.times';
 import { DrRiveraPractitioner, DrRiveraSchedule, SchedulingFixtures } from '../stories/scheduling';
 import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
@@ -126,6 +126,21 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Close blocked time details' }));
     await waitFor(() => expect(slotDetails()).not.toBeInTheDocument());
     expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
+  });
+
+  test('blocked time that began before the week shows on it', async () => {
+    await medplum.deleteResource('Slot', BLOCKED_SLOT.id);
+    await medplum.createResource<Slot>({
+      ...BLOCKED_SLOT,
+      id: 'slot-rivera-vacation',
+      start: addDays(new Date(), -14).toISOString(),
+      end: addDays(new Date(), 14).toISOString(),
+      comment: 'Vacation',
+    });
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await userEvent.click((await screen.findAllByText('Blocked'))[0]);
+    expect(within(slotDetails() as HTMLElement).getByText('Vacation')).toBeInTheDocument();
   });
 
   test('a filter hiding a visit hides the Slots it holds, saying so on one left open', async () => {
