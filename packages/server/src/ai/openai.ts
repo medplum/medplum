@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isObject } from '@medplum/core';
+import { badRequest, isObject, OperationOutcomeError } from '@medplum/core';
 import { getLogger } from '../logger';
 import { safeFetch } from '../util/url';
 
@@ -323,7 +323,9 @@ async function postRequest(context: AiContext, api: AiApi, stream: boolean): Pro
       name: (err as Error).name,
       code: isObject(cause) ? cause.code : undefined,
     });
-    throw new Error('Request could not be sent - check the OPENAI_API_KEY and LLM_BASE_URL project secrets');
+    throw new OperationOutcomeError(
+      badRequest('Request could not be sent - check the OPENAI_API_KEY and LLM_BASE_URL project secrets')
+    );
   }
 }
 

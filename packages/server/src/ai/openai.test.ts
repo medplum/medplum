@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { OperationOutcomeError } from '@medplum/core';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { loadTestConfig } from '../config/loader';
@@ -354,15 +355,17 @@ describe('OpenAI provider', () => {
       );
     });
 
-    test('Reports a uniform error when the request cannot be sent', async () => {
-      const expected = 'Request could not be sent - check the OPENAI_API_KEY and LLM_BASE_URL project secrets';
+    test('Does not forward the fetch error when the request cannot be sent', async () => {
+      const original = 'Failed to parse URL from example';
+      global.fetch = vi.fn().mockRejectedValue(new TypeError(original));
 
-      global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to parse URL from example'));
-      await expect(callOpenAi(baseContext)).rejects.toThrow(new Error(expected));
+      const callError = await callOpenAi(baseContext).catch((err) => err);
+      expect(callError).toBeInstanceOf(OperationOutcomeError);
+      expect(JSON.stringify(callError.outcome)).not.toContain(original);
 
       const streamError = await streamOpenAi(baseContext, () => undefined).catch((err) => err);
-      expect(streamError.message).toBe(expected);
-      expect(streamError.cause).toBeUndefined();
+      expect(streamError).toBeInstanceOf(OperationOutcomeError);
+      expect(JSON.stringify(streamError.outcome)).not.toContain(original);
     });
 
     test('Throws when the response has no body', async () => {
