@@ -62354,6 +62354,10 @@
         "refreshSecretRotatedAt": {
           "description": "The time at which the refresh secret was most recently rotated.",
           "$ref": "#/definitions/instant"
+        },
+        "dpopJkt": {
+          "description": "The JWK SHA-256 thumbprint of the DPoP key this login's tokens are bound to (RFC 9449).",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,

@@ -42,6 +42,7 @@ import { getTopicForUser } from '../fhircast/utils';
 import { getLogger } from '../logger';
 import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
+import { verifyDpopProof } from './dpop';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
 import {
@@ -90,6 +91,15 @@ export const tokenHandler: RequestHandler = async (req: Request, res: Response):
   if (!grantType) {
     sendTokenError(res, 'invalid_request', 'Missing grant_type');
     return;
+  }
+
+  if (req.headersDistinct.dpop) {
+    const result = await verifyDpopProof(req);
+    if ('error' in result) {
+      sendTokenError(res, 'invalid_dpop_proof', result.error);
+      return;
+    }
+    res.locals.dpopJkt = result.jkt;
   }
 
   switch (grantType) {
@@ -336,6 +346,12 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   if (login.revoked) {
     sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
+
+  // Checked before rotation, so a request without the bound key cannot consume the refresh token.
+  if (login.dpopJkt && login.dpopJkt !== res.locals.dpopJkt) {
+    sendTokenError(res, 'invalid_dpop_proof', 'DPoP proof required with the bound key');
     return;
   }
 
@@ -1021,8 +1037,18 @@ async function sendTokenResponse(
   client?: ClientApplication
 ): Promise<void> {
   const config = getConfig();
+  const dpopJkt = res.locals.dpopJkt;
 
   const systemRepo = getGlobalSystemRepo();
+  if (login.dpopJkt && login.dpopJkt !== dpopJkt) {
+    sendTokenError(res, 'invalid_dpop_proof', 'DPoP proof required with the bound key');
+    return;
+  }
+  if (dpopJkt && !login.dpopJkt) {
+    // Patched rather than updated, so a stale copy of the login cannot restore a superseded refresh secret.
+    login = await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/dpopJkt', value: dpopJkt }]);
+  }
+
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const membership = await systemRepo.readReference<ProjectMembership>(
     login.membership as Reference<ProjectMembership>
@@ -1032,6 +1058,7 @@ async function sendTokenResponse(
     accessLifetime: client?.accessTokenLifetime,
     refreshLifetime: client?.refreshTokenLifetime,
     issuer: getProjectScopedUrl(req.originalUrl, config.issuer),
+    dpopJkt,
   });
   let patient = undefined;
   let encounter = undefined;
@@ -1067,7 +1094,7 @@ async function sendTokenResponse(
   const { exp, iat } = parseJWTPayload(tokens.accessToken);
 
   res.status(200).json({
-    token_type: 'Bearer',
+    token_type: dpopJkt ? 'DPoP' : 'Bearer',
     expires_in: (exp ?? 0) - (iat ?? 0),
     scope: login.scope,
     id_token: tokens.idToken,

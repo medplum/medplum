@@ -67,8 +67,8 @@ export async function authenticateTokenImpl(req: Request): Promise<Authenticatio
     return undefined;
   }
 
-  if (tokenType === 'Bearer') {
-    return getLoginForAccessToken(req, token);
+  if (tokenType === 'Bearer' || tokenType === 'DPoP') {
+    return getLoginForAccessToken(req, token, tokenType);
   }
 
   if (tokenType === 'Basic') {

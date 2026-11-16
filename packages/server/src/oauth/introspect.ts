@@ -111,10 +111,10 @@ function writeInactiveResponse(res: Response): void {
 
 const patientPrefix = 'Patient/';
 function writeActiveResponse(res: Response, payload: JWTPayload, login: Login, launch?: SmartAppLaunch): void {
-  const { exp, iat, iss, sub, client_id, scope, profile } = payload;
+  const { exp, iat, iss, sub, client_id, scope, profile, cnf } = payload;
   let patient = launch?.patient?.reference?.substring(patientPrefix.length);
   if (!patient && typeof profile === 'string' && profile.startsWith(patientPrefix)) {
     patient = profile.substring(patientPrefix.length);
   }
-  res.status(200).json({ active: true, iat, exp, iss, sub, client_id, scope, patient }).end();
+  res.status(200).json({ active: true, iat, exp, iss, sub, client_id, scope, patient, cnf }).end();
 }

@@ -264,6 +264,12 @@ export interface Login {
    * The time at which the refresh secret was most recently rotated.
    */
   refreshSecretRotatedAt?: string;
+
+  /**
+   * The JWK SHA-256 thumbprint of the DPoP key this login's tokens are
+   * bound to (RFC 9449).
+   */
+  dpopJkt?: string;
 }
 
 /**
