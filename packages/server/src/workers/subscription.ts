@@ -6,6 +6,7 @@ import {
   ContentType,
   EMPTY,
   Operator,
+  append,
   createReference,
   getExtension,
   getExtensionValue,
