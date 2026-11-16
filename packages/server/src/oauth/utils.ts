@@ -1642,14 +1642,9 @@ async function tryExternalAuthLogin(
   return { login, project, membership };
 }
 
+// An allow-list, not a deny-list: a new IdentityProvider setting must never make a client eligible for bearer tokens.
 const externalBearerIdpFields = ['issuer', 'jwksUrl', 'audience'];
 
-/**
- * Returns true if the identity provider is configured only to verify external bearer tokens:
- * `issuer`, `jwksUrl` and `audience` are all set, and no other settings are present.
- * @param idp - The client application's identity provider.
- * @returns True if the identity provider can authenticate external bearer tokens as its client.
- */
 function isExternalBearerIdentityProvider(idp: IdentityProvider | undefined): boolean {
   return (
     !!idp?.issuer &&
@@ -1683,7 +1678,6 @@ function isClientSubjectAllowed(membership: WithId<ProjectMembership> | undefine
 /**
  * Resolves an identity-less external bearer token to the client application configured for its issuer.
  * The project-scoped URL supplies the tenant, while the issuer identifies the client within that project.
- * Only clients whose identity provider is dedicated to bearer token verification are considered.
  * Ambiguous configurations fail closed.
  *
  * @param projectId - Project ID from the request URL.

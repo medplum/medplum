@@ -147,7 +147,6 @@ describe('External auth', () => {
         .setExpirationTime('2h')
         .sign(keyPair.privateKey);
 
-      // Without an audience, the client is not used for bearer tokens
       fetchMock.mockClear();
       const noAudienceResponse = await request(app)
         .get(`/projects/${project.id}/oauth2/userinfo`)
@@ -318,7 +317,7 @@ describe('External auth', () => {
         .set('Authorization', 'Bearer ' + jwt);
       expect(res).toHaveStatus(401);
 
-      // A client with additional identity provider settings is not a candidate, so the issuer is no longer ambiguous
+      // Any other identity provider setting makes a client ineligible
       await projectRepo.updateResource({
         ...duplicate,
         identityProvider: { ...identityProvider, tokenUrl: 'https://ambiguous.example.com/oauth2/token' },
