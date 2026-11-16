@@ -546,9 +546,9 @@ describe('Export', () => {
       await exporter.close(project);
     }));
 
-  async function exportPatientsSince(accessToken: string, since: string): Promise<Record<string, unknown>> {
+  async function exportPatientsSince(accessToken: string, since: string, extra = ''): Promise<Record<string, unknown>> {
     const initRes = await request(app)
-      .get(`/fhir/R4/$export?_type=Patient&_since=${encodeURIComponent(since)}`)
+      .get(`/fhir/R4/$export?_type=Patient&_since=${encodeURIComponent(since)}${extra}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(initRes).toHaveStatus(202);
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
@@ -575,8 +575,8 @@ describe('Export', () => {
     const deletedBefore = await repo.createResource<Patient>({ resourceType: 'Patient' });
     await repo.deleteResource('Patient', deletedBefore.id);
     await sleep(5);
-    const since = new Date().toISOString();
     const kept = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const since = kept.meta?.lastUpdated as string;
     const deletedAfter = await repo.createResource<Patient>({ resourceType: 'Patient' });
     await repo.deleteResource('Patient', deletedAfter.id);
 
@@ -591,11 +591,28 @@ describe('Export', () => {
     expect(bundles[0].entry).toStrictEqual([{ request: { method: 'DELETE', url: `Patient/${deletedAfter.id}` } }]);
   });
 
-  test('Omits deleted for non-admins', async () => {
-    const { repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true });
+  test.each([
+    ['non-admins', {}, ''],
+    ['_typeFilter types', { membership: { admin: true } }, `&_typeFilter=${encodeURIComponent('Patient?active=true')}`],
+    [
+      'admins with a criteria access policy',
+      {
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [
+            { resourceType: 'AsyncJob' },
+            { resourceType: 'Patient' },
+            { resourceType: 'Observation', criteria: 'Observation?status=final' },
+          ],
+        },
+      },
+      '',
+    ],
+  ])('Omits deleted for %s', async (_label, options, extra) => {
+    const { repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true, ...options });
     const since = new Date().toISOString();
-    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', active: true });
     await repo.deleteResource('Patient', patient.id);
-    expect(await exportPatientsSince(accessToken, since)).not.toHaveProperty('deleted');
+    expect(await exportPatientsSince(accessToken, since, extra)).not.toHaveProperty('deleted');
   });
 });

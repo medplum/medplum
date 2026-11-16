@@ -43,6 +43,7 @@ export class BulkExporter {
   private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSets = new Map<string, Set<string>>();
+  /** One `deleted` file spans all resource types, so it stays open until close(). */
   private deletedWriter: BulkFileWriter | undefined;
 
   constructor(repo: Repository, resource?: WithId<AsyncJob>) {

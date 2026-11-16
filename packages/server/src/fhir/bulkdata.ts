@@ -63,7 +63,7 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
     requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
     output: extractOutputParameters(bulkDataExport, 'output'),
     error: extractOutputParameters(bulkDataExport, 'error'),
-    // The IG makes `deleted` optional; an empty array would wrongly claim nothing was deleted
+    // The IG makes `deleted` optional; omit it when deletions were not exported
     ...(deleted.length ? { deleted } : undefined),
   });
   res.status(200).type(ContentType.JSON).json(json);

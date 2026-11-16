@@ -13,6 +13,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
+  projectAdminResourceTypes,
   protectedResourceTypes,
   singularize,
 } from '@medplum/core';
@@ -88,8 +89,7 @@ async function startExport(req: FhirRequest, exportType: 'System' | 'Patient'): 
   const { baseUrl } = getConfig();
   const { since, types, typeFilters } = parseExportParameters(req);
   const typeFilterSearches = parseTypeFilters(ctx.repo, typeFilters);
-  // Deleted rows have no compartments or search columns to evaluate access policy criteria against
-  const includeDeleted = !!since && ctx.membership.admin === true;
+  const includeDeleted = !!since && ctx.membership.admin === true && !hasRestrictiveAccessPolicy(ctx.repo);
 
   const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
@@ -186,6 +186,19 @@ export async function exportResources(
 
   // Close the exporter
   await exporter.close(project);
+}
+
+/**
+ * Deleted rows keep only id, project, and lastUpdated, so access policy criteria and compartments
+ * would silently drop them from the `deleted` output. Project admin resource types are exempt
+ * because their admin criteria only match on `_project` or `_id`.
+ * @param repo - The repository.
+ * @returns True if the access policy filters any non-admin resource type by criteria or compartment.
+ */
+function hasRestrictiveAccessPolicy(repo: Repository): boolean {
+  return !!repo
+    .effectiveAccessPolicy()
+    ?.resource?.some((p) => !projectAdminResourceTypes.includes(p.resourceType) && (p.criteria || p.compartment));
 }
 
 /**
