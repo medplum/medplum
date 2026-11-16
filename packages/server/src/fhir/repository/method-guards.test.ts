@@ -66,6 +66,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'handleStorage',
   'writeToDatabase',
   'checkExistingResource',
+  'checkRestorable',
   'canUpdateExisting',
   'isNotModified',
   'getPermittedProjectIds',

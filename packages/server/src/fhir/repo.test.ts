@@ -1091,6 +1091,21 @@ describe('FHIR Repo', () => {
       );
     }));
 
+  test('Update deleted or missing resource with ifMatch', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await systemRepo.deleteResource('Patient', patient.id);
+
+      // With no previous version, no version can match
+      await expect(systemRepo.updateResource(patient, { ifMatch: patient.meta?.versionId })).rejects.toThrow(
+        new OperationOutcomeError(preconditionFailed)
+      );
+      await expect(
+        systemRepo.updateResource({ ...patient, id: randomUUID() }, { ifMatch: patient.meta?.versionId })
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+      await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow('Gone');
+    }));
+
   test('Patch resource with matching versionId', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({

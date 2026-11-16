@@ -616,7 +616,7 @@ describe('OAuth utils', () => {
         id: otherClientMembership.id,
       });
 
-      // A client without a membership in its own Project still resolves its membership elsewhere
+      // A client's memberships in other Projects resolve only through a project-scoped URL
       const awayClient = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         meta: { project: home.project.id },
@@ -627,10 +627,10 @@ describe('OAuth utils', () => {
         user: createReference(awayClient),
         profile: createReference(awayClient),
       });
-      await expect(getClientApplicationMembership(systemRepo, awayClient)).resolves.toMatchObject({
+      await expect(getClientApplicationMembership(systemRepo, awayClient)).resolves.toBeUndefined();
+      await expect(getClientApplicationMembership(systemRepo, awayClient, other.project.id)).resolves.toMatchObject({
         id: awayMembership.id,
       });
-      await expect(getClientApplicationMembership(systemRepo, awayClient, home.project.id)).resolves.toBeUndefined();
     });
   });
 

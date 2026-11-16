@@ -463,30 +463,24 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
 
 /**
  * Returns the project membership for the client application.
- * Without an explicit project, the membership in the client's own Project is preferred, so a membership in another
- * Project is never chosen over it. A client with no membership in its own Project keeps the unscoped lookup.
+ * The search is scoped to the explicit project if given, otherwise to the client's own Project, so a membership in
+ * another Project is found only through a project-scoped URL. A client without `meta.project` is searched by user only.
  * @param systemRepo - The system repository.
  * @param client - The client application.
  * @param projectId - Optional project ID (e.g. from a project-scoped URL) to restrict the search to.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export async function getClientApplicationMembership(
+export function getClientApplicationMembership(
   systemRepo: SystemRepository,
   client: WithId<ClientApplication>,
   projectId?: string
 ): Promise<WithId<ProjectMembership> | undefined> {
-  const userFilter: Filter = { code: 'user', operator: Operator.EQUALS, value: getReferenceString(client) };
+  const filters: Filter[] = [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(client) }];
   const targetProjectId = projectId ?? client.meta?.project;
   if (targetProjectId) {
-    const membership = await systemRepo.searchOne<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      filters: [userFilter, { code: 'project', operator: Operator.EQUALS, value: 'Project/' + targetProjectId }],
-    });
-    if (membership || projectId) {
-      return membership;
-    }
+    filters.push({ code: 'project', operator: Operator.EQUALS, value: 'Project/' + targetProjectId });
   }
-  return systemRepo.searchOne<ProjectMembership>({ resourceType: 'ProjectMembership', filters: [userFilter] });
+  return systemRepo.searchOne<ProjectMembership>({ resourceType: 'ProjectMembership', filters });
 }
 
 /**

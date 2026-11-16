@@ -20,7 +20,6 @@ import {
   gone,
   isGone,
   isNotFound,
-  isOk,
   isResource,
   isResourceType,
   isResourceWithId,
@@ -198,21 +197,15 @@ type TransactionBinding = {
   readonly scope: ConnectionScope;
 };
 
-/** The "gone" error for a deleted resource, carrying the project its tombstone belongs to. */
-class DeletedResourceError extends OperationOutcomeError {
-  readonly projectId: string | undefined;
-
-  constructor(projectId: string | undefined) {
-    super(gone);
-    this.projectId = projectId;
-  }
-}
-
-/** The previous version of a resource being updated, or the project of its tombstone if it was deleted. */
-interface ExistingResource<T extends Resource> {
-  existing?: WithId<T>;
-  deletedProjectId?: string;
-}
+/**
+ * The stored state of a resource being updated. `previous` is the last version before this write: the current
+ * version of a live resource, or the version a deleted resource had before its delete, if one was found.
+ * `projectId` is the tombstone's project, undefined for a resource deleted outside any project.
+ */
+type StoredResource<T extends Resource> =
+  | { status: 'live'; previous: WithId<T> }
+  | { status: 'deleted'; previous: WithId<T> | undefined; projectId: string | undefined }
+  | { status: 'missing'; previous?: undefined };
 
 const interactionsWithRead = Object.freeze(
   Object.fromEntries(
@@ -749,11 +742,7 @@ export class Repository extends FhirRepository implements Disposable {
 
     validateResourceType(resourceType);
 
-    const builder = new SelectQuery(resourceType)
-      .column('content')
-      .column('deleted')
-      .column('projectId')
-      .where('id', '=', id);
+    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType, interactions);
 
@@ -762,17 +751,13 @@ export class Repository extends FhirRepository implements Disposable {
     // which picks its pool synchronously from the same mode, so a concurrent writer switch cannot change it.
     const { entry } = this.connectionFor({ resourceTypes: resourceType as ResourceType });
     const servedByWriter = entry.connection.mode === RepositoryMode.WRITER;
-    const rows = await this.sqlRead<{ content: string; deleted: boolean; projectId: string }>(
-      builder,
-      resourceType as ResourceType
-    );
+    const rows = await this.sqlRead<{ content: string; deleted: boolean }>(builder, resourceType as ResourceType);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
 
     if (rows[0].deleted) {
-      const { projectId } = rows[0];
-      throw new DeletedResourceError(projectId === systemResourceProjectId ? undefined : projectId);
+      throw new OperationOutcomeError(gone);
     }
 
     const resource = JSON.parse(rows[0].content) as WithId<T>;
@@ -1123,20 +1108,20 @@ export class Repository extends FhirRepository implements Disposable {
       this.validateBinarySecurityContext(validatedResource);
     }
 
-    const { existing, deletedProjectId }: ExistingResource<T> = create
-      ? {}
+    const stored: StoredResource<T> = create
+      ? { status: 'missing' }
       : await this.checkExistingResource<T>(resourceType, id);
-    if (existing) {
-      if (!this.canUpdateExisting(existing)) {
-        // Check before the update
-        throw new OperationOutcomeError(forbidden);
-      }
-      if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
-        throw new OperationOutcomeError(preconditionFailed);
-      }
+    const existing = stored.status === 'live' ? stored.previous : undefined;
+    if (existing && !this.canUpdateExisting(existing)) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    // With no current version (a deleted or missing resource), no version can match
+    if (options?.ifMatch && existing?.meta?.versionId !== options.ifMatch) {
+      throw new OperationOutcomeError(preconditionFailed);
     }
 
-    const restoredFields = this.restoreReadonlyFields(validatedResource, existing);
+    // A restored resource keeps the readonly fields of the version that was deleted
+    const restoredFields = this.restoreReadonlyFields(validatedResource, stored.previous);
     // replaceConditionalReferences rewrites nested references in place, so it needs a resource
     // that shares no structure with validatedResource or the cached existing resource.
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, deepClone(validatedResource));
@@ -1145,7 +1130,7 @@ export class Repository extends FhirRepository implements Disposable {
     const resultMeta: Meta = {
       ...updated.meta,
       versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, validatedResource),
+      lastUpdated: this.getLastUpdated(stored, validatedResource),
       author: this.getAuthor(),
       onBehalfOf: this.context.onBehalfOf,
       deleted: undefined,
@@ -1153,11 +1138,11 @@ export class Repository extends FhirRepository implements Disposable {
 
     const result = { ...updated, meta: resultMeta };
 
-    const projectId = this.getProjectId(existing, updated, deletedProjectId);
+    const projectId = this.getProjectId(stored, updated);
     if (projectId) {
       resultMeta.project = projectId;
     }
-    const accounts = await this.getAccounts(existing, updated);
+    const accounts = await this.getAccounts(stored, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
@@ -1197,7 +1182,7 @@ export class Repository extends FhirRepository implements Disposable {
       this.logPostMetadataFieldMatch(updated, result);
     }
 
-    // With no previous version (a PUT over a deleted resource, or an upsert over a missing id), the write is a create
+    // With no current version (a PUT over a deleted resource, or an upsert over a missing id), the write is a create
     const writeInteraction = existing ? interaction : AccessPolicyInteraction.CREATE;
     if (!this.isResourceWriteable(existing, result, writeInteraction)) {
       // Check after the update
@@ -1214,7 +1199,7 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     const output = deepClone(result);
-    return this.redactWriteResult(output, interaction, restoredFields);
+    return this.redactWriteResult(output, writeInteraction, restoredFields);
   }
 
   private shouldAddBackgroundJobs(resource: Resource): boolean {
@@ -1325,32 +1310,80 @@ export class Repository extends FhirRepository implements Disposable {
    *  - Previous version does not exist, and user does have permission to create by ID
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @returns The existing resource if found, or the project of its tombstone if it was deleted.
+   * @returns The stored state of the resource.
    */
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string
-  ): Promise<ExistingResource<T>> {
+  ): Promise<StoredResource<T>> {
     try {
-      return { existing: await this.readResourceImpl<T>(resourceType, id, AccessPolicyInteraction.UPDATE) };
+      return {
+        status: 'live',
+        previous: await this.readResourceImpl<T>(resourceType, id, AccessPolicyInteraction.UPDATE),
+      };
     } catch (err) {
-      if (err instanceof DeletedResourceError) {
-        return { deletedProjectId: err.projectId };
-      }
       const outcome = normalizeOperationOutcome(err);
-      if (!isOk(outcome) && !isNotFound(outcome) && !isGone(outcome)) {
+      if (!isNotFound(outcome) && !isGone(outcome)) {
         throw new OperationOutcomeError(outcome, { cause: err });
       }
-
-      if (isNotFound(outcome) && !this.canSetId()) {
-        throw new OperationOutcomeError(outcome, { cause: err });
+      // Access policy criteria cannot match a tombstone, whose search columns are cleared, so look for one in the
+      // projects the user can access, regardless of access policy. A "gone" can also come from a Binary's deleted
+      // securityContext, in which case there is no Binary tombstone.
+      const builder = new SelectQuery(resourceType)
+        .column('projectId')
+        .where('id', '=', id)
+        .where('deleted', '=', true);
+      this.addProjectFilters(builder, resourceType);
+      const [tombstone] = await this.sqlRead<{ projectId: string }>(builder, resourceType);
+      if (!tombstone) {
+        if (!this.canSetId()) {
+          throw new OperationOutcomeError(outcome, { cause: err });
+        }
+        return { status: 'missing' };
       }
-
-      // Otherwise, it is ok if the resource is not found.
-      // This is an "update" operation, and the outcome is "not-found" or "gone",
-      // and the current user has permission to create a new version.
-      return {};
+      const previous = await this.checkRestorable<T>(resourceType, id);
+      const projectId = tombstone.projectId === systemResourceProjectId ? undefined : tombstone.projectId;
+      return { status: 'deleted', previous, projectId };
     }
+  }
+
+  /**
+   * Checks that the current user can restore a deleted resource. This requires permission to both
+   * update the version that was deleted, and create the new version.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @returns The version that was deleted, if one was found.
+   */
+  private async checkRestorable<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string
+  ): Promise<WithId<T> | undefined> {
+    const rows = await this.sqlRead<{ content: string | null }>(
+      new SelectQuery(resourceType + '_History')
+        .column('content')
+        .where('id', '=', id)
+        .orderBy('lastUpdated', true)
+        .orderBy('versionId', true)
+        .limit(2),
+      resourceType,
+      { source: 'repo.checkRestorable' }
+    );
+    const previous = rows.map((row) => parseHistoryContent(row.content)).find((v) => !v.meta?.deleted) as
+      WithId<T> | undefined;
+    if (!previous) {
+      // Nothing to check against, so treat the ID as missing
+      if (!this.canSetId()) {
+        throw new OperationOutcomeError(notFound);
+      }
+      return undefined;
+    }
+    await this.authorizeBinarySecurityContext(previous);
+    if (!this.canUpdateExisting(previous)) {
+      // As in an update, a resource the user can neither read nor update is not found
+      const readable = this.canPerformInteraction(AccessPolicyInteraction.READ, previous);
+      throw new OperationOutcomeError(readable ? forbidden : notFound);
+    }
+    return previous;
   }
 
   /**
@@ -2316,16 +2349,17 @@ export class Repository extends FhirRepository implements Disposable {
    * Returns the last updated timestamp for the resource.
    * During historical data migration, some client applications are allowed
    * to override the timestamp.
-   * @param existing - Existing resource if one exists.
+   * @param stored - The stored state of the resource.
    * @param resource - The FHIR resource.
    * @returns The last updated date.
    */
-  private getLastUpdated(existing: Resource | undefined, resource: Resource): string {
-    if (!existing) {
+  private getLastUpdated<T extends Resource>(stored: StoredResource<T>, resource: T): string {
+    if (stored.status === 'missing') {
       // If the resource has a specified "lastUpdated",
-      // and there is no existing version,
-      // and the current context is a ClientApplication (i.e., OAuth client credentials),
-      // then allow the ClientApplication to set the date.
+      // and there is no existing version or tombstone,
+      // and the current context is allowed to write protected meta,
+      // then allow it to set the date.
+      // A restore always takes "now", so history order matches version order.
       const lastUpdated = resource.meta?.lastUpdated;
       if (lastUpdated && this.canWriteProtectedMeta()) {
         return lastUpdated;
@@ -2341,16 +2375,11 @@ export class Repository extends FhirRepository implements Disposable {
    * If it is a public resource type, then returns the public project ID.
    * If it is a protected resource type, then returns the Medplum project ID.
    * Otherwise, by default, return the current context project ID.
-   * @param existing - Existing resource if one exists.
+   * @param stored - The stored state of the resource.
    * @param updated - The FHIR resource.
-   * @param deletedProjectId - Project of the resource's tombstone, if it was deleted.
    * @returns The project ID.
    */
-  private getProjectId(
-    existing: Resource | undefined,
-    updated: Resource,
-    deletedProjectId?: string
-  ): string | undefined {
+  private getProjectId<T extends Resource>(stored: StoredResource<T>, updated: T): string | undefined {
     if (updated.resourceType === 'Project') {
       return updated.id;
     }
@@ -2366,8 +2395,9 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {
       // Super admins can add, remove, and the project compartment of users
-      // and subscriptions (to manage server-scoped subscriptions)
-      return updated?.meta?.project;
+      // and subscriptions (to manage server-scoped subscriptions).
+      // Omitting the project removes it, except on a restore, which keeps the tombstone's project.
+      return updated.meta?.project ?? (stored.status === 'deleted' ? stored.projectId : undefined);
     }
 
     if (protectedResourceTypes.includes(updated.resourceType)) {
@@ -2382,8 +2412,12 @@ export class Repository extends FhirRepository implements Disposable {
       return submittedProjectId;
     }
 
-    // A deleted resource is restored into its own project, which the write check requires to be the caller's
-    return existing?.meta?.project ?? deletedProjectId ?? this.context.projects?.[0]?.id;
+    if (stored.status === 'deleted') {
+      // A deleted resource is restored into its own project, which the write check requires to be the caller's
+      return stored.projectId;
+    }
+
+    return stored.previous?.meta?.project ?? this.context.projects?.[0]?.id;
   }
 
   /**
@@ -2399,13 +2433,13 @@ export class Repository extends FhirRepository implements Disposable {
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
-   * @param existing - Current (soon to be previous) resource, if one exists.
+   * @param stored - The stored state of the resource.
    * @param updated - The incoming updated resource.
    * @returns The account values.
    */
-  private async getAccounts(
-    existing: WithId<Resource> | undefined,
-    updated: WithId<Resource>
+  private async getAccounts<T extends Resource>(
+    stored: StoredResource<T>,
+    updated: WithId<T>
   ): Promise<Reference[] | undefined> {
     if (updated.meta && this.canWriteAccount()) {
       // If the user specifies accounts, and they have permission, then use the provided accounts.
@@ -2414,17 +2448,18 @@ export class Repository extends FhirRepository implements Disposable {
     }
 
     const accounts = new Set<string>();
-    if (!existing && this.context.accessPolicy?.compartment?.reference) {
+    if (stored.status !== 'live' && this.context.accessPolicy?.compartment?.reference) {
       // If the creator's access policy specifies a compartment, then use it as the account.
-      // The writer's access policy is only applied at resource creation: simply editing a
-      // resource does NOT pull it into the user's account.
+      // The writer's access policy is only applied at resource creation, including a restore: simply
+      // editing a resource does NOT pull it into the user's account.
       accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
     if (updated.resourceType === 'Patient') {
       // When examining a Patient resource, we only look at the individual patient
-      // We should not call `getPatients` and `readReference`
-      const existingAccounts = extractAccountReferences(existing?.meta);
+      // We should not call `getPatients` and `readReference`.
+      // A restored Patient keeps the accounts of the version that was deleted.
+      const existingAccounts = extractAccountReferences(stored.previous?.meta);
       for (const account of existingAccounts ?? EMPTY) {
         accounts.add(account.reference as string);
       }
@@ -2871,7 +2906,7 @@ export class Repository extends FhirRepository implements Disposable {
       const accountsRepo = this.clone();
       const saveRepo = this.clone({ skipBackgroundJobs: true }).getSystemRepo();
       accountsRepo
-        .getAccounts(undefined, auditEvent as WithId<AuditEvent>)
+        .getAccounts({ status: 'missing' }, auditEvent as WithId<AuditEvent>)
         .then((accounts) => {
           if (accounts) {
             auditEvent.meta = { ...auditEvent.meta, account: accounts[0], accounts };
