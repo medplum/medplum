@@ -135,6 +135,22 @@ describe('Whole-questionnaire assembly', () => {
     );
   });
 
+  test('preserves conditions referring to a nested module under an inherited prefix', async () => {
+    await repo.createResource(module('grandchild', [{ linkId: 'city', type: 'string', text: 'City' }]));
+    await repo.createResource(
+      module('child', [
+        { linkId: 'name', type: 'string', enableWhen: [{ question: 'city', operator: 'exists', answerBoolean: true }] },
+        placeholder('grandchild'),
+      ])
+    );
+    const result = await assembleQuestionnaire(repo, module('root', [group('person', [placeholder('child')])]));
+    expect(result.issues).toEqual([]);
+    expect(result.questionnaire.item?.[0].item).toMatchObject([
+      { linkId: 'person.name', enableWhen: [{ question: 'person.city' }] },
+      { linkId: 'person.city', text: 'City' },
+    ]);
+  });
+
   test.each([false, true])(
     'rejects child-root prefixes regardless of sibling order: prefix child first %s',
     async (first) => {
@@ -623,6 +639,32 @@ describe('Whole-questionnaire assembly', () => {
       await expect(assembleQuestionnaire(repo, root)).rejects.toThrow(/linkIdPrefix/);
     }
   );
+
+  test.each([
+    'https://example.org/Questionnaire/library|1#address',
+    'https://example.org/StructureDefinition/example#Example.name',
+  ])('rejects deferred item.definition before resolving %s', async (definition) => {
+    const search = vi.spyOn(repo, 'searchResources');
+    const read = vi.spyOn(repo, 'readResource');
+    const root = module('root', [{ linkId: 'q', type: 'string', text: 'Answer', definition }]);
+    await expect(assembleQuestionnaire(repo, root)).rejects.toThrow('item.definition assembly is not supported');
+    expect(search).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  test('rejects cycles spanning multiple modules', async () => {
+    const first = await repo.createResource(module('first', [placeholder('second')]));
+    await repo.createResource(module('second', [placeholder('first')]));
+    await expect(assembleQuestionnaire(repo, first)).rejects.toThrow('circular');
+  });
+
+  test('rejects duplicate linkIds even without imports', async () => {
+    const root = module('root', [
+      { linkId: 'q', type: 'string' },
+      { linkId: 'q', type: 'string' },
+    ]);
+    await expect(assembleQuestionnaire(repo, root)).rejects.toThrow('Duplicate');
+  });
 
   test('rejects dangling conditions and contained references', async () => {
     const root = module('root', [

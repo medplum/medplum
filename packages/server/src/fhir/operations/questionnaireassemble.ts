@@ -2,81 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, deepEquals, isResource, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  OperationDefinition,
-  Parameters,
-  ParametersParameter,
-  Questionnaire,
-  Reference,
-} from '@medplum/fhirtypes';
+import type { Parameters, ParametersParameter, Questionnaire, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { makeOperationDefinition } from './definitions';
 import { assembleQuestionnaire } from './questionnaireassembly';
 import type { QuestionnaireInput } from './questionnaireassemblyresolver';
 import { QuestionnaireResolver } from './questionnaireassemblyresolver';
-
-/**
- * SDC's Questionnaire/$assemble operation.
- *
- * The input is described as Element because SDC allows a
- * canonical URI, a Reference, or an inline Questionnaire for the same
- * parameter. The request parser below enforces those three choices.
- */
-export const questionnaireAssembleOperation: OperationDefinition = makeOperationDefinition(
-  { scope: 'type-and-instance', resource: 'Questionnaire' },
-  {
-    id: 'Questionnaire-assemble',
-    name: 'SDCAssemble',
-    code: 'assemble',
-    url: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
-    version: '4.0.0',
-    title: 'Assemble Modular Questionnaire Operation',
-    inputProfile: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/parameters-questionnaire-assemble-in',
-    description:
-      'Takes a modular Questionnaire and produces an equivalent fully-inline Questionnaire by resolving whole subQuestionnaire references. Remote retrieval, item.definition generation, and item-fragment imports are not supported.',
-    parameter: [
-      {
-        use: 'in',
-        name: 'questionnaire',
-        type: 'Element',
-        min: 1,
-        max: '1',
-        extension: [
-          { url: 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type', valueUri: 'uri' },
-          { url: 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type', valueUri: 'Reference' },
-          {
-            url: 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type',
-            valueUri: 'Questionnaire',
-          },
-        ],
-        documentation: 'The modular Questionnaire to assemble.',
-      },
-      {
-        use: 'out',
-        name: 'return',
-        type: 'Resource',
-        min: 0,
-        max: '1',
-        documentation: 'The fully assembled Questionnaire.',
-      },
-      {
-        use: 'out',
-        name: 'outcome',
-        type: 'Resource',
-        min: 0,
-        max: '1',
-        documentation: 'Warnings or informational messages produced during assembly.',
-      },
-    ],
-  }
-);
 
 /**
  * Reads the three SDC input choices without relaxing parsing for other operations.
  * @param req - Operation request.
  * @returns The supplied Questionnaire, canonical URI, or local Reference.
  */
-export function parseQuestionnaireInput(req: FhirRequest): QuestionnaireInput | undefined {
+function parseQuestionnaireInput(req: FhirRequest): QuestionnaireInput | undefined {
   const body = req.body;
   if (req.query.questionnaire !== undefined) {
     throw new OperationOutcomeError(badRequest('Supply questionnaire in the POST body, not the query string'));

@@ -1,19 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Extension, OperationOutcome, Parameters, Questionnaire } from '@medplum/fhirtypes';
+import type { Extension, OperationOutcome, Parameters, Questionnaire, QuestionnaireItem } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import type { Test } from 'supertest';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
-import { questionnaireAssembleOperation } from './questionnaireassemble';
 import { ASSEMBLE_EXPECTATION_EXTENSION_URL, SUB_QUESTIONNAIRE_EXTENSION_URL } from './questionnaireassembly';
 
 const inputParameter = (value: Record<string, unknown>): Parameters => ({
   resourceType: 'Parameters',
   parameter: [{ name: 'questionnaire', ...value }],
+});
+const placeholder = (canonical: string, linkId = 'import'): QuestionnaireItem => ({
+  linkId,
+  type: 'display',
+  text: 'Module unavailable',
+  extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: canonical }],
 });
 
 describe('Questionnaire/$assemble HTTP contract', () => {
@@ -22,6 +28,9 @@ describe('Questionnaire/$assemble HTTP contract', () => {
   let repo: Repository;
   let root: Questionnaire;
   let child: Questionnaire;
+
+  const postAssembly = (path = 'Questionnaire/$assemble'): Test =>
+    request(app).post(`/fhir/R4/${path}`).auth(accessToken, { type: 'bearer' });
 
   beforeAll(async () => {
     await initApp(app, await loadTestConfig());
@@ -40,29 +49,10 @@ describe('Questionnaire/$assemble HTTP contract', () => {
       url: `https://example.org/${randomUUID()}`,
       version: '1',
       extension: [{ url: ASSEMBLE_EXPECTATION_EXTENSION_URL, valueCode: 'assemble-root' }],
-      item: [
-        {
-          linkId: 'import',
-          type: 'display',
-          text: 'Module unavailable',
-          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${child.url}|1` }],
-        },
-      ],
+      item: [placeholder(`${child.url}|1`)],
     });
   });
   afterAll(shutdownApp);
-
-  test('describes the supported subset and standard output parameters', () => {
-    expect(questionnaireAssembleOperation).toMatchObject({
-      type: true,
-      instance: true,
-      description: expect.stringContaining('not supported'),
-    });
-    expect(questionnaireAssembleOperation.parameter?.filter((p) => p.use === 'out').map((p) => p.name)).toEqual([
-      'return',
-      'outcome',
-    ]);
-  });
 
   test.each(['inline', 'resource', 'uri', 'reference'])(
     'accepts %s input at the type and instance endpoints',
@@ -75,7 +65,7 @@ describe('Questionnaire/$assemble HTTP contract', () => {
       };
       const body = bodies[shape as keyof typeof bodies];
       for (const path of ['Questionnaire/$assemble', `Questionnaire/${root.id}/$assemble`]) {
-        const res = await request(app).post(`/fhir/R4/${path}`).auth(accessToken, { type: 'bearer' }).send(body);
+        const res = await postAssembly(path).send(body);
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         expect(res.body).toMatchObject({
           resourceType: 'Questionnaire',
@@ -94,19 +84,14 @@ describe('Questionnaire/$assemble HTTP contract', () => {
     for (const version of ['1', '2', '1,2']) {
       await repo.createResource<Questionnaire>({ ...child, id: undefined, meta: undefined, url, version });
     }
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(inputParameter({ valueUri: `${url}|1,2` }));
+    const res = await postAssembly().send(inputParameter({ valueUri: `${url}|1,2` }));
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.version).toBe('1,2');
     expect(res.body.url).toBe(url);
   });
 
   test('accepts an instance URL without a body', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Questionnaire/${root.id}/$assemble`)
-      .auth(accessToken, { type: 'bearer' });
+    const res = await postAssembly(`Questionnaire/${root.id}/$assemble`);
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.resourceType).toBe('Questionnaire');
   });
@@ -125,20 +110,10 @@ describe('Questionnaire/$assemble HTTP contract', () => {
         });
         input = {
           ...root,
-          extension: root.extension,
-          item: [
-            {
-              linkId: 'import',
-              type: 'display',
-              extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${untagged.url}|1` }],
-            },
-          ],
+          item: [placeholder(`${untagged.url}|1`)],
         };
       }
-      const res = await request(app)
-        .post('/fhir/R4/Questionnaire/$assemble')
-        .auth(accessToken, { type: 'bearer' })
-        .send(input);
+      const res = await postAssembly().send(input);
       expect(res.status, JSON.stringify(res.body)).toBe(200);
       expect(res.body.resourceType).toBe('Parameters');
       const parameters = (res.body as Parameters).parameter;
@@ -157,18 +132,9 @@ describe('Questionnaire/$assemble HTTP contract', () => {
     const input: Questionnaire = {
       ...root,
       extension: undefined,
-      item: [
-        {
-          linkId: 'import',
-          type: 'display',
-          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: 'https://example.org/unavailable|1' }],
-        },
-      ],
+      item: [placeholder('https://example.org/unavailable|1')],
     };
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(input);
+    const res = await postAssembly().send(input);
     expect(res.status).toBe(400);
     expect(res.body.resourceType).toBe('OperationOutcome');
     expect(res.body.issue[0].severity).toBe('error');
@@ -189,20 +155,11 @@ describe('Questionnaire/$assemble HTTP contract', () => {
         {
           linkId: 'section',
           type: 'group',
-          item: [
-            {
-              linkId: 'import-empty',
-              type: 'display',
-              extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${empty.url}|1` }],
-            },
-          ],
+          item: [placeholder(`${empty.url}|1`, 'import-empty')],
         },
       ],
     };
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(input);
+    const res = await postAssembly().send(input);
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.resourceType).toBe('Parameters');
     const parameters = (res.body as Parameters).parameter;
@@ -243,18 +200,9 @@ describe('Questionnaire/$assemble HTTP contract', () => {
     const input: Questionnaire = {
       ...root,
       extension: [...(root.extension ?? []), constraint],
-      item: [
-        {
-          linkId: 'import',
-          type: 'display',
-          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${constrained.url}|1` }],
-        },
-      ],
+      item: [placeholder(`${constrained.url}|1`)],
     };
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(input);
+    const res = await postAssembly().send(input);
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body.resourceType).toBe('Parameters');
     const parameters = (res.body as Parameters).parameter;
@@ -300,18 +248,9 @@ describe('Questionnaire/$assemble HTTP contract', () => {
           valueExpression: { name: 'patient', language: 'text/fhirpath', expression: '%resource' },
         },
       ],
-      item: [
-        {
-          linkId: 'import',
-          type: 'display',
-          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${launch.url}|1` }],
-        },
-      ],
+      item: [placeholder(`${launch.url}|1`)],
     };
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(input);
+    const res = await postAssembly().send(input);
     expect(res.status).toBe(400);
     expect(res.body.resourceType).toBe('OperationOutcome');
     expect(res.body.issue[0].details.text).toContain("Duplicate or missing variable name 'patient'");
@@ -323,13 +262,7 @@ describe('Questionnaire/$assemble HTTP contract', () => {
     async (failure) => {
       const input: Questionnaire = { ...root, item: [...(root.item ?? [])] };
       if (failure === 'cycle') {
-        input.item = [
-          {
-            linkId: 'self',
-            type: 'display',
-            extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${root.url}|1` }],
-          },
-        ];
+        input.item = [placeholder(`${root.url}|1`, 'self')];
       } else if (failure === 'duplicate') {
         input.item?.push({ linkId: 'name', type: 'string' });
       } else {
@@ -339,10 +272,7 @@ describe('Questionnaire/$assemble HTTP contract', () => {
           enableWhen: [{ question: 'missing', operator: 'exists', answerBoolean: true }],
         });
       }
-      const res = await request(app)
-        .post('/fhir/R4/Questionnaire/$assemble')
-        .auth(accessToken, { type: 'bearer' })
-        .send(input);
+      const res = await postAssembly().send(input);
       expect(res.status, JSON.stringify(res.body)).toBe(400);
       expect(res.body.resourceType).toBe('OperationOutcome');
       expect(res.body.issue[0].severity).toBe('error');
@@ -351,10 +281,7 @@ describe('Questionnaire/$assemble HTTP contract', () => {
   );
 
   test('keeps invalid input validation fatal', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send({ ...root, status: undefined });
+    const res = await postAssembly().send({ ...root, status: undefined });
     expect(res.status, JSON.stringify(res.body)).toBe(400);
     expect(res.body.resourceType).toBe('OperationOutcome');
     expect(res.body.issue[0].severity).toBe('error');
@@ -376,10 +303,7 @@ describe('Questionnaire/$assemble HTTP contract', () => {
     { resourceType: 'Parameters', parameter: [{ name: 'unknown', valueString: 'a' }] },
     {},
   ])('rejects malformed or missing type input %j', async (body) => {
-    const res = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(body);
+    const res = await postAssembly().send(body);
     expect(res.status).toBe(400);
     expect(res.body.resourceType).toBe('OperationOutcome');
   });
@@ -389,10 +313,7 @@ describe('Questionnaire/$assemble HTTP contract', () => {
       inputParameter({ valueReference: { reference: `Questionnaire/${child.id}` } }),
       { ...root, version: '2' },
     ]) {
-      const res = await request(app)
-        .post(`/fhir/R4/Questionnaire/${root.id}/$assemble`)
-        .auth(accessToken, { type: 'bearer' })
-        .send(body);
+      const res = await postAssembly(`Questionnaire/${root.id}/$assemble`).send(body);
       expect(res.status).toBe(400);
       expect(res.body.issue[0].details.text).toMatch(/conflicts/);
     }
@@ -408,31 +329,18 @@ describe('Questionnaire/$assemble HTTP contract', () => {
     });
     const input: Questionnaire = {
       ...root,
-      item: [
-        {
-          linkId: 'private',
-          type: 'display',
-          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${privateModule.url}|1` }],
-        },
-      ],
+      item: [placeholder(`${privateModule.url}|1`, 'private')],
     };
-    const canonicalRes = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(input);
+    const canonicalRes = await postAssembly().send(input);
     expect(canonicalRes.status).toBe(400);
     expect(canonicalRes.body.issue[0].details.text).toContain('not found');
-    const referenceRes = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(inputParameter({ valueReference: { reference: `Questionnaire/${privateModule.id}` } }));
+    const referenceRes = await postAssembly().send(
+      inputParameter({ valueReference: { reference: `Questionnaire/${privateModule.id}` } })
+    );
     expect(referenceRes.status).toBe(404);
     // An inaccessible duplicate does not make the caller's canonical ambiguous.
     await other.repo.createResource<Questionnaire>({ ...root, id: undefined, meta: undefined });
-    const ownRes = await request(app)
-      .post('/fhir/R4/Questionnaire/$assemble')
-      .auth(accessToken, { type: 'bearer' })
-      .send(inputParameter({ valueUri: `${root.url}|1` }));
+    const ownRes = await postAssembly().send(inputParameter({ valueUri: `${root.url}|1` }));
     expect(ownRes.status).toBe(200);
   });
 });
