@@ -417,8 +417,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setDeselectedIds((prev) => ({ ...prev, [actorType]: toggleId(prev[actorType], id) }));
   }, []);
 
-  // Opens what was blocked and pages to it, so it isn't lost when not drawn: a Slot on a calendar
-  // shown where there is one, with the others listed beside it.
+  // Opens what was blocked and pages to it when it misses the dates on screen, so it isn't lost
+  // when not drawn: a Slot on a calendar shown where there is one, with the others listed beside it.
   const finishBlock = useCallback(
     (slots: WithId<Slot>[]): void | Promise<void> => {
       closeBooking();
@@ -426,12 +426,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       const opened = slots.find((slot) => shown.has(slot.schedule.reference ?? '')) ?? slots[0];
       setSelectedSlot(opened);
       setNewBlockSlots(slots);
-      if (opened?.start) {
+      const onScreen =
+        range && Date.parse(opened?.start) < range.end.getTime() && Date.parse(opened?.end) > range.start.getTime();
+      if (opened?.start && !onScreen) {
         calendarRef.current?.gotoDate(new Date(opened.start));
       }
       return onBlocked?.(slots);
     },
-    [closeBooking, onBlocked, schedules]
+    [closeBooking, onBlocked, schedules, range]
   );
 
   const showAppointment = useCallback(
