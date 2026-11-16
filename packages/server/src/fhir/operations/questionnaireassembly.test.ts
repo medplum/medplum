@@ -56,6 +56,15 @@ const launchContext = (types = ['Practitioner', 'PractitionerRole']): Extension 
     { url: 'multiplesAllowed', valueBoolean: false },
   ],
 });
+const targetConstraint = (key: string, expression = 'true'): Extension => ({
+  url: constraint,
+  extension: [
+    { url: 'key', valueId: key },
+    { url: 'severity', valueCode: 'error' },
+    { url: 'expression', valueExpression: { language: 'text/fhirpath', expression } },
+    { url: 'human', valueString: 'Example response constraint' },
+  ],
+});
 
 beforeAll(() => {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -227,19 +236,171 @@ describe('Whole-questionnaire assembly', () => {
     await expect(assembleQuestionnaire(repo, child)).rejects.toThrow('through its parent');
   });
 
-  test('makes propagated variables available to a later sibling import', async () => {
-    const first = module('first', [{ linkId: 'first', type: 'string' }]);
-    first.extension?.push(variable('sharedContext'));
-    const second = module('second', [{ linkId: 'second', type: 'string' }]);
-    second.extension?.push({ url: sdc + 'sdc-questionnaire-assembleContext', valueString: 'sharedContext' });
-    await repo.createResource(first);
-    await repo.createResource(second);
-    const result = await assembleQuestionnaire(
-      repo,
-      module('root', [placeholder('first', 'first-import'), placeholder('second', 'second-import')])
-    );
-    expect(result.questionnaire.extension?.some((e) => e.valueExpression?.name === 'sharedContext')).toBe(true);
-    expect(result.questionnaire.item?.map((item) => item.linkId)).toEqual(['first', 'second']);
+  test.each(['variable', 'launchContext'])(
+    'resolves propagated %s dependencies from nested imports in either sibling order',
+    async (kind) => {
+      const provider = module('provider', [{ linkId: 'provider', type: 'string' }]);
+      provider.extension?.push(kind === 'variable' ? variable('user') : launchContext());
+      const consumer = module('consumer', [{ linkId: 'consumer', type: 'string' }]);
+      consumer.extension?.push({ url: sdc + 'sdc-questionnaire-assembleContext', valueString: 'user' });
+      await repo.createResource(provider);
+      await repo.createResource(consumer);
+      await repo.createResource(module('outer-provider', [placeholder('provider')]));
+      await repo.createResource(module('outer-consumer', [placeholder('consumer')]));
+      for (const order of [
+        ['outer-provider', 'outer-consumer'],
+        ['outer-consumer', 'outer-provider'],
+      ]) {
+        const root = module('root', [
+          group(
+            'section',
+            order.map((name) => placeholder(name, name))
+          ),
+        ]);
+        const original = deepClone(root);
+        const result = await assembleQuestionnaire(repo, root);
+        expect(result.issues).toEqual([]);
+        expect(result.questionnaire.item?.[0].item?.map((item) => item.linkId)).toEqual(
+          order.map((name) => 'section.' + name.replace('outer-', ''))
+        );
+        expect(root).toEqual(original);
+      }
+    }
+  );
+
+  test.each(['variable', 'launchContext'])(
+    'keeps propagated %s in its specified scope across sibling groups',
+    async (kind) => {
+      const provider = module('provider', [{ linkId: 'provider', type: 'string' }]);
+      provider.extension?.push(kind === 'variable' ? variable('user') : launchContext());
+      const consumer = module('consumer');
+      consumer.extension?.push({ url: sdc + 'sdc-questionnaire-assembleContext', valueString: 'user' });
+      await repo.createResource(provider);
+      await repo.createResource(consumer);
+      for (const order of [
+        ['provider', 'consumer'],
+        ['consumer', 'provider'],
+      ]) {
+        const root = module(
+          'root',
+          order.map((name) => group(name, [placeholder(name)]))
+        );
+        if (kind === 'variable') {
+          await expect(assembleQuestionnaire(repo, root)).rejects.toThrow("unavailable assembleContext 'user'");
+        } else {
+          expect((await assembleQuestionnaire(repo, root)).issues).toEqual([]);
+        }
+      }
+    }
+  );
+
+  test.each(['root', 'launch-module', 'variable-module', 'both-modules'])(
+    'rejects launch-context and variable name collisions at the root: %s',
+    async (location) => {
+      const launch = module('launch', [{ linkId: 'launch', type: 'string' }]);
+      launch.extension?.push(launchContext());
+      const vars = module('vars', [{ linkId: 'vars', type: 'string' }]);
+      vars.extension?.push(variable('user'));
+      await repo.createResource(launch);
+      await repo.createResource(vars);
+      for (const order of [
+        ['launch', 'vars'],
+        ['vars', 'launch'],
+      ]) {
+        const imported = order.filter(
+          (name) =>
+            location === 'both-modules' || location === (name === 'launch' ? 'launch-module' : 'variable-module')
+        );
+        const root = module('root', imported.length ? imported.map((name) => placeholder(name, name)) : undefined);
+        if (!imported.includes('launch')) {
+          root.extension?.push(launchContext());
+        }
+        if (!imported.includes('vars')) {
+          root.extension?.push(variable('user'));
+        }
+        await expect(assembleQuestionnaire(repo, root)).rejects.toThrow("Duplicate or missing variable name 'user'");
+      }
+    }
+  );
+
+  test('allows a nested variable to shadow a launch context imported by a later module', async () => {
+    const provider = module('provider', [{ linkId: 'provider', type: 'string' }]);
+    provider.extension?.push(launchContext());
+    await repo.createResource(provider);
+    const section = group('section', [{ linkId: 'answer', type: 'string' }]);
+    section.extension?.push(variable('user'));
+    const result = await assembleQuestionnaire(repo, module('root', [section, placeholder('provider')]));
+    expect(result.issues).toEqual([]);
+    expect(result.questionnaire.item?.[0].extension).toContainEqual(variable('user'));
+  });
+
+  test.each(['same-scope', 'separate-groups'])(
+    'warns on duplicate targetConstraint keys across the assembled resource: %s',
+    async (location) => {
+      const first = module('first', [{ linkId: 'first', type: 'string' }]);
+      const second = module('second', [{ linkId: 'second', type: 'string' }]);
+      first.extension?.push(targetConstraint('shared'));
+      second.extension?.push(targetConstraint('shared', 'false'));
+      await repo.createResource(first);
+      await repo.createResource(second);
+      const root = module(
+        'root',
+        ['first', 'second'].map((name) =>
+          location === 'same-scope' ? placeholder(name, name) : group(name, [placeholder(name)])
+        )
+      );
+      const result = await assembleQuestionnaire(repo, root);
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          code: 'invariant',
+          details: { text: expect.stringContaining("Duplicate targetConstraint key 'shared'") },
+          expression: [expect.stringMatching(/^Questionnaire\.(item\[1\]\.)?extension\[\d+\]$/)],
+        }),
+      ]);
+      const containers = location === 'same-scope' ? [result.questionnaire] : (result.questionnaire.item ?? []);
+      expect(containers.flatMap((container) => container.extension?.filter((e) => e.url === constraint) ?? [])).toEqual(
+        [targetConstraint('shared'), targetConstraint('shared', 'false')]
+      );
+    }
+  );
+
+  test('keeps distinct targetConstraint keys without warnings', async () => {
+    const child = module('child');
+    child.extension?.push(targetConstraint('child-rule'));
+    await repo.createResource(child);
+    const root = module('root', [placeholder('child')]);
+    root.extension?.push(targetConstraint('root-rule'));
+    const result = await assembleQuestionnaire(repo, root);
+    expect(result.issues).toEqual([]);
+    expect(result.questionnaire.extension?.filter((e) => e.url === constraint)).toEqual([
+      targetConstraint('root-rule'),
+      targetConstraint('child-rule'),
+    ]);
+  });
+
+  test.each(['bad_', 'bad:', 'x'.repeat(58)])(
+    'explains contained ID restrictions after applying prefix %s',
+    async (prefix) => {
+      const child = module('child', [{ linkId: 'q', type: 'choice', answerValueSet: '#values' }]);
+      child.contained = [{ resourceType: 'ValueSet', id: 'values', status: 'active' }];
+      await repo.createResource(child);
+      await expect(
+        assembleQuestionnaire(repo, module('root', [group(prefix, [placeholder('child')])]))
+      ).rejects.toThrow(
+        `Contained resource id '${prefix}.values' in https://example.org/child|1 is invalid after prefixing; use 1 to 64 characters from A-Z, a-z, 0-9, '-' or '.'`
+      );
+    }
+  );
+
+  test('allows a prefixed contained ID at the 64-character limit', async () => {
+    const child = module('child', [{ linkId: 'q', type: 'choice', answerValueSet: '#values' }]);
+    child.contained = [{ resourceType: 'ValueSet', id: 'values', status: 'active' }];
+    await repo.createResource(child);
+    const prefix = 'x'.repeat(57);
+    const result = await assembleQuestionnaire(repo, module('root', [group(prefix, [placeholder('child')])]));
+    expect(result.issues).toEqual([]);
+    expect(result.questionnaire.contained?.[0].id).toBe(`${prefix}.values`);
   });
 
   test('bounds expanded bytes before cloning large inputs', async () => {

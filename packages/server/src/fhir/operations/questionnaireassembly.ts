@@ -58,7 +58,7 @@ const MAX_MODULES = 1000;
 const MAX_BYTES = 5 * 1024 * 1024;
 
 type Container = Questionnaire | QuestionnaireItem;
-type Scope = { names: Set<string>; prefix?: string };
+type Scope = { container: Container; parent?: Scope; prefix?: string };
 export type AssemblyResult = { questionnaire: Questionnaire; issues: OperationOutcomeIssue[] };
 
 /**
@@ -81,6 +81,7 @@ class QuestionnaireAssembler {
   private readonly provenance = new Set<string>();
   private readonly contained = new Map<string, Resource>();
   private readonly warnings = new Set<string>();
+  private readonly contextChecks: { name: string; canonical: string; scope: Scope }[] = [];
   private itemCount = 0;
   private moduleCount = 0;
   private byteCount = 0;
@@ -102,11 +103,14 @@ class QuestionnaireAssembler {
     this.checkVariables(this.root);
     this.normalizeRootDependencies();
     this.registerContained(this.root);
-    const scope = extendScope(this.root, { names: new Set() });
+    const scope = extendScope(this.root);
     await this.expandContainer(this.root, this.root, scope, new Set([questionnaireKey(input)]), 0);
     this.root.contained = this.contained.size ? [...this.contained.values()] : undefined;
+    this.checkVariables(this.root);
+    this.checkContexts();
     this.checkResult();
     this.finalize();
+    this.checkConstraintKeys();
     if (Buffer.byteLength(JSON.stringify(this.root)) > MAX_BYTES) {
       fail('Assembled Questionnaire exceeds the 5 MiB output limit');
     }
@@ -165,7 +169,6 @@ class QuestionnaireAssembler {
         const childStack = new Set(stack).add(key);
         await this.expandContainer(child, childSource, childScope, childStack, depth + 1);
         this.propagateExtensions(child, container);
-        scope = extendScope(child, scope);
         result.push(...(child.item ?? []));
         const provenance = questionnaireCanonical(childSource);
         if (provenance && provenance !== questionnaireCanonical(this.root)) {
@@ -281,23 +284,40 @@ class QuestionnaireAssembler {
         fail(`SubQuestionnaire ${canonical}: ${extension.url} must be on an allowed item, not the child root`);
       }
     }
-    const availableNames = new Set(scope.names);
-    for (const launch of extensions(this.root, LAUNCH_CONTEXT_URL)) {
-      const name = launch.extension?.find((e) => e.url === 'name')?.valueCoding?.code;
-      if (name) {
-        availableNames.add(name);
-      }
-    }
     for (const dependency of extensions(child, ASSEMBLE_CONTEXT_URL)) {
-      if (!dependency.valueString || !availableNames.has(dependency.valueString)) {
-        fail(`SubQuestionnaire ${canonical} requires unavailable assembleContext '${dependency.valueString ?? ''}'`);
+      if (!dependency.valueString) {
+        fail(`SubQuestionnaire ${canonical} has an assembleContext without a variable name`);
       }
+      this.contextChecks.push({ name: dependency.valueString, canonical, scope });
     }
     this.checkVariables(child);
   }
 
+  private checkContexts(): void {
+    // SDC permits declarations later in a scope. Keep live container references until
+    // all imports have propagated their variables and global launch contexts.
+    const launchNames = new Set(
+      extensions(this.root, LAUNCH_CONTEXT_URL).map(
+        (e) => e.extension?.find((part) => part.url === 'name')?.valueCoding?.code
+      )
+    );
+    for (const { name, canonical, scope } of this.contextChecks) {
+      let available = launchNames.has(name);
+      for (let current: Scope | undefined = scope; current && !available; current = current.parent) {
+        available = extensions(current.container, VARIABLE_EXTENSION_URL).some((e) => e.valueExpression?.name === name);
+      }
+      if (!available) {
+        fail(`SubQuestionnaire ${canonical} requires unavailable assembleContext '${name}'`);
+      }
+    }
+  }
+
   private checkVariables(container: Container): void {
-    const names = new Set<string>();
+    const names = new Set(
+      extensions(container, LAUNCH_CONTEXT_URL).map(
+        (e) => e.extension?.find((part) => part.url === 'name')?.valueCoding?.code
+      )
+    );
     for (const variable of extensions(container, VARIABLE_EXTENSION_URL)) {
       const name = variable.valueExpression?.name;
       if (!name || names.has(name)) {
@@ -380,7 +400,9 @@ class QuestionnaireAssembler {
   private registerContained(questionnaire: Questionnaire): void {
     for (const resource of questionnaire.contained ?? []) {
       if (!resource.id || !/^[A-Za-z0-9.-]{1,64}$/.test(resource.id)) {
-        fail('Contained resource requires a valid id after prefixing');
+        fail(
+          `Contained resource id '${resource.id ?? '(missing)'}' in ${questionnaireKey(questionnaire)} is invalid after prefixing; use 1 to 64 characters from A-Z, a-z, 0-9, '-' or '.'`
+        );
       }
       const existing = this.contained.get(resource.id);
       if (existing && !deepEquals(existing, resource)) {
@@ -414,6 +436,32 @@ class QuestionnaireAssembler {
       }
       return reference;
     });
+  }
+
+  private checkConstraintKeys(): void {
+    const keys = new Set<string>();
+    const visit = (container: Container, path: string): void => {
+      container.extension?.forEach((extension, index) => {
+        if (extension.url !== CONSTRAINT_URL) {
+          return;
+        }
+        const key = extension.extension?.find((part) => part.url === 'key')?.valueId;
+        if (!key) {
+          return;
+        }
+        if (keys.has(key)) {
+          this.resolver.issues.push({
+            severity: 'warning',
+            code: 'invariant',
+            details: { text: `Duplicate targetConstraint key '${key}'; keys must be unique within the Questionnaire` },
+            expression: [`${path}.extension[${index}]`],
+          });
+        }
+        keys.add(key);
+      });
+      container.item?.forEach((item, index) => visit(item, `${path}.item[${index}]`));
+    };
+    visit(this.root, 'Questionnaire');
   }
 
   private finalize(): void {
@@ -511,19 +559,10 @@ function hasImports(items: QuestionnaireItem[]): boolean {
   return items.some((item) => extensions(item, SUB_QUESTIONNAIRE_EXTENSION_URL).length || hasImports(item.item ?? []));
 }
 
-function extendScope(container: Container, inherited: Scope): Scope {
-  const scope: Scope = { names: new Set(inherited.names), prefix: inherited.prefix };
-  for (const launch of extensions(container, LAUNCH_CONTEXT_URL)) {
-    const name = launch.extension?.find((e) => e.url === 'name')?.valueCoding?.code;
-    if (name) {
-      scope.names.add(name);
-    }
-  }
+function extendScope(container: Container, inherited?: Scope): Scope {
+  const scope: Scope = { container, parent: inherited, prefix: inherited?.prefix };
   for (const extension of extensions(container, VARIABLE_EXTENSION_URL)) {
     const variable = extension.valueExpression;
-    if (variable?.name) {
-      scope.names.add(variable.name);
-    }
     if (variable?.name !== 'linkIdPrefix') {
       continue;
     }
@@ -538,13 +577,13 @@ function extendScope(container: Container, inherited: Scope): Scope {
         `Unsupported linkIdPrefix expression in ${containerLabel(container)}; use a string literal or %linkIdPrefix + 'suffix'`
       );
     }
-    if (expression.includes('%linkIdPrefix') && inherited.prefix === undefined) {
+    if (expression.includes('%linkIdPrefix') && inherited?.prefix === undefined) {
       fail(`Missing inherited linkIdPrefix in ${containerLabel(container)}`);
     }
     const values = evalFhirPathTyped(
       expression,
       [],
-      inherited.prefix === undefined ? {} : { '%linkIdPrefix': toTypedValue(inherited.prefix) }
+      inherited?.prefix === undefined ? {} : { '%linkIdPrefix': toTypedValue(inherited.prefix) }
     );
     if (values.length !== 1 || typeof values[0].value !== 'string') {
       fail(`linkIdPrefix must evaluate to one string in ${containerLabel(container)}`);

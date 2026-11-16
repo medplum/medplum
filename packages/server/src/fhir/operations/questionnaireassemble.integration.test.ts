@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { OperationOutcome, Parameters, Questionnaire } from '@medplum/fhirtypes';
+import type { Extension, OperationOutcome, Parameters, Questionnaire } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -221,6 +221,101 @@ describe('Questionnaire/$assemble HTTP contract', () => {
         expression: ['Questionnaire.item[0]'],
       }),
     ]);
+  });
+
+  test('returns duplicate constraint keys as warnings without removing either constraint', async () => {
+    const constraint: Extension = {
+      url: 'http://hl7.org/fhir/StructureDefinition/targetConstraint',
+      extension: [
+        { url: 'key', valueId: 'shared-rule' },
+        { url: 'severity', valueCode: 'error' },
+        { url: 'expression', valueExpression: { language: 'text/fhirpath', expression: 'true' } },
+        { url: 'human', valueString: 'Example response constraint' },
+      ],
+    };
+    const constrained = await repo.createResource<Questionnaire>({
+      ...child,
+      id: undefined,
+      meta: undefined,
+      url: `https://example.org/${randomUUID()}`,
+      extension: [...(child.extension ?? []), constraint],
+    });
+    const input: Questionnaire = {
+      ...root,
+      extension: [...(root.extension ?? []), constraint],
+      item: [
+        {
+          linkId: 'import',
+          type: 'display',
+          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${constrained.url}|1` }],
+        },
+      ],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(input);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.resourceType).toBe('Parameters');
+    const parameters = (res.body as Parameters).parameter;
+    expect(parameters?.map((p) => p.name)).toEqual(['return', 'outcome']);
+    const assembled = parameters?.[0].resource as Questionnaire;
+    expect(assembled.extension?.filter((e) => e.url === constraint.url)).toEqual([constraint, constraint]);
+    expect((parameters?.[1].resource as OperationOutcome).issue).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        code: 'invariant',
+        details: { text: expect.stringContaining("Duplicate targetConstraint key 'shared-rule'") },
+        expression: [expect.stringMatching(/^Questionnaire\.extension\[\d+\]$/)],
+      }),
+    ]);
+  });
+
+  test('returns an error without a result when an imported launch context collides with a root variable', async () => {
+    const launch = await repo.createResource<Questionnaire>({
+      ...child,
+      id: undefined,
+      meta: undefined,
+      url: `https://example.org/${randomUUID()}`,
+      extension: [
+        ...(child.extension ?? []),
+        {
+          url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext',
+          extension: [
+            {
+              url: 'name',
+              valueCoding: { system: 'http://hl7.org/fhir/uv/sdc/CodeSystem/launchContext', code: 'patient' },
+            },
+            { url: 'type', valueCode: 'Patient' },
+          ],
+        },
+      ],
+    });
+    const input: Questionnaire = {
+      ...root,
+      extension: [
+        ...(root.extension ?? []),
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/variable',
+          valueExpression: { name: 'patient', language: 'text/fhirpath', expression: '%resource' },
+        },
+      ],
+      item: [
+        {
+          linkId: 'import',
+          type: 'display',
+          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${launch.url}|1` }],
+        },
+      ],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(input);
+    expect(res.status).toBe(400);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+    expect(res.body.issue[0].details.text).toContain("Duplicate or missing variable name 'patient'");
+    expect(res.body.parameter).toBeUndefined();
   });
 
   test.each(['cycle', 'duplicate', 'dangling'])(

@@ -48,7 +48,7 @@ Canonical lookup searches local Questionnaires, with separate URL and business-v
 
 Missing `assemble-expectation` metadata produces a warning for an imported child or a root requiring assembly. Assembly continues only if all other assembly checks pass. This does not establish SDC conformance.
 
-After assembly, a final FHIR R4 validation check reports conformance problems as warnings, following SDC's operation guidance. The response includes the assembled definition and diagnostic locations for review. Correct these problems before publishing. Invalid input, unresolved modules, cycles, and other assembly failures still return errors.
+After assembly, validation reports duplicate `targetConstraint` keys and final FHIR R4 conformance problems as warnings, following SDC's operation guidance. Constraint keys must be unique across the Questionnaire, including separate groups. Both constraints remain in the output for author review; the warning identifies the duplicate's location. Correct these problems before publishing. Invalid input, unresolved modules, cycles, and other assembly failures still return errors.
 
 The result keeps the root's canonical `url` and business `version`, removes its storage ID and revision metadata, adjusts `assemble-expectation`, and declares `executable` capability. `assembledFrom` records resolved descendant canonicals and their available business versions. Existing valid capability codes are retained. The modular input profile is removed; other profile declarations are retained and should be validated before publication.
 
@@ -59,6 +59,10 @@ Store source and assembled forms under separate IDs. Use one reviewed assembly p
 A `subQuestionnaire` extension belongs on a `display` item. Assembly replaces that item with all child items, preserving their order, groups, conditions, and supported annotations. Put conditions and variable declarations on a containing group that survives assembly.
 
 Medplum supports recursive whole-questionnaire imports, scoped `assembleContext` checks, SDC metadata compatibility and propagation, contained resources, and structural prefixes. For assembly-time `linkIdPrefix`, use a FHIRPath string literal such as `'primary.'` or inherited concatenation such as `%linkIdPrefix + 'name.'`. Prefixing updates the module's own linkIds, `enableWhen.question`, contained IDs, and typed references/canonicals starting with `#`. Variables and runtime expressions remain scoped as authored. `QuestionnaireForm` does not evaluate SDC `variable` declarations; see [renderer compatibility](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms).
+
+Context checks run after imports have propagated their declarations, so sibling order does not change whether a dependency is available. Launch contexts are available throughout the assembled form; variables remain in their containing scope and descendants. A launch context and variable with the same name at the Questionnaire root fail assembly. A variable in a descendant group may shadow an ancestor's name. See [SDC expression scope and naming](https://hl7.org/fhir/uv/sdc/STU4/en/expressions.html).
+
+When a module contains resources, the prefix plus each contained ID must contain 1 to 64 characters using only letters `A-Z` or `a-z`, digits, hyphens, or periods. For example, use `primary.` instead of `primary_`. Assembly reports the invalid final ID and its source module if these restrictions are violated.
 
 **Medplum policy:** declare any `linkIdPrefix` for an imported module on its parent or on a group inside the module. A declaration on the imported Questionnaire root is rejected because moving it into the parent could change sibling prefixes. A prefix on the top-level Questionnaire being assembled is supported.
 
