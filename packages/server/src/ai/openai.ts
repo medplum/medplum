@@ -308,14 +308,23 @@ function buildResponsesRequestBody(context: AiContext, stream: boolean): Record<
 async function postRequest(context: AiContext, api: AiApi, stream: boolean): Promise<Response> {
   const path = api === 'responses' ? '/responses' : '/chat/completions';
   const body = api === 'responses' ? buildResponsesRequestBody(context, stream) : buildChatRequestBody(context, stream);
-  return safeFetch(`${context.baseUrl}${path}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${context.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  try {
+    return await safeFetch(`${context.baseUrl}${path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${context.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    const cause = (err as Error).cause;
+    getLogger().warn('AI request could not be sent', {
+      name: (err as Error).name,
+      code: isObject(cause) ? cause.code : undefined,
+    });
+    throw new Error('Request could not be sent - check the OPENAI_API_KEY and LLM_BASE_URL project secrets');
+  }
 }
 
 /**

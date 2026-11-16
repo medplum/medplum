@@ -354,6 +354,17 @@ describe('OpenAI provider', () => {
       );
     });
 
+    test('Reports a uniform error when the request cannot be sent', async () => {
+      const expected = 'Request could not be sent - check the OPENAI_API_KEY and LLM_BASE_URL project secrets';
+
+      global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to parse URL from example'));
+      await expect(callOpenAi(baseContext)).rejects.toThrow(new Error(expected));
+
+      const streamError = await streamOpenAi(baseContext, () => undefined).catch((err) => err);
+      expect(streamError.message).toBe(expected);
+      expect(streamError.cause).toBeUndefined();
+    });
+
     test('Throws when the response has no body', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, body: null });
       await expect(streamOpenAi(baseContext, () => undefined)).rejects.toThrow(
