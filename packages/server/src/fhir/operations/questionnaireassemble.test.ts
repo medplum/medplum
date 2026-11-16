@@ -6,14 +6,15 @@ import { readJson } from '@medplum/definitions';
 import type { FhirRequest } from '@medplum/fhir-router';
 import { MemoryRepository } from '@medplum/fhir-router';
 import type { Bundle, Parameters, Questionnaire, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { parseQuestionnaireInput } from './questionnaireassemble';
 import {
   ASSEMBLED_FROM_EXTENSION_URL,
   ASSEMBLE_EXPECTATION_EXTENSION_URL,
   SUB_QUESTIONNAIRE_EXTENSION_URL,
   VARIABLE_EXTENSION_URL,
   assembleQuestionnaire,
-  parseQuestionnaireInput,
-} from './questionnaireassemble';
+} from './questionnaireassembly';
+import { KNOWLEDGE_CAPABILITY_URL } from './questionnaireassemblyresolver';
 
 const makeRequest = (body: unknown): FhirRequest => ({
   method: 'POST',
@@ -64,6 +65,7 @@ describe('Questionnaire/$assemble', () => {
       url: 'https://example.com/questionnaire/grandchild',
       version: '1.0.0',
       status: 'active',
+      extension: [{ url: ASSEMBLE_EXPECTATION_EXTENSION_URL, valueCode: 'independent-child' }],
       item: [{ linkId: 'city', type: 'string', text: 'City' }],
     };
     await repo.createResource(grandchild);
@@ -73,11 +75,12 @@ describe('Questionnaire/$assemble', () => {
       url: 'https://example.com/questionnaire/child',
       version: '1.0.0',
       status: 'active',
+      extension: [{ url: ASSEMBLE_EXPECTATION_EXTENSION_URL, valueCode: 'assemble-child' }],
       contained: [{ resourceType: 'ValueSet', id: 'child-values', status: 'active' }],
       item: [
         {
           linkId: 'name',
-          type: 'string',
+          type: 'choice',
           text: 'Name',
           answerValueSet: '#child-values',
           enableWhen: [{ question: 'city', operator: 'exists', answerBoolean: true }],
@@ -147,18 +150,21 @@ describe('Questionnaire/$assemble', () => {
         { linkId: 'person.city', text: 'City' },
       ],
     });
-    expect(result.questionnaire.extension).toEqual([
-      { url: ASSEMBLED_FROM_EXTENSION_URL, valueCanonical: 'https://example.com/questionnaire/child|1.0.0' },
-      { url: ASSEMBLED_FROM_EXTENSION_URL, valueCanonical: 'https://example.com/questionnaire/grandchild|1.0.0' },
-    ]);
+    expect(result.questionnaire.extension).toEqual(
+      expect.arrayContaining([
+        { url: KNOWLEDGE_CAPABILITY_URL, valueCode: 'executable' },
+        { url: ASSEMBLED_FROM_EXTENSION_URL, valueCanonical: 'https://example.com/questionnaire/child|1.0.0' },
+        { url: ASSEMBLED_FROM_EXTENSION_URL, valueCanonical: 'https://example.com/questionnaire/grandchild|1.0.0' },
+      ])
+    );
     expect(result.questionnaire.contained).toEqual([
       { resourceType: 'ValueSet', id: 'person.child-values', status: 'active' },
     ]);
-    expect(result.questionnaire.version).toBe('1.0.0-assembled');
+    expect(result.questionnaire.version).toBe('1.0.0');
     expect(root).toEqual(original);
   });
 
-  test('propagates an item definition from a Questionnaire library', async () => {
+  test('rejects deferred item definitions from a Questionnaire library', async () => {
     const repo = new MemoryRepository();
     await repo.createResource({
       resourceType: 'Questionnaire',
@@ -170,6 +176,7 @@ describe('Questionnaire/$assemble', () => {
           linkId: 'address',
           type: 'group',
           text: 'Address',
+          extension: [{ url: ASSEMBLE_EXPECTATION_EXTENSION_URL, valueCode: 'independent-child' }],
           item: [{ linkId: 'city', type: 'string', text: 'City' }],
         },
       ],
@@ -187,20 +194,16 @@ describe('Questionnaire/$assemble', () => {
       ],
     };
 
-    const result = await assembleQuestionnaire(repo, questionnaire);
-
-    expect(result.issues).toHaveLength(0);
-    expect(result.questionnaire.item?.[0]).toMatchObject({
-      linkId: 'home-address',
-      text: 'Address',
-      item: [{ linkId: 'city', type: 'string', text: 'City' }],
-    });
+    await expect(assembleQuestionnaire(repo, questionnaire)).rejects.toThrow(
+      'item.definition assembly is not supported'
+    );
   });
 
-  test('propagates metadata from a contained element definition', async () => {
+  test('rejects deferred StructureDefinition-based assembly', async () => {
     const repo = new MemoryRepository();
     const structureDefinition = {
       resourceType: 'StructureDefinition',
+      id: 'definition',
       url: 'https://example.com/StructureDefinition/example',
       name: 'Example',
       status: 'active',
@@ -234,15 +237,9 @@ describe('Questionnaire/$assemble', () => {
       ],
     };
 
-    const result = await assembleQuestionnaire(repo, questionnaire);
-
-    expect(result.issues).toHaveLength(0);
-    expect(result.questionnaire.item?.[0]).toMatchObject({
-      text: 'Official name',
-      required: true,
-      repeats: false,
-      code: [{ system: 'https://example.com', code: 'name' }],
-    });
+    await expect(assembleQuestionnaire(repo, questionnaire)).rejects.toThrow(
+      'item.definition assembly is not supported'
+    );
   });
 
   test('rejects missing references, cycles, and duplicate linkIds', async () => {
@@ -288,7 +285,7 @@ describe('Questionnaire/$assemble', () => {
     };
     await repo.createResource(first);
     await repo.createResource(second);
-    await expect(assembleQuestionnaire(repo, first)).rejects.toThrow('Circular');
+    await expect(assembleQuestionnaire(repo, first)).rejects.toThrow('circular');
 
     const duplicateRoot: Questionnaire = {
       resourceType: 'Questionnaire',

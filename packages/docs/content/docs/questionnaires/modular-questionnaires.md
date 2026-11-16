@@ -5,9 +5,9 @@ description: Reuse questionnaire sections, combine them into a complete form, an
 
 A clinic might use the same visit questions across several intake forms, then add a section specific to each service. Maintaining the shared questions once makes changes easier to review and keeps the forms consistent. A **composite questionnaire** brings those reusable pieces together into the form a patient or practitioner completes.
 
-With Medplum today, your application can combine known Questionnaire definitions before publishing a complete `Questionnaire`. Medplum stores that definition, and `QuestionnaireForm` renders its questions and collects a single `QuestionnaireResponse`.
+Combine reusable definitions before publishing a complete `Questionnaire`. On servers that advertise `$assemble`, Medplum can resolve SDC modules for you; application code can also combine a small set of known definitions. Medplum stores that definition, and `QuestionnaireForm` renders its questions and collects a single `QuestionnaireResponse`.
 
-This guide walks through a shared visit section plus a clinic-specific preparation section. Start with [Modeling Questionnaires and Responses](/docs/questionnaires/questionnaires-and-responses) for item types and basic conditions.
+This guide follows assembly, review, publication, and response processing. It also includes a small manual composition example for two known modules. Start with [Modeling Questionnaires and Responses](/docs/questionnaires/questionnaires-and-responses) for item types and basic conditions.
 
 ## Choose between groups, modules, and separate forms
 
@@ -36,11 +36,71 @@ Keep the published definition available for its responses. When a module changes
 
 ### What Medplum supports
 
-Medplum's current React renderer works with the complete Questionnaire's inline items, including nested groups and basic `enableWhen` conditions. Your application owns selecting modules and combining their content. Check the [advanced-authoring compatibility table](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms) for other features used by your modules.
+Medplum's React renderer uses the complete Questionnaire's inline items. On servers that advertise it in their CapabilityStatement, [`$assemble`](/docs/api/fhir/operations/assemble) resolves locally stored SDC modules before rendering. It supports whole-questionnaire imports, prefixes, contained resources, and SDC metadata checks. Remote retrieval, `item.definition` generation, and individual item imports are outside the first release.
 
-FHIR's Structured Data Capture (SDC) guide defines a `subQuestionnaire` extension and an [`$assemble` operation](https://hl7.org/fhir/uv/sdc/STU4/en/OperationDefinition-Questionnaire-assemble.html) for modular authoring. **Medplum does not currently provide a built-in `$assemble` operation, and `QuestionnaireForm` does not expand `subQuestionnaire` references.** An imported definition that requires assembly needs application code or a compatible external assembler before it reaches the renderer.
+`QuestionnaireForm` does not expand module references or evaluate SDC `variable` declarations. Assembly preserves those declarations for compatible tools, but expressions depending on them need a compatible evaluator. The example below uses prefixes during assembly and basic `enableWhen` during rendering. Check [renderer compatibility](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms) for other features in your modules.
 
-## Build a visit-preparation form
+## Assemble SDC modules
+
+This example collects a visit reason and contact names. It reuses one contact module twice, producing one response and two extracted `RelatedPerson` resources when both contacts are supplied.
+
+```mermaid
+flowchart LR
+    V[Visit module] --> A[Assemble and review]
+    C[Contact module, used twice] --> A
+    A --> P[Publish one definition]
+    P --> R[Assign, save, and resume one response]
+    R --> E[Extract using the assigned definition]
+```
+
+### 1. Define and reference the modules
+
+The contact module keeps its extraction annotation on a root **group inside the module**, an allowed location. Its contained template reads the answer from that group's response context, so it does not depend on runtime `linkIdPrefix` evaluation.
+
+<details>
+<summary>Visit and contact modules</summary>
+
+{{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="modules" >}}
+
+</details>
+
+The root uses `display` placeholders to include the modules. Each surviving group declares its prefix. Medplum rejects prefix declarations on an imported Questionnaire root; use the parent or a group inside the module so the declaration keeps its intended scope. The second contact's condition belongs on its group because assembly removes the placeholder entirely.
+
+{{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="include, root" >}}
+
+The assembled contact questions have linkIds `primary.name` and `secondary.name`. Their template references become `#primary.contact-template` and `#secondary.contact-template`. The modules remain independently maintained source definitions.
+
+### 2. Assemble, review, and publish
+
+Store the pinned module versions, then call the instance operation for the root:
+
+{{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="assemble" >}}
+
+Review any returned warnings and correct validation problems before publishing. Assembly can return a definition with warnings when its final FHIR R4 check finds a conformance problem. Preview the complete Questionnaire with `QuestionnaireForm`, try both states of **Add another contact?**, save a draft, and verify extraction:
+
+{{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="publish" >}}
+
+The [complete example source](https://github.com/medplum/medplum/blob/main/packages/examples/src/questionnaires/assembled-questionnaires.ts) includes `storeDefinition`, which uses identifier-based conditional creation. Replace its example URLs and identifier system with values you own.
+
+Source and assembly share the same canonical URL and business version, but have different storage IDs and identifiers. Sources declare `computable`; the output also declares `executable`. Publish **one reviewed build per root URL/version**. A changed module requires a new module version and a new root version before another assembly is published. Keep existing published definitions unchanged.
+
+### 3. Assign, save, and reopen the complete form
+
+Use the published definition's ID with the [assignment and save helpers](/docs/questionnaires/saving-and-resuming). Load that Questionnaire and pass it, together with the assigned response, to `QuestionnaireForm`. The callbacks contain one response spanning the modules.
+
+The form initializer prefers the canonical URL, so save with the existing `saveResponse` helper. It restores the assignment's `Questionnaire/{id}` reference, subject, and concurrency metadata. Reopen using the saved assignment rather than looking up the newest canonical:
+
+{{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="reopen" >}}
+
+### 4. Extract with the assigned definition
+
+After validating completion and saving the response as `completed`, pass its matching assembled Questionnaire explicitly:
+
+{{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="extract" >}}
+
+`$extract` returns a Bundle for a separate review and persistence step. Automatic canonical lookup cannot choose between the source and assembly when they share a URL/version, and returns an ambiguity error. Passing the assigned definition also keeps older responses aligned with their original extraction rules.
+
+## Build a visit-preparation form in application code
 
 The example uses two small, known modules:
 
@@ -102,7 +162,7 @@ After reviewing the form, add this helper to `modular-questionnaires.ts` and cal
 
 Keep the returned Questionnaire ID in configuration. This identifier-based conditional create makes a retry reuse the existing definition. Replace the identifier system with one owned by your application. The helper derives the identifier from the composed Questionnaire's `version`. Bump that version for each new published revision; keeping it unchanged returns the previous definition even if the code has changed.
 
-The final definition uses the resource-ID strategy from [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming): load the stored Questionnaire by ID and assign a response that points to `Questionnaire/{id}`. The composed definition intentionally has no canonical `url`; the source module URLs identify the modules only. Keep a published resource unchanged while responses depend on it.
+The final definition uses the resource-ID strategy from [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming): load the stored Questionnaire by ID and assign a response that points to `Questionnaire/{id}`. This manual example intentionally gives its composed definition no canonical `url`; the source module URLs identify the modules only. `$assemble` output keeps its root canonical URL/version, as shown above. Keep a published resource unchanged while responses depend on it.
 
 Continue with that guide for assignment identifiers, subject and encounter context, saving drafts, completion validation, and resuming the same response. Apply those steps to the complete definition returned here.
 
@@ -114,7 +174,7 @@ Before publishing a revised form:
 
 - Check all `linkId` values for uniqueness and confirm every `enableWhen.question` still identifies the intended question. Prefixing IDs during composition also requires updating references and any expressions that use them; this example authors distinct IDs in advance.
 - Test conditions, calculations, and prefilled answers against the complete response structure. Adding or removing a wrapper group changes paths used by FHIRPath expressions and processing code.
-- Keep extraction or Bot logic aligned with the final definition. This example collects answers only. Add and test extraction templates if you use `$extract`; when following this resource-ID strategy, supply the loaded Questionnaire explicitly to that operation. Its automatic lookup uses `Questionnaire.url`.
+- Keep extraction or Bot logic aligned with the final definition. The manual visit-preparation example collects answers only. Add and test extraction templates if you use `$extract`; when following this resource-ID strategy, supply the loaded Questionnaire explicitly to that operation. Its automatic lookup uses `Questionnaire.url`.
 - Verify that a saved response reopens against its original complete definition after you publish a newer revision.
 
 See [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) for choosing template extraction or a Bot and handling downstream writes. Form submission alone does not run that processing.
@@ -125,4 +185,4 @@ For interoperability with other form-authoring tools, [SDC Modular Forms](https:
 
 An SDC assembler also handles dependencies such as contained resources, extension propagation, expression context, and ID collisions. The small composition function above implements the needs of its two known modules; it does not implement the SDC assembly algorithm or claim conformance to its Modular Questionnaire profile.
 
-If your authoring tool produces SDC modular definitions, choose an assembler that supports their features, then inspect and test the complete output with Medplum's renderer. Successful assembly still needs the feature compatibility checks in [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms).
+If your authoring tool produces SDC modular definitions, check their features against the [supported assembly subset](/docs/api/fhir/operations/assemble#supported-assembly-rules), then inspect and test the complete output with Medplum's renderer. Successful assembly still needs the feature compatibility checks in [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms).

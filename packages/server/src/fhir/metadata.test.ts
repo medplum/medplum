@@ -36,10 +36,13 @@ describe('CapabilityStatement', () => {
     expect(patient?.supportedProfile?.length).toBeGreaterThan(0);
     expect(getResource('Claim')).toBeDefined();
 
-    expect(getResource('Questionnaire')?.operation).toContainEqual({
-      name: 'assemble',
-      definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
-    });
+    expect(getResource('Questionnaire')?.operation).toContainEqual(
+      expect.objectContaining({
+        name: 'assemble',
+        definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
+        documentation: expect.stringContaining('Whole-questionnaire assembly'),
+      })
+    );
   });
 
   test.each([

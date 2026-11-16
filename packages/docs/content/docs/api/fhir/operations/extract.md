@@ -37,6 +37,12 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 
 <sup>2</sup> If `QuestionnaireResponse.questionnaire` is not specified in the resource, it must be passed in via the `questionnaire` parameter; otherwise it can be used to override the Questionnaire used for parsing.
 
+## Selecting the Questionnaire
+
+Without an explicit `questionnaire` input, Medplum searches by the response's canonical URL and, when supplied as `url|version`, its exact business version. A unique accessible match succeeds; no match returns the existing missing-Questionnaire error. Multiple matches now return an error asking for explicit input instead of selecting the first result.
+
+This applies when an authored source and its [`$assemble`](/docs/api/fhir/operations/assemble) output share a URL and version. Pinning a business version alone does not distinguish them. Load the assigned assembled Questionnaire by ID and pass it explicitly. Use the same approach for responses whose `questionnaire` is `Questionnaire/{id}`; automatic lookup searches canonical URLs.
+
 ## Output
 
 The operation returns a `Bundle` resource containing the resources populated from templates in the Questionnaire, derived from values in the QuestionnaireResponse. It does not persist the extracted resources; see [saving the results](/docs/questionnaires/parsing-questionnaire-responses#results-bundle).
@@ -50,7 +56,7 @@ Given a `QuestionnaireResponse` with an associated `Questionnaire`, e.g.`
   "resourceType": "QuestionnaireResponse",
   "id": "1c503f4e-a08c-4b7d-8ebd-bfc67b0ab761",
   "status": "completed",
-  "questionnaire": "Questionnaire/f80e508b-9aaa-41e3-aa8e-0e4817c86b44"
+  "questionnaire": "https://example.org/Questionnaire/intake|1"
   // ...
 }
 ```
@@ -78,7 +84,7 @@ curl 'https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8
 
 ## Related
 
-- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) — Complete guide to SDC workflows
+- [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses) – Complete guide to SDC workflows
 - [FHIR Questionnaire Resource](https://hl7.org/fhir/R4/questionnaire.html) - FHIR specification for Questionnaire
 - [FHIR QuestionnaireResponse Resource](https://hl7.org/fhir/R4/questionnaireresponse.html) - FHIR specification for QuestionnaireResponse
 - [HL7 SDC Implementation Guide](https://build.fhir.org/ig/HL7/sdc/) - Official Structured Data Capture IG

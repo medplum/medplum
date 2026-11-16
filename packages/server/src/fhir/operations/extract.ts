@@ -10,6 +10,7 @@ import {
   crawlTypedValueAsync,
   deepClone,
   EMPTY,
+  escapeSearchValue,
   evalFhirPathTyped,
   flatMapFilter,
   getExtension,
@@ -35,6 +36,7 @@ import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
+import { parseQuestionnaireCanonical } from './utils/questionnaire';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -146,16 +148,30 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
   if (params.questionnaire) {
     questionnaire = params.questionnaire;
   } else if (response.questionnaire) {
-    const result = await repo.searchOne<Questionnaire>({
+    const { url, version } = parseQuestionnaireCanonical(response.questionnaire);
+    const filters = [{ code: 'url', operator: Operator.EQUALS, value: escapeSearchValue(url) }];
+    if (version !== undefined) {
+      filters.push({ code: 'version', operator: Operator.EQUALS, value: escapeSearchValue(version) });
+    }
+    const results = await repo.searchResources<Questionnaire>({
       resourceType: 'Questionnaire',
-      filters: [{ code: 'url', operator: Operator.EQUALS, value: response.questionnaire }],
+      filters,
+      count: 2,
     });
-    if (!result) {
+    if (results.length === 0) {
       return [
         badRequest(`Questionnaire with URL ${response.questionnaire} not found`, 'QuestionnaireResponse.questionnaire'),
       ];
     }
-    questionnaire = result;
+    if (results.length > 1) {
+      return [
+        badRequest(
+          'Multiple Questionnaires match the response; supply the questionnaire parameter explicitly',
+          'QuestionnaireResponse.questionnaire'
+        ),
+      ];
+    }
+    questionnaire = results[0];
   } else {
     return [
       badRequest('Questionnaire associated with the response must be specified', 'QuestionnaireResponse.questionnaire'),

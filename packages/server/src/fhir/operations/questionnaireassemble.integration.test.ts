@@ -1,0 +1,343 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcome, Parameters, Questionnaire } from '@medplum/fhirtypes';
+import express from 'express';
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config/loader';
+import { createTestProject } from '../../test.setup';
+import type { Repository } from '../repo';
+import { questionnaireAssembleOperation } from './questionnaireassemble';
+import { ASSEMBLE_EXPECTATION_EXTENSION_URL, SUB_QUESTIONNAIRE_EXTENSION_URL } from './questionnaireassembly';
+
+const inputParameter = (value: Record<string, unknown>): Parameters => ({
+  resourceType: 'Parameters',
+  parameter: [{ name: 'questionnaire', ...value }],
+});
+
+describe('Questionnaire/$assemble HTTP contract', () => {
+  const app = express();
+  let accessToken: string;
+  let repo: Repository;
+  let root: Questionnaire;
+  let child: Questionnaire;
+
+  beforeAll(async () => {
+    await initApp(app, await loadTestConfig());
+    ({ accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true, extendedMode: false }));
+    child = await repo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: `https://example.org/${randomUUID()}`,
+      version: '1',
+      extension: [{ url: ASSEMBLE_EXPECTATION_EXTENSION_URL, valueCode: 'independent-child' }],
+      item: [{ linkId: 'name', type: 'string', text: 'Name' }],
+    });
+    root = await repo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: `https://example.org/${randomUUID()}`,
+      version: '1',
+      extension: [{ url: ASSEMBLE_EXPECTATION_EXTENSION_URL, valueCode: 'assemble-root' }],
+      item: [
+        {
+          linkId: 'import',
+          type: 'display',
+          text: 'Module unavailable',
+          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${child.url}|1` }],
+        },
+      ],
+    });
+  });
+  afterAll(shutdownApp);
+
+  test('describes the supported subset and standard output parameters', () => {
+    expect(questionnaireAssembleOperation).toMatchObject({
+      type: true,
+      instance: true,
+      description: expect.stringContaining('not supported'),
+    });
+    expect(questionnaireAssembleOperation.parameter?.filter((p) => p.use === 'out').map((p) => p.name)).toEqual([
+      'return',
+      'outcome',
+    ]);
+  });
+
+  test.each(['inline', 'resource', 'uri', 'reference'])(
+    'accepts %s input at the type and instance endpoints',
+    async (shape) => {
+      const bodies = {
+        inline: root,
+        resource: inputParameter({ resource: root }),
+        uri: inputParameter({ valueUri: `${root.url}|1` }),
+        reference: inputParameter({ valueReference: { reference: `Questionnaire/${root.id}` } }),
+      };
+      const body = bodies[shape as keyof typeof bodies];
+      for (const path of ['Questionnaire/$assemble', `Questionnaire/${root.id}/$assemble`]) {
+        const res = await request(app).post(`/fhir/R4/${path}`).auth(accessToken, { type: 'bearer' }).send(body);
+        expect(res.status, JSON.stringify(res.body)).toBe(200);
+        expect(res.body).toMatchObject({
+          resourceType: 'Questionnaire',
+          url: root.url,
+          version: '1',
+          item: [{ linkId: 'name' }],
+        });
+        expect(res.body.id).toBeUndefined();
+      }
+      expect(await repo.readResource('Questionnaire', root.id as string)).toEqual(root);
+    }
+  );
+
+  test('treats commas in canonical URLs and business versions literally', async () => {
+    const url = `https://example.org/${randomUUID()},form`;
+    for (const version of ['1', '2', '1,2']) {
+      await repo.createResource<Questionnaire>({ ...child, id: undefined, meta: undefined, url, version });
+    }
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(inputParameter({ valueUri: `${url}|1,2` }));
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.version).toBe('1,2');
+    expect(res.body.url).toBe(url);
+  });
+
+  test('accepts an instance URL without a body', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Questionnaire/${root.id}/$assemble`)
+      .auth(accessToken, { type: 'bearer' });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.resourceType).toBe('Questionnaire');
+  });
+
+  test.each(['root', 'child'])(
+    'returns HTTP 200 with return and warning outcome for an otherwise valid untagged %s requiring assembly',
+    async (location) => {
+      let input: Questionnaire = { ...root, extension: undefined };
+      if (location === 'child') {
+        const untagged = await repo.createResource<Questionnaire>({
+          ...root,
+          id: undefined,
+          meta: undefined,
+          url: `https://example.org/${randomUUID()}`,
+          extension: undefined,
+        });
+        input = {
+          ...root,
+          extension: root.extension,
+          item: [
+            {
+              linkId: 'import',
+              type: 'display',
+              extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${untagged.url}|1` }],
+            },
+          ],
+        };
+      }
+      const res = await request(app)
+        .post('/fhir/R4/Questionnaire/$assemble')
+        .auth(accessToken, { type: 'bearer' })
+        .send(input);
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(res.body.resourceType).toBe('Parameters');
+      const parameters = (res.body as Parameters).parameter;
+      expect(parameters?.map((p) => p.name)).toEqual(['return', 'outcome']);
+      expect(parameters?.[0].resource).toMatchObject({ resourceType: 'Questionnaire', item: [{ linkId: 'name' }] });
+      expect((parameters?.[1].resource as OperationOutcome).issue).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          details: { text: expect.stringContaining('missing assemble-expectation') },
+        }),
+      ]);
+    }
+  );
+
+  test('returns an error outcome, without an assembled result, for missing metadata plus a missing dependency', async () => {
+    const input: Questionnaire = {
+      ...root,
+      extension: undefined,
+      item: [
+        {
+          linkId: 'import',
+          type: 'display',
+          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: 'https://example.org/unavailable|1' }],
+        },
+      ],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(input);
+    expect(res.status).toBe(400);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+    expect(res.body.issue[0].severity).toBe('error');
+    expect(res.body.parameter).toBeUndefined();
+  });
+
+  test('returns final validation warnings with the assembled result for author review', async () => {
+    const empty = await repo.createResource<Questionnaire>({
+      ...child,
+      id: undefined,
+      meta: undefined,
+      url: `https://example.org/${randomUUID()}`,
+      item: undefined,
+    });
+    const input: Questionnaire = {
+      ...root,
+      item: [
+        {
+          linkId: 'section',
+          type: 'group',
+          item: [
+            {
+              linkId: 'import-empty',
+              type: 'display',
+              extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${empty.url}|1` }],
+            },
+          ],
+        },
+      ],
+    };
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(input);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.resourceType).toBe('Parameters');
+    const parameters = (res.body as Parameters).parameter;
+    expect(parameters?.map((p) => p.name)).toEqual(['return', 'outcome']);
+    expect(parameters?.[0].resource).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [{ linkId: 'section', type: 'group' }],
+    });
+    // FHIR serialization omits the empty item array, leaving the invalid group available for review.
+    expect((parameters?.[0].resource as Questionnaire).item?.[0].item).toBeUndefined();
+    expect((parameters?.[1].resource as OperationOutcome).issue).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        code: 'invariant',
+        details: { text: expect.stringContaining('que-1') },
+        expression: ['Questionnaire.item[0]'],
+      }),
+    ]);
+  });
+
+  test.each(['cycle', 'duplicate', 'dangling'])(
+    'returns an error without a result for an assembly failure: %s',
+    async (failure) => {
+      const input: Questionnaire = { ...root, item: [...(root.item ?? [])] };
+      if (failure === 'cycle') {
+        input.item = [
+          {
+            linkId: 'self',
+            type: 'display',
+            extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${root.url}|1` }],
+          },
+        ];
+      } else if (failure === 'duplicate') {
+        input.item?.push({ linkId: 'name', type: 'string' });
+      } else {
+        input.item?.push({
+          linkId: 'conditional',
+          type: 'string',
+          enableWhen: [{ question: 'missing', operator: 'exists', answerBoolean: true }],
+        });
+      }
+      const res = await request(app)
+        .post('/fhir/R4/Questionnaire/$assemble')
+        .auth(accessToken, { type: 'bearer' })
+        .send(input);
+      expect(res.status, JSON.stringify(res.body)).toBe(400);
+      expect(res.body.resourceType).toBe('OperationOutcome');
+      expect(res.body.issue[0].severity).toBe('error');
+      expect(res.body.parameter).toBeUndefined();
+    }
+  );
+
+  test('keeps invalid input validation fatal', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ ...root, status: undefined });
+    expect(res.status, JSON.stringify(res.body)).toBe(400);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+    expect(res.body.issue[0].severity).toBe('error');
+    expect(res.body.parameter).toBeUndefined();
+  });
+
+  test.each([
+    { resourceType: 'Patient' },
+    { resourceType: 'Questionnaire' },
+    inputParameter({ valueString: 'bad' }),
+    inputParameter({ valueUri: 'https://example.org/a|1', valueReference: { reference: 'Questionnaire/b' } }),
+    {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'questionnaire', valueUri: 'a' },
+        { name: 'questionnaire', valueUri: 'b' },
+      ],
+    },
+    { resourceType: 'Parameters', parameter: [{ name: 'unknown', valueString: 'a' }] },
+    {},
+  ])('rejects malformed or missing type input %j', async (body) => {
+    const res = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(body);
+    expect(res.status).toBe(400);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+  });
+
+  test('rejects conflicting instance and input, including modified inline content', async () => {
+    for (const body of [
+      inputParameter({ valueReference: { reference: `Questionnaire/${child.id}` } }),
+      { ...root, version: '2' },
+    ]) {
+      const res = await request(app)
+        .post(`/fhir/R4/Questionnaire/${root.id}/$assemble`)
+        .auth(accessToken, { type: 'bearer' })
+        .send(body);
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toMatch(/conflicts/);
+    }
+  });
+
+  test('honors project access for dependencies and explicit references', async () => {
+    const other = await createTestProject({ withAccessToken: true, withRepo: true, extendedMode: false });
+    const privateModule = await other.repo.createResource<Questionnaire>({
+      ...child,
+      id: undefined,
+      meta: undefined,
+      url: `https://example.org/${randomUUID()}`,
+    });
+    const input: Questionnaire = {
+      ...root,
+      item: [
+        {
+          linkId: 'private',
+          type: 'display',
+          extension: [{ url: SUB_QUESTIONNAIRE_EXTENSION_URL, valueCanonical: `${privateModule.url}|1` }],
+        },
+      ],
+    };
+    const canonicalRes = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(input);
+    expect(canonicalRes.status).toBe(400);
+    expect(canonicalRes.body.issue[0].details.text).toContain('not found');
+    const referenceRes = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(inputParameter({ valueReference: { reference: `Questionnaire/${privateModule.id}` } }));
+    expect(referenceRes.status).toBe(404);
+    // An inaccessible duplicate does not make the caller's canonical ambiguous.
+    await other.repo.createResource<Questionnaire>({ ...root, id: undefined, meta: undefined });
+    const ownRes = await request(app)
+      .post('/fhir/R4/Questionnaire/$assemble')
+      .auth(accessToken, { type: 'bearer' })
+      .send(inputParameter({ valueUri: `${root.url}|1` }));
+    expect(ownRes.status).toBe(200);
+  });
+});

@@ -160,6 +160,8 @@ const supportedOperations: Record<string, CapabilityStatementRestResourceOperati
     {
       name: 'assemble',
       definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
+      documentation:
+        'Whole-questionnaire assembly using local modules. Remote retrieval, item.definition generation, and item-fragment imports are unsupported.',
     },
   ],
 };

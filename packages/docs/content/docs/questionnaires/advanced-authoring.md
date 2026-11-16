@@ -150,7 +150,7 @@ This table describes the current Medplum form renderer. SDC covers a wider set o
 | SDC `initialExpression`, `launchContext`, `variable`, `answerExpression` | No built-in evaluation in this form renderer. Load context and populate answers or choices in application code. `%patient` and `%encounter` are not supplied as expression variables. |
 | Signature capture                                                        | Supported on the single-page form; see [Consent and Signatures](/docs/consent). The paginated branch currently does not render the signature input.                                   |
 | SDC template extraction                                                  | A separate server operation; see [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses). Form submission alone does not invoke it.                   |
-| SDC `subQuestionnaire` / `$assemble`                                     | No built-in assembly. [Compose a complete Questionnaire](/docs/questionnaires/modular-questionnaires) in application code or use a compatible external assembler before rendering.    |
+| SDC `subQuestionnaire` / `$assemble`                                     | On servers advertising it, [`$assemble`](/docs/api/fhir/operations/assemble) combines local whole-questionnaire modules. Pass the reviewed output to the renderer; it does not expand references itself.    |
 
 Use this as a feature-level compatibility checklist. When importing a questionnaire:
 
