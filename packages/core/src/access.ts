@@ -126,27 +126,43 @@ export function satisfiedAccessPolicy(
   if (!accessPolicy) {
     return universalAccessPolicy;
   }
-  return accessPolicy.resource?.find((policy) => matchesAccessPolicyResourcePolicy(resource, interaction, policy));
+  return satisfiedAccessPolicies(resource, [interaction], accessPolicy)[0];
 }
 
 /**
- * Returns true if the resource satisfies the specified access policy resource policy.
- * @param resource - The resource.
- * @param interaction - The interaction being performed on the resource.
- * @param resourcePolicy - One per-resource policy section from the access policy.
- * @returns True if the resource matches the access policy.
+ * Finds the access policy entry that permits each interaction on a resource.
+ * Equivalent to calling `satisfiedAccessPolicy` for each interaction, but evaluates each entry's criteria at most once.
+ * @param resource - The resource being acted upon.
+ * @param interactions - The interactions being performed on the resource.
+ * @param accessPolicy - The relevant access policy for the current user.
+ * @returns The satisfied access policy for each interaction, in the same order, or undefined where none permits it.
  */
-function matchesAccessPolicyResourcePolicy(
+export function satisfiedAccessPolicies(
   resource: Resource,
-  interaction: AccessPolicyInteraction,
-  resourcePolicy: AccessPolicyResource
-): boolean {
-  const resourceType = resource.resourceType;
-  if (!shallowMatchesResourcePolicy(resourcePolicy, resourceType, interaction)) {
-    return false;
-  }
+  interactions: readonly AccessPolicyInteraction[],
+  accessPolicy: AccessPolicy
+): (AccessPolicyResource | undefined)[] {
+  const policies = accessPolicy.resource ?? [];
+  // Memoized per-policy filter results, so each policy's criteria are evaluated at most once across all interactions
+  const filterResults: (boolean | undefined)[] = new Array(policies.length);
+  return interactions.map((interaction) =>
+    policies.find(
+      (policy, i) =>
+        shallowMatchesResourcePolicy(policy, resource.resourceType, interaction) &&
+        (filterResults[i] ??= matchesResourcePolicyFilters(resource, policy))
+    )
+  );
+}
+
+/**
+ * Returns true if the resource satisfies the compartment and criteria of an access policy resource policy.
+ * @param resource - The resource.
+ * @param resourcePolicy - One per-resource policy section from the access policy.
+ * @returns True if the resource matches the resource policy's compartment and criteria.
+ */
+function matchesResourcePolicyFilters(resource: Resource, resourcePolicy: AccessPolicyResource): boolean {
   // Binary has no search parameters, so it cannot be restricted by compartment or criteria
-  if (resourceType === 'Binary') {
+  if (resource.resourceType === 'Binary') {
     return true;
   }
   if (
@@ -161,7 +177,7 @@ function matchesAccessPolicyResourcePolicy(
     if (resourcePolicy.resourceType === '*' && criteria.startsWith('*?')) {
       // As in search, a wildcard entry's parameters apply to the resource's own type.
       // Parameters that type does not define never match.
-      criteria = resourceType + criteria.slice(1);
+      criteria = resource.resourceType + criteria.slice(1);
     }
     if (!matchesSearchRequest(resource, parseSearchRequest(criteria))) {
       return false;
@@ -172,12 +188,13 @@ function matchesAccessPolicyResourcePolicy(
 
 /**
  * Shallow check if the given interaction on a resource type matches the resource access policy.
+ * Does not evaluate the policy's compartment or criteria.
  * @param policy - The AccessPolicy resource policy.
  * @param resourceType - The candidate resource type.
  * @param interaction - Interaction type to check against the policy.
  * @returns True when the resource type matches the resource policy.
  */
-function shallowMatchesResourcePolicy(
+export function shallowMatchesResourcePolicy(
   policy: AccessPolicyResource,
   resourceType: ResourceType,
   interaction: AccessPolicyInteraction

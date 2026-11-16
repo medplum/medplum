@@ -48,12 +48,15 @@ export interface ExternalAuthState {
 type IdentitySource = NonNullable<IdentityProvider['identitySource']>;
 type IdentityMappingMode = NonNullable<IdentityProvider['identityMappingMode']>;
 
-interface ExternalLoginIdentity {
+export interface ExternalLoginIdentity {
   email?: string;
   externalId?: string;
 }
 
 export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
+  // Set when the identity provider redirected to the per-client callback path /auth/external/:clientId
+  const callbackClientId = req.params.clientId as string | undefined;
+
   const code = req.query.code as string;
   if (!code) {
     sendOutcome(res, badRequest('Missing code'));
@@ -74,12 +77,18 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
+  if (callbackClientId !== undefined && body.clientId !== callbackClientId) {
+    sendOutcome(res, badRequest('Invalid client'));
+    return;
+  }
+
+  // The per-client path only uses its client's identity provider and redirect URIs
   let domainConfig: DomainConfiguration | undefined;
-  if (body.domain) {
+  if (body.domain && callbackClientId === undefined) {
     domainConfig = await getDomainConfiguration(body.domain);
   }
 
-  const { idp, client } = await getIdentityProvider(body, domainConfig);
+  const { idp, client } = await getIdentityProvider(body, domainConfig, callbackClientId);
   if (!idp) {
     sendOutcome(res, badRequest('Identity provider not found'));
     return;
@@ -92,7 +101,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const userInfo = await verifyExternalCode(idp, code, body.codeChallenge);
+  const userInfo = await verifyExternalCode(idp, code, body.codeChallenge, callbackClientId);
 
   let identity: ExternalLoginIdentity;
   try {
@@ -142,6 +151,13 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
+
+  if (callbackClientId === undefined && client?.identityProvider) {
+    getLogger().warn('Client identity provider signed in through the shared external auth callback', {
+      clientId: client.id,
+      projectId: client.meta?.project,
+    });
+  }
 
   // The identity provider authenticated the user, which is the control this flag records.
   await getGlobalSystemRepo().patchResource<User>('User', resolveId(login.user) as string, [
@@ -202,18 +218,37 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
  * Tries to find the identity provider configuration.
  * @param state - The external auth state.
  * @param domainConfig - The domain configuration.
+ * @param callbackClientId - The client ID from the per-client callback path, if any.
  * @returns External identity provider definition if found.
  */
 async function getIdentityProvider(
   state: ExternalAuthState,
-  domainConfig: DomainConfiguration | undefined
+  domainConfig: DomainConfiguration | undefined,
+  callbackClientId: string | undefined
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   let idp: IdentityProvider | undefined;
   let client: ClientApplication | undefined;
 
+  if (callbackClientId !== undefined) {
+    // The per-client path only serves that client's identity provider
+    client = await getClientApplication(callbackClientId);
+    return { idp: client.identityProvider, client };
+  }
+
   if (state.clientId) {
     client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
+      if (!(await isLegacyExternalAuthAllowed(client))) {
+        getLogger().warn('Client identity provider refused on the shared external auth callback', {
+          clientId: client.id,
+          projectId: client.meta?.project,
+        });
+        throw new OperationOutcomeError(
+          badRequest(
+            `Client identity provider must use the per-client callback ${getConfig().baseUrl}auth/external/${client.id}`
+          )
+        );
+      }
       return { idp: client.identityProvider, client };
     }
   }
@@ -229,7 +264,14 @@ async function getIdentityProvider(
   return { idp, client };
 }
 
-async function resolveExternalLoginIdentity(
+/**
+ * Maps the claims from an external identity provider to the identity used to look up the Medplum user.
+ * Every flow that signs in a user from external claims must use this, so that they agree on who the user is.
+ * @param idp - The identity provider configuration.
+ * @param userInfo - The claims from the external identity provider.
+ * @returns The email or external ID to log in with.
+ */
+export async function resolveExternalLoginIdentity(
   idp: IdentityProvider,
   userInfo: Record<string, unknown>
 ): Promise<ExternalLoginIdentity> {
@@ -276,12 +318,14 @@ function getIdentityMappingMode(idp: IdentityProvider): IdentityMappingMode {
  * @param idp - The identity provider configuration.
  * @param code - The authorization code.
  * @param codeVerifier - The code verifier.
+ * @param callbackClientId - The client ID from the per-client callback path, if any.
  * @returns ID token claims.
  */
 async function verifyExternalCode(
   idp: IdentityProvider,
   code: string,
-  codeVerifier: string | undefined
+  codeVerifier: string | undefined,
+  callbackClientId: string | undefined
 ): Promise<Record<string, unknown>> {
   if (!idp.tokenUrl) {
     throw new OperationOutcomeError(badRequest('Missing token URL for external identity provider'));
@@ -295,7 +339,11 @@ async function verifyExternalCode(
 
   const params = new URLSearchParams();
   params.append('grant_type', OAuthGrantType.AuthorizationCode);
-  params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
+  // Must match the redirect_uri of the authorization request
+  params.append(
+    'redirect_uri',
+    getConfig().baseUrl + 'auth/external' + (callbackClientId === undefined ? '' : '/' + callbackClientId)
+  );
   params.append('code', code);
 
   if (idp.usePkce && codeVerifier) {
@@ -405,6 +453,21 @@ function isValidReturnToUrl(
   } catch {
     return false;
   }
+}
+
+/**
+ * Returns true if the client's Project may use the shared /auth/external callback for its client identity providers.
+ * Read from Project.systemSetting, which only super admins can set.
+ * Clients without a Project (server config `defaultOAuthClients`, or created by a super admin) are always allowed.
+ * @param client - The client application.
+ * @returns True if the shared callback is allowed for the client.
+ */
+async function isLegacyExternalAuthAllowed(client: ClientApplication): Promise<boolean> {
+  if (!client.meta?.project) {
+    return true;
+  }
+  const project = await getGlobalSystemRepo().readResource<Project>('Project', client.meta.project);
+  return project.systemSetting?.find((s) => s.name === 'legacyExternalAuth')?.valueBoolean === true;
 }
 
 /**

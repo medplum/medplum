@@ -15,6 +15,7 @@ import {
   canReadResourceType,
   canWriteResource,
   canWriteResourceType,
+  satisfiedAccessPolicies,
   satisfiedAccessPolicy,
 } from './access';
 import { indexSearchParameterBundle } from './types';
@@ -157,6 +158,72 @@ describe('Access', () => {
         restrictedPolicy
       )
     ).toBeUndefined();
+  });
+
+  test('satisfiedAccessPolicies', () => {
+    const { READ, SEARCH, UPDATE, DELETE } = AccessPolicyInteraction;
+    const interactions = [READ, SEARCH, UPDATE, DELETE];
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        { resourceType: 'Communication', interaction: ['read'], criteria: 'Communication?status=completed' },
+        { resourceType: 'Communication', interaction: ['read', 'search'] },
+        { resourceType: 'Communication', readonly: true },
+        { resourceType: 'Communication', interaction: ['update'] },
+      ],
+    };
+    const [criteriaRead, readSearch, , update] = accessPolicy.resource ?? [];
+
+    const completed: Communication = { resourceType: 'Communication', status: 'completed' };
+    const inProgress: Communication = { resourceType: 'Communication', status: 'in-progress' };
+    expect(satisfiedAccessPolicies(completed, interactions, accessPolicy)).toStrictEqual([
+      criteriaRead,
+      readSearch,
+      update,
+      undefined,
+    ]);
+    expect(satisfiedAccessPolicies(inProgress, interactions, accessPolicy)).toStrictEqual([
+      readSearch,
+      readSearch,
+      update,
+      undefined,
+    ]);
+    expect(satisfiedAccessPolicies(completed, [READ], nullPolicy)).toStrictEqual([undefined]);
+  });
+
+  test('satisfiedAccessPolicies() filter and interaction fallthrough', () => {
+    const { READ, SEARCH, UPDATE } = AccessPolicyInteraction;
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        // Shallow-matches READ and SEARCH, but fails filters for in-progress resources
+        { resourceType: 'Communication', interaction: ['read', 'search'], criteria: 'Communication?status=completed' },
+        { resourceType: 'Communication', interaction: ['search', 'update'] },
+        { resourceType: 'Binary', interaction: ['read'], criteria: 'Binary?_id=never-matches' },
+      ],
+    };
+    const [completedPolicy, fallbackPolicy, binaryPolicy] = accessPolicy.resource ?? [];
+    const inProgress: Communication = { resourceType: 'Communication', status: 'in-progress' };
+    const completed: Communication = { resourceType: 'Communication', status: 'completed' };
+    const interactions = [READ, SEARCH, UPDATE];
+
+    // A failed filter must not block later policies for any interaction it shallow-matched
+    expect(satisfiedAccessPolicies(inProgress, interactions, accessPolicy)).toStrictEqual([
+      undefined,
+      fallbackPolicy,
+      fallbackPolicy,
+    ]);
+    expect(satisfiedAccessPolicies(completed, interactions, accessPolicy)).toStrictEqual([
+      completedPolicy,
+      completedPolicy,
+      fallbackPolicy,
+    ]);
+
+    // Binary has no search parameters, so criteria are ignored
+    const binary = { resourceType: 'Binary', contentType: 'text/plain' } as const;
+    expect(satisfiedAccessPolicies(binary, [READ, UPDATE], accessPolicy)).toStrictEqual([binaryPolicy, undefined]);
+
+    expect(satisfiedAccessPolicies(completed, [], accessPolicy)).toStrictEqual([]);
   });
 
   test('Legacy compartment case', () => {

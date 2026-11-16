@@ -194,6 +194,11 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
     accessPolicy = applySmartScopes(accessPolicy, authState);
   }
 
+  if (!project.superAdmin) {
+    // Only super admins can set Bot.system
+    accessPolicy = applyBotSystemReadonly(accessPolicy);
+  }
+
   return accessPolicy;
 }
 
@@ -440,4 +445,35 @@ function applyProjectAdminAccessPolicy(
   }
 
   return accessPolicy;
+}
+
+/**
+ * Makes `Bot.system` readonly for every entry that can write a Bot.
+ * Applied after SMART scopes, which can turn wildcard entries into Bot entries.
+ * @param accessPolicy - The access policy.
+ * @returns The access policy with `Bot.system` readonly.
+ */
+function applyBotSystemReadonly(accessPolicy: PopulatedAccessPolicy): PopulatedAccessPolicy {
+  accessPolicy.resource = accessPolicy.resource.flatMap((r) => {
+    if (r.resourceType === 'Bot') {
+      return [withReadonlyField(r, 'system')];
+    }
+    if (r.resourceType === '*') {
+      // The first matching entry applies, so a wildcard grant gets a Bot entry ahead of it
+      const botEntry: AccessPolicyResource = { ...r, resourceType: 'Bot' };
+      if (r.criteria) {
+        botEntry.criteria = r.criteria.replace(/^\*\?/, 'Bot?');
+      }
+      return [withReadonlyField(botEntry, 'system'), r];
+    }
+    return [r];
+  });
+  return accessPolicy;
+}
+
+function withReadonlyField(entry: AccessPolicyResource, field: string): AccessPolicyResource {
+  if (entry.readonlyFields?.includes(field) || entry.hiddenFields?.includes(field)) {
+    return entry;
+  }
+  return { ...entry, readonlyFields: [...(entry.readonlyFields ?? []), field] };
 }

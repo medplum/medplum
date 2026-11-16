@@ -77,6 +77,12 @@ const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
  */
 export const minCursorBasedSearchPageSize = 20;
 
+const searchInteractions: readonly AccessPolicyInteraction[] = Object.freeze([AccessPolicyInteraction.SEARCH]);
+const searchResultInteractions: readonly AccessPolicyInteraction[] = Object.freeze([
+  AccessPolicyInteraction.READ,
+  AccessPolicyInteraction.SEARCH,
+]);
+
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
   offset: number;
@@ -461,7 +467,7 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
+  repo.addSecurityFilters(builder, resourceType, searchInteractions);
   addSearchFilters(repo, builder, resourceType, searchRequest, opts?.trackedResourceTypes);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
@@ -474,7 +480,7 @@ function getBaseSelectQueryForResourceType(
 }
 
 function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
-  repo.removeHiddenFields(resource);
+  repo.removeHiddenFields(resource, searchResultInteractions);
   if (searchRequest.fields) {
     const schema = getDataType(resource.resourceType);
     subsetResource(
@@ -511,6 +517,10 @@ function getIncludeOptions(repo: Repository): IncludeOptions {
     // Run sub-searches through the query pipeline directly rather than re-entering
     // `Repository.search()`, which would additionally build bundle links for every sub-search.
     executeSearch: async (searchRequest: SearchRequest): Promise<WithId<Resource>[]> => {
+      // Canonical `_include` target types come from the search parameter definition rather than the request
+      if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, searchRequest.resourceType)) {
+        return [];
+      }
       const trackedResourceTypes = new Set<ResourceType>();
       const query = getSelectQueryForSearch(repo, searchRequest, { trackedResourceTypes });
       const result = await getSearchEntries(

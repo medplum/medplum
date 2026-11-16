@@ -133,6 +133,6 @@ Medplum caches external auth results in Redis for 1 hour to minimize calls to th
 | **Endpoint** | `/oauth2/userinfo` | `/oauth2/token` |
 | **Configuration** | Server-level `externalAuthProviders` | Per-`ClientApplication` identity provider |
 | **Token format** | Uses external JWT directly | Exchanges for Medplum access token |
-| **User lookup** | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `useSubject` flag) |
+| **User lookup** | `fhirUser` claim or `sub` / `externalId` | Email or `sub` (via `identitySource` / `identityMappingMode`, or the legacy `useSubject` flag) |
 
 Choose **Direct External Auth** when you want to use external JWTs directly without an explicit token exchange step. Choose **Token Exchange** when you need a standard Medplum access token or when the auth flow is scoped to a specific `ClientApplication`.
