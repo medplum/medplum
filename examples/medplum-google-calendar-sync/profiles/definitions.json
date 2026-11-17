@@ -212,139 +212,127 @@
               "key": "gcal-public-status-15",
               "severity": "error",
               "human": "Google Calendar public-status constraint 16",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsRevision').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsRevision').all(value is string)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').all(value is string)"
             },
             {
               "key": "gcal-public-status-16",
               "severity": "error",
               "human": "Google Calendar public-status constraint 17",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').all(value is string)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').all(value is instant)"
             },
             {
               "key": "gcal-public-status-17",
               "severity": "error",
               "human": "Google Calendar public-status constraint 18",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').all(value is instant)"
             },
             {
               "key": "gcal-public-status-18",
               "severity": "error",
               "human": "Google Calendar public-status constraint 19",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').all(value is instant)"
             },
             {
               "key": "gcal-public-status-19",
               "severity": "error",
               "human": "Google Calendar public-status constraint 20",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').all(value is instant)"
             },
             {
               "key": "gcal-public-status-20",
               "severity": "error",
               "human": "Google Calendar public-status constraint 21",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').all(value is instant)"
             },
             {
               "key": "gcal-public-status-21",
               "severity": "error",
               "human": "Google Calendar public-status constraint 22",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').all(value is instant)"
             },
             {
               "key": "gcal-public-status-22",
               "severity": "error",
               "human": "Google Calendar public-status constraint 23",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').all(value is boolean)"
             },
             {
               "key": "gcal-public-status-23",
               "severity": "error",
               "human": "Google Calendar public-status constraint 24",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').all(value is boolean)"
             },
             {
               "key": "gcal-public-status-24",
               "severity": "error",
               "human": "Google Calendar public-status constraint 25",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').all(value is boolean)"
             },
             {
               "key": "gcal-public-status-25",
               "severity": "error",
               "human": "Google Calendar public-status constraint 26",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').all(value is boolean)"
             },
             {
               "key": "gcal-public-status-26",
               "severity": "error",
               "human": "Google Calendar public-status constraint 27",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').all(value is boolean)"
             },
             {
               "key": "gcal-public-status-27",
               "severity": "error",
               "human": "Google Calendar public-status constraint 28",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').all(value is boolean)"
             },
             {
               "key": "gcal-public-status-28",
               "severity": "error",
               "human": "Google Calendar public-status constraint 29",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))"
             },
             {
               "key": "gcal-public-status-29",
               "severity": "error",
               "human": "Google Calendar public-status constraint 30",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsPending').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').all(value.empty() and extension.where(url='phase').count() = 1 and extension.where(url='phase').all((value is code) and (valueCode = 'discover' or valueCode = 'repair')) and extension.where(url='start').count() = 1 and extension.where(url='start').all(value is instant) and extension.where(url='end').count() = 1 and extension.where(url='end').all(value is instant) and extension.where(url='start').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='end').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='start').value < extension.where(url='end').value)"
             },
             {
               "key": "gcal-public-status-30",
               "severity": "error",
               "human": "Google Calendar public-status constraint 31",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))"
+              "expression": "(extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.empty() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.empty()) or (extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.exists() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.exists() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value < extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value)"
             },
             {
               "key": "gcal-public-status-31",
               "severity": "error",
               "human": "Google Calendar public-status constraint 32",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').all(value.empty() and extension.where(url='phase').count() = 1 and extension.where(url='phase').all((value is code) and (valueCode = 'discover' or valueCode = 'repair')) and extension.where(url='start').count() = 1 and extension.where(url='start').all(value is instant) and extension.where(url='end').count() = 1 and extension.where(url='end').all(value is instant) and extension.where(url='start').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='end').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='start').value < extension.where(url='end').value)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').all(value.empty() and extension.all(url = 'lastInbound' or url = 'lastOutbound' or url = 'staleReason' or url = 'inboundError' or url = 'outboundError' or url = 'cleanupIssue' or url = 'privacyPending' or url = 'projectDetailLevel' or url = 'inboundRequest' or url = 'outboundRequest'))"
             },
             {
               "key": "gcal-public-status-32",
               "severity": "error",
               "human": "Google Calendar public-status constraint 33",
-              "expression": "(extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.empty() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.empty()) or (extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.exists() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.exists() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value < extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/status').count() = 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/status').all((value is code) and (valueCode = 'active' or valueCode = 'reauth-required' or valueCode = 'disconnecting'))"
             },
             {
               "key": "gcal-public-status-33",
               "severity": "error",
               "human": "Google Calendar public-status constraint 34",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').all(value.empty() and extension.all(url = 'lastInbound' or url = 'lastOutbound' or url = 'staleReason' or url = 'inboundError' or url = 'outboundError' or url = 'cleanupIssue' or url = 'privacyPending' or url = 'projectDetailLevel' or url = 'conflictsRevision' or url = 'inboundRequest' or url = 'outboundRequest'))"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/refresh-token').empty()"
             },
             {
               "key": "gcal-public-status-34",
               "severity": "error",
               "human": "Google Calendar public-status constraint 35",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/status').count() = 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/status').all((value is code) and (valueCode = 'active' or valueCode = 'reauth-required' or valueCode = 'disconnecting'))"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/worker-lease').empty()"
             },
             {
               "key": "gcal-public-status-35",
               "severity": "error",
               "human": "Google Calendar public-status constraint 36",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/refresh-token').empty()"
-            },
-            {
-              "key": "gcal-public-status-36",
-              "severity": "error",
-              "human": "Google Calendar public-status constraint 37",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/worker-lease').empty()"
-            },
-            {
-              "key": "gcal-public-status-37",
-              "severity": "error",
-              "human": "Google Calendar public-status constraint 38",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflict' or url='channel' or url='outboundWork').empty()"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='channel' or url='outboundWork').empty()"
             },
             {
               "key": "gcal-public-status-code",
@@ -921,108 +909,96 @@
               "key": "gcal-connection-17",
               "severity": "error",
               "human": "Google Calendar connection constraint 18",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsRevision').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsRevision').all(value is string)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').all(value is string)"
             },
             {
               "key": "gcal-connection-18",
               "severity": "error",
               "human": "Google Calendar connection constraint 19",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='cleanupIssue').all(value is string)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').all(value is instant)"
             },
             {
               "key": "gcal-connection-19",
               "severity": "error",
               "human": "Google Calendar connection constraint 20",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastInbound').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').all(value is instant)"
             },
             {
               "key": "gcal-connection-20",
               "severity": "error",
               "human": "Google Calendar connection constraint 21",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='lastOutbound').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').all(value is instant)"
             },
             {
               "key": "gcal-connection-21",
               "severity": "error",
               "human": "Google Calendar connection constraint 22",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='inboundRetryAt').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').all(value is instant)"
             },
             {
               "key": "gcal-connection-22",
               "severity": "error",
               "human": "Google Calendar connection constraint 23",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundRetryAt').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').all(value is instant)"
             },
             {
               "key": "gcal-connection-23",
               "severity": "error",
               "human": "Google Calendar connection constraint 24",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').all(value is instant)"
             },
             {
               "key": "gcal-connection-24",
               "severity": "error",
               "human": "Google Calendar connection constraint 25",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').all(value is instant)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').all(value is boolean)"
             },
             {
               "key": "gcal-connection-25",
               "severity": "error",
               "human": "Google Calendar connection constraint 26",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='privacyPending').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').all(value is boolean)"
             },
             {
               "key": "gcal-connection-26",
               "severity": "error",
               "human": "Google Calendar connection constraint 27",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='forgetRevoked').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').all(value is boolean)"
             },
             {
               "key": "gcal-connection-27",
               "severity": "error",
               "human": "Google Calendar connection constraint 28",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='googleCleaned').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').all(value is boolean)"
             },
             {
               "key": "gcal-connection-28",
               "severity": "error",
               "human": "Google Calendar connection constraint 29",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='slotsCleaned').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').all(value is boolean)"
             },
             {
               "key": "gcal-connection-29",
               "severity": "error",
               "human": "Google Calendar connection constraint 30",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='credentialRevoked').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').all(value is boolean)"
             },
             {
               "key": "gcal-connection-30",
               "severity": "error",
               "human": "Google Calendar connection constraint 31",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='statusPublishPending').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))"
             },
             {
               "key": "gcal-connection-31",
               "severity": "error",
               "human": "Google Calendar connection constraint 32",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsPending').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='conflictsPending').all(value is boolean)"
+              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').all(value.empty() and extension.where(url='phase').count() = 1 and extension.where(url='phase').all((value is code) and (valueCode = 'discover' or valueCode = 'repair')) and extension.where(url='start').count() = 1 and extension.where(url='start').all(value is instant) and extension.where(url='end').count() = 1 and extension.where(url='end').all(value is instant) and extension.where(url='start').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='end').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='start').value < extension.where(url='end').value)"
             },
             {
               "key": "gcal-connection-32",
               "severity": "error",
               "human": "Google Calendar connection constraint 33",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))"
-            },
-            {
-              "key": "gcal-connection-33",
-              "severity": "error",
-              "human": "Google Calendar connection constraint 34",
-              "expression": "extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').count() <= 1 and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='outboundWork').all(value.empty() and extension.where(url='phase').count() = 1 and extension.where(url='phase').all((value is code) and (valueCode = 'discover' or valueCode = 'repair')) and extension.where(url='start').count() = 1 and extension.where(url='start').all(value is instant) and extension.where(url='end').count() = 1 and extension.where(url='end').all(value is instant) and extension.where(url='start').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='end').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='start').value < extension.where(url='end').value)"
-            },
-            {
-              "key": "gcal-connection-34",
-              "severity": "error",
-              "human": "Google Calendar connection constraint 35",
               "expression": "(extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.empty() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.empty()) or (extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.exists() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.exists() and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value.toString().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$') and extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeStart').value < extension.where(url='https://www.medplum.com/integrations/google-calendar/sync-state').extension.where(url='requestedRangeEnd').value)"
             },
             {

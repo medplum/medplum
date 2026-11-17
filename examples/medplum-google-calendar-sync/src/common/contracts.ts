@@ -33,17 +33,6 @@ const summary = [
   param('lastSuccessfulOutbound', 'instant'),
   param('disconnectWarning', 'string'),
 ];
-const conflict = {
-  ...param('conflict', 'string', 0, '*'),
-  type: undefined,
-  part: [
-    param('key', 'string', 1),
-    param('appointment', 'Reference', 1),
-    param('start', 'instant', 1),
-    param('end', 'instant', 1),
-    param('schedule', 'Reference', 0, '*'),
-  ],
-};
 const entries = [
   [
     'install',
@@ -71,13 +60,7 @@ const entries = [
     'status',
     BOT_IDENTIFIER_VALUE.status,
     [],
-    [
-      ...summary,
-      param('activeConflictCount', 'integer'),
-      conflict,
-      param('clientId', 'string'),
-      param('detailsAllowed', 'boolean'),
-    ],
+    [...summary, param('clientId', 'string'), param('detailsAllowed', 'boolean')],
   ],
   ['settings', BOT_IDENTIFIER_VALUE.settings, [param('eventDetailLevel', 'string', 1)], summary],
   ['disconnect', BOT_IDENTIFIER_VALUE.disconnect, [param('forgetRevoked', 'boolean')], summary],
@@ -208,7 +191,7 @@ export function operationHandler(
 
 function operationDescription(name: string): string {
   if (name === 'status') {
-    return 'Read caller-authorized connection status and conflicts.';
+    return 'Read caller-authorized connection status.';
   }
   if (name === 'sync') {
     return 'Queue outbound work; completion is reported by status.';

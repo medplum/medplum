@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumClient, WithId } from '@medplum/core';
-import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Schedule, Slot } from '@medplum/fhirtypes';
 import type { CalendarConnection } from './connection';
 import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { GoogleCalendarClient, RemoteCalendarEvent } from './google-calendar';
-import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import type { SyncRange } from './range-sync';
@@ -165,7 +164,7 @@ export interface ImportResult {
  * @param connection - Active connection owned by this worker.
  * @param range - Complete snapshot coverage.
  * @param beforeWrite - Checks the worker still owns the connection and may write.
- * @returns Completed import counts and inputs for conflict evaluation.
+ * @returns Completed import counts.
  */
 export async function importBusyTime(
   medplum: MedplumClient,
@@ -275,61 +274,4 @@ function sameBlock(a: Slot, b: Slot): boolean {
     !a.comment &&
     JSON.stringify(a.identifier) === JSON.stringify(b.identifier)
   );
-}
-
-export interface CalendarConflict {
-  key: string;
-  appointment: string;
-  schedules: string[];
-  start: string;
-  end: string;
-}
-
-/**
- * Pure half-open interval comparison; one conflict per occurrence/appointment across schedules.
- * @param connectionId - Connection identity.
- * @param calendarId - Resolved Google calendar identity.
- * @param intervals - Current imported busy intervals.
- * @param schedules - Affected Schedule references.
- * @param appointments - Current, authorized candidate Appointments.
- * @param participatingActors - Practitioner and its PractitionerRole references.
- * @param now - Reference instant, excluding wholly past conflicts.
- * @returns Stable conflicts without private Google or clinical content.
- */
-export function findConflicts(
-  connectionId: string,
-  calendarId: string,
-  intervals: BusyInterval[],
-  schedules: string[],
-  appointments: Appointment[],
-  participatingActors: ReadonlySet<string>,
-  now: Date
-): CalendarConflict[] {
-  const conflicts = new Map<string, CalendarConflict>();
-  for (const appointment of appointments) {
-    if (
-      !appointment.id ||
-      !MIRRORED_APPOINTMENT_STATUSES.has(appointment.status) ||
-      !appointment.participant.some((p) => p.status !== 'declined' && participatingActors.has(p.actor?.reference ?? ''))
-    ) {
-      continue;
-    }
-    for (const interval of intervals) {
-      const start = Math.max(Date.parse(interval.start), Date.parse(appointment.start ?? ''));
-      const end = Math.min(Date.parse(interval.end), Date.parse(appointment.end ?? ''));
-      if (!(start < end && end > now.getTime())) {
-        continue;
-      }
-      const ref = `Appointment/${appointment.id}`;
-      const key = Buffer.from(JSON.stringify([connectionId, calendarId, interval.eventId, ref])).toString('base64url');
-      conflicts.set(key, {
-        key,
-        appointment: ref,
-        schedules: [...new Set(schedules)].sort(),
-        start: new Date(start).toISOString(),
-        end: new Date(end).toISOString(),
-      });
-    }
-  }
-  return [...conflicts.values()].sort((a, b) => a.key.localeCompare(b.key));
 }

@@ -2,15 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getExtensionValue, getStatus, OperationOutcomeError } from '@medplum/core';
-import type { Appointment, Basic, Parameters } from '@medplum/fhirtypes';
-import { createHash } from 'node:crypto';
+import { getExtensionValue } from '@medplum/core';
+import type { Basic, Parameters } from '@medplum/fhirtypes';
 import { readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { CONNECTION_STATUSES, readCode, readConnection } from './connection';
 import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
-import { findConflicts, importedSlots, readImportedIdentity } from './import';
-import { MIRRORED_APPOINTMENT_STATUSES } from './mapping';
 import { connectionStatusParameters } from './operations';
 import { PROFILES } from './profiles';
 import { projectQuery } from './project';
@@ -39,7 +36,6 @@ export async function publishStatus(medplum: MedplumClient, basic: WithId<Basic>
       ),
     },
     {
-      conflicts: [],
       channels: [],
       lastInbound: state.lastInbound,
       lastOutbound: state.lastOutbound,
@@ -49,8 +45,7 @@ export async function publishStatus(medplum: MedplumClient, basic: WithId<Basic>
       cleanupIssue: state.cleanupIssue,
       privacyPending: state.privacyPending,
       projectDetailLevel: state.projectDetailLevel,
-      conflictsRevision: state.conflictsRevision,
-      inboundRequest: state.inboundRequest !== state.inboundCompleted || state.conflictsPending ? 'pending' : undefined,
+      inboundRequest: state.inboundRequest !== state.inboundCompleted ? 'pending' : undefined,
       outboundRequest: state.outboundRequest !== state.outboundCompleted || state.outboundWork ? 'pending' : undefined,
     }
   );
@@ -103,80 +98,5 @@ export async function callerStatus(medplum: MedplumClient, practitionerRef: stri
     eventDetailLevel,
     accountEmail: getExtensionValue(basic, `${N}/account-email`) as string | undefined,
   };
-  // Both searches execute with the caller's policy. Unreadable appointments never enter the response.
-  const actors = new Set([practitionerRef]);
-  for await (const page of medplum.searchResourcePages(
-    'PractitionerRole',
-    await projectQuery(medplum, { practitioner: practitionerRef })
-  )) {
-    for (const role of page) {
-      actors.add(`PractitionerRole/${role.id}`);
-    }
-  }
-  const now = new Date();
-  const horizon = new Date(now.getTime() + 90 * 24 * 60 * 60_000);
-  const appointments: Appointment[] = [];
-  for await (const page of medplum.searchResourcePages(
-    'Appointment',
-    await projectQuery(medplum, {
-      actor: [...actors].join(','),
-      status: [...MIRRORED_APPOINTMENT_STATUSES].join(','),
-      end: `gt${now.toISOString()}`,
-      date: `lt${horizon.toISOString()}`,
-      _count: '200',
-    })
-  )) {
-    appointments.push(...page);
-  }
-  const conflicts = new Map<string, ReturnType<typeof findConflicts>[number]>();
-  const permissions = new Map<string, boolean>();
-  const readable = async (reference: string): Promise<boolean> => {
-    if (permissions.has(reference)) {
-      return permissions.get(reference) as boolean;
-    }
-    try {
-      await medplum.readReference({ reference }, { cache: 'no-cache' });
-      permissions.set(reference, true);
-      return true;
-    } catch (err) {
-      if (err instanceof OperationOutcomeError && [403, 404, 410].includes(getStatus(err.outcome))) {
-        permissions.set(reference, false);
-        return false;
-      }
-      throw err;
-    }
-  };
-  for (const slot of await importedSlots(medplum, id, undefined, {
-    end: `gt${now.toISOString()}`,
-    start: `lt${horizon.toISOString()}`,
-  })) {
-    const identity = readImportedIdentity(slot);
-    if (!identity) {
-      continue;
-    }
-    for (const conflict of findConflicts(
-      id,
-      identity.calendarId,
-      [{ eventId: identity.eventId, start: slot.start, end: slot.end }],
-      [],
-      appointments,
-      actors,
-      now
-    )) {
-      if (!(await readable(conflict.appointment))) {
-        continue;
-      }
-      conflict.schedules = (await readable(slot.schedule.reference as string))
-        ? [slot.schedule.reference as string]
-        : [];
-      const key = createHash('sha256').update(conflict.key).digest('hex');
-      const previous = conflicts.get(key);
-      conflicts.set(key, {
-        ...conflict,
-        key,
-        schedules: [...new Set([...(previous?.schedules ?? []), ...conflict.schedules])],
-      });
-    }
-  }
-  return connectionStatusParameters(connection, await readProjectCeiling(medplum), [...conflicts.values()]);
+  return connectionStatusParameters(connection, await readProjectCeiling(medplum));
 }

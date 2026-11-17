@@ -9,7 +9,6 @@ This example syncs a practitioner's Medplum schedule with their primary Google C
 - **Medplum to Google**: Creates, updates and removes a Google event for each Appointment and block. Writes only to events the integration owns.
 - **Google to Medplum**: Creates a Slot on each of the practitioner's active Schedules for each timed Busy event, including each occurrence of a recurring event. Skips all-day, Free, cancelled and declined events. Never creates or changes an Appointment.
 - **Privacy**: Sends every event as Busy by default. A project can let each practitioner choose `busy-only`, `initials` or `full`. Never adds a patient as an attendee. Never copies a Google title, description or guest list into Medplum.
-- **Conflicts**: Reports each Appointment that overlaps imported Busy time through `$google-calendar-status`. Changes neither the Appointment nor the Slot.
 - **Recovery**: An hourly Cron repairs missed changes. A Cron that runs every minute retries unfinished work.
 
 ## Bots
@@ -18,7 +17,7 @@ This example syncs a practitioner's Medplum schedule with their primary Google C
 | -------------------------------- | --------------------------------------------------- |
 | `install-google-calendar`        | Installs the integration in a project               |
 | `google-calendar-connect-bot`    | Exchanges the OAuth code and stores the credential  |
-| `google-calendar-status-bot`     | Returns connection status and conflicts             |
+| `google-calendar-status-bot`     | Returns connection status                           |
 | `google-calendar-settings-bot`   | Changes a practitioner's detail level               |
 | `google-calendar-disconnect-bot` | Queues disconnect cleanup                           |
 | `google-calendar-sync-range-bot` | Queues a sync of a date range                       |
@@ -115,21 +114,20 @@ Every operation takes a FHIR `Parameters` resource. The practitioner is always t
 | ------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------- |
 | `POST /Project/$google-calendar-install`         | None                                                               | AccessPolicy entries to add                         |
 | `POST /Practitioner/$google-calendar-connect`    | `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel` | Connection summary. Queues the first sync.          |
-| `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status, conflicts and Google client ID   |
+| `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status and Google client ID              |
 | `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events. |
 | `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential  |
 | `POST /Practitioner/$google-calendar-sync`       | Optional `start` and `end`                                         | The queued range                                    |
 
 `$google-calendar-status` returns these parameters, among others:
 
-| Parameter                           | Meaning                                                                     |
-| ----------------------------------- | --------------------------------------------------------------------------- |
-| `connected`                         | The practitioner has a connection                                           |
-| `status`                            | `active`, `reauth-required` or `disconnecting`                              |
-| `stale`, `staleReason`              | The last import failed, is overdue or has not run                           |
-| `inboundPending`, `outboundPending` | Queued work is unfinished                                                   |
-| `privacyCleanupPending`             | A lowered detail level is not yet applied to every event                    |
-| `conflict`                          | An Appointment that overlaps imported Busy time, with its `start` and `end` |
+| Parameter                           | Meaning                                                  |
+| ----------------------------------- | -------------------------------------------------------- |
+| `connected`                         | The practitioner has a connection                        |
+| `status`                            | `active`, `reauth-required` or `disconnecting`           |
+| `stale`, `staleReason`              | The last import failed, is overdue or has not run        |
+| `inboundPending`, `outboundPending` | Queued work is unfinished                                |
+| `privacyCleanupPending`             | A lowered detail level is not yet applied to every event |
 
 When `status` is `reauth-required`, the practitioner must connect again. `src/common/contracts.ts` defines every input and output.
 
@@ -148,7 +146,7 @@ export E2E_MANIFEST="$PWD/test-results/gcal-e2e-$(date +%s).json"
 npm run test:e2e --workspace=medplum-google-calendar-sync
 ```
 
-Add `-- --extended` to also test event filtering, a new Schedule, conflicts and recurring events. If a run is interrupted, run `test:e2e:cleanup` with the same `E2E_MANIFEST`.
+Add `-- --extended` to also test event filtering, a new Schedule and recurring events. If a run is interrupted, run `test:e2e:cleanup` with the same `E2E_MANIFEST`.
 
 ## Limitations
 
@@ -156,7 +154,7 @@ Add `-- --extended` to also test event filtering, a new Schedule, conflicts and 
 - The refresh token is stored unencrypted in a `Basic` resource. AccessPolicy is the only protection: a project admin, or a user whose policy grants `Basic`, can read it.
 - Without a range, sync covers 90 days from now. `$google-calendar-sync` accepts a range of up to 366 days.
 - Any user who can write Slots can change an imported Slot. To prevent that, replace the user's Slot write grant with `ORDINARY_SLOT_POLICY_SNIPPET` from `src/common/policies.ts`.
-- The integration sends no notifications. `notificationSubscription()` in `src/common/subscriptions.ts` returns a Subscription that fires on `reauth-required` or on a conflict change.
+- The integration sends no notifications. `notificationSubscription()` in `src/common/subscriptions.ts` returns a Subscription that fires on `reauth-required`.
 - Disconnect deletes the imported Slots, so those times become bookable.
 - Google expires the refresh tokens of an OAuth app in Testing status after seven days.
 

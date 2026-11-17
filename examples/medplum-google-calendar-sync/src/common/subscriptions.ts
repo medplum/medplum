@@ -113,22 +113,18 @@ export async function ensureWorkSubscription(
 /**
  * Customer-owned workflow; this helper does not install or send notifications.
  * @param botReference - Customer-owned workflow Bot endpoint.
- * @param signal - State transition to observe.
  * @returns A Subscription for the administrator to install.
  */
-export function notificationSubscription(botReference: string, signal: 'reauth' | 'conflicts'): Subscription {
+export function notificationSubscription(botReference: string): Subscription {
   if (!/^Bot\/[A-Za-z0-9.-]+$/.test(botReference)) {
     throw new Error('A customer Bot reference is required');
   }
   const status = `extension.where(url='${GOOGLE_CALENDAR_NAMESPACE}/status').valueCode`;
-  const expression =
-    signal === 'conflicts'
-      ? transitionExpression('conflictsRevision')
-      : `%current.${status} = 'reauth-required' and (%previous.${status}.empty() or %previous.${status} != 'reauth-required')`;
+  const expression = `%current.${status} = 'reauth-required' and (%previous.${status}.empty() or %previous.${status} != 'reauth-required')`;
   return {
     resourceType: 'Subscription',
     status: 'active',
-    reason: `Customer workflow for Google Calendar ${signal}`,
+    reason: 'Customer workflow for Google Calendar reauthorization',
     criteria: `Basic?${PUBLIC_STATUS_SEARCH}`,
     channel: { type: 'rest-hook', endpoint: botReference },
     extension: [

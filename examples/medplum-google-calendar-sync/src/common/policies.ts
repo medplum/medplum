@@ -111,8 +111,7 @@ export async function ensureInboundPolicy(medplum: MedplumClient, webhookOnly = 
       { resourceType: 'Basic', criteria: `Basic?${MIRROR_SEARCH}` },
       { resourceType: 'Slot', criteria: `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|` },
       { resourceType: 'Schedule', readonly: true },
-      { resourceType: 'PractitionerRole', readonly: true },
-      { resourceType: 'Appointment', readonly: true }
+      { resourceType: 'PractitionerRole', readonly: true }
     );
   }
   const desired: AccessPolicy = {

@@ -5,10 +5,7 @@ import type { BotEvent } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { saveConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { LEASE_URL } from '../common/lease';
-import { readState, withState } from '../common/state';
 import type * as SyncModule from '../common/sync';
 import { operationIdentity } from '../test-auth';
 import type { SyncBotInput } from './google-calendar-sync-bot';
@@ -119,65 +116,6 @@ describe('google-calendar-sync-bot', () => {
       resource: expect.objectContaining({ id: slot.id }),
       deleted: false,
     });
-  });
-
-  test('queues conflict refresh for a busy recipient and still refreshes later recipients', async () => {
-    const a = await saveConnection(medplum, {
-      practitionerRef: 'Practitioner/a',
-      accountSub: 'a',
-      refreshToken: 'synthetic-a',
-    });
-    const b = await saveConnection(medplum, {
-      practitionerRef: 'Practitioner/b',
-      accountSub: 'b',
-      refreshToken: 'synthetic-b',
-    });
-    const held = await medplum.updateResource({
-      ...a.basic,
-      extension: [
-        ...(a.basic.extension ?? []),
-        {
-          url: LEASE_URL,
-          extension: [
-            { url: 'owner', valueString: 'another-worker' },
-            { url: 'expires', valueInstant: new Date(Date.now() + 60_000).toISOString() },
-          ],
-        },
-      ],
-    });
-    await medplum.updateResource(
-      withState(b.basic, {
-        ...readState(b.basic),
-        conflicts: [
-          {
-            key: 'stale',
-            appointment: 'Appointment/gone',
-            schedules: [],
-            start: '2026-11-01T10:00:00.000Z',
-            end: '2026-11-01T11:00:00.000Z',
-          },
-        ],
-      })
-    );
-    const appointment = await medplum.createResource<Appointment>({
-      resourceType: 'Appointment',
-      meta: { project: 'proj-1' },
-      status: 'booked',
-      participant: [],
-    });
-    syncSource.mockResolvedValueOnce([
-      { practitionerRef: 'Practitioner/a', outcome: 'replaced' },
-      { practitionerRef: 'Practitioner/b', outcome: 'replaced' },
-    ]);
-    await expect(handler(medplum, event(appointment))).resolves.toBeUndefined();
-    const updatedA = await medplum.readResource('Basic', a.basic.id);
-    expect(readState(updatedA).inboundRequest).toBeTruthy();
-    expect(readState(updatedA).inboundRequest).not.toBe(readState(held).inboundRequest);
-    expect(updatedA.extension?.find((e) => e.url === LEASE_URL)).toEqual(
-      held.extension?.find((e) => e.url === LEASE_URL)
-    );
-    expect(readState(await medplum.readResource('Basic', b.basic.id)).conflicts).toEqual([]);
-    expect(syncSource).toHaveBeenCalledTimes(1);
   });
 
   test('runs the session with the resource project and surfaces failures', async () => {

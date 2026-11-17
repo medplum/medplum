@@ -6,7 +6,6 @@ import type { Basic, Extension } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { EventDetailLevel } from './constants';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
-import type { CalendarConflict } from './import';
 import { assertCurrentProject } from './project';
 import { ifMatch, isVersionConflict } from './versioning';
 
@@ -48,16 +47,13 @@ export interface SyncState {
   outboundError?: string;
   privacyPending?: boolean;
   projectDetailLevel?: EventDetailLevel;
-  conflicts: CalendarConflict[];
   channels: WatchChannel[];
   forgetRevoked?: boolean;
   googleCleaned?: boolean;
   credentialRevoked?: boolean;
   cleanupIssue?: string;
   slotsCleaned?: boolean;
-  conflictsRevision?: string;
   statusPublishPending?: boolean;
-  conflictsPending?: boolean;
 }
 
 const STRINGS = [
@@ -68,7 +64,6 @@ const STRINGS = [
   'staleReason',
   'inboundError',
   'outboundError',
-  'conflictsRevision',
   'cleanupIssue',
 ] as const;
 const INSTANTS = [
@@ -86,7 +81,6 @@ const BOOLEANS = [
   'slotsCleaned',
   'credentialRevoked',
   'statusPublishPending',
-  'conflictsPending',
 ] as const;
 
 export class InvalidCheckpointError extends Error {
@@ -155,7 +149,7 @@ export function repairCheckpoint<T extends Basic>(basic: T): T {
 
 export function readState(basic: Basic): SyncState {
   const fields = basic.extension?.find((e) => e.url === STATE_URL)?.extension ?? [];
-  const state: SyncState = { conflicts: [], channels: [] };
+  const state: SyncState = { channels: [] };
   for (const key of STRINGS) {
     state[key] = fields.find((e) => e.url === key)?.valueString;
   }
@@ -196,17 +190,6 @@ export function readState(basic: Basic): SyncState {
         expires: instant('expires'),
         lastMessage: text('lastMessage') || undefined,
         address: text('address') || undefined,
-      });
-    }
-    if (field.url === 'conflict') {
-      state.conflicts.push({
-        key: text('key'),
-        appointment: field.extension?.find((e) => e.url === 'appointment')?.valueReference?.reference ?? '',
-        schedules: (field.extension ?? [])
-          .filter((e) => e.url === 'schedule')
-          .map((e) => e.valueReference?.reference ?? ''),
-        start: instant('start'),
-        end: instant('end'),
       });
     }
   }
@@ -257,18 +240,6 @@ export function withState(basic: Basic, state: SyncState): Basic {
         ...(channel.lastMessage ? [{ url: 'lastMessage', valueString: channel.lastMessage }] : []),
         ...(channel.resourceId ? [{ url: 'resourceId', valueString: channel.resourceId }] : []),
         ...(channel.address ? [{ url: 'address', valueString: channel.address }] : []),
-      ],
-    });
-  }
-  for (const conflict of state.conflicts) {
-    fields.push({
-      url: 'conflict',
-      extension: [
-        { url: 'key', valueString: conflict.key },
-        { url: 'appointment', valueReference: { reference: conflict.appointment } },
-        { url: 'start', valueInstant: conflict.start },
-        { url: 'end', valueInstant: conflict.end },
-        ...conflict.schedules.map((reference) => ({ url: 'schedule', valueReference: { reference } })),
       ],
     });
   }

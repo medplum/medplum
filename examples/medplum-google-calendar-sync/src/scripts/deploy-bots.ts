@@ -107,7 +107,7 @@ const botDefinitions: BotDefinition[] = [
   {
     identifier: BOT_IDENTIFIER_VALUE.status,
     name: 'Google Calendar Status Bot',
-    description: 'Read caller-authorized connection status and conflicts',
+    description: 'Read caller-authorized connection status',
     runAsUser: true,
     timeout: 120,
   },

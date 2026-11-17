@@ -110,8 +110,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
             state.statusPublishPending ||
             (connection.status === 'disconnecting' &&
               (state.inboundError !== 'reauth-required' || state.forgetRevoked)) ||
-            (connection.status === 'active' &&
-              (state.inboundRequest !== state.inboundCompleted || state.conflictsPending))
+            (connection.status === 'active' && state.inboundRequest !== state.inboundCompleted)
           ) {
             directions.push('inbound');
           }

@@ -14,7 +14,6 @@ import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler as disconnect } from '../bots/google-calendar-disconnect-bot';
 import { operationIdentity } from '../test-auth';
-import * as conflicts from './conflicts';
 import type { CalendarConnection } from './connection';
 import { findConnection, saveConnection, updateConnection } from './connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
@@ -22,7 +21,6 @@ import { importedSlots } from './import';
 import { runInbound } from './inbound';
 import { ConnectionBusyError, LEASE_MS, LEASE_URL, withConnectionLease } from './lease';
 import { ensureInboundPolicy, ORDINARY_SLOT_POLICY_SNIPPET } from './policies';
-import { callerStatus } from './public-status';
 import { readState, requestSync, withState } from './state';
 import { notificationSubscription, transitionExpression } from './subscriptions';
 import { ensureWatch, receiveNotification } from './watch';
@@ -158,51 +156,17 @@ describe('calendar runtime', () => {
     'x-goog-resource-state': 'exists',
   });
 
-  test('imports, records freshness/conflicts, and does not emit workflow resources', async () => {
+  test('imports, records freshness, and does not emit workflow resources', async () => {
     const tasks = await medplum.searchResources('Task');
     await runInbound(medplum, event, connection.basic.id);
     const state = readState(await current());
     expect(state.lastInbound).toBeTruthy();
-    expect(state.conflicts).toHaveLength(1);
-    expect(state.conflicts[0].appointment).toBe(`Appointment/${appointment.id}`);
     expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
     expect(JSON.stringify(await current())).not.toContain(watch.token);
-    const revision = state.conflictsRevision;
     await runInbound(medplum, event, connection.basic.id);
-    expect(readState(await current()).conflictsRevision).toBe(revision);
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
     expect(await medplum.searchResources('Task')).toEqual(tasks);
     expect(await medplum.searchResources('DetectedIssue')).toHaveLength(0);
-  });
-
-  test.each([false, true])('finished Google import survives local conflict failure (deadline=%s)', async (deadline) => {
-    const failure = deadline ? new conflicts.ConflictRefreshPending('budget') : new Error('local read failed');
-    const refresh = vi.spyOn(conflicts, 'refreshConflicts').mockRejectedValueOnce(failure);
-    const searches = vi.spyOn(medplum, 'searchResourcePages');
-    const run = runInbound(medplum, event, connection.basic.id);
-    if (deadline) {
-      await expect(run).resolves.toBeUndefined();
-    } else {
-      await expect(run).rejects.toThrow('local read failed');
-    }
-    expect(searches.mock.calls.filter(([type]) => type === 'Slot')).toHaveLength(1);
-    const afterImport = readState(await current());
-    expect(afterImport.inboundCompleted).toBe(afterImport.inboundRequest);
-    expect(afterImport.conflictsPending).toBe(true);
-    expect(afterImport.lastInbound).toBeTruthy();
-    expect((await callerStatus(medplum, PRACTITIONER)).parameter).toContainEqual({
-      name: 'inboundPending',
-      valueBoolean: true,
-    });
-    expect(refresh.mock.calls[0][2]?.intervals).toHaveLength(1);
-    const googleRequests = requests.length;
-    refresh.mockRestore();
-    await runInbound(medplum, event, connection.basic.id);
-    expect(requests).toHaveLength(googleRequests);
-    expect(readState(await current()).conflictsPending).toBeUndefined();
-    expect(readState(await current()).conflicts).toHaveLength(1);
-    await requestSync(medplum, connection.basic.id, ['inbound']);
-    await runInbound(medplum, event, connection.basic.id);
-    expect(requests.length).toBeGreaterThan(googleRequests);
   });
 
   test('headers authenticate routing; duplicate and out-of-order notifications do not queue again', async () => {
@@ -335,7 +299,7 @@ describe('calendar runtime', () => {
     expect(readState(await current()).channels).toHaveLength(1);
   });
 
-  test('an outage or revocation preserves blocks, conflicts and last successful import', async () => {
+  test('an outage or revocation preserves blocks and last successful import', async () => {
     await runInbound(medplum, event, connection.basic.id);
     const before = readState(await current());
     const slots = await importedSlots(medplum, connection.basic.id);
@@ -343,7 +307,6 @@ describe('calendar runtime', () => {
     await expect(runInbound(medplum, event, connection.basic.id)).rejects.toMatchObject({ status: 403 });
     const failed = readState(await current());
     expect(failed).toMatchObject({
-      conflicts: before.conflicts,
       lastInbound: before.lastInbound,
       inboundError: 'inbound-error',
     });
@@ -357,7 +320,6 @@ describe('calendar runtime', () => {
     await runInbound(medplum, event, connection.basic.id);
     expect((await findConnection(medplum, PRACTITIONER))?.status).toBe('reauth-required');
     expect(await importedSlots(medplum, connection.basic.id)).toEqual(slots);
-    expect(readState(await current()).conflicts).toEqual(before.conflicts);
   });
 
   test('disconnect is queued, then removes watches and imported Slots without changing the appointment', async () => {
@@ -446,17 +408,7 @@ describe('calendar runtime', () => {
     ).rejects.toThrow('lost its connection lease');
   });
 
-  test('status omits credentials and filters references through the caller’s permissions', async () => {
-    await runInbound(medplum, event, connection.basic.id);
-    const status = await callerStatus(medplum, PRACTITIONER);
-    expect(status.parameter).toContainEqual({ name: 'activeConflictCount', valueInteger: 1 });
-    expect(JSON.stringify(status)).not.toMatch(/refresh-secret|tokenHash|calendar@workspace/);
-    await medplum.deleteResource('Appointment', appointment.id);
-    const hidden = await callerStatus(medplum, PRACTITIONER);
-    expect(hidden.parameter).toContainEqual({ name: 'activeConflictCount', valueInteger: 0 });
-  });
-
-  test('work and conflict transition expressions ignore unrelated connection writes', async () => {
+  test('work transition expressions ignore unrelated connection writes', async () => {
     const previous = await current();
     await requestSync(medplum, connection.basic.id, ['inbound']);
     const updated = await current();
@@ -468,13 +420,6 @@ describe('calendar runtime', () => {
     expect(evaluate('inboundRequest', previous, updated)).toEqual([true]);
     expect(evaluate('outboundRequest', previous, updated)).toEqual([false]);
     expect(evaluate('inboundRequest', updated, updated)).toEqual([false]);
-    await runInbound(medplum, event, connection.basic.id);
-    const opened = await current();
-    expect(evaluate('conflictsRevision', updated, opened)).toEqual([true]);
-    await medplum.updateResource({ ...appointment, status: 'cancelled' });
-    await runInbound(medplum, event, connection.basic.id);
-    expect(evaluate('conflictsRevision', opened, await current())).toEqual([true]);
-    expect(readState(await current()).conflicts).toEqual([]);
   });
 
   test('import policy permits owned Slots only and denies Appointment/Schedule mutations', async () => {
@@ -526,7 +471,7 @@ describe('calendar runtime', () => {
       status: 'reauth-required',
     });
     const after = await current();
-    const expression = notificationSubscription('Bot/customer-workflow', 'reauth').extension?.find((e) => e.valueString)
+    const expression = notificationSubscription('Bot/customer-workflow').extension?.find((e) => e.valueString)
       ?.valueString as string;
     const evaluate = (previous: Basic, current: Basic): unknown[] =>
       evalFhirPath(expression, current, {

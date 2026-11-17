@@ -57,5 +57,5 @@ test('validates output parts and cardinalities rather than returning unchecked P
         { name: 'conflict', part: [{ name: 'key', valueString: 'x' }] },
       ],
     })
-  ).toThrow();
+  ).toThrow('Unknown parameter: conflict');
 });

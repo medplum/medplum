@@ -96,7 +96,7 @@ test.each(['credential', 'settings', 'mirror'] as const)('%s profile validates i
 });
 
 test('empty sync state omits the invalid empty FHIR extension', () => {
-  const resource = withState(connection, { channels: [], conflicts: [] });
+  const resource = withState(connection, { channels: [] });
   expect(resource.extension?.some((e) => e.url === `${N}/sync-state`)).toBe(false);
   expect(() => validateResource(resource, { profile: profile(PROFILES.connection) })).not.toThrow();
 });

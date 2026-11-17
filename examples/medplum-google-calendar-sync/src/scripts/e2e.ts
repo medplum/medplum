@@ -258,43 +258,24 @@ async function main(): Promise<void> {
             { ...appointment, status: 'booked', start, end },
             ifMatch(appointment)
           );
-          await waitFor('overlap appears in caller-authorized conflict status', async () => {
+          await waitFor(
+            'rebooked Appointment reaches Google',
+            async () => Date.parse((await calendar.getEvent(mirrorId))?.start?.dateTime ?? '') === Date.parse(start)
+          );
+          // Only an import that finished after the mirror appeared can show the mirror was skipped.
+          const mirroredAt = Date.now();
+          await waitFor('own mirror is excluded from inbound Slots', async () => {
             const current = await medplum.post<Parameters>('fhir/R4/Practitioner/$google-calendar-status', {
               resourceType: 'Parameters',
             });
-            return !!current.parameter?.some(
-              (p) =>
-                p.name === 'conflict' &&
-                p.part?.some(
-                  (part) =>
-                    part.name === 'appointment' && part.valueReference?.reference === `Appointment/${appointment.id}`
-                )
-            );
-          });
-          const unchanged = await medplum.readResource('Appointment', appointment.id, { cache: 'no-cache' });
-          if (unchanged.status !== 'booked' || unchanged.start !== start || !(await slotsMatch(start, end))) {
-            throw new Error('Conflict changed the source or blocks');
-          }
-          manifest.checks.push('conflict leaves Appointment and blocks unchanged');
-          save();
-          await waitFor('own mirror is excluded from inbound Slots', async () => {
+            const imported = current.parameter?.find((p) => p.name === 'lastSuccessfulInbound')?.valueInstant;
+            if (!(Date.parse(imported ?? '') > mirroredAt)) {
+              return false;
+            }
             const slots = await importedSlots(medplum, connection.basic.id);
             return !slots.some((slot) => readImportedIdentity(slot)?.eventId === mirrorId);
           });
-          appointment = await medplum.updateResource({ ...unchanged, status: 'cancelled' }, ifMatch(unchanged));
-          await waitFor('conflict resolves after cancellation', async () => {
-            const current = await medplum.post<Parameters>('fhir/R4/Practitioner/$google-calendar-status', {
-              resourceType: 'Parameters',
-            });
-            return !current.parameter?.some(
-              (p) =>
-                p.name === 'conflict' &&
-                p.part?.some(
-                  (part) =>
-                    part.name === 'appointment' && part.valueReference?.reference === `Appointment/${appointment.id}`
-                )
-            );
-          });
+          appointment = await medplum.updateResource({ ...appointment, status: 'cancelled' }, ifMatch(appointment));
         }
 
         inserted = await calendar.updateEvent(

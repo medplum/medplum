@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { isFhirCriteriaMet, resourceMatchesSubscriptionCriteria } from '@medplum/core';
-import type { Appointment, PractitionerRole, Schedule } from '@medplum/fhirtypes';
+import type { PractitionerRole, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { saveConnection } from './connection';
 import { runInbound } from './inbound';
 import { LEASE_URL, withConnectionLease } from './lease';
-import { callerStatus } from './public-status';
 import { readState, withState } from './state';
 import { ensureSyncSubscription } from './subscriptions';
 
@@ -79,29 +78,6 @@ test('a failed public summary never holds the lease or fails completed credentia
   fail = false;
   await withConnectionLease(medplum, connection.basic.id, async () => undefined);
   expect(readState(await medplum.readResource('Basic', connection.basic.id)).statusPublishPending).toBeUndefined();
-});
-
-test('status never reads historical appointments one at a time', async () => {
-  const practitionerRef = 'Practitioner/p';
-  await saveConnection(medplum, { practitionerRef, accountSub: 'sub', refreshToken: 'token' });
-  for (let i = 0; i < 100; i++) {
-    await medplum.createResource<Appointment>({
-      resourceType: 'Appointment',
-      status: 'booked',
-      start: '2020-01-01T10:00:00Z',
-      end: '2020-01-01T11:00:00Z',
-      participant: [{ actor: { reference: practitionerRef }, status: 'accepted' }],
-    });
-  }
-  const reads = vi.spyOn(medplum, 'readReference');
-  const searches = vi.spyOn(medplum, 'searchResourcePages');
-  const status = await callerStatus(medplum, practitionerRef);
-  expect(status.parameter).toContainEqual({ name: 'activeConflictCount', valueInteger: 0 });
-  expect(reads).not.toHaveBeenCalled();
-  const query = searches.mock.calls.find(([type]) => type === 'Appointment')?.[1];
-  expect(query).toContain('end=gt');
-  expect(query).toContain('date=lt');
-  expect(query).toContain('status=');
 });
 
 test('summary-only retries publish without any Google request', async () => {

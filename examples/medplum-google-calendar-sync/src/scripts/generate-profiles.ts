@@ -55,7 +55,6 @@ const stateConstraints = [
     'staleReason',
     'inboundError',
     'outboundError',
-    'conflictsRevision',
     'cleanupIssue',
   ].map((name) => stateField(name, 'String')),
   ...[
@@ -73,7 +72,6 @@ const stateConstraints = [
     'slotsCleaned',
     'credentialRevoked',
     'statusPublishPending',
-    'conflictsPending',
   ].map((name) => stateField(name, 'Boolean')),
   `${ext('sync-state')}.extension.where(url='projectDetailLevel').count() <= 1 and ${ext('sync-state')}.extension.where(url='projectDetailLevel').all((value is code) and (valueCode = 'busy-only' or valueCode = 'initials' or valueCode = 'full'))`,
 ];
@@ -90,7 +88,6 @@ const publicFields = [
   'cleanupIssue',
   'privacyPending',
   'projectDetailLevel',
-  'conflictsRevision',
   'inboundRequest',
   'outboundRequest',
 ];
@@ -121,7 +118,7 @@ const specs: [string, 'Basic' | 'Slot', string[]][] = [
       code('status', statuses),
       `${ext('refresh-token')}.empty()`,
       `${ext('worker-lease')}.empty()`,
-      `${ext('sync-state')}.extension.where(url='conflict' or url='channel' or url='outboundWork').empty()`,
+      `${ext('sync-state')}.extension.where(url='channel' or url='outboundWork').empty()`,
     ],
   ],
   [

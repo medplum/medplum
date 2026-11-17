@@ -8,14 +8,7 @@ import type { CalendarConnection } from './connection';
 import { saveConnection } from './connection';
 import { IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { RemoteCalendarEvent } from './google-calendar';
-import {
-  busyInterval,
-  findConflicts,
-  importBusyTime,
-  importedSlots,
-  importIdentifier,
-  readImportedIdentity,
-} from './import';
+import { busyInterval, importBusyTime, importedSlots, importIdentifier, readImportedIdentity } from './import';
 
 const RANGE = { start: new Date('2026-10-01T00:00:00Z'), end: new Date('2026-12-30T00:00:00Z') };
 const PRACTITIONER = 'Practitioner/example';
@@ -238,51 +231,5 @@ describe('Google busy import', () => {
       status: 'busy-unavailable',
       start: '2026-10-12T16:00:00.000Z',
     });
-  });
-});
-
-describe('conflicts', () => {
-  const interval = busyInterval(BUSY) as NonNullable<ReturnType<typeof busyInterval>>;
-  const booked: Appointment = {
-    resourceType: 'Appointment',
-    id: 'visit',
-    status: 'booked',
-    start: '2026-10-12T16:15:00Z',
-    end: '2026-10-12T16:45:00Z',
-    participant: [{ actor: { reference: PRACTITIONER }, status: 'accepted' }],
-  };
-  const now = new Date('2026-10-01T00:00:00Z');
-  const run = (appointments = [booked], time = now): ReturnType<typeof findConflicts> =>
-    findConflicts(
-      'conn',
-      'calendar',
-      [interval],
-      ['Schedule/a', 'Schedule/b', 'Schedule/a'],
-      appointments,
-      new Set([PRACTITIONER]),
-      time
-    );
-  test('one stable conflict per occurrence and appointment across matching Schedules', () => {
-    const conflicts = run([booked, booked]);
-    expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]).toMatchObject({
-      appointment: 'Appointment/visit',
-      schedules: ['Schedule/a', 'Schedule/b'],
-      start: '2026-10-12T16:15:00.000Z',
-      end: '2026-10-12T16:30:00.000Z',
-    });
-    expect(run()).toEqual(conflicts);
-  });
-  test('adjacent, declined, cancelled, proposed and wholly past appointments do not conflict', () => {
-    expect(run([{ ...booked, start: interval.end }])).toEqual([]);
-    expect(run([{ ...booked, end: interval.start }])).toEqual([]);
-    expect(run([{ ...booked, participant: [{ actor: { reference: PRACTITIONER }, status: 'declined' }] }])).toEqual([]);
-    expect(
-      run([
-        { ...booked, status: 'cancelled' },
-        { ...booked, status: 'proposed' },
-      ])
-    ).toEqual([]);
-    expect(run([booked], new Date('2026-10-13T00:00:00Z'))).toEqual([]);
   });
 });

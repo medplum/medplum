@@ -6,7 +6,6 @@ import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { CalendarConnection } from './connection';
 import type { EventDetailLevel } from './constants';
 import { EVENT_DETAIL_LEVELS } from './constants';
-import type { CalendarConflict } from './import';
 import { resolveDetailLevel } from './mapping';
 import { readState } from './state';
 
@@ -61,14 +60,9 @@ export function parseDetailLevel(value: string | undefined): EventDetailLevel | 
  * The `Parameters` every operation returns, so the settings UI renders one shape.
  * @param connection - The connection, if any.
  * @param ceiling - Current project detail ceiling.
- * @param conflicts - Conflicts filtered through the caller’s resource permissions.
  * @returns `connected`, and the account email and detail level when connected.
  */
-export function connectionStatusParameters(
-  connection: CalendarConnection | undefined,
-  ceiling?: string,
-  conflicts: CalendarConflict[] = []
-): Parameters {
+export function connectionStatusParameters(connection: CalendarConnection | undefined, ceiling?: string): Parameters {
   const parameter: ParametersParameter[] = [{ name: 'connected', valueBoolean: connection !== undefined }];
   if (connection) {
     const state = readState(connection.basic);
@@ -98,10 +92,9 @@ export function connectionStatusParameters(
       },
       {
         name: 'inboundPending',
-        valueBoolean: state.inboundRequest !== state.inboundCompleted || state.conflictsPending === true,
+        valueBoolean: state.inboundRequest !== state.inboundCompleted,
       },
       { name: 'stale', valueBoolean: Boolean(staleReason) },
-      { name: 'activeConflictCount', valueInteger: conflicts.length },
       {
         name: 'disconnectWarning',
         valueString:
@@ -117,18 +110,6 @@ export function connectionStatusParameters(
     if (state.lastOutbound) {
       parameter.push({ name: 'lastSuccessfulOutbound', valueInstant: state.lastOutbound });
     }
-    for (const conflict of conflicts) {
-      parameter.push({
-        name: 'conflict',
-        part: [
-          { name: 'key', valueString: conflict.key },
-          { name: 'appointment', valueReference: { reference: conflict.appointment } },
-          { name: 'start', valueInstant: conflict.start },
-          { name: 'end', valueInstant: conflict.end },
-          ...conflict.schedules.map((reference) => ({ name: 'schedule', valueReference: { reference } })),
-        ],
-      });
-    }
     if (connection.accountEmail) {
       parameter.push({ name: 'email', valueString: connection.accountEmail });
     }
@@ -140,7 +121,5 @@ export function connectionStatusParameters(
 }
 
 export function mutationStatus(connection: CalendarConnection | undefined, ceiling?: string): Parameters {
-  const result = connectionStatusParameters(connection, ceiling);
-  result.parameter = result.parameter?.filter((p) => !['activeConflictCount', 'conflict'].includes(p.name));
-  return result;
+  return connectionStatusParameters(connection, ceiling);
 }

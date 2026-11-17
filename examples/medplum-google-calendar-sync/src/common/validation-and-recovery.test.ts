@@ -5,13 +5,11 @@ import { isFhirCriteriaMet, OperationOutcomeError, preconditionFailed, validateR
 import type { Basic, Bot, StructureDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
-import { ConflictRefreshPending, refreshConflicts } from './conflicts';
 import { saveConnection } from './connection';
 import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
-import { busyInterval, importIdentifier } from './import';
+import { busyInterval } from './import';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
 import { DEFINITIONS, PROFILES } from './profiles';
-import { callerStatus } from './public-status';
 import { mutateConnectionState, readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
 import { ensureSyncSubscription } from './subscriptions';
 
@@ -151,75 +149,6 @@ test('Slot delivery excludes imported writes and deletes but retains native bloc
   expect(await isFhirCriteriaMet(sub, native, async () => imported)).toBe(true);
 });
 
-test.each([1, 40])(
-  'local conflict refresh checks %i Slots without per-Slot lease reads or Google calls',
-  async (count) => {
-    const medplum = new MockClient();
-    const connection = await saveConnection(medplum, {
-      practitionerRef: 'Practitioner/p',
-      accountSub: 'sub',
-      refreshToken: 'synthetic',
-    });
-    const a = await medplum.createResource({
-      resourceType: 'Schedule',
-      active: true,
-      actor: [{ reference: 'Practitioner/p' }],
-    });
-    await medplum.createResource({ resourceType: 'Schedule', active: true, actor: [{ reference: 'Practitioner/p' }] });
-    const start = new Date(Date.now() + 3600_000).toISOString(),
-      end = new Date(Date.now() + 7200_000).toISOString();
-    await medplum.createResource({
-      resourceType: 'Appointment',
-      status: 'booked',
-      start,
-      end,
-      participant: [{ actor: { reference: 'Practitioner/p' }, status: 'accepted' }],
-    });
-    for (let index = 0; index < count; index++) {
-      await medplum.createResource({
-        resourceType: 'Slot',
-        status: 'busy-unavailable',
-        start,
-        end,
-        schedule: { reference: `Schedule/${a.id}` },
-        identifier: [
-          {
-            system: IMPORT_IDENTIFIER_SYSTEM,
-            value: importIdentifier({
-              connectionId: connection.basic.id,
-              calendarId: 'synthetic',
-              eventId: `event-${index}`,
-              scheduleRef: `Schedule/${a.id}`,
-            }),
-          },
-        ],
-      });
-    }
-    const fetch = vi.spyOn(globalThis, 'fetch');
-    try {
-      await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-        await refreshConflicts(lease, connection);
-        const reads = vi.spyOn(lease, 'read');
-        const writes = vi.spyOn(lease, 'mutate');
-        await refreshConflicts(lease, connection);
-        expect(writes).not.toHaveBeenCalled();
-        // Checks are per page/schedule, not per Slot.
-        expect(reads.mock.calls.length).toBeLessThan(12);
-        reads.mockRestore();
-        writes.mockRestore();
-      });
-      const state = readState(await medplum.readResource('Basic', connection.basic.id));
-      expect(state.conflicts).toHaveLength(count);
-      expect(
-        state.conflicts.every((conflict) => JSON.stringify(conflict.schedules) === JSON.stringify([`Schedule/${a.id}`]))
-      ).toBe(true);
-      expect(fetch).not.toHaveBeenCalled();
-    } finally {
-      fetch.mockRestore();
-    }
-  }
-);
-
 test.each([
   ['2026-11-02T11:00:00.000Z', '2026-11-02T10:00:00.000Z'],
   ['2026-11-02T10:00:00.000Z', undefined],
@@ -275,71 +204,6 @@ test('request marking repairs corrupt work and persists both requested direction
   expect(readState(saved).inboundRequest).toBeTruthy();
   expect(readState(saved).outboundRequest).toBeTruthy();
   expect(() => validateResource(saved, profile('connection'))).not.toThrow();
-});
-
-test('conflict refresh stops before its budget expires and scopes Slot reads by Schedule', async () => {
-  const medplum = new MockClient();
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
-  const schedule = await medplum.createResource({ resourceType: 'Schedule', actor: [{ reference: 'Practitioner/p' }] });
-  const queries = vi.spyOn(medplum, 'searchResourcePages');
-  await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-    const clock = vi.spyOn(Date, 'now').mockReturnValue(lease.deadline - 30_000);
-    try {
-      await expect(refreshConflicts(lease, connection)).rejects.toBeInstanceOf(ConflictRefreshPending);
-    } finally {
-      clock.mockRestore();
-    }
-    await refreshConflicts(lease, connection);
-  });
-  const slotQueries = queries.mock.calls.filter(([type]) => type === 'Slot');
-  expect(slotQueries).toHaveLength(1);
-  expect(new URLSearchParams(slotQueries[0][1] as string).get('schedule')).toBe(`Schedule/${schedule.id}`);
-});
-
-test('imports and local refreshes keep conflicts stable when no active Schedule can receive busy time', async () => {
-  const medplum = new MockClient();
-  const practitionerRef = 'Practitioner/p';
-  const connection = await saveConnection(medplum, {
-    practitionerRef,
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
-  await medplum.createResource({
-    resourceType: 'Schedule',
-    active: false,
-    actor: [{ reference: practitionerRef }],
-  });
-  const start = new Date(Date.now() + 3600_000).toISOString();
-  const end = new Date(Date.now() + 7200_000).toISOString();
-  await medplum.createResource({
-    resourceType: 'Appointment',
-    status: 'booked',
-    start,
-    end,
-    participant: [{ actor: { reference: practitionerRef }, status: 'accepted' }],
-  });
-  const imported = {
-    calendarId: 'synthetic',
-    intervals: [{ eventId: 'busy-event', start, end }],
-    schedules: [],
-    createdOrUpdated: 0,
-    removed: 0,
-  };
-  const before = readState(connection.basic);
-  for (const snapshot of [imported, undefined, imported]) {
-    await withConnectionLease(medplum, connection.basic.id, (lease) => refreshConflicts(lease, connection, snapshot));
-    const state = readState(await medplum.readResource('Basic', connection.basic.id));
-    expect(state.conflicts).toEqual([]);
-    expect(state.conflictsRevision).toBe(before.conflictsRevision);
-    expect((await callerStatus(medplum, practitionerRef)).parameter).toContainEqual({
-      name: 'activeConflictCount',
-      valueInteger: 0,
-    });
-  }
 });
 
 test('queued state mutations rebase on a worker write and preserve its lease and checkpoints', async () => {

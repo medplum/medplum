@@ -4,10 +4,8 @@
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { requireBotMembership } from '../common/authorization';
-import { refreshConflicts } from '../common/conflicts';
-import { findConnection, readConnection } from '../common/connection';
+import { findConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import { withConnectionLease } from '../common/lease';
 import { requestSync } from '../common/state';
 import type { SyncSource } from '../common/sync';
 import { getProjectId, isResourceGone, SyncSession } from '../common/sync';
@@ -72,27 +70,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SyncBotInp
     const connection = await findConnection(medplum, result.practitionerRef);
     if (connection?.status === 'active') {
       await requestSync(medplum, connection.basic.id, ['outbound']);
-    }
-  }
-
-  if (source.resource.resourceType === 'Appointment') {
-    for (const result of results) {
-      const connection = await findConnection(medplum, result.practitionerRef);
-      if (connection?.status === 'active') {
-        try {
-          await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-            const current = readConnection(await lease.read());
-            if (current?.status === 'active') {
-              await refreshConflicts(lease, current);
-            }
-          });
-        } catch {
-          // Do not log the exception: provider errors may contain private event data.
-          console.warn('Calendar conflict refresh deferred; queuing an inbound retry');
-          // A busy worker or failed local refresh must leave durable work for this recipient.
-          await requestSync(medplum, connection.basic.id, ['inbound']);
-        }
-      }
     }
   }
 
