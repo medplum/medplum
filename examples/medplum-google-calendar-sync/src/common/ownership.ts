@@ -8,7 +8,6 @@ import type { CalendarConnection } from './connection';
 import { EVENT_PROPERTY, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import type { ConnectionLease } from './lease';
 import type { GoogleCalendarEvent } from './mapping';
-import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import { ifMatch } from './versioning';
 
@@ -70,7 +69,6 @@ export function ownershipStore(lease: ConnectionLease, connection: CalendarConne
       const saved = await lease.medplum.createResourceIfNoneExist<Basic>(
         {
           resourceType: 'Basic',
-          meta: { profile: [PROFILES.mirror] },
           code: { coding: [{ system: N, code: 'calendar-mirror' }] },
           subject: { reference: `Basic/${connection.basic.id}` },
           identifier: [

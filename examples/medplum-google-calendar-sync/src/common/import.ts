@@ -6,7 +6,6 @@ import type { Schedule, Slot } from '@medplum/fhirtypes';
 import type { CalendarConnection } from './connection';
 import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { GoogleCalendarClient, RemoteCalendarEvent } from './google-calendar';
-import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import type { SyncRange } from './range-sync';
 import { ifMatch } from './versioning';
@@ -196,7 +195,6 @@ export async function importBusyTime(
       const value = importIdentifier(identity);
       const slot: Slot = {
         resourceType: 'Slot',
-        meta: { profile: [PROFILES.slot] },
         identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value }],
         schedule: { reference: identity.scheduleRef },
         status: 'busy-unavailable',
@@ -232,10 +230,7 @@ export async function importBusyTime(
         throw new Error('Imported Slot ownership mismatch');
       }
       await beforeWrite();
-      await medplum.updateResource(
-        { ...slot, id: stored.id, meta: { ...stored.meta, profile: [PROFILES.slot] } },
-        ifMatch(stored)
-      );
+      await medplum.updateResource({ ...slot, id: stored.id, meta: stored.meta }, ifMatch(stored));
     }
     createdOrUpdated++;
   }
@@ -265,7 +260,6 @@ function sameBlock(a: Slot, b: Slot): boolean {
     Object.keys(a).every((key) =>
       ['resourceType', 'id', 'meta', 'identifier', 'schedule', 'status', 'start', 'end'].includes(key)
     ) &&
-    a.meta?.profile?.includes(PROFILES.slot) === true &&
     a.status === b.status &&
     a.start === b.start &&
     a.end === b.end &&

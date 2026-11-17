@@ -7,7 +7,6 @@ import type { Basic } from '@medplum/fhirtypes';
 import type { EventDetailLevel } from './constants';
 import { GOOGLE_CALENDAR_NAMESPACE, SECRET } from './constants';
 import { resolveDetailLevel } from './mapping';
-import { PROFILES } from './profiles';
 import { currentProjectId, projectQuery } from './project';
 import { ifMatch } from './versioning';
 
@@ -45,7 +44,6 @@ export async function readProjectCeiling(medplum: MedplumClient, fallback?: stri
 export async function writeProjectCeiling(medplum: MedplumClient, level: EventDetailLevel): Promise<void> {
   const resource: Basic = {
     resourceType: 'Basic',
-    meta: { profile: [PROFILES.settings] },
     code: { coding: [{ system: GOOGLE_CALENDAR_NAMESPACE, code: 'calendar-settings' }] },
     identifier: [
       { system: `${GOOGLE_CALENDAR_NAMESPACE}/settings`, value: `Project/${await currentProjectId(medplum)}` },
@@ -65,8 +63,5 @@ export async function writeProjectCeiling(medplum: MedplumClient, level: EventDe
         identifier: `${GOOGLE_CALENDAR_NAMESPACE}/settings|${resource.identifier?.[0].value}`,
       })
     ));
-  await medplum.updateResource(
-    { ...resource, id: current.id, meta: { ...current.meta, profile: [PROFILES.settings] } },
-    ifMatch(current)
-  );
+  await medplum.updateResource({ ...resource, id: current.id, meta: current.meta }, ifMatch(current));
 }

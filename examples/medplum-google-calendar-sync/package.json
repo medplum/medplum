@@ -11,7 +11,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && npm run lint && npm run profiles:check && tsc && node esbuild.mjs",
+    "build": "npm run clean && npm run lint && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "connect-local": "tsx src/scripts/connect-local.ts",
     "deploy": "npm run build && tsx src/scripts/deploy-bots.ts",
@@ -19,8 +19,6 @@
     "lint:fix": "eslint src --fix && prettier --write src",
     "live-api-probe": "tsx src/scripts/live-google-test.ts",
     "migrate-mirrors": "tsx src/scripts/migrate-mirrors.ts",
-    "profiles": "tsx src/scripts/generate-profiles.ts",
-    "profiles:check": "tsx src/scripts/generate-profiles.ts --check",
     "setup:project": "tsx src/scripts/install-project.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

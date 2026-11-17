@@ -10,7 +10,6 @@ import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE } from './constants';
 import { TOKEN_URL, writeCredential } from './credentials';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
-import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import { readState, withState } from './state';
 
@@ -132,7 +131,6 @@ export async function saveConnection(
   }
   const resource: Basic = {
     resourceType: 'Basic',
-    meta: { profile: [PROFILES.connection] },
     id: existing?.id,
     code: { coding: [{ system: GOOGLE_CALENDAR_NAMESPACE, code: CALENDAR_CONNECTION_CODE }] },
     subject: { reference: input.practitionerRef },
@@ -179,7 +177,7 @@ export async function saveConnection(
       return withState(
         {
           ...latest,
-          meta: { ...latest.meta, profile: [PROFILES.connection] },
+          meta: latest.meta,
           identifier: [
             ...(latest.identifier ?? []).filter(
               (i) => i.system !== CONNECTION_IDENTIFIER_SYSTEM && i.system !== ACCOUNT_IDENTIFIER_SYSTEM

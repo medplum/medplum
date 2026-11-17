@@ -1,62 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { isFhirCriteriaMet, OperationOutcomeError, preconditionFailed, validateResource } from '@medplum/core';
-import type { Basic, Bot, StructureDefinition } from '@medplum/fhirtypes';
+import { isFhirCriteriaMet, OperationOutcomeError, preconditionFailed } from '@medplum/core';
+import type { Basic, Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
 import { saveConnection } from './connection';
 import { IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import { busyInterval } from './import';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
-import { DEFINITIONS, PROFILES } from './profiles';
 import { mutateConnectionState, readState, repairCheckpoint, requestSync, STATE_URL, withState } from './state';
 import { ensureSyncSubscription } from './subscriptions';
-
-const profile = (name: keyof typeof PROFILES): { profile: StructureDefinition } => ({
-  profile: DEFINITIONS.find((d) => d.url === PROFILES[name]) as StructureDefinition,
-});
-const publicStatus: Basic = {
-  resourceType: 'Basic',
-  code: { coding: [{ system: N, code: 'calendar-public-status' }] },
-  subject: { reference: 'Practitioner/p' },
-  identifier: [{ system: `${N}/public-status`, value: 'Basic/c' }],
-  extension: [{ url: `${N}/status`, valueCode: 'active' }],
-};
-
-test('public status accepts its projection but rejects private fields, invalid types and conflicting subtype codes', () => {
-  expect(() => validateResource(publicStatus, profile('publicStatus'))).not.toThrow();
-  for (const extra of [
-    { url: `${N}/secret`, valueString: 'synthetic' },
-    { url: `${N}/event-detail-level`, valueCode: 'full-with-invite' },
-    { url: `${N}/account-email`, valueBoolean: true },
-    { url: STATE_URL, extension: [{ url: 'lastInbound', valueBoolean: true }] },
-    { url: STATE_URL, extension: [{ url: 'note', valueString: 'synthetic' }] },
-  ]) {
-    expect(() =>
-      validateResource(
-        { ...publicStatus, extension: [...(publicStatus.extension ?? []), extra] },
-        profile('publicStatus')
-      )
-    ).toThrow();
-  }
-  expect(() =>
-    validateResource(
-      {
-        ...publicStatus,
-        code: { coding: [...(publicStatus.code.coding ?? []), { system: N, code: 'calendar-settings' }] },
-      },
-      profile('publicStatus')
-    )
-  ).toThrow();
-});
-
-test('resource profiles retain inherited constraints', () => {
-  for (const url of Object.values(PROFILES)) {
-    const definition = DEFINITIONS.find((d) => d.url === url) as StructureDefinition;
-    expect(definition.snapshot?.element[0].constraint?.some((c) => c.key === 'dom-2')).toBe(true);
-  }
-});
 
 function corrupt(basic: Basic): Basic {
   return {
@@ -88,10 +42,8 @@ test('invalid checkpoint is rejected, then quarantined privately with fresh work
     refreshToken: 'synthetic',
   });
   const broken = corrupt(connection.basic);
-  expect(() => validateResource(broken, profile('connection'))).toThrow();
   expect(() => readState(broken)).toThrow('checkpoint');
   const repaired = repairCheckpoint(broken);
-  expect(() => validateResource(repaired, profile('connection'))).not.toThrow();
   expect(readState(repaired).outboundRequest).toBeTruthy();
   expect(repaired.extension?.find((e) => e.url === `${N}/invalid-outbound-checkpoint`)?.extension).toEqual(
     broken.extension?.find((e) => e.url === STATE_URL)?.extension?.[0].extension
@@ -165,28 +117,13 @@ test.each([
     requestedRangeStart: start,
     requestedRangeEnd: end,
   });
-  expect(() => validateResource(broken, profile('connection'))).toThrow();
   const repaired = repairCheckpoint(broken);
-  expect(() => validateResource(repaired, profile('connection'))).not.toThrow();
   expect(readState(repaired).requestedRangeStart).toBeUndefined();
   expect(readState(repaired).requestedRangeEnd).toBeUndefined();
   expect(readState(repaired).outboundError).toBe('checkpoint-repair-required');
   expect(repairCheckpoint(repaired)).toBe(repaired);
   const corruptedAgain = repairCheckpoint(corrupt(repaired));
   expect(corruptedAgain.extension?.filter((e) => e.url === `${N}/invalid-outbound-checkpoint`)).toHaveLength(1);
-});
-
-test('connection identifier must equal its practitioner subject', async () => {
-  const medplum = new MockClient();
-  const { basic } = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
-  expect(() => validateResource(basic, profile('connection'))).not.toThrow();
-  expect(() =>
-    validateResource({ ...basic, subject: { reference: 'Practitioner/other' } }, profile('connection'))
-  ).toThrow();
 });
 
 test('request marking repairs corrupt work and persists both requested directions', async () => {
@@ -203,7 +140,6 @@ test('request marking repairs corrupt work and persists both requested direction
   expect(readState(saved).outboundError).toBe('checkpoint-repair-required');
   expect(readState(saved).inboundRequest).toBeTruthy();
   expect(readState(saved).outboundRequest).toBeTruthy();
-  expect(() => validateResource(saved, profile('connection'))).not.toThrow();
 });
 
 test('queued state mutations rebase on a worker write and preserve its lease and checkpoints', async () => {

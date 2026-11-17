@@ -9,7 +9,6 @@ import type { CalendarConnection } from './connection';
 import { CONNECTION_STATUSES, readCode, readConnection } from './connection';
 import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import { connectionStatusParameters } from './operations';
-import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import { readState, withState } from './state';
 import { ifMatch } from './versioning';
@@ -27,7 +26,6 @@ export async function publishStatus(medplum: MedplumClient, basic: WithId<Basic>
   const resource: Basic = withState(
     {
       resourceType: 'Basic',
-      meta: { profile: [PROFILES.publicStatus] },
       code: { coding: [{ system: N, code: 'calendar-public-status' }] },
       subject: basic.subject,
       identifier: [{ system: SYSTEM, value: `Basic/${basic.id}` }],
@@ -53,10 +51,7 @@ export async function publishStatus(medplum: MedplumClient, basic: WithId<Basic>
     resource,
     await projectQuery(medplum, { identifier: `${SYSTEM}|Basic/${basic.id}` })
   );
-  await medplum.updateResource(
-    { ...resource, id: saved.id, meta: { ...saved.meta, profile: [PROFILES.publicStatus] } },
-    ifMatch(saved)
-  );
+  await medplum.updateResource({ ...resource, id: saved.id, meta: saved.meta }, ifMatch(saved));
 }
 
 export async function deletePublicStatus(medplum: MedplumClient, id: string): Promise<void> {

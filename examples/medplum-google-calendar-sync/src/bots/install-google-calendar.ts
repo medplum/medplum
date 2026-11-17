@@ -22,7 +22,6 @@ import {
   ensureSyncAccessPolicy,
   PRACTITIONER_POLICY_SNIPPET,
 } from '../common/policies';
-import { installProfiles } from '../common/profiles';
 import { currentProjectId, projectQuery } from '../common/project';
 import { requestSync } from '../common/state';
 import { ensureSyncSubscription, ensureWorkSubscription } from '../common/subscriptions';
@@ -59,7 +58,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     secrets[SECRET.allowEventDetails] ?? project.secret?.find((s) => s.name === SECRET.allowEventDetails)?.valueString;
   const ceiling = ceilingFromAllowEventDetails(allowEventDetails) ?? 'busy-only';
 
-  await installProfiles(medplum);
   const syncBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.sync);
   const reconcileBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.reconcile);
   const importBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.inbound);

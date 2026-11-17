@@ -8,7 +8,6 @@ import type { CalendarConnection } from './connection';
 import { CONNECTION_IDENTIFIER_SYSTEM } from './connection';
 import { GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
 import type { ConnectionLease } from './lease';
-import { PROFILES } from './profiles';
 import { projectQuery } from './project';
 import { ifMatch } from './versioning';
 
@@ -34,7 +33,6 @@ export async function writeCredential(lease: ConnectionLease, token: string, acc
   const connection = await lease.read();
   const resource: Basic = {
     resourceType: 'Basic',
-    meta: { profile: [PROFILES.credential] },
     code: { coding: [{ system: N, code: 'calendar-credential' }] },
     subject: connection.subject,
     identifier: [
@@ -52,10 +50,7 @@ export async function writeCredential(lease: ConnectionLease, token: string, acc
   }
   await lease.check();
   if (getExtensionValue(saved, TOKEN_URL) !== token) {
-    await lease.medplum.updateResource(
-      { ...resource, id: saved.id, meta: { ...saved.meta, profile: [PROFILES.credential] } },
-      ifMatch(saved)
-    );
+    await lease.medplum.updateResource({ ...resource, id: saved.id, meta: saved.meta }, ifMatch(saved));
   }
 }
 
@@ -106,7 +101,7 @@ export async function migrateCredential(lease: ConnectionLease): Promise<void> {
   await writeCredential(lease, token, sub);
   await lease.mutate((current) => ({
     ...current,
-    meta: { ...current.meta, profile: [PROFILES.connection] },
+    meta: current.meta,
     identifier: [
       ...(current.identifier ?? []).filter((i) => i.system !== CONNECTION_IDENTIFIER_SYSTEM),
       { system: CONNECTION_IDENTIFIER_SYSTEM, value: practitionerRef },
