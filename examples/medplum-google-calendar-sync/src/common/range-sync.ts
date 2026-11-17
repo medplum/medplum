@@ -26,26 +26,12 @@ export interface SyncRange {
 }
 
 /**
- * Validates a caller-supplied range: both instants parse, the end is after the start, and the
- * span is at most a year, so one call can't walk a whole history.
- * @param start - ISO start, or undefined for now.
- * @param end - ISO end, or undefined for 90 days after the start.
+ * The window both directions discover and repair.
  * @param now - The reference time.
- * @returns The range.
+ * @returns From now to `DEFAULT_SYNC_DAYS` ahead.
  */
-export function parseSyncRange(start: string | undefined, end: string | undefined, now: Date): SyncRange {
-  const startDate = start ? new Date(start) : now;
-  const endDate = end ? new Date(end) : new Date(startDate.getTime() + DEFAULT_SYNC_DAYS * DAY_MS);
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    throw new Error('start and end must be ISO 8601 date-times');
-  }
-  if (endDate <= startDate) {
-    throw new Error('end must be after start');
-  }
-  if (endDate.getTime() - startDate.getTime() > 366 * DAY_MS) {
-    throw new Error('The range may span at most one year');
-  }
-  return { start: startDate, end: endDate };
+export function defaultSyncRange(now: Date): SyncRange {
+  return { start: now, end: new Date(now.getTime() + DEFAULT_SYNC_DAYS * DAY_MS) };
 }
 
 /**

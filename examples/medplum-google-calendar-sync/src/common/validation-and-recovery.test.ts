@@ -101,31 +101,6 @@ test('Slot delivery excludes imported writes and deletes but retains native bloc
   expect(await isFhirCriteriaMet(sub, native, async () => imported)).toBe(true);
 });
 
-test.each([
-  ['2026-11-02T11:00:00.000Z', '2026-11-02T10:00:00.000Z'],
-  ['2026-11-02T10:00:00.000Z', undefined],
-  ['2026-11-02T10:00:00Z', '2026-11-02T11:00:00.000Z'],
-])('invalid requested range %s / %s is rejected and repaired once', async (start, end) => {
-  const medplum = new MockClient();
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
-  const broken = withState(connection.basic, {
-    ...readState(connection.basic),
-    requestedRangeStart: start,
-    requestedRangeEnd: end,
-  });
-  const repaired = repairCheckpoint(broken);
-  expect(readState(repaired).requestedRangeStart).toBeUndefined();
-  expect(readState(repaired).requestedRangeEnd).toBeUndefined();
-  expect(readState(repaired).outboundError).toBe('checkpoint-repair-required');
-  expect(repairCheckpoint(repaired)).toBe(repaired);
-  const corruptedAgain = repairCheckpoint(corrupt(repaired));
-  expect(corruptedAgain.extension?.filter((e) => e.url === `${N}/invalid-outbound-checkpoint`)).toHaveLength(1);
-});
-
 test('request marking repairs corrupt work and persists both requested directions', async () => {
   const medplum = new MockClient();
   const { basic } = await saveConnection(medplum, {

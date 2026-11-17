@@ -188,8 +188,8 @@ export class SyncSession {
       const state = readState(basic);
       if (!resume || !state.outboundWork || state.outboundWork.request !== state.outboundRequest) {
         state.outboundWork = {
-          start: state.requestedRangeStart ?? range.start.toISOString(),
-          end: state.requestedRangeEnd ?? range.end.toISOString(),
+          start: range.start.toISOString(),
+          end: range.end.toISOString(),
           phase: 'discover',
           errors: 0,
           request: state.outboundRequest ?? '',
@@ -267,8 +267,6 @@ export class SyncSession {
         state.outboundRetryAt = undefined;
         if (complete && ceilingStillCurrent && state.outboundRequest === this.outboundRequestAtStart) {
           state.privacyPending = false;
-          state.requestedRangeStart = undefined;
-          state.requestedRangeEnd = undefined;
         }
       }
       return withState(basic, state);

@@ -4,8 +4,8 @@
 import { expect, test } from 'vitest';
 import { CONTRACTS, validateContract } from './contracts';
 
-test('six type-level contracts distinguish reads and mutations', () => {
-  expect(Object.keys(CONTRACTS)).toHaveLength(6);
+test('five type-level contracts distinguish reads and mutations', () => {
+  expect(Object.keys(CONTRACTS)).toHaveLength(5);
   for (const [name, { definition }] of Object.entries(CONTRACTS)) {
     expect(definition).toMatchObject({ system: false, type: true, instance: false, affectsState: name !== 'status' });
     expect(definition.parameter?.some((p) => p.use === 'out')).toBe(true);
@@ -45,9 +45,6 @@ test('validates output parts and cardinalities rather than returning unchecked P
       resourceType: 'Parameters',
       parameter: [{ name: 'connected', valueString: 'true' }],
     })
-  ).toThrow();
-  expect(() =>
-    validateContract('sync', 'out', { resourceType: 'Parameters', parameter: [{ name: 'queued', valueBoolean: true }] })
   ).toThrow();
   expect(() =>
     validateContract('status', 'out', {

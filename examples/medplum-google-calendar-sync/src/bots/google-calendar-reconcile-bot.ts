@@ -8,7 +8,7 @@ import { CONNECTION_SEARCH, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE, INSTALL_SYSTEM } from '../common/constants';
 import { LEASE_URL } from '../common/lease';
 import { assertCurrentProject, projectQuery } from '../common/project';
-import { parseSyncRange, syncRange } from '../common/range-sync';
+import { defaultSyncRange, syncRange } from '../common/range-sync';
 import { readState, repairCheckpoint, requestSync } from '../common/state';
 import { getProjectId, SyncSession } from '../common/sync';
 
@@ -23,7 +23,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const counts = await syncRange(
       new SyncSession(medplum, event.secrets, getProjectId(connection.basic)),
       connection,
-      parseSyncRange(undefined, undefined, new Date()),
+      defaultSyncRange(new Date()),
       true
     );
     if (counts.errors || counts.unmappable) {

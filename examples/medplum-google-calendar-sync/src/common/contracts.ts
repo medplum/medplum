@@ -64,12 +64,6 @@ const entries = [
   ],
   ['settings', BOT_IDENTIFIER_VALUE.settings, [param('eventDetailLevel', 'string', 1)], summary],
   ['disconnect', BOT_IDENTIFIER_VALUE.disconnect, [param('forgetRevoked', 'boolean')], summary],
-  [
-    'sync',
-    BOT_IDENTIFIER_VALUE.syncRange,
-    [param('start', 'string'), param('end', 'string')],
-    [param('queued', 'boolean', 1), param('start', 'dateTime', 1), param('end', 'dateTime', 1)],
-  ],
 ] as const;
 
 function output(p: OperationDefinitionParameter): OperationDefinitionParameter {
@@ -192,9 +186,6 @@ export function operationHandler(
 function operationDescription(name: string): string {
   if (name === 'status') {
     return 'Read caller-authorized connection status.';
-  }
-  if (name === 'sync') {
-    return 'Queue outbound work; completion is reported by status.';
   }
   if (name === 'disconnect') {
     return 'Queue cleanup of both sides; completion is reported by status.';

@@ -46,7 +46,6 @@ describe('install-google-calendar', () => {
       'google-calendar-connect-bot',
       'google-calendar-settings-bot',
       'google-calendar-disconnect-bot',
-      'google-calendar-sync-range-bot',
     ]) {
       await medplum.createResource<Bot>({
         resourceType: 'Bot',
@@ -189,7 +188,7 @@ describe('install-google-calendar', () => {
         .map((e) => e.valueCode)
     ).toEqual(['create', 'update', 'delete']);
     const memberships = await ours('ProjectMembership');
-    expect(memberships).toHaveLength(8);
+    expect(memberships).toHaveLength(7);
     expect(memberships.map((m) => m.profile.reference)).toEqual(
       expect.arrayContaining([
         `Bot/${reconcileBot.id}`,
@@ -214,7 +213,7 @@ describe('install-google-calendar', () => {
     expect(rotated.secret?.find((s) => s.name === 'GOOGLE_CALENDAR_CLIENT_SECRET')?.valueString).toBe('secret-2');
     expect(rotated.secret).toHaveLength(4);
     expect(await ours('Subscription')).toHaveLength(4);
-    expect(await ours('ProjectMembership')).toHaveLength(8);
+    expect(await ours('ProjectMembership')).toHaveLength(7);
     expect(await ours('Cron')).toHaveLength(2);
   });
 

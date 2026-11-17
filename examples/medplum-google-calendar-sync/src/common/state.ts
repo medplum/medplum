@@ -32,8 +32,6 @@ export interface OutboundWork {
 
 export interface SyncState {
   outboundWork?: OutboundWork;
-  requestedRangeStart?: string;
-  requestedRangeEnd?: string;
   inboundRequest?: string;
   inboundCompleted?: string;
   outboundCompleted?: string;
@@ -66,14 +64,7 @@ const STRINGS = [
   'outboundError',
   'cleanupIssue',
 ] as const;
-const INSTANTS = [
-  'lastInbound',
-  'lastOutbound',
-  'inboundRetryAt',
-  'outboundRetryAt',
-  'requestedRangeStart',
-  'requestedRangeEnd',
-] as const;
+const INSTANTS = ['lastInbound', 'lastOutbound', 'inboundRetryAt', 'outboundRetryAt'] as const;
 const BOOLEANS = [
   'privacyPending',
   'forgetRevoked',
@@ -95,20 +86,9 @@ export class InvalidCheckpointError extends Error {
  * @returns The original record or a repaired copy with the corrupt checkpoint preserved.
  */
 export function repairCheckpoint<T extends Basic>(basic: T): T {
-  const fields = basic.extension?.find((e) => e.url === STATE_URL)?.extension ?? [];
-  const rangeFields = fields.filter((e) => ['requestedRangeStart', 'requestedRangeEnd'].includes(e.url));
-  const start = rangeFields.find((e) => e.url === 'requestedRangeStart')?.valueInstant;
-  const end = rangeFields.find((e) => e.url === 'requestedRangeEnd')?.valueInstant;
-  const canonicalInstant = (value: string | undefined): boolean =>
-    !!value && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-  const invalidRange =
-    rangeFields.length > 0 &&
-    (rangeFields.length !== 2 || !canonicalInstant(start) || !canonicalInstant(end) || !(start && end && start < end));
   try {
     readState(basic);
-    if (!invalidRange) {
-      return basic;
-    }
+    return basic;
   } catch (err) {
     if (!(err instanceof InvalidCheckpointError)) {
       throw err;
@@ -126,17 +106,13 @@ export function repairCheckpoint<T extends Basic>(basic: T): T {
           e.url === STATE_URL
             ? {
                 ...e,
-                extension: e.extension?.filter(
-                  (f) =>
-                    f.url !== 'outboundWork' &&
-                    !(invalidRange && ['requestedRangeStart', 'requestedRangeEnd'].includes(f.url))
-                ),
+                extension: e.extension?.filter((f) => f.url !== 'outboundWork'),
               }
             : e
         ),
       {
         url: quarantineUrl,
-        extension: [...(checkpoints[0]?.extension ?? []), ...(invalidRange ? rangeFields : [])],
+        extension: checkpoints[0]?.extension ?? [],
       },
     ],
   };

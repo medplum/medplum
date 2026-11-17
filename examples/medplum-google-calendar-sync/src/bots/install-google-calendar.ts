@@ -77,12 +77,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   secrets[SECRET.webhookUrl] = new URL(`webhook/${webhookMembership.id}`, medplum.getBaseUrl()).toString();
   await writeProjectSecrets(medplum, project, secrets);
   await writeProjectCeiling(medplum, ceiling);
-  for (const value of [
-    BOT_IDENTIFIER_VALUE.connect,
-    BOT_IDENTIFIER_VALUE.settings,
-    BOT_IDENTIFIER_VALUE.disconnect,
-    BOT_IDENTIFIER_VALUE.syncRange,
-  ]) {
+  for (const value of [BOT_IDENTIFIER_VALUE.connect, BOT_IDENTIFIER_VALUE.settings, BOT_IDENTIFIER_VALUE.disconnect]) {
     const bot = await requireSharedBot(medplum, value);
     if (bot.runAsUser !== false) {
       throw new Error('Redeploy operation Bots with runAsUser=false before installation');

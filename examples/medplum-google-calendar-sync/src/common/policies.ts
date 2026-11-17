@@ -18,7 +18,6 @@ const OPERATION_BOT_CRITERIA = `Bot?identifier=${[
   BOT_IDENTIFIER_VALUE.status,
   BOT_IDENTIFIER_VALUE.settings,
   BOT_IDENTIFIER_VALUE.disconnect,
-  BOT_IDENTIFIER_VALUE.syncRange,
 ]
   .map((value) => `${BOT_IDENTIFIER_SYSTEM}|${value}`)
   .join(',')}`;

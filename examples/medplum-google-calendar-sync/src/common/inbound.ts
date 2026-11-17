@@ -15,7 +15,7 @@ import { withConnectionLease } from './lease';
 import { toGoogleEventId } from './mapping';
 import { ownershipStore } from './ownership';
 import { deletePublicStatus } from './public-status';
-import { parseSyncRange } from './range-sync';
+import { defaultSyncRange } from './range-sync';
 import { readState, withState } from './state';
 import { ifMatch } from './versioning';
 import { ensureWatch } from './watch';
@@ -75,7 +75,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
         throw new Error('Missing installed Google Calendar webhook address');
       }
       await ensureWatch(lease, calendar, address);
-      const range = parseSyncRange(undefined, undefined, new Date());
+      const range = defaultSyncRange(new Date());
       await importBusyTime(medplum, calendar, connection, range, () => beforeInboundWrite(lease));
       await lease.mutate((basic) => {
         const state = readState(basic);

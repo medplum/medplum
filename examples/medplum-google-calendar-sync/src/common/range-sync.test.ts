@@ -11,8 +11,8 @@ import { findConnection, saveConnection } from './connection';
 import { GoogleApiError } from './google-calendar';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
-import { parseSyncRange, syncRange } from './range-sync';
-import { readState, requestSync, withState } from './state';
+import { defaultSyncRange, syncRange } from './range-sync';
+import { readState, requestSync } from './state';
 import type { SyncDeps } from './sync';
 import { SyncSession } from './sync';
 
@@ -106,12 +106,8 @@ describe('range-sync', () => {
     return syncRange(new SyncSession(medplum, secrets, PROJECT_ID, deps), connection, RANGE);
   }
 
-  test('ranges: default is now to +90 days; bounds are validated', () => {
-    expect(parseSyncRange(undefined, undefined, NOW)).toEqual({ start: NOW, end: new Date('2027-01-05T12:00:00Z') });
-    expect(parseSyncRange('2026-10-01T00:00:00Z', undefined, NOW).end).toEqual(new Date('2026-12-30T00:00:00Z'));
-    expect(() => parseSyncRange('nope', undefined, NOW)).toThrow('ISO 8601');
-    expect(() => parseSyncRange('2026-10-02T00:00:00Z', '2026-10-01T00:00:00Z', NOW)).toThrow('after start');
-    expect(() => parseSyncRange('2026-01-01T00:00:00Z', '2027-06-01T00:00:00Z', NOW)).toThrow('one year');
+  test('the default range is now to +90 days', () => {
+    expect(defaultSyncRange(NOW)).toEqual({ start: NOW, end: new Date('2027-01-05T12:00:00Z') });
   });
 
   test('pushes every mirrorable appointment and blocked slot in range', async () => {
@@ -177,48 +173,6 @@ describe('range-sync', () => {
     expect(state.outboundCompleted).toBe(state.outboundRequest);
     expect(state.outboundError).toBe('outbound-incomplete');
     expect(state.lastOutbound).toBeUndefined();
-  });
-
-  test('an incomplete explicit range is kept for the hourly retry and cleared once it succeeds', async () => {
-    const historical = await booked({ start: '2025-03-01T16:00:00Z', end: '2025-03-01T16:30:00Z' });
-    searched.appointments = [historical];
-    const requested = { start: '2025-02-01T00:00:00.000Z', end: '2025-04-01T00:00:00.000Z' };
-    await medplum.updateResource(
-      withState(connection.basic, {
-        ...readState(connection.basic),
-        requestedRangeStart: requested.start,
-        requestedRangeEnd: requested.end,
-      })
-    );
-    const defaultWindow = parseSyncRange(undefined, undefined, NOW);
-    const failing = fakeDeps(upserts, toGoogleEventId(historical.id));
-    const first = await syncRange(
-      new SyncSession(medplum, secrets, PROJECT_ID, failing),
-      connection,
-      defaultWindow,
-      true
-    );
-    expect(first).toMatchObject({ candidates: 1, errors: 1 });
-    let state = readState(await medplum.readResource('Basic', connection.basic.id));
-    expect(state.outboundCompleted).toBe(state.outboundRequest);
-    expect(state.outboundError).toBe('outbound-incomplete');
-    expect(state).toMatchObject({ requestedRangeStart: requested.start, requestedRangeEnd: requested.end });
-
-    // The hourly reconcile requests outbound again; the retained range, not the default window, is walked.
-    await requestSync(medplum, connection.basic.id, ['outbound']);
-    const second = await syncRange(
-      new SyncSession(medplum, secrets, PROJECT_ID, fakeDeps(upserts)),
-      connection,
-      defaultWindow,
-      true
-    );
-    expect(second).toMatchObject({ candidates: 1, inserted: 1, errors: 0 });
-    expect(upserts.map((e) => e.id)).toEqual([toGoogleEventId(historical.id)]);
-    state = readState(await medplum.readResource('Basic', connection.basic.id));
-    expect(state.outboundCompleted).toBe(state.outboundRequest);
-    expect(state.outboundError).toBeUndefined();
-    expect(state.requestedRangeStart).toBeUndefined();
-    expect(state.requestedRangeEnd).toBeUndefined();
   });
 
   test('a rate-limited repair is retried when the work resumes rather than skipped', async () => {

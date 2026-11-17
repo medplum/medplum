@@ -82,13 +82,6 @@ const botDefinitions: BotDefinition[] = [
     runAsUser: false,
   },
   {
-    identifier: BOT_IDENTIFIER_VALUE.syncRange,
-    name: 'Google Calendar Sync Range Bot',
-    description: 'Queue outbound repair of a practitioner’s appointments and blocked time within a date range',
-    runAsUser: false,
-    timeout: LONG_TIMEOUT_SECONDS,
-  },
-  {
     identifier: BOT_IDENTIFIER_VALUE.reconcile,
     name: 'Google Calendar Reconcile Bot',
     description: 'Queue hourly repair in both directions; process outbound connection work',
