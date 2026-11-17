@@ -177,17 +177,17 @@ function isAccountReference(value: unknown): value is Reference {
   return isObject(value) && (value.reference === undefined || typeof value.reference === 'string');
 }
 
-function validateAccountFields(resource: { resourceType: string; meta: unknown }): void {
-  const { resourceType, meta } = resource;
+function validateAccountFields(resource: Resource): void {
+  const meta = resource.meta as unknown;
   if (!isObject(meta)) {
     return;
   }
   if (meta.account !== undefined && !isAccountReference(meta.account)) {
-    throw new OperationOutcomeError(badRequest('Invalid account reference', `${resourceType}.meta.account`));
+    throw new OperationOutcomeError(badRequest('Invalid account reference', `${resource.resourceType}.meta.account`));
   }
   const accounts = meta.accounts;
   if (accounts !== undefined && !(Array.isArray(accounts) && accounts.every(isAccountReference))) {
-    throw new OperationOutcomeError(badRequest('Invalid account references', `${resourceType}.meta.accounts`));
+    throw new OperationOutcomeError(badRequest('Invalid account references', `${resource.resourceType}.meta.accounts`));
   }
 }
 
