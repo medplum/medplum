@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Flex, Select, Stack, Text } from '@mantine/core';
+import { ActionIcon, Flex, Select, Text } from '@mantine/core';
 import type { Condition } from '@medplum/fhirtypes';
 import { IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -17,21 +17,15 @@ interface ConditionItemProps {
 export default function ConditionItem(props: ConditionItemProps): JSX.Element {
   const { condition, rank, total, onChange, onRemove } = props;
   const coding = condition.code?.coding?.[0];
-  const note = condition.note?.[0]?.text;
 
   return (
     <Flex align="center" gap="md" px="md" py="sm">
       <Text size="sm" fw={600} w={80}>
         {coding?.code ?? ''}
       </Text>
-      <Stack gap={2} flex={1} miw={0}>
-        <Text size="sm">{coding?.display ?? ''}</Text>
-        {note && (
-          <Text size="xs" c="dimmed">
-            {note}
-          </Text>
-        )}
-      </Stack>
+      <Text size="sm" flex={1} miw={0}>
+        {coding?.display ?? ''}
+      </Text>
       <ConditionStatusBadge clinicalStatus={condition.clinicalStatus} />
       <Select
         w={70}

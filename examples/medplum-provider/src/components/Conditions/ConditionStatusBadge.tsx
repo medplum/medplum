@@ -1,16 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { CodeableConcept } from '@medplum/fhirtypes';
+import type { Condition } from '@medplum/fhirtypes';
 import { StatusBadge } from '@medplum/react';
 import type { JSX } from 'react';
-import { getConditionStatusColor } from '../../utils/conditions';
+
+/** Badge colors per clinical status, matching the Problems section of PatientSummary. */
+const STATUS_COLORS: Record<string, string> = {
+  active: 'green',
+  recurrence: 'green',
+  relapse: 'green',
+  inactive: 'orange',
+  remission: 'blue',
+  resolved: 'teal',
+};
 
 /**
  * Props for ConditionStatusBadge.
  * - clinicalStatus: the Condition.clinicalStatus to show; nothing renders without a code.
  */
 export interface ConditionStatusBadgeProps {
-  readonly clinicalStatus: CodeableConcept | undefined;
+  readonly clinicalStatus: Condition['clinicalStatus'];
 }
 
 export function ConditionStatusBadge(props: ConditionStatusBadgeProps): JSX.Element | null {
@@ -18,5 +27,5 @@ export function ConditionStatusBadge(props: ConditionStatusBadgeProps): JSX.Elem
   if (!code) {
     return null;
   }
-  return <StatusBadge status={code} color={getConditionStatusColor(code)} variant="light" size="sm" />;
+  return <StatusBadge status={code} color={STATUS_COLORS[code] ?? 'gray'} variant="light" size="sm" />;
 }

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Flex, Group, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Divider, Flex, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
@@ -42,30 +42,27 @@ function latestPerCode(conditions: WithId<Condition>[]): WithId<Condition>[] {
  * Props for ExistingConditionModal.
  * - opened / onClose: modal visibility.
  * - patient: the patient whose current diagnoses are listed.
- * - excludeIds: Condition ids already on the encounter, left out of the list.
- * - excludeCodes: ICD-10-CM codes already on the encounter, left out of the list.
+ * - excludeCodes: diagnosis codes already on the encounter, left out of the list.
  * - onSubmit: called with the chosen Condition.
  */
 export interface ExistingConditionModalProps {
   readonly opened: boolean;
   readonly onClose: () => void;
   readonly patient: WithId<Patient>;
-  readonly excludeIds: string[];
   readonly excludeCodes: string[];
   readonly onSubmit: (condition: WithId<Condition>) => void;
 }
 
 export default function ExistingConditionModal(props: ExistingConditionModalProps): JSX.Element {
-  const { opened, onClose, patient, excludeIds, excludeCodes, onSubmit } = props;
+  const { opened, onClose, patient, excludeCodes, onSubmit } = props;
   const medplum = useMedplum();
   const [conditions, setConditions] = useState<WithId<Condition>[] | undefined>();
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(query.trim(), 300);
   const [loadedKey, setLoadedKey] = useState<string | undefined>();
-  const excludeKey = excludeIds.join(',');
-  const excludeCodesKey = excludeCodes.map((code) => `${ICD10_CM_SYSTEM}|${code}`).join(',');
-  const requestKey = [debouncedQuery, excludeKey, excludeCodesKey].join('\n');
+  const excludeCodesKey = excludeCodes.join(',');
+  const requestKey = debouncedQuery + '\n' + excludeCodesKey;
   const searching = query.trim() !== debouncedQuery || loadedKey !== requestKey;
 
   useEffect(() => {
@@ -80,9 +77,6 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
       _sort: '-_lastUpdated',
       _count: String(SEARCH_COUNT),
     };
-    if (excludeKey) {
-      params['_id:not'] = excludeKey;
-    }
     if (excludeCodesKey) {
       params['code:not'] = excludeCodesKey;
     }
@@ -108,7 +102,7 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
     return () => {
       active = false;
     };
-  }, [opened, medplum, patient, excludeKey, excludeCodesKey, debouncedQuery, requestKey]);
+  }, [opened, medplum, patient, excludeCodesKey, debouncedQuery, requestKey]);
 
   const selected = conditions?.find((c) => c.id === selectedId);
 
@@ -144,16 +138,11 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
         aria-label="Search diagnoses"
         placeholder="Search by name"
         leftSection={<IconSearch size={16} />}
-        rightSection={searching && conditions ? <Loader size="xs" aria-label="Searching" /> : undefined}
+        rightSection={searching ? <Loader size="xs" aria-label="Searching" /> : undefined}
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
         data-autofocus
       />
-      {!conditions && (
-        <Group justify="center" py="md">
-          <Loader size="sm" />
-        </Group>
-      )}
       {conditions?.length === 0 && (
         <Text size="sm" c="dimmed">
           {debouncedQuery ? 'No matching diagnoses' : 'No other active diagnoses for this patient'}

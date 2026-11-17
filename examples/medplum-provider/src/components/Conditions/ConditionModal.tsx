@@ -1,8 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Flex, Select, Stack, Text } from '@mantine/core';
-import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
-import type { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
+import {
+  addProfileToResource,
+  capitalize,
+  createReference,
+  HTTP_HL7_ORG,
+  HTTP_TERMINOLOGY_HL7_ORG,
+} from '@medplum/core';
+import type { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Modal, SubmitButton } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -19,28 +25,23 @@ export interface ConditionDialogProps {
 
 const CLINICAL_STATUS_SYSTEM = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-clinical';
 
-const CLINICAL_STATUSES = [
-  { value: 'active', label: 'Active' },
-  { value: 'recurrence', label: 'Recurrence' },
-  { value: 'relapse', label: 'Relapse' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'remission', label: 'Remission' },
-  { value: 'resolved', label: 'Resolved' },
-];
+const CLINICAL_STATUSES = ['active', 'recurrence', 'relapse', 'inactive', 'remission', 'resolved'].map((code) => ({
+  value: code,
+  label: capitalize(code),
+}));
 
-function toClinicalStatus(code: string): CodeableConcept {
-  const label = CLINICAL_STATUSES.find((s) => s.value === code)?.label ?? code;
-  return { coding: [{ system: CLINICAL_STATUS_SYSTEM, code, display: label }] };
+function toClinicalStatus(code: string): Condition['clinicalStatus'] {
+  return { coding: [{ system: CLINICAL_STATUS_SYSTEM, code, display: capitalize(code) }] };
 }
 
 const ACTIVE_STATUS = toClinicalStatus('active');
 
 export default function ConditionModal(props: ConditionDialogProps): JSX.Element {
   const { opened, onClose, patient, encounter, onSubmit } = props;
-  const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
-  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept>(ACTIVE_STATUS);
+  const [diagnosis, setDiagnosis] = useState<Condition['code']>();
+  const [clinicalStatus, setClinicalStatus] = useState<Condition['clinicalStatus']>(ACTIVE_STATUS);
   const coding = diagnosis?.coding?.[0];
-  const statusCoding = clinicalStatus.coding?.[0];
+  const statusCoding = clinicalStatus?.coding?.[0];
 
   const handleSubmit = useCallback(() => {
     if (!diagnosis) {

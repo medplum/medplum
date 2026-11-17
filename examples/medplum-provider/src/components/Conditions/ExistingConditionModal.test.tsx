@@ -30,14 +30,13 @@ describe('ExistingConditionModal', () => {
     medplum = new MockClient({ seedDefaultData: false });
   });
 
-  function setup(excludeIds: string[] = [], onSubmit = vi.fn(), excludeCodes: string[] = []): void {
+  function setup(excludeCodes: string[] = [], onSubmit = vi.fn()): void {
     render(
       <MedplumProvider medplum={medplum}>
         <ExistingConditionModal
           opened
           onClose={vi.fn()}
           patient={patient}
-          excludeIds={excludeIds}
           excludeCodes={excludeCodes}
           onSubmit={onSubmit}
         />
@@ -47,12 +46,12 @@ describe('ExistingConditionModal', () => {
 
   test('lists only current ICD-10-coded conditions not already on the encounter and submits the choice', async () => {
     const active = await medplum.createResource(condition('E11.9', 'active'));
-    const linked = await medplum.createResource(condition('I10', 'active'));
+    await medplum.createResource(condition('I10', 'active'));
     await medplum.createResource(condition('J20.9', 'resolved'));
     await medplum.createResource(condition('R05.9', 'active', 'entered-in-error'));
     await medplum.createResource({ ...condition('I10', 'active'), code: { text: 'Hypertension' } });
     const onSubmit = vi.fn();
-    setup([linked.id], onSubmit);
+    setup(['I10'], onSubmit);
 
     const radio = await screen.findByRole('radio', { name: 'E11.9 Dx E11.9' });
     expect(screen.getAllByRole('radio')).toHaveLength(1);
@@ -75,12 +74,6 @@ describe('ExistingConditionModal', () => {
     await userEvent.setup().click(radio);
     await userEvent.setup().click(screen.getByRole('button', { name: 'Add' }));
     expect(onSubmit).toHaveBeenCalledWith(newer);
-  });
-
-  test('hides conditions whose code is already on the encounter', async () => {
-    await medplum.createResource(condition('A00.1', 'active'));
-    setup([], vi.fn(), ['A00.1']);
-    expect(await screen.findByText('No other active diagnoses for this patient')).toBeInTheDocument();
   });
 
   test('searches the patient conditions by name on the server', async () => {

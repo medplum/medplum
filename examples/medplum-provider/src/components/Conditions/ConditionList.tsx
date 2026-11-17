@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Divider, Group, Paper, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { Condition, Encounter, EncounterDiagnosis, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
@@ -22,12 +22,11 @@ interface ConditionListProps {
   onDiagnosisChange: (diagnosis: EncounterDiagnosis[]) => void;
 }
 
-const ICD10_CM_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/icd-10-cm';
-
 const ALREADY_ON_ENCOUNTER = 'This diagnosis is already on the encounter';
 
 export const ConditionList = (props: ConditionListProps): JSX.Element => {
   const { patient, encounter, conditions, setConditions, onDiagnosisChange } = props;
+  const linkedCodes = (conditions ?? []).flatMap((c) => c.code?.coding?.flatMap((coding) => coding.code ?? []) ?? []);
   const medplum = useMedplum();
   const [opened, setOpened] = useState(false);
   const [existingOpened, setExistingOpened] = useState(false);
@@ -130,8 +129,7 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
 
   const handleConditionSubmit = async (condition: Condition): Promise<void> => {
     try {
-      const existingCodes = new Set((conditions ?? []).flatMap((c) => c.code?.coding?.map((coding) => coding.code)));
-      if (condition.code?.coding?.some((coding) => coding.code && existingCodes.has(coding.code))) {
+      if (condition.code?.coding?.some((coding) => coding.code && linkedCodes.includes(coding.code))) {
         showErrorNotification(ALREADY_ON_ENCOUNTER);
         return;
       }
@@ -153,28 +151,13 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
   };
 
   const linkCondition = (condition: WithId<Condition>): void => {
-    const reference = getReferenceString(condition);
     const diagnosis = encounter.diagnosis ?? [];
-    if (diagnosis.some((d) => d.condition?.reference === reference)) {
-      showErrorNotification(ALREADY_ON_ENCOUNTER);
-      return;
-    }
-
     setConditions([...(conditions ?? []), condition]);
-    onDiagnosisChange([...diagnosis, { condition: { reference }, rank: diagnosis.length + 1 }]);
+    onDiagnosisChange([
+      ...diagnosis,
+      { condition: { reference: getReferenceString(condition) }, rank: diagnosis.length + 1 },
+    ]);
   };
-
-  const linkedCodes = (conditions ?? []).flatMap(
-    (c) =>
-      c.code?.coding
-        ?.filter((coding) => coding.system === ICD10_CM_SYSTEM && coding.code)
-        .map((coding) => coding.code as string) ?? []
-  );
-
-  const linkedIds = (encounter?.diagnosis ?? [])
-    .map((d) => d.condition?.reference)
-    .filter((ref): ref is string => !!ref?.startsWith('Condition/'))
-    .map((ref) => ref.slice('Condition/'.length));
 
   return (
     <>
@@ -230,7 +213,6 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
         opened={existingOpened}
         onClose={() => setExistingOpened(false)}
         patient={patient}
-        excludeIds={linkedIds}
         excludeCodes={linkedCodes}
         onSubmit={handleExistingSubmit}
       />
