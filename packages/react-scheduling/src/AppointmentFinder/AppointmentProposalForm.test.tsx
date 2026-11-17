@@ -1312,13 +1312,10 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Identifying the patient', () => {
-    test('Asks for the patient below the action that finds a time', async () => {
+    test('Asks for the patient above the action that finds a time', async () => {
       setup(medplum);
 
-      // Naming a patient cannot change which times are offered, so asking for one
-      // ahead of the search puts work that cannot affect the result in front of the
-      // one control that can.
-      expect(isBefore(finderButton(), field(/patient/i))).toBe(true);
+      expect(isBefore(field(/patient/i), finderButton())).toBe(true);
     });
 
     test('Offers patients matching the name typed', async () => {
@@ -1451,13 +1448,12 @@ describe('AppointmentProposalForm', () => {
       expect(searched.some((url) => url.includes('Patient'))).toBe(false);
     });
 
-    test('Asks only the patient and the notes below the action that finds a time', async () => {
+    test('Asks only the notes below the action that finds a time', async () => {
       setup(medplum);
 
       // Anything else the visit needs is one of the fields a practice configures.
       const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
       expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([
-        field(/patient/i),
         screen.getByRole('textbox', { name: 'Notes' }),
       ]);
     });
