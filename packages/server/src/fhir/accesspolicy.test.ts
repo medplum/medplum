@@ -2527,7 +2527,10 @@ describe('AccessPolicy', () => {
       await systemRepo.deleteResource('Patient', patient.id);
       const repo = getRepository({
         projects: [testProject],
-        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }] },
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }],
+        },
       });
 
       await expect(repo.updateResource<Binary>({ ...binary, contentType: 'text/html' })).rejects.toThrow('Gone');
