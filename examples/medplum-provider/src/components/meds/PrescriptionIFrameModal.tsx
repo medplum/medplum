@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Box, useComputedColorScheme } from '@mantine/core';
 import type { MedicationRequest } from '@medplum/fhirtypes';
+import type { ModalProps } from '@medplum/react';
 import { Modal } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { CSSProperties, JSX } from 'react';
@@ -20,6 +21,8 @@ export interface PrescriptionIFrameModalProps {
   /** When set, called on open to refresh session token (idempotent bot call). */
   onRefreshLaunchUrl?: () => Promise<string | undefined>;
   title?: string;
+  /** Modal width. Defaults to `xl`. */
+  size?: ModalProps['size'];
   /**
    * MedicationRequest ids to poll until each transitions from “still in draft /
    * pending” to synced (non-draft or prescription-id present). Fires
@@ -52,6 +55,7 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
     launchUrl,
     onRefreshLaunchUrl,
     title = 'Complete prescription',
+    size = 'xl',
     medicationRequestIdsToWatch,
     onFhirSynced,
   } = props;
@@ -133,7 +137,7 @@ export function PrescriptionIFrameModal(props: PrescriptionIFrameModalProps): JS
   const hasReadErrors = errors.size > 0;
 
   return (
-    <Modal opened={opened} onClose={onClose} size="xl" title={title} style={FULL_BLEED}>
+    <Modal opened={opened} onClose={onClose} size={size} title={title} style={FULL_BLEED}>
       <>
         {timedOut && (
           <Alert

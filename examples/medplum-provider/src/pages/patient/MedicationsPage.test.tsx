@@ -184,6 +184,13 @@ describe('MedicationsPage', () => {
     expect(await screen.findByText('Draft')).toBeInTheDocument();
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(await screen.findByLabelText('Order medication')).toBeInTheDocument();
+    expect(screen.getByLabelText('Audit log and reports')).toBeInTheDocument();
+  });
+
+  test('Hides the audit log and reports menu without a ScriptSure identifier', async () => {
+    await setup(`/Patient/${HomerSimpson.id}/MedicationRequest`);
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Audit log and reports')).not.toBeInTheDocument();
   });
 
   test('Defaults to active status filter on first render', async () => {
