@@ -594,6 +594,30 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test.each([
+    ['/auth/login', '/AUTH/LOGIN'],
+    ['/auth/login', '/auth/login/'],
+    ['/auth/login', '/API/Projects/123/Auth/Login/'],
+    ['/auth/newuser', '/Auth/NewUser'],
+    ['/auth/mfa/verify', '/AUTH/MFA/VERIFY/'],
+  ])('Rate limit for %s also applies to %s', async (path, variant) => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultLoginRateLimit = 1;
+    config.defaultMfaRateLimit = 1;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'path-variant-rate-limit:';
+    await initApp(app, config);
+
+    expect(await request(app).post(path).send({})).toHaveStatus(400);
+    expect(await request(app).post(variant).send({})).toHaveStatus(429);
+
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('Server rate limit disabled', async () => {
     const app = express();
     const config = await loadTestConfig();

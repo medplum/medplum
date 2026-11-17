@@ -3,6 +3,7 @@
 
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, parseJWTPayload, resolveId } from '@medplum/core';
+import type { FhirRequest } from '@medplum/fhir-router';
 import type { Bot, Login, ProjectMembership } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -19,6 +20,7 @@ import type { BotExecutionRequest } from './types';
 import {
   clearBotAccessTokenCache,
   getBotAccessToken,
+  getBotRequestHeaders,
   getJsFileExtension,
   logBotCallerSmartScopes,
   normalizeBotExecutionResult,
@@ -65,6 +67,13 @@ describe('getJsFileExtension', () => {
     const bot = { id: '1' } as Bot;
     const code = 'const foo = 42;';
     expect(getJsFileExtension(bot, code)).toBe('.cjs');
+  });
+});
+
+describe('getBotRequestHeaders', () => {
+  test('returns empty headers when the request has none', () => {
+    const req = { method: 'POST', url: '/', pathname: '/', params: {}, query: {}, body: {} } as FhirRequest;
+    expect(getBotRequestHeaders(req)).toStrictEqual({});
   });
 });
 

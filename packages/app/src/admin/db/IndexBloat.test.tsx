@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { FetchLike } from '@medplum/core';
 import { ContentType, MedplumClient } from '@medplum/core';
@@ -28,10 +27,8 @@ describe('IndexHealth', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super/db/index-health']}>
-          <MantineProvider>
-            <Notifications />
-            <IndexHealth />
-          </MantineProvider>
+          <Notifications />
+          <IndexHealth />
         </MemoryRouter>
       </MedplumProvider>
     );

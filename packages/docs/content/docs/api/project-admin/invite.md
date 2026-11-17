@@ -8,7 +8,7 @@ title: Invite User Endpoint
 Invite a new user to the project. This will perform the following actions:
 
 1. Search for an existing user with the provided `email`, if given
-2. Search for an existing profile resource ([`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner), or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson))
+2. Select the provided `membership.profile` or search for an existing profile resource ([`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner), or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson)) using the [profile-selection rules](#profile-selection)
 3. Create a new [`User`](/docs/api/fhir/medplum/user), if no existing [`User`](/docs/api/fhir/medplum/user) was found,
    1. Set the password if `password` is given
    2. Generate a password reset url
@@ -25,6 +25,7 @@ Invite a new user to the project. This will perform the following actions:
   lastName: string;
   email?: string;
   externalId?: string;
+  patient?: Reference<Patient>;
   scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;
@@ -41,12 +42,13 @@ Invite a new user to the project. This will perform the following actions:
 | `firstName`, `lastName` | The first and last names that will be assigned to user's [profile resource](/docs/user-management#profiles). Ignored if a profile resource already exists                                                                                                                               |
 | `email`                 | The email address assigned to the [User](/docs/api/fhir/medplum/user). User matching uses the email and the selected project or server scope. |
 | `externalId`            | The unique id provided by external identity provider (if applicable). See [Using External Ids](/docs/auth/external-identity-providers)                                                                                                                                                                    |
+| `patient`               | The [`Patient`](/docs/api/fhir/resources/patient) a new [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) is related to. Required when the invite creates a RelatedPerson. When the invite does not set an access policy, Medplum copies this reference onto [`ProjectMembership.access.parameter`](/docs/api/fhir/medplum/projectmembership) as `patient`, which fills `%patient` in the default RelatedPerson policy. See [Caregiver access](/docs/access/access-policies#caregiver-access). |
 | `password`              | The [User's](/docs/api/fhir/medplum/user) password                                                                                                                                                                                                                                                 |
 | `scope`                 | The scope of the user. If `project`, the user will be scoped to the project. If `server`, the user will be a server scoped user. Defaults to `server` for Practitioners and `project` for Patients. See [server vs project scoped user guide](/docs/user-management/project-vs-server-scoped-users)                                                                                                                               |
 | `sendEmail`             | If `true`, send an invite email to the user. If self-hosting, see our [guide on setting up SES](/docs/self-hosting/install-on-aws#setup-ses)                                                                                                                                                       |
 | `membership`            | Used to override any fields of the resulting [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource. Common use cases include: <ul><li>Setting [Access Policies](/docs/access/access-policies) upon invite </li><li>Overriding the default `ProjectMembership.profile`</li></ul> |
 | `upsert`                | If `true`, allows updating existing users and profiles instead of creating new ones. When enabled, the invite will search for existing users and profiles and update them if found, rather than throwing an error message.                                                                                                                                              |
-| `forceNewMembership`    | If `true`, creates an additional [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) instead of checking for an existing membership by User and project. User matching still uses email and identity scope; [profile selection](#profile-selection) is unchanged. |
+| `forceNewMembership`    | If `true`, creates an additional [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) instead of checking for an existing membership by User and project. For email-based invites, User matching still uses email and identity scope; [profile selection](#profile-selection) is unchanged. |
 | `mfaRequired`           | If `true`, requires the user to set up Multi-Factor Authentication (MFA) during their first login. See [MFA documentation](/docs/auth/mfa) for more details.                                                                                                                                                                                                                         |
 
 ### Profile selection
@@ -214,6 +216,56 @@ Returns the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) asso
   }
 }
 ```
+
+#### Inviting a RelatedPerson
+
+Pass `patient`, and leave the access policy unset so the project's default RelatedPerson policy is applied with that Patient as the `patient` parameter. See [Caregiver access](/docs/access/access-policies#caregiver-access).
+
+{{< tabs groupId="language" >}}
+  {{< tab value="ts" label="Typescript" >}}
+
+```ts
+await medplum.post('admin/projects/:projectId/invite', {
+  resourceType: 'RelatedPerson',
+  firstName: 'Marge',
+  lastName: 'Simpson',
+  email: 'marge@example.com',
+  patient: { reference: 'Patient/bart-simpson' },
+});
+```
+
+  {{< /tab >}}
+  {{< tab value="cli" label="CLI" >}}
+
+```bash
+medplum post admin/projects/:projectId/invite \
+'{
+  "resourceType": "RelatedPerson",
+  "firstName": "Marge",
+  "lastName": "Simpson",
+  "email": "marge@example.com",
+  "patient": { "reference": "Patient/bart-simpson" }
+}'
+```
+
+  {{< /tab >}}
+  {{< tab value="curl" label="cURL" >}}
+
+```bash
+curl https://api.medplum.com/admin/projects/:projectId/invite \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+  "resourceType": "RelatedPerson",
+  "firstName": "Marge",
+  "lastName": "Simpson",
+  "email": "marge@example.com",
+  "patient": { "reference": "Patient/bart-simpson" }
+}'
+```
+
+  {{< /tab >}}
+{{< /tabs >}}
 
 #### Inviting a User with MFA Required
 

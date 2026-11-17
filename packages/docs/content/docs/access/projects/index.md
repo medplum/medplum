@@ -7,7 +7,7 @@ docs_tags: [auth]
 
 Medplum [`Projects`](/docs/api/fhir/medplum/project) are resource containers with separate administration, settings, and access boundaries. Every application uses a project, whether it serves one organization or many tenants. [Access policies](/docs/access/access-policies) define permissions within that boundary.
 
-A common requirement for development teams is to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
+A common setup uses a staging project for development and integration testing and a production project for live workflows. Paid hosted plans include staging and production environments; see [pricing](/pricing). Use synthetic data for testing. For a repeatable workflow to deploy reviewed resource definitions to each project, see [Deploying Resource Definitions from Source Control](/docs/deploying-resources-from-source-control).
 
 ## Isolation Model
 

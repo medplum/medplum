@@ -5,7 +5,7 @@ import type { Bot } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { getBotDefaultHeaders, sendBotResponse } from '../bots/utils';
+import { getBotDefaultHeaders, getBotRequestHeaders, sendBotResponse } from '../bots/utils';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 
@@ -73,7 +73,7 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
     requester: ctx.membership.profile,
     input: req.body,
     contentType: ContentType.JSON,
-    headers: req.headers,
+    headers: getBotRequestHeaders(req),
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
   });

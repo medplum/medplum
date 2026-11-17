@@ -7,7 +7,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { verifyJwt } from '../../oauth/keys';
+import { getLoginForAccessToken } from '../../oauth/utils';
 import { addTestUser, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { getWsBindingTokenAudience } from './getwsbindingtoken';
 
 const app = express();
 let accessToken: string;
@@ -64,9 +66,19 @@ describe('Get WebSocket binding token', () => {
       const { payload } = await verifyJwt(token);
       expect(payload?.sub).toBeDefined();
       expect(payload?.exp).toBeDefined();
-      expect(payload?.aud).toBeDefined();
+      expect(payload?.aud).toStrictEqual(getWsBindingTokenAudience());
       expect(payload?.username).toBeDefined();
       expect(payload?.subscription_id).toBeDefined();
+
+      // The binding token is only for WebSocket binding, not for HTTP requests
+      const res3 = await request(app)
+        .get('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + token);
+      expect(res3).toHaveStatus(401);
+
+      // Nor for other WebSocket endpoints, which pass no request
+      expect(await getLoginForAccessToken(undefined, token)).toBeUndefined();
+      expect(await getLoginForAccessToken(undefined, token, { audience: getWsBindingTokenAudience() })).toBeDefined();
 
       expect(params.parameter?.[1]).toBeDefined();
       expect(params.parameter?.[1]?.name).toStrictEqual('expiration');

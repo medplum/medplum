@@ -10,7 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { createTestProject } from '../test.setup';
 import type { PopulatedAccessPolicy } from './accesspolicy';
-import { applySmartScopes, getPartialPermissionScopes, parseSmartScopes } from './smart';
+import { applySmartScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
@@ -97,23 +97,6 @@ describe('SMART on FHIR', () => {
       },
     ]);
     expect(parseSmartScopes('patient/Observation.rs?')[0].params).toBeUndefined();
-  });
-
-  test.each<[string, string[]]>([
-    ['openid offline_access', []],
-    ['patient/Observation.rs patient/Patient.read', []],
-    ['patient/Observation.read patient/Observation.write', []],
-    ['patient/Observation.r patient/Observation.s', []],
-    ['user/*.*', []],
-    ['patient/Observation.r', ['patient/Observation.r']],
-    ['patient/Observation.s', ['patient/Observation.s']],
-    ['user/Patient.c openid', ['user/Patient.c']],
-    ['patient/Observation.write', ['patient/Observation.cud']],
-    ['patient/Observation.c patient/Observation.rs', ['patient/Observation.crs']],
-    ['user/*.* user/Patient.c', []],
-    ['user/*.c user/Patient.rs', ['user/*.c', 'user/Patient.crs']],
-  ])('Partial permission scopes for %s', (scope, expected) => {
-    expect(getPartialPermissionScopes(scope)).toStrictEqual(expected);
   });
 
   describe('applySmartScopes()', () => {
@@ -215,7 +198,7 @@ describe('SMART on FHIR', () => {
             readonly: true,
             criteria: `StructureDefinition?_compartment=${encoded}`,
           },
-          { resourceType: 'Patient', readonly: true, criteria: `Patient?_compartment=${encoded}` },
+          { resourceType: 'Patient', criteria: `Patient?_compartment=${encoded}` },
           {
             resourceType: 'StructureDefinition',
             criteria: `StructureDefinition?_compartment=${encoded}`,
@@ -225,14 +208,49 @@ describe('SMART on FHIR', () => {
       });
     });
 
+    test.each<[string, AccessPolicyInteraction[]]>([
+      ['user/Patient.c', ['create']],
+      ['user/Patient.r', ['read', 'vread', 'history']],
+      ['user/Patient.u', ['update']],
+      ['user/Patient.d', ['delete']],
+      ['user/Patient.s', ['search']],
+      ['user/Patient.cu', ['create', 'update']],
+      ['user/Patient.write', ['create', 'update', 'delete']],
+      ['user/Patient.cruds', Object.values(AccessPolicyInteraction)],
+    ])('Scope %s grants exactly its interactions', (scope, expected) => {
+      const result = applySmartScopes(
+        { resourceType: 'AccessPolicy', resource: [{ resourceType: '*' }] },
+        authStateFor(scope)
+      );
+      for (const interaction of Object.values(AccessPolicyInteraction)) {
+        expect(accessPolicySupportsInteraction(result, interaction, 'Patient')).toBe(expected.includes(interaction));
+      }
+    });
+
+    test('Scope letters cannot widen a readonly entry', () => {
+      const result = applySmartScopes(
+        {
+          resourceType: 'AccessPolicy',
+          resource: [
+            { resourceType: 'Patient', readonly: true },
+            { resourceType: 'Observation', readonly: true },
+          ],
+        },
+        authStateFor('user/Patient.cruds user/Observation.c')
+      );
+      expect(result.resource).toStrictEqual([
+        { resourceType: 'Patient', readonly: true, interaction: ['read', 'vread', 'history', 'search'] },
+      ]);
+    });
+
     test('Intersect with wildcard read scopes', () => {
       const system = applySmartScopes(clinicalPolicy, authStateFor('system/*.read'));
       expect(system).toMatchObject<AccessPolicy>({
         resourceType: 'AccessPolicy',
         resource: [
-          { resourceType: 'Observation', readonly: true },
-          { resourceType: 'Patient', readonly: true },
-          { resourceType: 'VisionPrescription', readonly: true },
+          { resourceType: 'Observation' },
+          { resourceType: 'Patient' },
+          { resourceType: 'VisionPrescription' },
         ],
       });
       expect(accessPolicySupportsInteraction(system, AccessPolicyInteraction.READ, 'Observation')).toBe(true);
@@ -252,16 +270,12 @@ describe('SMART on FHIR', () => {
         })
       );
       expect(both.resource).toMatchObject([
-        { resourceType: 'Observation', readonly: true, criteria: `Observation?_compartment=Patient%2F${patientId}` },
-        { resourceType: 'Observation', readonly: true },
-        { resourceType: 'Patient', readonly: true, criteria: `Patient?_compartment=Patient%2F${patientId}` },
-        { resourceType: 'Patient', readonly: true },
-        {
-          resourceType: 'VisionPrescription',
-          readonly: true,
-          criteria: `VisionPrescription?_compartment=Patient%2F${patientId}`,
-        },
-        { resourceType: 'VisionPrescription', readonly: true },
+        { resourceType: 'Observation', criteria: `Observation?_compartment=Patient%2F${patientId}` },
+        { resourceType: 'Observation' },
+        { resourceType: 'Patient', criteria: `Patient?_compartment=Patient%2F${patientId}` },
+        { resourceType: 'Patient' },
+        { resourceType: 'VisionPrescription', criteria: `VisionPrescription?_compartment=Patient%2F${patientId}` },
+        { resourceType: 'VisionPrescription' },
       ]);
       expect(both.resource.filter((r) => !r.criteria)).toHaveLength(3);
       expect(accessPolicySupportsInteraction(both, AccessPolicyInteraction.UPDATE, 'Observation')).toBe(false);
@@ -279,7 +293,7 @@ describe('SMART on FHIR', () => {
       const result = applySmartScopes(startAccessPolicy, authStateFor('system/*.read'));
       expect(result).toMatchObject<AccessPolicy>({
         resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Observation', readonly: true, interaction: ['read', 'search'] }],
+        resource: [{ resourceType: 'Observation', interaction: ['read', 'search'] }],
       });
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.READ, 'Observation')).toBe(true);
       expect(accessPolicySupportsInteraction(result, AccessPolicyInteraction.SEARCH, 'Observation')).toBe(true);
@@ -332,14 +346,12 @@ describe('SMART on FHIR', () => {
           { resourceType: 'Practitioner', readonly: true, criteria: `Practitioner?${npi}&${inCompartment}` },
           {
             resourceType: 'Goal',
-            readonly: true,
             criteria: `Goal?identifier=http%3A%2F%2Fexample.com%2FpatientVisible%7Ctrue&${inCompartment}&category=nursing&${inCompartment}`,
           },
           { resourceType: 'Patient', criteria: `Patient?${inCompartment}&${inCompartment}` },
           { resourceType: 'Practitioner', criteria: `Practitioner?${inCompartment}&${npi}&${inCompartment}` },
           {
             resourceType: 'Goal',
-            readonly: true,
             criteria: `Goal?${inCompartment}&category=nursing&${inCompartment}`,
           },
           {
@@ -402,7 +414,6 @@ describe('SMART on FHIR', () => {
       expect(result.resource).toMatchObject([
         {
           resourceType: 'Observation',
-          readonly: true,
           criteria: `Observation?_compartment=${encodeURIComponent(org)}&category=laboratory`,
         },
       ]);
@@ -480,10 +491,7 @@ describe('SMART on FHIR', () => {
 
       test('Allow user and system scopes without context', () => {
         const result = applySmartScopes(startAccessPolicy, authStateFor('openid user/Observation.rs system/*.rs'));
-        expect(result.resource).toMatchObject([
-          { resourceType: 'Observation', readonly: true },
-          { resourceType: 'Observation', readonly: true },
-        ]);
+        expect(result.resource).toMatchObject([{ resourceType: 'Observation' }, { resourceType: 'Observation' }]);
         expect(result.resource.every((r) => !r.criteria)).toBe(true);
       });
 
@@ -491,11 +499,7 @@ describe('SMART on FHIR', () => {
         const resolveCompartment = (overrides: Partial<AuthState>): PopulatedAccessPolicy['resource'] =>
           applySmartScopes(startAccessPolicy, authStateFor('openid patient/Observation.rs', overrides)).resource;
         const expected = (patientId: string): object[] => [
-          {
-            resourceType: 'Observation',
-            readonly: true,
-            criteria: `Observation?_compartment=Patient%2F${patientId}`,
-          },
+          { resourceType: 'Observation', criteria: `Observation?_compartment=Patient%2F${patientId}` },
         ];
 
         // Membership profile when the launch context has no Patient

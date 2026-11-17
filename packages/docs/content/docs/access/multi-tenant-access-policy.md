@@ -109,6 +109,10 @@ The **Patient's `meta.compartment` field** records which compartments that Patie
 
 Tenant assignments are stored in `meta.accounts` and included in the server-computed `meta.compartment`. AccessPolicy and ProjectMembership grants determine who can access the assigned resources.
 
+### Assigning account references {#adding-references-to-the-metacompartment-field}
+
+The server computes `meta.compartment`. Use [$set-accounts](/docs/api/fhir/operations/set-accounts) to set the resource’s tenant or care-team account references, which contribute to its compartments. Supply the complete intended account list, including existing accounts you want to retain. The operation requires project-admin or super-admin authority and checks access to the target resource.
+
 The IDs below are illustrative. Substitute the actual resource IDs returned by Medplum before running the examples.
 
 When a Patient and its patient-compartment resources have the same intended tenant audience, assign the Patient to those tenants and use propagation for existing resources. For tenant-specific Patients, assign each Patient only to its intended tenant. For a shared Patient with different clinical audiences, follow [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).
@@ -125,10 +129,6 @@ Tenant assignment controls which tenant-scoped policies can match the Patient. P
 </details>
 
 Find other example enrollment methods [here](https://github.com/medplum/medplum/blob/main/examples/medplum-mso-demo/src/utils/enrollment.ts).
-
-### Assigning account references {#adding-references-to-the-metacompartment-field}
-
-The server computes `meta.compartment`. Use [$set-accounts](/docs/api/fhir/operations/set-accounts) to set the resource’s tenant or care-team account references, which contribute to its compartments. Supply the complete intended account list, including existing accounts you want to retain. The operation requires project-admin or super-admin authority and checks access to the target resource.
 
 {{< tabs groupId="access-group-type" >}}
   {{< tab value="organization" label="Organization" >}}

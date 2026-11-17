@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Encounter, Patient, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { EncountersPage } from './EncountersPage';
 
 const QUERY = '?_count=20&_fields=_lastUpdated,period,status,serviceType&_sort=-_lastUpdated';
@@ -52,13 +52,11 @@ describe('EncountersPage', () => {
     return render(
       <MemoryRouter initialEntries={[path]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Patient/:patientId/Encounter" element={<EncountersPage />} />
-              <Route path="/Patient/:patientId/Encounter/:encounterId/Task?/:taskId?" element={<EncountersPage />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Patient/:patientId/Encounter" element={<EncountersPage />} />
+            <Route path="/Patient/:patientId/Encounter/:encounterId/Task?/:taskId?" element={<EncountersPage />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

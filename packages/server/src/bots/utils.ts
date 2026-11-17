@@ -50,7 +50,6 @@ import { getBinaryStorage } from '../storage/loader';
 import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
-const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
 const callerSmartScopesLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
@@ -75,16 +74,9 @@ export async function getBotProjectMembership(
   if (membership) {
     return membership;
   }
-  missingMembershipLogThrottle.maybeLog(`${project}/${bot.id}`, (suppressed) => {
-    getLogger().warn('Bot executed without ProjectMembership', {
-      botId: bot.id,
-      botProject: bot.meta?.project,
-      runAsProject: project,
-      runAsMembership: ctx.membership.id,
-      suppressed,
-    });
-  });
-  return ctx.membership;
+  throw new OperationOutcomeError(
+    badRequest('Bot does not have a ProjectMembership in this project; create one or set Bot.runAsUser')
+  );
 }
 
 /**
@@ -124,6 +116,18 @@ export function logBotCallerSmartScopes(request: BotExecutionRequest): void {
       suppressed,
     });
   });
+}
+
+/**
+ * Returns the HTTP request headers to pass to the bot as `event.headers`.
+ * The bot acts with the access token that `executeBot` creates for the `runAs` membership,
+ * so the caller's own Authorization header is removed.
+ * @param req - The HTTP request.
+ * @returns The HTTP request headers without the Authorization header.
+ */
+export function getBotRequestHeaders(req: Request | FhirRequest): BotExecutionRequest['headers'] {
+  const { authorization: _authorization, ...headers } = req.headers ?? {};
+  return headers;
 }
 
 /**
