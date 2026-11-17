@@ -61,6 +61,8 @@ The agreed pilot convention is **title case for page titles and all section head
 
 The verifier reads the same editorial guidance. Draft notes identify the neighboring style examples and any code-execution or rendered-preview checks still needed. Images must already exist and fit the current UI; required new screenshots are routed to human work. This pilot adds no image-generation or screenshot-capture capability.
 
+The [Mermaid guidance](prompts/draft.md#mermaid-diagrams) also reflects the site's [browser renderer](../../packages/docs/assets/js/components/mermaid.mjs) and [Hugo render hook](../../packages/docs/layouts/_markup/render-codeblock-mermaid.html), checked against upstream `6b6c72696` on 2026-11-17. The renderer selects a light/dark theme; the hook emits source for browser rendering, so a Hugo build does not validate Mermaid syntax or layout. New diagrams use the site theme, concise quoted labels, meaningful arrows, and accessible descriptions. These are explicit pilot conventions; older diagrams include custom palettes and HTML labels. Human review must check the actual page at desktop/narrow widths in both themes. Syntax references: [Mermaid flowcharts](https://mermaid.js.org/syntax/flowchart.html) and [accessible titles/descriptions](https://mermaid.js.org/config/accessibility.html).
+
 ## Quality and publication gates
 
 - Valid structured output, supported paths, evidence locations, and complete planned file coverage.
