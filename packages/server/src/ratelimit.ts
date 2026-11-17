@@ -7,11 +7,12 @@ import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import type { ServerConfig } from './config/utils';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
+import { getLogger } from './logger';
 import { getRateLimitRedis } from './redis';
 import { getNormalizedPath } from './util/url';
 
 // There are four separate rate limits:
-// 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints
+// 1. "Login" rate limit - applies only to login and registration endpoints; successful `/auth/login` requests are refunded
 // 2. "MFA" rate limit - applies to unauthenticated MFA verification endpoints
 // 3. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
 // 4. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
@@ -27,10 +28,12 @@ interface RateLimitCategoryConfig {
   readonly serverConfigKey: keyof ServerConfig;
   readonly systemSettingName: string;
   readonly defaultLimitPerMinute: number;
-  // Request paths are lowercased before matching, so these must be lowercase (enforced in ratelimit.test.ts)
+  /** Request paths to match against, must be lowercase */
   readonly paths?: readonly string[];
   readonly prefixes?: readonly string[];
   readonly excludedPaths?: readonly string[];
+  /** Paths whose consumed point is refunded when the response is successful (i.e. 2xx) */
+  readonly refundOnSuccessPaths?: readonly string[];
 }
 
 export const categories: RateLimitCategoryConfig[] = [
@@ -40,6 +43,8 @@ export const categories: RateLimitCategoryConfig[] = [
     systemSettingName: 'loginRateLimit',
     defaultLimitPerMinute: 5,
     paths: ['/auth/login', '/auth/newuser', '/auth/newproject'],
+    // Only rate limit failed login attempts; account creation stays limited regardless of outcome
+    refundOnSuccessPaths: ['/auth/login'],
   },
   {
     name: 'mfa',
@@ -77,8 +82,13 @@ export function rateLimitHandler(config: ServerConfig): Handler {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {
-        const key = getRateLimitKey(req);
-        const limit = getRateLimiter(req, config);
+        // Express routing is case-insensitive and ignores one trailing slash
+        const url = getNormalizedPath(req.originalUrl.toLowerCase());
+        const path = url.length > 1 && url.endsWith('/') ? url.slice(0, -1) : url;
+
+        const category = getRateLimitCategory(path);
+        const key = getRateLimitKey(req, category);
+        const limit = getRateLimiter(category, config);
 
         const userBlock = blockedUsers.get(key);
         if (userBlock) {
@@ -92,6 +102,10 @@ export function rateLimitHandler(config: ServerConfig): Handler {
 
         try {
           const result = await limit.consume(key, 1);
+          if (category.refundOnSuccessPaths?.includes(path)) {
+            refundLimitOnSuccess(res, limit, key);
+          }
+
           addRateLimitHeader(result, res);
           next();
         } catch (err: unknown) {
@@ -115,18 +129,17 @@ function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimite
   res.status(429).json(outcome).end();
 }
 
-export function getRateLimiter(req: Request, config?: ServerConfig): RateLimiterRedis {
+export function getRateLimiter(category: RateLimitCategoryConfig, config?: ServerConfig): RateLimiterRedis {
   const client = getRateLimitRedis();
   return new RateLimiterRedis({
     keyPrefix: 'medplum:rl:',
     storeClient: client,
-    points: getRateLimitForRequest(req, config), // Number of points
+    points: getRateLimitForCategory(category, config), // Number of points
     duration: 60, // Per minute
   });
 }
 
-function getRateLimitKey(req: Request): string {
-  const category = getRateLimitCategory(req);
+function getRateLimitKey(req: Request, category: RateLimitCategoryConfig): string {
   const categoryKey = category.name;
   return (req.ip as string) + (categoryKey === 'default' ? '' : `:${categoryKey}`);
 }
@@ -140,8 +153,7 @@ export function closeRateLimiter(): void {
   handler = undefined;
 }
 
-function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
-  const category = getRateLimitCategory(req);
+function getRateLimitForCategory(category: RateLimitCategoryConfig, config?: ServerConfig): number {
   let limit: number = category.defaultLimitPerMinute;
 
   const serverConfigKey = category.serverConfigKey;
@@ -161,12 +173,7 @@ function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
   return limit;
 }
 
-function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
-  // Express routing is case-insensitive and ignores one trailing slash
-  let url = getNormalizedPath(req.originalUrl.toLowerCase());
-  if (url.length > 1 && url.endsWith('/')) {
-    url = url.slice(0, -1);
-  }
+function getRateLimitCategory(url: string): RateLimitCategoryConfig {
   for (let i = 0; i < categories.length - 1; i++) {
     const category = categories[i];
     if (
@@ -176,5 +183,13 @@ function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
       return category;
     }
   }
-  return categories[categories.length - 1]; // Default category is the last one in the list
+  return categories.at(-1) as RateLimitCategoryConfig; // Default category is the last one in the list
+}
+
+function refundLimitOnSuccess(res: Response, limiter: RateLimiterRedis, key: string): void {
+  res.once('finish', () => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      limiter.reward(key, 1).catch((err: unknown) => getLogger().warn('Rate limit refund failed', { err }));
+    }
+  });
 }
