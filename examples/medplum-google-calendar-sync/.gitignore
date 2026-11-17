@@ -4,6 +4,5 @@ dist/
 .env.*
 !.env.example
 medplum.config*.json
-test-results/
 .local/
 *.log

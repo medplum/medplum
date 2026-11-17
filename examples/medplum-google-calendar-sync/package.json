@@ -17,12 +17,8 @@
     "deploy": "npm run build && tsx src/scripts/deploy-bots.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix && prettier --write src",
-    "live-api-probe": "tsx src/scripts/live-google-test.ts",
-    "setup:project": "tsx src/scripts/install-project.ts",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "tsx src/scripts/e2e.ts",
-    "test:e2e:cleanup": "tsx src/scripts/e2e.ts --cleanup"
+    "test:coverage": "vitest run --coverage"
   },
   "prettier": {
     "printWidth": 120,
