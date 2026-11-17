@@ -9,6 +9,7 @@ import {
   SchedulingColorURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
+  TimezoneExtensionURI,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
@@ -287,6 +288,8 @@ describe('MultiCalendar', () => {
       status: 'booked',
       start: new Date(baseDate.getTime()).toISOString(),
       end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+      // Drawn at 10 AM on the viewer's clock, and told on the visit's own (no daylight saving).
+      extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Phoenix' }],
       serviceType: [
         {
           // Stale: the event names the service type as its HealthcareService is named now.
@@ -322,7 +325,7 @@ describe('MultiCalendar', () => {
     // Its status sits beside the patient it is titled by.
     expect(card.getByText('Homer Simpson').closest('.mantine-Group-root')).toHaveTextContent('booked');
     expect((await card.findByText('Ultrasound imaging')).parentElement).toHaveTextContent(
-      /^Ultrasound imaging · 10:00\sAM – 10:30\sAM$/
+      /^Ultrasound imaging · 3:00\sAM – 3:30\sAM MST$/
     );
     expect(screen.getAllByText('Primary')).toHaveLength(1);
     expect(primary.closest('.mantine-Group-root')).toHaveTextContent('Alice Smith');

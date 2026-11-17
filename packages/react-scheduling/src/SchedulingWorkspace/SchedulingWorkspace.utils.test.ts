@@ -76,6 +76,16 @@ describe('formatWhen', () => {
       `Monday, May 4 · ${formatZonedTime(mondayNine)} – Friday, May 8 · ${formatZonedTime(fridayFive)}`
     );
     expect(formatWhen({})).toBeUndefined();
+
+    // An appointment naming its zone is told on that clock, days included: both of these
+    // fall on Tuesday, May 5 in UTC.
+    const extension = [{ url: TimezoneExtensionURI, valueCode: EASTERN }];
+    expect(formatWhen({ start: '2020-05-05T01:00:00Z', end: '2020-05-05T02:00:00Z', extension })).toMatch(
+      /^Monday, May 4 · 9:00\sPM – 10:00\sPM ET$/
+    );
+    expect(formatWhen({ start: '2020-05-05T03:00:00Z', end: '2020-05-05T05:00:00Z', extension })).toMatch(
+      /^Monday, May 4 · 11:00\sPM – Tuesday, May 5 · 1:00\sAM ET$/
+    );
   });
 });
 

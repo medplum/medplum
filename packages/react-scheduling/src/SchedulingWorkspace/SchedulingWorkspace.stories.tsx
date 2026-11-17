@@ -175,6 +175,10 @@ Basic.parameters = { controls: { include: ['appointmentCommentMaxLength'] } };
  * kept in another. Deselect both providers and the line goes, because the rooms and
  * devices never declared a zone.
  *
+ * Tuesday's imaging visit is held in Eastern time and Wednesday's in Central, and each says so:
+ * hover either, or click it for its details, and its times are told on its own clock and
+ * labelled ET or CT, though the grid still draws it where it falls on yours.
+ *
  * Click open time, choose Ultrasound Imaging and Dr. Maya Rivera, then Find a time.
  * The times are Rivera's Eastern hours, labelled ET, and the form writes the same zone
  * on the one it keeps.

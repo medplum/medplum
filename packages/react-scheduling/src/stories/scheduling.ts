@@ -1221,6 +1221,8 @@ export const RiveraImagingAppointment: WithId<Appointment> = {
   start: '2020-05-05T17:00:00Z',
   end: '2020-05-05T17:30:00Z',
   serviceType: toServiceTypeCodeableConcepts(UltrasoundImagingService),
+  // Held in Dr. Rivera's zone, so its card and details tell it on Eastern time.
+  extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
   comment: 'Bring prior films',
   slot: RiveraImagingHeldSlots.map(createReference),
   supportingInformation: [toAppointmentSiteReference(MainClinic)],
@@ -1269,6 +1271,8 @@ export const OkaforImagingAppointment: WithId<Appointment> = {
       url: SchedulingExternalUrlURI,
       valueUrl: 'https://foomedical.com/appointments?date=05%2F06%2F2020&mrn=456',
     },
+    // Held in Dr. Okafor's zone, so its card and details tell it on Central time.
+    { url: TimezoneExtensionURI, valueCode: 'America/Chicago' },
   ],
   participant: setPrimaryProvider(
     [

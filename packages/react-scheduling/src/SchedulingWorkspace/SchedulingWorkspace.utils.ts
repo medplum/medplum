@@ -4,15 +4,21 @@ import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
   getAppointmentSite,
+  getExtension,
   getExtensionValue,
   getReferenceString,
   isDefined,
   serviceTypeIncludesService,
   TimezoneExtensionURI,
 } from '@medplum/core';
-import type { Appointment, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Extension, Slot } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { formatDayHeading, formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import {
+  formatDayHeading,
+  formatZonedTime,
+  formatZonedTimeRange,
+  isViewerTimezone,
+} from '../AppointmentFinder/AppointmentFinder.times';
 import type { CalendarFilterValues } from './CalendarFilters';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */
@@ -132,24 +138,33 @@ function getHeldSlotReferences(appointments: readonly Appointment[]): Set<string
 }
 
 /**
- * Says when a visit or a block of time is, as far as it is known.
+ * Says when a visit or a block of time is, as far as it is known, on the clock of the timezone
+ * it names for itself, if any.
  * @param period - The appointment or slot being described.
  * @param period.start - When it starts.
  * @param period.end - When it ends.
+ * @param period.extension - Where it may name its timezone.
  * @returns The day and the times, naming the end's day too when it is another, or undefined
  * for one holding no time.
  */
-export function formatWhen(period: { readonly start?: string; readonly end?: string }): string | undefined {
+export function formatWhen(period: {
+  readonly start?: string;
+  readonly end?: string;
+  readonly extension?: Extension[];
+}): string | undefined {
   if (!period.start) {
     return undefined;
   }
+  const timezone = getExtension(period, TimezoneExtensionURI)?.valueCode;
   const start = new Date(period.start);
   const end = period.end ? new Date(period.end) : undefined;
-  if (end && end.toDateString() !== start.toDateString()) {
-    return `${formatDayHeading(start)} · ${formatZonedTime(start)} – ${formatDayHeading(end)} · ${formatZonedTime(end)}`;
+  const startDay = formatDayHeading(start, timezone);
+  const endDay = end && formatDayHeading(end, timezone);
+  if (end && endDay !== startDay) {
+    const withTimezone = !isViewerTimezone(timezone);
+    return `${startDay} · ${formatZonedTime(start, timezone)} – ${endDay} · ${formatZonedTime(end, timezone, { withTimezone })}`;
   }
-  const times = [formatZonedTime(start), end && formatZonedTime(end)].filter(Boolean).join(' – ');
-  return `${formatDayHeading(start)} · ${times}`;
+  return `${startDay} · ${formatZonedTimeRange(start, end, timezone)}`;
 }
 
 /** How many hours after an appointment ends it can still be changed. */

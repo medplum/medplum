@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
 import { Badge, Divider, Group, Popover, Stack, Text } from '@mantine/core';
-import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
+import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI, TimezoneExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
 import { IconRepeat } from '@tabler/icons-react';
@@ -10,7 +10,7 @@ import cx from 'clsx';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { getNonPatientActors } from '../actors';
-import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import { formatZonedTimeRange } from '../AppointmentFinder/AppointmentFinder.times';
 import { AppointmentStatusBadge } from '../AppointmentStatusBadge';
 import { ServiceTypeDisplay } from '../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../serviceTypes';
@@ -95,7 +95,9 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
   const primary = getPrimaryProvider(appointment);
   const { start, end } = info.event;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
-  const times = start && end && `${formatZonedTime(start)} – ${formatZonedTime(end)}`;
+  // Told on the clock of the zone the appointment names, while the grid draws it on the viewer's.
+  const times =
+    start && end && formatZonedTimeRange(start, end, getExtension(appointment, TimezoneExtensionURI)?.valueCode);
 
   return (
     <Stack gap={4}>
