@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   allowedDoc,
+  args,
+  config,
+  landedDiff,
   readyToPublish,
   sourceNumber,
   structuredResult,
@@ -55,6 +67,41 @@ function verification(): Verification {
     availability: 'Existing supported behavior; no release claim.',
   };
 }
+function controller() {
+  const base = workspace();
+  const root = join(base, 'repo');
+  for (const [path, value] of [
+    [page, original],
+    [code, 'export const example = true;\n'],
+  ]) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), value);
+  }
+  const git = (...args: string[]): string => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' });
+  git('init', '-qb', 'main');
+  git('config', 'user.email', 'test@example.com');
+  git('config', 'user.name', 'Test');
+  git('add', '.');
+  git('commit', '-qm', 'fixture');
+  const run = join(base, '.docs-run');
+  mkdirSync(run);
+  const write = (name: string, data: unknown): void => writeFileSync(join(run, name), JSON.stringify(data));
+  write('context.json', { mode: 'draft', baseSha: git('rev-parse', 'HEAD').trim() });
+  const output = join(base, 'outputs');
+  const command = (stage: string, result?: unknown, env: Record<string, string> = {}): void => {
+    const execution = join(base, 'execution.json');
+    writeFileSync(
+      execution,
+      JSON.stringify([{ type: 'result', subtype: 'success', is_error: false, structured_output: result }])
+    );
+    execFileSync(process.execPath, [fileURLToPath(new URL('./run.ts', import.meta.url)), stage], {
+      cwd: base,
+      env: { ...process.env, GITHUB_OUTPUT: output, EXECUTION_FILE: execution, ...env },
+      stdio: 'pipe',
+    });
+  };
+  return { base, root, run, git, write, output, command };
+}
 afterEach(() => {
   for (const dir of temps.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
@@ -64,6 +111,53 @@ test('accepts PR numbers and rejects command/URL/option injection', () => {
   for (const value of ['', '0', '-1', '1; touch /tmp/a', '$(env)', '1\n2', 'https://github.com/org/repo/pull/1']) {
     assert.throws(() => sourceNumber(value));
   }
+});
+test('accepts xhigh effort and rejects invalid configuration', () => {
+  const effort = config.effort;
+  try {
+    config.effort = 'xhigh';
+    assert.match(args('draft'), /--effort xhigh/);
+    config.effort = 'anything';
+    assert.throws(() => args('draft'));
+  } finally {
+    config.effort = effort;
+  }
+});
+test('uses landed squash/merge changes and rejects an incomplete rebase diff', () => {
+  const { root, git } = controller();
+  const base = git('rev-parse', 'HEAD').trim();
+  git('checkout', '-qb', 'feature');
+  writeFileSync(join(root, code), 'export const example = false;\n');
+  git('commit', '-qam', 'first change');
+  const first = git('rev-parse', 'HEAD').trim();
+  writeFileSync(join(root, page), content);
+  git('commit', '-qam', 'second change');
+  const head = git('rev-parse', 'HEAD').trim();
+  const prDiff = git('diff', base, head);
+  git('checkout', '-q', 'main');
+  writeFileSync(join(root, 'unrelated.txt'), 'Another PR landed first.\n');
+  git('add', '.');
+  git('commit', '-qm', 'unrelated change');
+  const newBase = git('rev-parse', 'HEAD').trim();
+  git('merge', '--squash', 'feature');
+  git('commit', '-qm', 'squashed PR');
+  const squash = git('rev-parse', 'HEAD').trim();
+  assert.equal(landedDiff(root, squash, head, prDiff), git('diff', newBase, squash));
+  assert.equal(landedDiff(root, squash, head, prDiff + 'x'.repeat(300001)), undefined);
+  git('checkout', '-qb', 'rebased', newBase);
+  git('cherry-pick', first, head);
+  assert.equal(landedDiff(root, git('rev-parse', 'HEAD').trim(), head, prDiff), undefined);
+  // A real merge can resolve a conflict differently from the PR's original patch.
+  git('checkout', '-qb', 'merged', newBase);
+  writeFileSync(join(root, page), original.replace('Original guidance.', 'Guidance from main.'));
+  git('commit', '-qam', 'main edit');
+  assert.throws(() => git('merge', '--no-ff', '--no-commit', 'feature'));
+  writeFileSync(join(root, page), content + '\nResolved while merging.\n');
+  git('add', '.');
+  git('commit', '-qm', 'merge PR');
+  const merge = git('rev-parse', 'HEAD').trim();
+  assert.match(landedDiff(root, merge, head, prDiff) ?? '', /Resolved while merging/);
+  assert.equal(landedDiff(root, merge, base, prDiff), undefined);
 });
 test('write scope excludes code, generated reference, decision guides, and traversal', () => {
   for (const path of [
@@ -210,40 +304,25 @@ test('uncertainty or unexecuted new examples prevent publication', () => {
   assert.equal(readyToPublish(classification(), { ...draft(), questions: ['Unknown version'] }, verification()), false);
   assert.equal(readyToPublish(classification(), draft(), { ...verification(), evidence: [] }), false);
 });
+test('draft questions finish successfully without edits or publication; invalid output still fails', () => {
+  const { root, run, git, command, write, output } = controller();
+  command('classify', classification());
+  const uncertain = { edits: [], notes: 'No draft applied.', questions: ['Which version shipped this change?'] };
+  command('draft', uncertain);
+  assert.equal(git('status', '--porcelain'), '');
+  assert.equal(readFileSync(join(root, page), 'utf8'), original);
+  assert.equal(existsSync(join(run, 'docs.patch')), false);
+  assert.deepEqual(JSON.parse(readFileSync(join(run, 'draft.json'), 'utf8')), uncertain);
+  assert.match(readFileSync(output, 'utf8'), /applied=false/);
+  write('context.json', { mode: 'open-pr' });
+  command('validation');
+  assert.equal(JSON.parse(readFileSync(join(run, 'validation.json'), 'utf8')).outcome, 'needs-human');
+  assert.ok(readFileSync(output, 'utf8').trim().endsWith('publishable=false'));
+  assert.throws(() => command('draft', { ...uncertain, edits: draft().edits }));
+  assert.throws(() => command('draft', { ...uncertain, questions: [] }));
+});
 test('controller applies only planned edits, captures new API guides, and gates dry-run publication', () => {
-  const base = workspace();
-  const root = join(base, 'repo');
-  mkdirSync(root);
-  for (const [path, value] of [
-    [page, original],
-    [code, 'export const example = true;\n'],
-  ]) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), value);
-  }
-  const git = (...args: string[]): string => execFileSync('git', args, { cwd: root, encoding: 'utf8' });
-  git('init', '-q');
-  git('config', 'user.email', 'test@example.com');
-  git('config', 'user.name', 'Test');
-  git('add', '.');
-  git('commit', '-qm', 'fixture');
-  const run = join(base, '.docs-run');
-  mkdirSync(run);
-  const write = (name: string, data: unknown): void => writeFileSync(join(run, name), JSON.stringify(data));
-  write('context.json', { mode: 'draft', baseSha: git('rev-parse', 'HEAD').trim() });
-  const script = fileURLToPath(new URL('./run.ts', import.meta.url));
-  const output = join(base, 'outputs');
-  const command = (stage: string, result?: unknown, env: Record<string, string> = {}): void => {
-    const execution = join(base, 'execution.json');
-    writeFileSync(
-      execution,
-      JSON.stringify([{ type: 'result', subtype: 'success', is_error: false, structured_output: result }])
-    );
-    execFileSync(process.execPath, [script, stage], {
-      cwd: base,
-      env: { ...process.env, GITHUB_OUTPUT: output, EXECUTION_FILE: execution, ...env },
-    });
-  };
+  const { root, run, write, command, output } = controller();
   const newPage = 'packages/docs/content/docs/api/fhir/operations/new-example.md';
   const plan = {
     ...classification(),
@@ -256,6 +335,9 @@ test('controller applies only planned edits, captures new API guides, and gates 
   });
   assert.equal(readFileSync(join(root, page), 'utf8'), content);
   assert.match(readFileSync(join(run, 'docs.patch'), 'utf8'), /new-example.md/);
+  command('verify', { ...verification(), verdict: 'needs-human', findings: ['Confirm availability.'] });
+  command('validation');
+  assert.equal(JSON.parse(readFileSync(join(run, 'validation.json'), 'utf8')).outcome, 'needs-human');
   command('verify', verification());
   command('validation', undefined, { INSTALL_RESULT: 'success', FORMAT_RESULT: 'success', BUILD_RESULT: 'success' });
   assert.match(readFileSync(output, 'utf8'), /publishable=false/);
@@ -267,30 +349,12 @@ test('controller applies only planned edits, captures new API guides, and gates 
 });
 
 test('publisher creates and assigns one draft PR, then preserves reviewer edits on retry', () => {
-  const base = workspace();
-  const root = join(base, 'repo');
-  mkdirSync(root);
-  for (const [path, value] of [
-    [page, original],
-    [code, 'export const example = true;\n'],
-  ]) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), value);
-  }
-  const git = (...args: string[]): string =>
-    execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-  git('init', '-qb', 'main');
-  git('config', 'user.email', 'test@example.com');
-  git('config', 'user.name', 'Test');
-  git('add', '.');
-  git('commit', '-qm', 'fixture');
+  const { base, root, git, run } = controller();
   const sha = git('rev-parse', 'HEAD').trim();
   const remote = join(base, 'remote.git');
   git('init', '--bare', '-q', remote);
   git('remote', 'add', 'origin', remote);
   git('push', '-q', 'origin', 'main');
-  const run = join(base, '.docs-run');
-  mkdirSync(run);
   for (const [name, value] of Object.entries({
     context: {
       repository: 'org/repo',
@@ -298,7 +362,7 @@ test('publisher creates and assigns one draft PR, then preserves reviewer edits 
       baseBranch: 'main',
       mode: 'open-pr',
       source: { number: 123, user: { type: 'User', login: 'original-author' } },
-      model: 'claude-sonnet-4-6',
+      model: config.model,
       effort: 'high',
     },
     classification: classification(),

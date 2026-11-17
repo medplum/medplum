@@ -161,8 +161,11 @@ export function readyToPublish(classification: Classification, draft: Draft, ver
   );
 }
 
-function args(stage: keyof typeof schemas): string {
-  if (!/^claude-[a-z0-9.-]+$/.test(config.model) || !['low', 'medium', 'high', 'max'].includes(config.effort)) {
+export function args(stage: keyof typeof schemas): string {
+  if (
+    !/^claude-[a-z0-9.-]+$/.test(config.model) ||
+    !['low', 'medium', 'high', 'xhigh', 'max'].includes(config.effort)
+  ) {
     throw new Error('Invalid model/effort configuration');
   }
   if (!Number.isInteger(config.maxTurns) || config.maxTurns < 1 || !Number.isFinite(config.budgetUsd[stage])) {
@@ -171,8 +174,28 @@ function args(stage: keyof typeof schemas): string {
   return (
     `--model ${config.model} --effort ${config.effort} --max-turns ${config.maxTurns} ` +
     `--max-budget-usd ${config.budgetUsd[stage]} --tools Read,Glob,Grep --allowedTools Read,Glob,Grep ` +
-    `--disallowedTools 'mcp__*' --json-schema '${JSON.stringify(schemas[stage])}'`
+    `--disallowedTools 'mcp__*' --setting-sources user --permission-mode dontAsk ` +
+    `--json-schema '${JSON.stringify(schemas[stage])}'`
   );
+}
+
+// A squash commit (or a one-commit rebase) must cover the full PR. A multi-commit
+// rebase's last commit does not, so it needs human review. Preserve merge resolutions.
+export function landedDiff(root: string, mergeSha: string, headSha: string, prDiff: string): string | undefined {
+  for (const sha of [mergeSha, headSha]) {
+    if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Invalid source revision');
+  }
+  const parents = git(['rev-list', '--parents', '-n', '1', mergeSha], root).trim().split(' ').slice(1);
+  if (parents.length !== 1 && (parents.length !== 2 || parents[1] !== headSha)) return undefined;
+  const diff = git(['diff', '--no-ext-diff', '--no-textconv', parents[0], mergeSha, '--'], root);
+  if (!diff.trim() || [diff, prDiff].some((text) => Buffer.byteLength(text) > config.maxDiffBytes)) return undefined;
+  const patchId = (text: string): string =>
+    execFileSync('git', ['patch-id', '--verbatim'], { input: text, encoding: 'utf8' }).trim().split(' ')[0];
+  if (parents.length === 1) {
+    const expected = patchId(prDiff);
+    if (!expected || patchId(diff) !== expected) return undefined;
+  }
+  return diff;
 }
 
 function prepare(): void {
@@ -223,12 +246,40 @@ function prepare(): void {
     );
     return;
   }
-  for (let page = 1; ; page++) {
-    const files = api<{ filename: string }[]>(`repos/${repository}/pulls/${number}/files?per_page=100&page=${page}`);
-    context.files.push(...files.map((file) => file.filename));
-    if (files.length < 100) break;
+  // Only fetch the landed revision; the PR branch is never checked out or executed.
+  if (!/^[a-f0-9]{40}$/.test(source.merge_commit_sha)) throw new Error('Invalid source revision');
+  git(['fetch', '--no-tags', 'origin', source.merge_commit_sha]);
+  git(['merge-base', '--is-ancestor', source.merge_commit_sha, context.baseSha]);
+  const prDiff = execFileSync(
+    'gh',
+    ['api', `repos/${repository}/pulls/${number}`, '-H', 'Accept: application/vnd.github.diff'],
+    {
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    }
+  );
+  const diff = landedDiff(repo, source.merge_commit_sha, source.head.sha, prDiff);
+  if (!diff) {
+    stop(
+      'needs-human',
+      'The landed diff is empty, exceeds the pilot limit, or cannot be verified as the complete PR change (for example, a multi-commit rebase).'
+    );
+    return;
   }
-  if (context.files.length !== source.changed_files) throw new Error('Incomplete PR file list');
+  context.files = git([
+    'diff',
+    '--name-only',
+    '--no-renames',
+    `${source.merge_commit_sha}^1`,
+    source.merge_commit_sha,
+    '--',
+  ])
+    .trim()
+    .split('\n');
+  if (context.files.length > config.maxSourceFiles) {
+    stop('needs-human', `Landed change exceeds the ${config.maxSourceFiles}-file pilot limit.`);
+    return;
+  }
   context.docsHints = [
     ...new Set<string>(
       config.sourceToDocs.flatMap((mapping: { source: string; docs: string[] }) =>
@@ -237,18 +288,6 @@ function prepare(): void {
     ),
   ];
   save('context.json', context);
-  // Retrieve immutable objects, without checking out or executing the PR branch.
-  for (const sha of [source.base.sha, source.head.sha, source.merge_commit_sha]) {
-    if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Invalid source revision');
-    git(['fetch', '--no-tags', 'origin', sha]);
-  }
-  git(['merge-base', '--is-ancestor', source.merge_commit_sha, context.baseSha]);
-  const diff = git(['diff', '--no-ext-diff', '--no-textconv', `${source.base.sha}...${source.head.sha}`, '--']);
-  if (Buffer.byteLength(diff) > config.maxDiffBytes) {
-    stop('needs-human', `PR diff exceeds ${config.maxDiffBytes} bytes; no truncated classification was attempted.`);
-    return;
-  }
-  if (!diff.trim()) throw new Error('Source PR diff is empty');
   writeFileSync(artifact('source.diff'), diff);
   output('analyze', 'true');
 }
@@ -294,7 +333,14 @@ function accept(stage: 'classify' | 'draft' | 'verify'): void {
     validateClassification(repo, result as Classification);
     output('draft', String((result as Classification).outcome === 'update-docs'));
   } else if (stage === 'draft') {
+    const draft = result as Draft;
+    if (draft.questions.length) {
+      if (draft.edits.length) throw new Error('An uncertain draft must return questions without edits');
+      output('applied', 'false');
+      return;
+    }
     applyDraft();
+    output('applied', 'true');
   } else {
     validateEvidence(repo, (result as Verification).evidence);
     const ready = readyToPublish(readJson('classification.json'), readJson('draft.json'), result as Verification);
@@ -359,7 +405,16 @@ function renderSummary(): void {
 }
 
 function recordValidation(): void {
+  const classification = existsSync(artifact('classification.json'))
+    ? readJson<Classification>('classification.json')
+    : undefined;
+  const draft = existsSync(artifact('draft.json')) ? readJson<Draft>('draft.json') : undefined;
+  const verification = existsSync(artifact('verification.json'))
+    ? readJson<Verification>('verification.json')
+    : undefined;
+  const ready = !!(classification && draft && verification && readyToPublish(classification, draft, verification));
   const validation = {
+    outcome: draft?.questions.length || (verification && !ready) ? 'needs-human' : classification?.outcome,
     install: process.env.INSTALL_RESULT ?? 'skipped',
     format: process.env.FORMAT_RESULT ?? 'skipped',
     build: process.env.BUILD_RESULT ?? 'skipped',
@@ -367,9 +422,6 @@ function recordValidation(): void {
   };
   save('validation.json', validation);
   const context = readJson<Context>('context.json');
-  const ready =
-    existsSync(artifact('verification.json')) &&
-    readyToPublish(readJson('classification.json'), readJson('draft.json'), readJson('verification.json'));
   output(
     'publishable',
     String(
