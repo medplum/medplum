@@ -219,4 +219,11 @@ ecosystem.
     linkedInUrl="https://www.linkedin.com/in/aanishsachdev/"
     githubUrl="https://github.com/aanishs"
 >}}
+{{< profile-card
+    name="Sanjana Badhya"
+    title="Forward Deployed Engineer"
+    imgUrl="/img/people/sanjana.webp"
+    linkedInUrl="https://www.linkedin.com/in/sanjanabadhya/"
+    githubUrl="https://github.com/sanjana-medplum"
+>}}
 {{< /card-container >}}
