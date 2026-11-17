@@ -101,6 +101,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }
     return;
   }
+  if (event.input !== undefined && input?.resourceType !== 'Cron') {
+    // Only a Cron starts a project-wide sweep, not a delivery from a Subscription an earlier install left behind.
+    return;
+  }
   // Each worker handles at most 100 connections. One practitioner's Google API work never
   // consumes another practitioner's dispatch time budget.
   for await (const page of medplum.searchResourcePages(

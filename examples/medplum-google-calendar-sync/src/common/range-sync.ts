@@ -12,11 +12,11 @@ import { isResourceGone } from './sync';
 
 /*
  * Pushes everything a practitioner should have on their calendar within a date range:
- * the backfill on connect, and `Practitioner/$google-calendar-sync` on demand.
+ * the backfill on connect and the hourly repair.
  * Then verifies every existing owned mirror, independently of the discovery horizon.
  */
 
-/** How far ahead the backfill on connect, and `$google-calendar-sync` by default, push. */
+/** How far ahead the backfill on connect and the hourly repair discover. */
 const DEFAULT_SYNC_DAYS = 90;
 const DAY_MS = 24 * 60 * 60 * 1000;
 

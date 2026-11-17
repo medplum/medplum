@@ -57,6 +57,13 @@ describe('google-calendar-reconcile-bot', () => {
     return { ...saved, basic };
   }
 
+  test('a delivery that is neither a Cron nor a batch starts no sweep', async () => {
+    await connected('Practitioner/a');
+    await handler(medplum, { ...event, input: { resourceType: 'Schedule', id: 's', actor: [] } });
+    await handler(medplum, { ...event, input: { deletedResource: { resourceType: 'Schedule', id: 's', actor: [] } } });
+    expect(medplum.executeBot).not.toHaveBeenCalled();
+  });
+
   test('nothing to do without active connections', async () => {
     await handler(medplum, event);
     const paused = await connected('Practitioner/paused');

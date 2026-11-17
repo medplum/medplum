@@ -148,7 +148,7 @@ Then check a real calendar by hand, in a test project with a test Google account
 
 - Untested: linked projects, Google Workspace Internal consent, calendars with thousands of events, Google quota limits, recurrence exceptions.
 - The refresh token is stored unencrypted in a `Basic` resource. AccessPolicy is the only protection: a project admin, or a user whose policy grants `Basic`, can read it.
-- Sync covers 90 days from now in both directions.
+- Discovery and import cover 90 days from now. A change to an Appointment or block outside that window is still sent to Google when it happens, and existing mirrored events are checked whatever their date.
 - Any user who can write Slots can change an imported Slot.
 - The integration sends no notifications. Subscribe to the status record if you need to know when a practitioner must reconnect.
 - Disconnect deletes the imported Slots, so those times become bookable.

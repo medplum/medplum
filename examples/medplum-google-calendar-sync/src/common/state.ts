@@ -39,6 +39,7 @@ export interface SyncState {
   lastInbound?: string;
   inboundRetryAt?: string;
   outboundRetryAt?: string;
+  watchRetryAt?: string;
   lastOutbound?: string;
   staleReason?: string;
   inboundError?: string;
@@ -64,7 +65,7 @@ const STRINGS = [
   'outboundError',
   'cleanupIssue',
 ] as const;
-const INSTANTS = ['lastInbound', 'lastOutbound', 'inboundRetryAt', 'outboundRetryAt'] as const;
+const INSTANTS = ['lastInbound', 'lastOutbound', 'inboundRetryAt', 'outboundRetryAt', 'watchRetryAt'] as const;
 const BOOLEANS = [
   'privacyPending',
   'forgetRevoked',

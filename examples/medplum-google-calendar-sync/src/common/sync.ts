@@ -258,8 +258,7 @@ export class SyncSession {
       state.outboundError = error;
       if (complete) {
         // The range was walked even when some sources failed: the request is done and the error
-        // reported, so the minute sweep does not re-run discovery. An explicit range is kept until
-        // a run succeeds, so the hourly retry walks it again rather than the default window.
+        // reported, so the minute sweep does not re-run discovery.
         state.outboundCompleted = this.outboundRequestAtStart;
       }
       if (!error) {
@@ -389,7 +388,7 @@ export class SyncSession {
           }
         }
         if (!owner?.[EVENT_PROPERTY.connection]) {
-          throw new Error('Legacy mirror requires connection ownership migration');
+          throw new Error('Event has no connection marker; delete it in Google Calendar so it can be recreated');
         }
         const sourceRef = owner?.[EVENT_PROPERTY.source];
         const match = sourceRef?.match(/^(Appointment|Slot)\/([A-Za-z0-9.-]+)$/);

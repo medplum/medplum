@@ -44,10 +44,20 @@ export async function ensureWatch(
     await lease.mutate((basic) =>
       withState(basic, { ...readState(basic), channels: [...readState(basic).channels, pending] })
     );
-    const registered = await calendar.watchEvents(id, token, address);
-    const expires = Number(registered.expiration);
-    if (registered.id !== id || !registered.resourceId || !Number.isFinite(expires) || expires <= Date.now()) {
-      throw new Error('Google returned an invalid watch registration');
+    let registered: Awaited<ReturnType<typeof calendar.watchEvents>>;
+    let expires: number;
+    try {
+      registered = await calendar.watchEvents(id, token, address);
+      expires = Number(registered.expiration);
+      if (registered.id !== id || !registered.resourceId || !Number.isFinite(expires) || expires <= Date.now()) {
+        throw new Error('Google returned an invalid watch registration');
+      }
+    } catch (err) {
+      // Do not keep a channel Google never confirmed.
+      await lease.mutate((basic) =>
+        withState(basic, { ...readState(basic), channels: readState(basic).channels.filter((c) => c.id !== id) })
+      );
+      throw err;
     }
     await lease.mutate((basic) =>
       withState(basic, {

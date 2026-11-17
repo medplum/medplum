@@ -311,10 +311,21 @@ describe('calendar runtime', () => {
     const failed = readState(await current());
     expect(failed.lastInbound).toBeTruthy();
     expect(failed.staleReason).toBe('watch-unavailable');
+    expect(failed.channels).toEqual([]);
+    // The next run inside the backoff imports without another registration attempt.
+    const attempts = (): number => requests.filter((r) => r.url.endsWith('/events/watch')).length;
+    const before = attempts();
+    await requestSync(medplum, connection.basic.id, ['inbound']);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(attempts()).toBe(before);
     watchFails = false;
+    await medplum.updateResource(
+      withState(await current(), { ...readState(await current()), watchRetryAt: undefined })
+    );
     await requestSync(medplum, connection.basic.id, ['inbound']);
     await runInbound(medplum, event, connection.basic.id);
     expect(readState(await current()).staleReason).toBeUndefined();
+    expect(readState(await current()).channels).toHaveLength(1);
   });
 
   test('an outage or revocation preserves blocks and last successful import', async () => {

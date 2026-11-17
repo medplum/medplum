@@ -75,14 +75,18 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
         throw new Error('Missing installed Google Calendar webhook address');
       }
       // The snapshot does not depend on the watch: keep importing while notifications are unavailable.
-      let watchFailed = false;
-      try {
-        await ensureWatch(lease, calendar, address);
-      } catch {
-        // Do not log the exception: provider errors may contain private event data.
-        console.warn('Calendar watch registration failed; importing without notifications');
-        watchFailed = true;
-        await lease.check();
+      let watchRetryAt = Date.parse(state.watchRetryAt ?? '') > Date.now() ? state.watchRetryAt : undefined;
+      if (!watchRetryAt) {
+        try {
+          await ensureWatch(lease, calendar, address);
+        } catch (err) {
+          // Do not log the exception: provider errors may contain private event data.
+          console.warn('Calendar watch registration failed; importing without notifications');
+          const retryAt =
+            (err instanceof GoogleApiError ? err.retryAt : undefined) ?? Date.now() + INBOUND_ERROR_RETRY_MS;
+          watchRetryAt = new Date(retryAt).toISOString();
+          await lease.check();
+        }
       }
       const range = defaultSyncRange(new Date());
       await importBusyTime(medplum, calendar, connection, range, () => beforeInboundWrite(lease));
@@ -92,7 +96,8 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
         state.inboundCompleted = inboundRequestAtStart;
         state.inboundError = undefined;
         state.inboundRetryAt = undefined;
-        state.staleReason = watchFailed ? 'watch-unavailable' : undefined;
+        state.watchRetryAt = watchRetryAt;
+        state.staleReason = watchRetryAt ? 'watch-unavailable' : undefined;
         return withState(basic, state);
       });
     } catch (err) {
