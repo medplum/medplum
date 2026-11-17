@@ -362,7 +362,15 @@ export async function addDiagnosesToEncounter(
   ]);
 }
 
-async function findExistingPatientCondition(
+/**
+ * Finds the patient's existing Condition with the diagnosis code, ignoring entered-in-error records.
+ *
+ * @param medplum - The Medplum client.
+ * @param encounter - The encounter whose subject owns the Condition.
+ * @param diagnosis - The diagnosis code to match (first coding).
+ * @returns The matching Condition, or undefined when none exists.
+ */
+export async function findExistingPatientCondition(
   medplum: MedplumClient,
   encounter: Encounter,
   diagnosis: CodeableConcept

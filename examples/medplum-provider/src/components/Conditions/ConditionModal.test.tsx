@@ -37,10 +37,22 @@ describe('ConditionModal', () => {
   const setup = (props: Partial<Parameters<typeof ConditionModal>[0]> = {}): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <ConditionModal patient={mockPatient} encounter={mockEncounter} onSubmit={vi.fn()} {...props} />
+        <ConditionModal
+          opened
+          onClose={vi.fn()}
+          patient={mockPatient}
+          encounter={mockEncounter}
+          onSubmit={vi.fn()}
+          {...props}
+        />
       </MedplumProvider>
     );
   };
+
+  test('defaults the status to Active', () => {
+    setup();
+    expect(screen.getByRole('textbox', { name: 'Status' })).toHaveValue('Active');
+  });
 
   test('renders form fields', () => {
     setup();
@@ -72,8 +84,8 @@ describe('ConditionModal', () => {
   });
 
   test('form is wrapped in Form component', () => {
-    const { container } = setup();
-    const form = container.querySelector('form');
+    setup();
+    const form = document.querySelector('form');
     expect(form).toBeInTheDocument();
   });
 });

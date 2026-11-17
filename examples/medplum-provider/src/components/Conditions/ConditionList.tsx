@@ -1,27 +1,36 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Card, Flex, Modal, Stack, Text } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { Button, Divider, Group, Paper, Stack, Text } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type { Condition, Encounter, EncounterDiagnosis, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
+import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import { findExistingPatientCondition } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import ConditionItem from './ConditionItem';
 import ConditionModal from './ConditionModal';
+import ExistingConditionModal from './ExistingConditionModal';
 
 interface ConditionListProps {
-  patient: Patient;
+  patient: WithId<Patient>;
   encounter: Encounter;
   conditions: Condition[] | undefined;
   setConditions: (conditions: Condition[]) => void;
   onDiagnosisChange: (diagnosis: EncounterDiagnosis[]) => void;
 }
 
+const ICD10_CM_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/icd-10-cm';
+
+const ALREADY_ON_ENCOUNTER = 'This diagnosis is already on the encounter';
+
 export const ConditionList = (props: ConditionListProps): JSX.Element => {
   const { patient, encounter, conditions, setConditions, onDiagnosisChange } = props;
   const medplum = useMedplum();
   const [opened, setOpened] = useState(false);
+  const [existingOpened, setExistingOpened] = useState(false);
 
   useEffect(() => {
     const fetchConditions = async (): Promise<void> => {
@@ -106,43 +115,31 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
     );
   };
 
-  const handleRemoveDiagnosis = async (condition: Condition): Promise<void> => {
+  const handleRemoveDiagnosis = (condition: Condition): void => {
     if (!conditions) {
       return;
     }
 
-    try {
-      await medplum.deleteResource('Condition', condition.id as string);
-      setConditions(conditions?.filter((c) => c.id !== condition.id));
-      const updatedDiagnosis = encounter.diagnosis?.filter(
-        (d) => d.condition?.reference !== getReferenceString(condition)
-      );
-      const reindexedDiagnosis = updatedDiagnosis?.map((d, index) => ({
-        ...d,
-        rank: index + 1,
-      }));
+    const reindexedDiagnosis = (encounter.diagnosis ?? [])
+      .filter((d) => d.condition?.reference !== getReferenceString(condition))
+      .map((d, index) => ({ ...d, rank: index + 1 }));
 
-      setConditions(conditions?.filter((c) => c.id !== condition.id) || []);
-      onDiagnosisChange(reindexedDiagnosis || []);
-    } catch (err) {
-      showErrorNotification(err);
-    }
+    setConditions(conditions.filter((c) => c.id !== condition.id));
+    onDiagnosisChange(reindexedDiagnosis);
   };
 
   const handleConditionSubmit = async (condition: Condition): Promise<void> => {
     try {
-      const newCondition = await medplum.createResource(condition);
-      if (encounter) {
-        const updatedDiagnosis = [
-          ...(encounter.diagnosis || []),
-          {
-            condition: { reference: `Condition/${newCondition.id}` },
-            rank: encounter.diagnosis?.length ? encounter.diagnosis.length + 1 : 1,
-          },
-        ];
-        setConditions([...(conditions || []), newCondition]);
-        onDiagnosisChange(updatedDiagnosis);
+      const existingCodes = new Set((conditions ?? []).flatMap((c) => c.code?.coding?.map((coding) => coding.code)));
+      if (condition.code?.coding?.some((coding) => coding.code && existingCodes.has(coding.code))) {
+        showErrorNotification(ALREADY_ON_ENCOUNTER);
+        return;
       }
+
+      const resolved =
+        (condition.code && (await findExistingPatientCondition(medplum, encounter, condition.code))) ||
+        (await medplum.createResource(condition));
+      linkCondition(resolved);
     } catch (err) {
       showErrorNotification(err);
     } finally {
@@ -150,37 +147,93 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
     }
   };
 
+  const handleExistingSubmit = (condition: WithId<Condition>): void => {
+    linkCondition(condition);
+    setExistingOpened(false);
+  };
+
+  const linkCondition = (condition: WithId<Condition>): void => {
+    const reference = getReferenceString(condition);
+    const diagnosis = encounter.diagnosis ?? [];
+    if (diagnosis.some((d) => d.condition?.reference === reference)) {
+      showErrorNotification(ALREADY_ON_ENCOUNTER);
+      return;
+    }
+
+    setConditions([...(conditions ?? []), condition]);
+    onDiagnosisChange([...diagnosis, { condition: { reference }, rank: diagnosis.length + 1 }]);
+  };
+
+  const linkedCodes = (conditions ?? []).flatMap(
+    (c) =>
+      c.code?.coding
+        ?.filter((coding) => coding.system === ICD10_CM_SYSTEM && coding.code)
+        .map((coding) => coding.code as string) ?? []
+  );
+
+  const linkedIds = (encounter?.diagnosis ?? [])
+    .map((d) => d.condition?.reference)
+    .filter((ref): ref is string => !!ref?.startsWith('Condition/'))
+    .map((ref) => ref.slice('Condition/'.length));
+
   return (
     <>
-      <Stack gap={0}>
-        <Text fw={600} size="lg" mb="md">
-          Diagnosis
-        </Text>
+      <Stack gap="xs">
+        <Group justify="space-between">
+          <Text fw={600} size="lg">
+            Diagnoses ({conditions?.length ?? 0})
+          </Text>
+          <Group gap="xs">
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconPlus size={14} />}
+              onClick={() => setExistingOpened(true)}
+            >
+              Add Existing
+            </Button>
+            <Button variant="light" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setOpened(true)}>
+              Add New
+            </Button>
+          </Group>
+        </Group>
 
-        <Card withBorder shadow="sm">
-          <Stack gap="md">
-            {conditions &&
-              conditions.length > 0 &&
-              conditions.map((condition, idx) => (
+        <Paper withBorder>
+          {conditions && conditions.length > 0 ? (
+            conditions.map((condition, idx) => (
+              <Fragment key={condition.id ?? idx}>
+                {idx > 0 && <Divider />}
                 <ConditionItem
-                  key={condition.id ?? idx}
                   condition={condition}
                   rank={idx + 1}
                   total={conditions.length}
                   onChange={handleUpdateDiagnosis}
                   onRemove={handleRemoveDiagnosis}
                 />
-              ))}
-
-            <Flex>
-              <Button onClick={() => setOpened(true)}>Add Diagnosis</Button>
-            </Flex>
-          </Stack>
-        </Card>
+              </Fragment>
+            ))
+          ) : (
+            <Text size="sm" c="dimmed" px="md" py="sm">
+              No diagnoses
+            </Text>
+          )}
+        </Paper>
       </Stack>
-      <Modal opened={opened} onClose={() => setOpened(false)} title={'Add Diagnosis'}>
-        <ConditionModal patient={patient} encounter={encounter} onSubmit={handleConditionSubmit} />
-      </Modal>
+      <ConditionModal
+        opened={opened}
+        onClose={() => setOpened(false)}
+        patient={patient}
+        encounter={encounter}
+        onSubmit={handleConditionSubmit}
+      />
+      <ExistingConditionModal
+        opened={existingOpened}
+        onClose={() => setExistingOpened(false)}
+        patient={patient}
+        excludeIds={linkedIds}
+        excludeCodes={linkedCodes}
+        onSubmit={handleExistingSubmit}
+      />
     </>
   );
 };

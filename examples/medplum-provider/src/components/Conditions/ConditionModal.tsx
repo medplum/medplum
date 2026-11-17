@@ -1,23 +1,46 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack } from '@mantine/core';
+import { Divider, Flex, Select, Stack, Text } from '@mantine/core';
 import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 import type { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
+import { CodeableConceptInput, Modal, SubmitButton } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
+import { ConditionStatusBadge } from './ConditionStatusBadge';
 
 export interface ConditionDialogProps {
+  readonly opened: boolean;
+  readonly onClose: () => void;
   readonly patient: Patient;
   readonly encounter: Encounter;
   readonly onSubmit: (condition: Condition) => void;
 }
 
+const CLINICAL_STATUS_SYSTEM = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-clinical';
+
+const CLINICAL_STATUSES = [
+  { value: 'active', label: 'Active' },
+  { value: 'recurrence', label: 'Recurrence' },
+  { value: 'relapse', label: 'Relapse' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'remission', label: 'Remission' },
+  { value: 'resolved', label: 'Resolved' },
+];
+
+function toClinicalStatus(code: string): CodeableConcept {
+  const label = CLINICAL_STATUSES.find((s) => s.value === code)?.label ?? code;
+  return { coding: [{ system: CLINICAL_STATUS_SYSTEM, code, display: label }] };
+}
+
+const ACTIVE_STATUS = toClinicalStatus('active');
+
 export default function ConditionModal(props: ConditionDialogProps): JSX.Element {
-  const { patient, encounter, onSubmit } = props;
+  const { opened, onClose, patient, encounter, onSubmit } = props;
   const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
-  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>();
+  const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept>(ACTIVE_STATUS);
+  const coding = diagnosis?.coding?.[0];
+  const statusCoding = clinicalStatus.coding?.[0];
 
   const handleSubmit = useCallback(() => {
     if (!diagnosis) {
@@ -50,15 +73,31 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
       HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'
     );
 
+    setDiagnosis(undefined);
+    setClinicalStatus(ACTIVE_STATUS);
     onSubmit(updatedCondition);
   }, [patient, encounter, diagnosis, clinicalStatus, onSubmit]);
 
+  const close = (): void => {
+    setDiagnosis(undefined);
+    setClinicalStatus(ACTIVE_STATUS);
+    onClose();
+  };
+
   return (
-    <Form onSubmit={handleSubmit}>
-      <Stack>
+    <Modal
+      opened={opened}
+      onClose={close}
+      title="Add New Diagnosis"
+      onSubmit={handleSubmit}
+      actions={<SubmitButton>Save</SubmitButton>}
+    >
+      <Stack gap="md">
         <CodeableConceptInput
           binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
           label="ICD-10 Code"
+          description="Billable ICD-10-CM codes"
+          placeholder="Search by code or name"
           name="diagnosis"
           path="Condition.code"
           required
@@ -66,19 +105,32 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
           onChange={(diagnosis) => setDiagnosis(diagnosis)}
         />
 
-        <CodeableConceptInput
-          name="clinicalStatus"
+        <Select
           label="Status"
-          path="Condition.clinicalStatus"
-          maxValues={1}
-          binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
-          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
+          name="clinicalStatus"
           required
+          allowDeselect={false}
+          data={CLINICAL_STATUSES}
+          value={statusCoding?.code ?? 'active'}
+          onChange={(code) => code && setClinicalStatus(toClinicalStatus(code))}
         />
-        <Group justify="flex-end" gap={4} mt="md">
-          <SubmitButton>Save</SubmitButton>
-        </Group>
+
+        {coding && (
+          <Stack gap={0}>
+            <Divider />
+            <Flex align="center" gap="md" py="sm">
+              <Text size="sm" fw={600} w={80}>
+                {coding.code}
+              </Text>
+              <Text size="sm" flex={1} miw={0}>
+                {coding.display}
+              </Text>
+              <ConditionStatusBadge clinicalStatus={clinicalStatus} />
+            </Flex>
+            <Divider />
+          </Stack>
+        )}
       </Stack>
-    </Form>
+    </Modal>
   );
 }
