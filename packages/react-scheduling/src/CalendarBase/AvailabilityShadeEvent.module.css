@@ -1,0 +1,48 @@
+/* See-through, so the grid lines show and an appointment's opaque card reads as sitting on top. */
+.shade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--shade-left) * 100%);
+  width: calc(var(--shade-width) * 100% - 1px);
+  overflow: hidden;
+  padding: 3px 5px;
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+  background-color: light-dark(
+    color-mix(in oklab, var(--shade-color) 24%, transparent),
+    color-mix(in oklab, var(--shade-color) 32%, transparent)
+  );
+  color: light-dark(
+    color-mix(in oklch, var(--shade-color), black 45%),
+    color-mix(in oklch, var(--shade-color), white 55%)
+  );
+}
+
+.label,
+.tag {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag {
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* Stands for several visit types, so it takes none of their colors. */
+.shade[data-kind='overflow'] {
+  padding-inline: 0;
+  text-align: center;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+  background:
+    repeating-linear-gradient(
+      135deg,
+      light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3)) 0 3px,
+      transparent 3px 6px
+    ),
+    light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+}

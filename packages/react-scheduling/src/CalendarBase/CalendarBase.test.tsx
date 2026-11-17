@@ -544,6 +544,35 @@ describe('CalendarBase', () => {
     });
   });
 
+  describe('availabilityShading prop', () => {
+    test('draws each shade behind the events, placed across its day by its left and width', async () => {
+      const service = { resourceType: 'HealthcareService', id: 'new-patient', name: 'New Patient' } as const;
+      const start = new Date(baseDate.getTime());
+      const end = new Date(baseDate.getTime() + 60 * 60 * 1000);
+      setup({
+        eventSources: [],
+        availabilityShading: [
+          {
+            id: 'shade-1',
+            start,
+            end,
+            kind: 'calendar',
+            color: 'green',
+            left: 0.5,
+            width: 0.5,
+            label: 'New Patient',
+            details: [{ schedule: DrAliceSmithSchedule, service, start, end, inherited: false }],
+          },
+        ],
+      });
+
+      const shade = screen.getByTestId('availability-shade');
+      expect(shade).toHaveTextContent('New Patient');
+      expect(shade.style.getPropertyValue('--shade-left')).toBe('0.5');
+      expect(shade.style.getPropertyValue('--shade-color')).toBe('var(--mantine-color-green-6)');
+    });
+  });
+
   describe('availableTime prop', () => {
     test('renders no non-business-hours overlay when availableTime is not provided', async () => {
       const { container } = setup({ eventSources: [] });
