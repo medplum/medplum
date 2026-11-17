@@ -29,7 +29,7 @@ Putting your own server in between a Medplum token and Medplum is not recommende
 
 ### The user has a non-Medplum token: use a server with On-Behalf-Of
 
-If your application has its own authentication and the user never receives a Medplum token, a server in between is justified. Your server verifies your application's token, then calls Medplum as a `ClientApplication` using [On-Behalf-Of](/docs/auth/on-behalf-of) to act as the user. Restrict that `ClientApplication` to your server's egress IPs: add [IP Access Rules](/docs/access/ip-access-rules) to the AccessPolicy on the `ClientApplication`'s `ProjectMembership`, so its credentials can't be used from anywhere else.
+If your application has its own authentication and the user never receives a Medplum token, a server in between is justified. Your server verifies your application's token, then calls Medplum as a `ClientApplication` using [On-Behalf-Of](/docs/auth/on-behalf-of) to act as the user. Restrict that `ClientApplication` to your server's egress IPs: add [IP Access Rules](/docs/access/ip-access-rules) to the AccessPolicy on the `ClientApplication`'s `ProjectMembership`. They're checked on every token request.
 
 ```mermaid
 flowchart LR
@@ -46,7 +46,7 @@ flowchart LR
         subgraph CI["ClientApplication's identity"]
             direction TB
             CA["ClientApplication"] --> CPM["ClientApplication's ProjectMembership<br/>(Project Admin)"]
-            CPM --> CP["AccessPolicy<br/>resource: [] (no data access)<br/>ipAccessRule: your server's egress IPs only"]
+            CPM --> CP["AccessPolicy<br/>resource: [] (no clinical data access)<br/>ipAccessRule: your server's egress IPs only"]
         end
         subgraph UI["End user's identity"]
             direction TB
@@ -145,8 +145,8 @@ Include these cases in automated integration tests, and supplement them with per
 
 Your server's `ClientApplication` is a privileged machine identity. On-Behalf-Of requires it to be a Project Admin, so restrict it in every other way:
 
-- **Permissionless access policy:** give its `ProjectMembership` an AccessPolicy with no resource access (`"resource": []`). Delegated requests use only the delegated user's access policy, so this doesn't limit your users, and a request that's missing the On-Behalf-Of header can't read or write data. See [Lock down the application credential](/docs/auth/on-behalf-of#lock-down-the-application-credential).
-- **IP restrictions:** add [IP Access Rules](/docs/access/ip-access-rules) to that policy allowing only your servers' egress IPs, followed by a wildcard block. They're checked on every `client_credentials` token request and every Basic auth request, so a leaked secret can't be used from elsewhere.
+- **Permissionless access policy:** give its `ProjectMembership` an AccessPolicy with no clinical data access (`"resource": []`). Delegated requests use only the delegated user's access policy, so this doesn't limit your users, and a request that's missing the On-Behalf-Of header can't read or write clinical data. See [Lock down the application credential](/docs/auth/on-behalf-of#lock-down-the-application-credential).
+- **IP restrictions:** add [IP Access Rules](/docs/access/ip-access-rules) to that policy allowing only your servers' egress IPs, followed by a wildcard block. They're checked on every `client_credentials` token request and every Basic auth request.
 - **Secret storage:** keep client secrets in a secrets manager, never in browser bundles, repositories, or logs.
 - **Separate environments:** use different `ClientApplication`s for development, staging, and production.
 - **Stronger authentication:** consider [Mutual TLS](/docs/auth/mtls) or [Client Assertion](/docs/auth/client-assertion) instead of a shared secret.
