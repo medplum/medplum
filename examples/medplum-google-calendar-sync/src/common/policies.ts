@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { MedplumClient, WithId } from '@medplum/core';
-import { getStatus, OperationOutcomeError } from '@medplum/core';
 import type { AccessPolicy } from '@medplum/fhirtypes';
 import { CONFIG_SEARCH } from './configuration';
 import { CONNECTION_SEARCH } from './connection';
@@ -41,7 +40,10 @@ export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> 
   { resourceType: 'Bot', criteria: OPERATION_BOT_CRITERIA, readonly: true },
 ];
 
-/** Apply within existing Slot scope; remove broader write grants before relying on this restriction. */
+/**
+ * Optional hardening: entries that stop a Slot writer from changing imported Slots. They take
+ * effect only when they replace that writer's broader Slot write grants. Install does not apply them.
+ */
 export const ORDINARY_SLOT_POLICY_SNIPPET: AccessPolicy['resource'] = [
   { resourceType: 'Slot', criteria: `Slot?identifier:not=${IMPORT_IDENTIFIER_SYSTEM}|` },
   { resourceType: 'Slot', criteria: `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|`, readonly: true },
@@ -146,118 +148,4 @@ export async function ensureOperationPolicy(
     await projectQuery(medplum, { _tag: `${tag.system}|${tag.code}` })
   );
   return medplum.updateResource({ ...desired, id: saved.id, meta: { ...saved.meta, ...desired.meta } }, ifMatch(saved));
-}
-
-export async function auditPolicyGrants(
-  medplum: MedplumClient,
-  projectId: string,
-  expectedWorkers: string[] = []
-): Promise<string[]> {
-  const policies: WithId<AccessPolicy>[] = [];
-  for await (const page of medplum.searchResourcePages(
-    'AccessPolicy',
-    await projectQuery(medplum, { _count: '200' })
-  )) {
-    policies.push(...page);
-  }
-  // Conservative structural audit: arbitrary criteria, parameters and compartments cannot
-  // be proved safe from a handful of synthetic fixtures. Warn unless a grant is known safe.
-  const risky = new Set(
-    policies
-      .filter((policy) =>
-        policy.resource?.some((r) => {
-          if (!['*', 'Basic', 'Slot'].includes(r.resourceType)) {
-            return false;
-          }
-          const writes =
-            !r.readonly && (!r.interaction || r.interaction.some((i) => ['create', 'update', 'delete'].includes(i)));
-          if (r.resourceType === 'Slot') {
-            return writes && r.criteria !== `Slot?identifier:not=${IMPORT_IDENTIFIER_SYSTEM}|`;
-          }
-          if (r.resourceType === 'Basic') {
-            const safeRead =
-              !writes &&
-              (r.criteria === `Basic?${CONFIG_SEARCH}` ||
-                (r.criteria === `Basic?${PUBLIC_STATUS_SEARCH}&subject=%profile` &&
-                  r.interaction?.every((i) => ['read', 'search'].includes(i))));
-            return !safeRead;
-          }
-          return true;
-        })
-      )
-      .map((policy) => `AccessPolicy/${policy.id}`)
-  );
-  const warnings: string[] = [];
-  for await (const page of medplum.searchResourcePages('ProjectMembership', {
-    project: `Project/${projectId}`,
-    _count: '200',
-  })) {
-    for (const member of page) {
-      const references = [
-        member.accessPolicy?.reference,
-        ...(member.access ?? []).map((a) => a.policy?.reference),
-      ].filter(Boolean);
-      const policy = policies.find((p) => member.accessPolicy?.reference === `AccessPolicy/${p.id}`);
-      const knownPolicy = policy?.meta?.tag?.some(
-        (tag) =>
-          tag.system === INSTALL_SYSTEM &&
-          ['sync-policy', 'import-policy', 'webhook-policy', 'connect-policy', 'operation-policy'].includes(
-            tag.code ?? ''
-          )
-      );
-      const boundedWorkerPolicy = policy?.resource?.every((r) => {
-        if (r.resourceType === '*') {
-          return false;
-        }
-        if (r.resourceType === 'Basic') {
-          return [CONNECTION_SEARCH, PUBLIC_STATUS_SEARCH, CREDENTIAL_SEARCH, MIRROR_SEARCH, CONFIG_SEARCH].some(
-            (query) => r.criteria === `Basic?${query}`
-          );
-        }
-        if (r.resourceType === 'AsyncJob') {
-          return r.interaction?.length === 1 && r.interaction[0] === 'create';
-        }
-        if (r.resourceType === 'Slot' && !r.readonly) {
-          return r.criteria === `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|`;
-        }
-        return r.readonly === true;
-      });
-      if (
-        !member.admin &&
-        !member.access?.length &&
-        member.profile?.reference?.startsWith('Bot/') &&
-        knownPolicy &&
-        boundedWorkerPolicy
-      ) {
-        try {
-          const bot = await medplum.readReference(member.profile);
-          if (
-            bot.resourceType === 'Bot' &&
-            bot.identifier?.some(
-              (i) =>
-                i.system === BOT_IDENTIFIER_SYSTEM &&
-                Object.values(BOT_IDENTIFIER_VALUE).includes(i.value as typeof BOT_IDENTIFIER_VALUE.sync)
-            )
-          ) {
-            expectedWorkers.push(`ProjectMembership/${member.id}`);
-            continue;
-          }
-        } catch (err) {
-          if (!(err instanceof OperationOutcomeError && [403, 404, 410].includes(getStatus(err.outcome)))) {
-            throw err;
-          }
-          warnings.push(`ProjectMembership/${member.id}`);
-          continue;
-        }
-      }
-      if (
-        member.admin ||
-        !references.length ||
-        references.some((ref) => risky.has(ref as string) || !policies.some((p) => ref === `AccessPolicy/${p.id}`))
-      ) {
-        warnings.push(`ProjectMembership/${member.id}`);
-      }
-    }
-  }
-  return warnings;
 }

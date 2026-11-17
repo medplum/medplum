@@ -17,11 +17,9 @@ import {
 } from '../common/install';
 import { getParam } from '../common/operations';
 import {
-  auditPolicyGrants,
   ensureInboundPolicy,
   ensureOperationPolicy,
   ensureSyncAccessPolicy,
-  ORDINARY_SLOT_POLICY_SNIPPET,
   PRACTITIONER_POLICY_SNIPPET,
 } from '../common/policies';
 import { installProfiles } from '../common/profiles';
@@ -125,8 +123,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     ? `Reconcile runs hourly (${cron.cronString}); unfinished work is retried each minute. `
     : 'Reconcile is not scheduled until a Medplum super admin enables the "cron" feature on this project. ';
 
-  const expectedWorkers: string[] = [];
-  const broadGrants = await auditPolicyGrants(medplum, projectId, expectedWorkers);
   const outcome: OperationOutcome = {
     ...allOk,
     issue: [
@@ -137,37 +133,13 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
           text:
             `Bidirectional Google Calendar sync installed. ${reconcileNote}` +
             `Add these entries to your practitioner AccessPolicy so practitioners can manage their own connection: ` +
-            JSON.stringify(PRACTITIONER_POLICY_SNIPPET) +
-            ` Reserve the imported Slot identifier for this integration. Apply these Slot rules within existing scopes, replacing broader write grants (do not append to unrestricted Slot access): ` +
-            JSON.stringify(ORDINARY_SLOT_POLICY_SNIPPET),
+            JSON.stringify(PRACTITIONER_POLICY_SNIPPET),
         },
       },
-      ...(expectedWorkers.length
-        ? [
-            {
-              severity: 'information' as const,
-              code: 'informational' as const,
-              details: {
-                text: `Expected restricted integration memberships: ${expectedWorkers.join(', ')}. These are listed separately from customer grants requiring review.`,
-              },
-            },
-          ]
-        : []),
-      ...(broadGrants.length
-        ? [
-            {
-              severity: 'warning' as const,
-              code: 'security' as const,
-              details: {
-                text: `Review broad Slot/Basic access for ${broadGrants.join(', ')}. This conservative scan includes broad reads/writes, custom criteria, unresolved references and admin memberships. Review effective policies and rule ordering; a clean report is not proof of isolation.`,
-              },
-            },
-          ]
-        : []),
     ],
   };
   // Custom operations discard a bare successful OperationOutcome. Wrap it so the
-  // administrator receives the required policy changes through both execution routes.
+  // administrator receives the required policy entries through both execution routes.
   return {
     resourceType: 'Parameters',
     parameter: [

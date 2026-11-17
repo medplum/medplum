@@ -15,7 +15,6 @@ import { CREDENTIAL_SEARCH, migrateCredential, readCredential, TOKEN_URL } from 
 import { importedSlots } from './import';
 import { withConnectionLease } from './lease';
 import {
-  auditPolicyGrants,
   ensureInboundPolicy,
   ensureSyncAccessPolicy,
   ORDINARY_SLOT_POLICY_SNIPPET,
@@ -158,38 +157,6 @@ test('mutations reject caller fallback, missing membership, and cross-project pr
     meta: { project: 'other' },
   });
   await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('different project');
-});
-
-test.each([
-  { resourceType: 'Basic' as const, readonly: true },
-  { resourceType: '*' as const, readonly: true },
-  { resourceType: 'Slot' as const, criteria: 'Slot?status=busy-unavailable' },
-  { resourceType: 'Basic' as const, criteria: 'Basic?_compartment=Patient/x', readonly: true },
-])('audit warns about grants that could bypass ownership or credential boundaries: %j', async (entry) => {
-  const policy = await medplum.createResource({ resourceType: 'AccessPolicy', resource: [entry] });
-  const member = await medplum.createResource({
-    resourceType: 'ProjectMembership',
-    user: { reference: 'User/u' },
-    project: { reference: 'Project/customer-a' },
-    profile: { reference: 'Practitioner/p' },
-    accessPolicy: { reference: `AccessPolicy/${policy.id}` },
-  });
-  expect(await auditPolicyGrants(medplum, 'customer-a')).toContain(`ProjectMembership/${member.id}`);
-});
-
-test('audit accepts only the published restricted caller snippets without warning', async () => {
-  const policy = await medplum.createResource({
-    resourceType: 'AccessPolicy',
-    resource: [...PRACTITIONER_POLICY_SNIPPET, ...(ORDINARY_SLOT_POLICY_SNIPPET ?? [])],
-  });
-  const member = await medplum.createResource({
-    resourceType: 'ProjectMembership',
-    user: { reference: 'User/u' },
-    project: { reference: 'Project/customer-a' },
-    profile: { reference: 'Practitioner/p' },
-    accessPolicy: { reference: `AccessPolicy/${policy.id}` },
-  });
-  expect(await auditPolicyGrants(medplum, 'customer-a')).not.toContain(`ProjectMembership/${member.id}`);
 });
 
 test('credential migration adds the missing legacy connection identity without replacing its resource', async () => {
