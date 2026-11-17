@@ -85,6 +85,8 @@ export function AvailabilityShadeEvent(props: AvailabilityShadeEventProps): JSX.
         data-kind={shade.kind}
         data-testid="availability-shade"
         data-shade-id={shade.id}
+        data-shade-start={shade.start.getTime()}
+        data-shade-end={shade.end.getTime()}
         style={style}
       >
         {shade.label && <span className={classes.label}>{shade.label}</span>}

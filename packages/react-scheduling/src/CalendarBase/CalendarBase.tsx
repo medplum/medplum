@@ -221,6 +221,11 @@ export interface CalendarBaseProps extends Omit<
    * `computeAvailabilityShading` works them out for the days on show. Not drawn in month view.
    */
   availabilityShading?: readonly AvailabilityShade[];
+  /**
+   * Prototype. Called as the pointer moves over the availability blocks with the instant under it, to the
+   * pixel rather than to the grid's rows, and with undefined once it is off them or over an event.
+   */
+  onHoverAvailability?: (instant: Date | undefined) => void;
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;
@@ -274,6 +279,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     className,
     availableTime,
     availabilityShading,
+    onHoverAvailability,
     onSelectAppointment,
     onSelectSlot,
     onDoubleClickAppointment,
@@ -421,7 +427,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     }
   }, [startMs, endMs]);
 
-  const shadeHover = useAvailabilityShadeHover(Boolean(availabilityShading?.length));
+  const shadeHover = useAvailabilityShadeHover(Boolean(availabilityShading?.length), onHoverAvailability);
 
   return (
     <div data-testid="calendar" className={cx(classes.wrapper, className)} {...shadeHover.hoverProps}>

@@ -46,7 +46,7 @@ import {
   getRequirements,
   searchScheduleCandidates,
 } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { getAppointmentKey } from '../AppointmentFinder/AppointmentFinder.times';
+import { formatZonedTime, getAppointmentKey } from '../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentProposalFormActions } from '../AppointmentFinder/AppointmentProposalForm';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
@@ -254,8 +254,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [formSelections, setFormSelections] = useState<ActorSelections>(NO_SELECTIONS);
   // Remounts the form, starting it over on the site it was last on.
   const [formSeed, setFormSeed] = useState({ key: 0, serviceFacility: defaultServiceFacility });
-  // The offered time under the pointer in the time search, drawn on the calendar as a fainter draft.
+  // The offered time under the pointer, in the time search or on the calendar's shading, drawn on the
+  // calendar as a fainter draft.
   const [hoveredTime, setHoveredTime] = useState<Appointment>();
+  // Where the pointer is on the shading, to the pixel. A click reports only the grid row it landed in,
+  // which can hold several offered times, so the click picks by this instead.
+  const shadingHoverInstant = useRef<Date>(undefined);
   const formActionsRef = useRef<AppointmentProposalFormActions>(null);
 
   const [range, setRange] = useState<DateTimeRange>();
@@ -421,7 +425,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     const proposalSources = draftsOnShow
       ? [
           ...(proposal ? [toDraftSource(proposal, 'Draft New Appointment', false)] : []),
-          ...(hoveredTime && !hoverIsProposal ? [toDraftSource(hoveredTime, 'Proposed Time', true)] : []),
+          ...(hoveredTime && !hoverIsProposal
+            ? [toDraftSource(hoveredTime, getProposedTimeLabel(hoveredTime), true)]
+            : []),
         ]
       : [];
     const legend = groups
@@ -543,6 +549,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const goToNextRange = useCallback((): void => calendarRef.current?.next(), []);
 
+  // Shows the offered time a click at the pointer would pick, before it is clicked.
+  const hoverShading = useCallback((instant: Date | undefined): void => {
+    shadingHoverInstant.current = instant;
+    const offered = instant && formActionsRef.current?.timeAt(instant);
+    setHoveredTime((previous) =>
+      previous && offered && getAppointmentKey(previous) === getAppointmentKey(offered) ? previous : offered
+    );
+  }, []);
+
   // Hides are kept across a service change rather than pruned: a calendar hidden under
   // one service type stays hidden if another offers it again.
   const toggleCandidate = useCallback((actorType: BookableActorType, id: string): void => {
@@ -629,16 +644,18 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // which there only is inside the shading.
   const selectInterval = useCallback(
     (interval: CalendarSelection): void => {
-      closeAppointment();
-      closeSlot();
-      if (paneTab === 'block') {
+      // With details open the form and its shading are out of sight, so the click only brings them back.
+      if (selectedAppointment || selectedSlot) {
+        closeAppointment();
+        closeSlot();
+      } else if (paneTab === 'block') {
         setBlockRange(interval);
         setBlockHighlight(interval);
       } else if (!interval.allDay) {
-        formActionsRef.current?.pickAt(interval.start);
+        formActionsRef.current?.pickAt(shadingHoverInstant.current ?? interval.start);
       }
     },
-    [closeAppointment, closeSlot, paneTab]
+    [closeAppointment, closeSlot, paneTab, selectedAppointment, selectedSlot]
   );
 
   // Held apart from the calendar's, like the open appointment, so it closes on being deleted
@@ -795,6 +812,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Tooltip>
           }
           availabilityShading={showBooking && paneTab === 'appointment' ? availabilityShading : undefined}
+          onHoverAvailability={hoverShading}
           loading={resourcesLoading || servicesPending}
           onSelectInterval={selectInterval}
           onSelectAppointment={selectAppointment}
@@ -887,6 +905,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
               nextRangeLabel={nextRangeLabel}
               onNextRange={goToNextRange}
               onHoverTime={setHoveredTime}
+              highlightedTime={hoveredTime}
               onChangeProposal={setProposal}
               onChangeServiceFacility={changeFormServiceFacility}
               onChangeService={changeFormService}
@@ -1039,6 +1058,12 @@ function getNextHalfHour(): DateTimeRange {
   const start = new Date();
   start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
   return { start, end: new Date(start.getTime() + 30 * 60 * 1000) };
+}
+
+// Names the draft drawn for an offered time being considered. The time comes first, as a short visit's
+// one line is cut off after a few words.
+function getProposedTimeLabel(offered: Appointment): string {
+  return offered.start ? `${formatZonedTime(new Date(offered.start))} · Proposed` : 'Proposed Time';
 }
 
 // Names the button paging the calendar on, by how many days the calendar has on show.

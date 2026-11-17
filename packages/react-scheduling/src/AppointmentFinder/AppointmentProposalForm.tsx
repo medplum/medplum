@@ -109,6 +109,8 @@ export interface AppointmentProposalFormActions {
    * @returns False when no offered time covers the instant.
    */
   readonly pickAt: (instant: Date) => boolean;
+  /** The offered time `pickAt` would pick for an instant, for a host to show before it is picked. */
+  readonly timeAt: (instant: Date) => Appointment | undefined;
 }
 
 // Long enough that typing a time does not search on every keystroke, short enough
@@ -260,6 +262,8 @@ export interface AppointmentProposalFormProps {
   readonly onChangeSelections?: (selections: ActorSelections) => void;
   /** Prototype. See {@link AppointmentProposalFormActions}. */
   readonly actionsRef?: Ref<AppointmentProposalFormActions>;
+  /** Prototype. An offered time to mark among the times, such as the one under the pointer on a host's calendar. */
+  readonly highlightedTime?: Appointment;
 }
 
 /** What `onBook` is told about the proposal it was handed. */
@@ -313,6 +317,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onChangeServiceFacility,
     onChangeSelections,
     actionsRef,
+    highlightedTime,
   } = props;
 
   const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
@@ -599,28 +604,39 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   const revealPick = useRef(false);
-  useImperativeHandle(actionsRef, () => ({
-    pickAt: (instant: Date): boolean => {
-      const at = instant.getTime();
-      const covering = daySearch.timeResultsByDay
-        .flatMap((day) => day.groups.flatMap((group) => group.appointments))
-        .filter((offered) => {
-          return (
-            offered.start &&
-            offered.end &&
-            new Date(offered.start).getTime() <= at &&
-            new Date(offered.end).getTime() > at
-          );
-        })
-        .sort((a, b) => new Date(b.start as string).getTime() - new Date(a.start as string).getTime());
-      if (!searching || covering.length === 0) {
-        return false;
+  useImperativeHandle(actionsRef, () => {
+    // The offered time covering an instant that starts latest, so each one answers for the stretch from
+    // its own start to the next one's, however far the visit's length runs past that.
+    const timeAt = (instant: Date): Appointment | undefined => {
+      if (!searching) {
+        return undefined;
       }
-      chooseTime(covering[0]);
-      revealPick.current = true;
-      return true;
-    },
-  }));
+      const at = instant.getTime();
+      let latest: Appointment | undefined;
+      let latestStart = -Infinity;
+      for (const offered of daySearch.timeResultsByDay.flatMap((day) => day.groups.flatMap((g) => g.appointments))) {
+        const start = offered.start ? new Date(offered.start).getTime() : NaN;
+        const end = offered.end ? new Date(offered.end).getTime() : NaN;
+        if (start <= at && end > at && start > latestStart) {
+          latest = offered;
+          latestStart = start;
+        }
+      }
+      return latest;
+    };
+    return {
+      timeAt,
+      pickAt: (instant: Date): boolean => {
+        const offered = timeAt(instant);
+        if (!offered) {
+          return false;
+        }
+        chooseTime(offered);
+        revealPick.current = true;
+        return true;
+      },
+    };
+  });
 
   // Brings a time picked from the host's calendar into view among the times. One picked from the times
   // themselves is already in view.
@@ -1039,6 +1055,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   selected={picked}
                   onSelectAppointment={chooseTime}
                   onHoverAppointment={onHoverTime}
+                  highlighted={highlightedTime}
                 />
               ))}
             {settled && (

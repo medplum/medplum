@@ -22,6 +22,8 @@ export interface AppointmentSlotGroupCardProps {
   readonly disabled?: boolean;
   /** Prototype. Called with the time the pointer or focus is on, and with undefined once it leaves. */
   readonly onHoverAppointment?: (appointment: Appointment | undefined) => void;
+  /** Prototype. An offered time to mark, such as the one under the pointer on a host's calendar. */
+  readonly highlighted?: Appointment;
 }
 
 function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Element {
@@ -51,6 +53,7 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
   // Matched by value, since a refetch, as reopening the search makes, offers the same time
   // as a new object.
   const selectedKey = selected && getAppointmentKey(selected);
+  const highlightedKey = props.highlighted && getAppointmentKey(props.highlighted);
 
   return (
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
@@ -68,11 +71,13 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
       </Group>
       <Group gap="xs" className={classes.timeGrid}>
         {group.appointments.map((appointment) => {
-          const isSelected = getAppointmentKey(appointment) === selectedKey;
+          const key = getAppointmentKey(appointment);
+          const isSelected = key === selectedKey;
+          const restVariant = key === highlightedKey ? 'light' : 'outline';
           return (
             <Button
               key={appointment.start}
-              variant={isSelected ? 'filled' : 'outline'}
+              variant={isSelected ? 'filled' : restVariant}
               size="sm"
               px="sm"
               disabled={disabled}
