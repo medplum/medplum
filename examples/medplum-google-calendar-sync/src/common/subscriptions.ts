@@ -14,25 +14,19 @@ const SUBSCRIPTION_INTERACTION_EXTENSION_URL =
   'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction';
 
 /**
- * Install scoped scheduling delivery. Schedule and PractitionerRole deletes use a separate
- * Subscription because their transition expressions apply only to creates and updates.
- * The endpoint must be the literal `Bot/<id>`; an identifier isn't accepted.
+ * Deliver Appointment and Slot changes to the sync Bot. Imported Slots are excluded so the
+ * integration never mirrors its own writes. The endpoint must be the literal `Bot/<id>`.
  * @param medplum - The client.
  * @param syncBot - The shared sync Bot.
  * @param criteria - Scheduling resource type.
- * @param deleteOnly - Separate deletion delivery without a transition expression.
  * @returns The Subscription.
  */
 export async function ensureSyncSubscription(
   medplum: MedplumClient,
   syncBot: WithId<Bot>,
-  criteria: 'Appointment' | 'Slot' | 'Schedule' | 'PractitionerRole',
-  deleteOnly = false
+  criteria: 'Appointment' | 'Slot'
 ): Promise<WithId<Subscription>> {
-  const tag = { system: INSTALL_SYSTEM, code: `subscription-${criteria.toLowerCase()}${deleteOnly ? '-delete' : ''}` };
-  const normalInteractions = ['Schedule', 'PractitionerRole'].includes(criteria)
-    ? ['create', 'update']
-    : ['create', 'update', 'delete'];
+  const tag = { system: INSTALL_SYSTEM, code: `subscription-${criteria.toLowerCase()}` };
   const desired: Subscription = {
     resourceType: 'Subscription',
     meta: { tag: [tag] },
@@ -49,15 +43,7 @@ export async function ensureSyncSubscription(
             },
           ]
         : []),
-      ...(!deleteOnly && ['Schedule', 'PractitionerRole'].includes(criteria)
-        ? [
-            {
-              url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
-              valueString: `%previous.empty() or %current.empty() or (%previous.active ~ %current.active).not() or (%previous.${criteria === 'Schedule' ? 'actor' : 'practitioner'} ~ %current.${criteria === 'Schedule' ? 'actor' : 'practitioner'}).not()`,
-            },
-          ]
-        : []),
-      ...(deleteOnly ? ['delete'] : normalInteractions).map((valueCode) => ({
+      ...['create', 'update', 'delete'].map((valueCode) => ({
         url: SUBSCRIPTION_INTERACTION_EXTENSION_URL,
         valueCode,
       })),

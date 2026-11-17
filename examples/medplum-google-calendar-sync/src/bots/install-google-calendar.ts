@@ -98,10 +98,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   await ensureBotMembership(medplum, projectId, syncBot, policy);
   await ensureSyncSubscription(medplum, syncBot, 'Appointment');
   await ensureSyncSubscription(medplum, syncBot, 'Slot');
-  await ensureSyncSubscription(medplum, reconcileBot, 'Schedule');
-  await ensureSyncSubscription(medplum, reconcileBot, 'PractitionerRole');
-  await ensureSyncSubscription(medplum, reconcileBot, 'Schedule', true);
-  await ensureSyncSubscription(medplum, reconcileBot, 'PractitionerRole', true);
   await ensureWorkSubscription(medplum, importBot, 'inbound');
   await ensureWorkSubscription(medplum, reconcileBot, 'outbound');
   const reconcileMembership = await ensureBotMembership(medplum, projectId, reconcileBot, policy);
