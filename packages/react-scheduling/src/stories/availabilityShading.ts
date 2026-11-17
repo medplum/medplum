@@ -10,6 +10,7 @@ import type { WithId } from '@medplum/core';
 import {
   createReference,
   SchedulingColorURI,
+  SchedulingParametersURI,
   setScheduleSchedulingParameter,
   toAppointmentSiteReference,
   toServiceTypeCodeableConcepts,
@@ -21,6 +22,7 @@ import type {
   Location,
   Patient,
   Practitioner,
+  PractitionerRole,
   Resource,
   Schedule,
   Slot,
@@ -51,25 +53,41 @@ export const northgate = facility('northgate', 'Northgate Hospital');
 export const SHADING_FACILITIES = [riverside, northgate];
 
 // Every visit type defaults to weekdays 9 to 5, which is what a calendar setting no hours of its own for
-// it inherits.
-function visitType(id: string, name: string, color: string): WithId<HealthcareService> {
+// it inherits. Lengths and start-time grids differ, as they do in a real clinic: not every visit is half
+// an hour on the half hour.
+function visitType(
+  id: string,
+  name: string,
+  color: string,
+  durationMinutes: number,
+  alignmentMinutes: number
+): WithId<HealthcareService> {
   return {
     resourceType: 'HealthcareService',
     id: `shading-${id}`,
     name,
     availableTime: [{ daysOfWeek: [...WEEKDAYS], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
-    extension: [{ url: SchedulingColorURI, valueString: color }],
+    extension: [
+      { url: SchedulingColorURI, valueString: color },
+      {
+        url: SchedulingParametersURI,
+        extension: [
+          { url: 'duration', valueDuration: { value: durationMinutes, unit: 'min' } },
+          { url: 'alignmentInterval', valueDuration: { value: alignmentMinutes, unit: 'min' } },
+        ],
+      },
+    ],
   };
 }
 
-export const newPatient = visitType('new-patient', 'New Patient', 'green');
-export const followUp = visitType('follow-up', 'Follow-up', 'blue');
-export const injections = visitType('injections', 'Injections', 'orange');
-export const procedures = visitType('procedures', 'Procedures', 'violet');
+export const newPatient = visitType('new-patient', 'New Patient', 'green', 45, 15);
+export const followUp = visitType('follow-up', 'Follow-up', 'blue', 30, 30);
+export const injections = visitType('injections', 'Injections', 'orange', 20, 10);
+export const procedures = visitType('procedures', 'Procedures', 'violet', 60, 30);
 // Shares New Patient's color, as visit types an admin groups together would.
-export const consult = visitType('consult', 'Consult', 'green');
-export const telehealth = visitType('telehealth', 'Telehealth', 'cyan');
-export const labReview = visitType('lab-review', 'Lab Review', 'pink');
+export const consult = visitType('consult', 'Consult', 'green', 30, 30);
+export const telehealth = visitType('telehealth', 'Telehealth', 'cyan', 30, 15);
+export const labReview = visitType('lab-review', 'Lab Review', 'pink', 15, 15);
 export const SHADING_VISIT_TYPES = [newPatient, followUp, injections, procedures, consult, telehealth, labReview];
 
 /** A provider's calendar, and the service facilities they work at. */
@@ -264,4 +282,25 @@ export const SHADING_FIXTURES: readonly Resource[] = [
   ...SHADING_VISIT_TYPES,
   ...SHADING_PROVIDERS.flatMap(({ practitioner, schedule }) => [practitioner, schedule]),
   ...patients,
+];
+
+// Where each provider works, as the scheduling workspace reads it.
+const roles = SHADING_PROVIDERS.flatMap(({ practitioner, facilities }) =>
+  facilities.map((site): WithId<PractitionerRole> => ({
+    resourceType: 'PractitionerRole',
+    id: `${practitioner.id}-at-${site.id}`,
+    practitioner: createReference(practitioner),
+    location: [createReference(site)],
+  }))
+);
+
+/**
+ * Everything the scheduling workspace searches for itself: the fixtures above, with where each provider
+ * works, the week's appointments and the blocked time stored too.
+ */
+export const SHADING_WORKSPACE_FIXTURES: readonly Resource[] = [
+  ...SHADING_FIXTURES,
+  ...roles,
+  ...SHADING_APPOINTMENTS,
+  ...SHADING_SLOTS,
 ];

@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { RecurrenceTemplateExtensionURI } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import {
+  getHealthcareServiceSchedulingParameters,
+  RecurrenceTemplateExtensionURI,
+  schedulingDurationToMinutes,
+} from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getServiceDurationMinutes } from '../AppointmentFinder/AppointmentServiceSelect.utils';
+import { computeBookingShading } from '../availabilityShading';
 import { buildFindBundle, buildProposedAppointment } from './scheduling';
 
 /** Clinic hours the stub offers times within, as local hours of the day. */
@@ -16,6 +21,17 @@ const DEFAULT_DURATION_MINUTES = 30;
 export interface FindStubOptions {
   /** Offer nothing at all, for the empty state. Defaults to false. */
   readonly empty?: boolean;
+  /**
+   * Offer only the times every schedule asked for has open: inside its availability for the visit type,
+   * and clear of its appointments and blocked time. Defaults to false, which offers clinic hours on any
+   * schedule.
+   */
+  readonly respectAvailability?: boolean;
+  /**
+   * The service facility being booked at, as a reference string, for the prototype's windows scoped to
+   * one. Only read with `respectAvailability`.
+   */
+  readonly getServiceFacility?: () => string | undefined;
 }
 
 /**
@@ -67,8 +83,12 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
   // every actor, so the stub does the same.
   const actorReferences = schedules.map((schedule) => schedule.actor[0]);
 
+  const starts = options.respectAvailability
+    ? await enumerateOpenTimes(medplum, { schedules, service, start, end, durationMinutes, options })
+    : enumerateSlots(start, end, durationMinutes);
+
   const appointments: Appointment[] = [];
-  for (const slotStart of enumerateSlots(start, end, durationMinutes)) {
+  for (const slotStart of starts) {
     if (appointments.length >= count) {
       break;
     }
@@ -93,6 +113,68 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
   }
 
   return buildFindBundle(appointments);
+}
+
+interface OpenTimesInput {
+  readonly schedules: readonly WithId<Schedule>[];
+  readonly service: WithId<HealthcareService>;
+  readonly start: Date;
+  readonly end: Date;
+  readonly durationMinutes: number;
+  readonly options: FindStubOptions;
+}
+
+/**
+ * Lays times on the visit type's alignment grid through the time every schedule has open.
+ *
+ * Open time is worked out as the calendar's shading works it out, so the two agree: each schedule's
+ * availability for the visit type, less the appointments and blocked time stored for it.
+ * @param medplum - The client holding the appointments and Slots.
+ * @param input - The schedules, visit type and window asked about.
+ * @returns Each time a visit could start at, in order.
+ */
+async function enumerateOpenTimes(medplum: MedplumClient, input: OpenTimesInput): Promise<Date[]> {
+  const { schedules, service, start, end, durationMinutes, options } = input;
+  const rows = await Promise.all(
+    schedules.map(async (schedule) => {
+      const [appointments, slots] = await Promise.all([
+        medplum.searchResources('Appointment', { actor: schedule.actor[0].reference ?? '', _count: '1000' }),
+        medplum.searchResources('Slot', { schedule: `Schedule/${schedule.id}`, _count: '1000' }),
+      ]);
+      return [{ schedule, appointments, slots }];
+    })
+  );
+  const facility = options.getServiceFacility?.();
+  const open = computeBookingShading({
+    rows,
+    service,
+    serviceFacility: facility ? { reference: facility } : undefined,
+    range: { start, end },
+    color: 'gray',
+    minMinutes: durationMinutes,
+    from: start,
+  });
+
+  const alignmentMinutes =
+    schedulingDurationToMinutes(
+      getHealthcareServiceSchedulingParameters(service, 'alignmentInterval')[0]?.valueDuration
+    ) ?? durationMinutes;
+  const stepMs = alignmentMinutes * 60_000;
+  const durationMs = durationMinutes * 60_000;
+
+  const times: Date[] = [];
+  for (const block of open) {
+    const midnight = new Date(block.start);
+    midnight.setHours(0, 0, 0, 0);
+    // The first grid line at or after the block opens, counted from the day's midnight.
+    const offset = Math.ceil((block.start.getTime() - midnight.getTime()) / stepMs) * stepMs;
+    for (let time = midnight.getTime() + offset; time + durationMs <= block.end.getTime(); time += stepMs) {
+      if (time <= end.getTime()) {
+        times.push(new Date(time));
+      }
+    }
+  }
+  return times;
 }
 
 /**

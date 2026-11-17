@@ -198,6 +198,16 @@
     }
   }
 
+  /* A draft only being considered, such as the time under the pointer in a time search. */
+  :global(.appointment.draft.ghost) {
+    opacity: 0.6;
+
+    &,
+    &:not(:focus-visible) {
+      outline-style: dashed;
+    }
+  }
+
   /* Slots are drawn in one gray, whichever source they come from, leaving color to the
    * appointments. The selected one takes a stronger gray. */
   :global(.slot) {

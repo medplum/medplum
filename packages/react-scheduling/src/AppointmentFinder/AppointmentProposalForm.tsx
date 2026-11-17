@@ -40,8 +40,8 @@ import type { Appointment, Extension, HealthcareService, Location, Patient, Refe
 import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconArrowBackUp, IconCalendarSearch } from '@tabler/icons-react';
-import type { JSX, RefObject } from 'react';
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { JSX, Ref, RefObject } from 'react';
+import { useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
@@ -49,6 +49,7 @@ import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import { ServiceFacilityInput } from '../ServiceFacilityInput';
+import type { DateTimeRange } from '../types';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -76,6 +77,7 @@ import {
   getLaterOccurrenceStarts,
   getNativeInputType,
   isViewerTimezone,
+  MAX_FIND_WINDOW_DAYS,
   parseZonedDateTimeInput,
   startOfDay,
 } from './AppointmentFinder.times';
@@ -96,6 +98,18 @@ const NO_SERVICE_BLOCKER: SelectionBlocker = { message: 'Choose a visit type fir
 
 // No month-wide scan exists, so every day is offered and the search answers.
 const NO_MARKED_DATES: Date[] = [];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Prototype. What a host can ask of a mounted form. */
+export interface AppointmentProposalFormActions {
+  /**
+   * Picks the offered time covering an instant, as clicking it in the search would: the one starting
+   * latest, where several overlap.
+   * @returns False when no offered time covers the instant.
+   */
+  readonly pickAt: (instant: Date) => boolean;
+}
 
 // Long enough that typing a time does not search on every keystroke, short enough
 // that the warning is there before the user reaches the book button.
@@ -225,6 +239,27 @@ export interface AppointmentProposalFormProps {
    * to six. Only offered when booking: `$reschedule` moves a single visit.
    */
   readonly allowRecurring?: boolean;
+  /**
+   * Prototype. Keeps the time search open beside the form, in place of the button that opens it. Until a
+   * visit type and an actor are chosen, the column says what is still needed.
+   */
+  readonly finderAlwaysOpen?: boolean;
+  /**
+   * Prototype. The days to search, in place of the date picker: the days a host's calendar has on show,
+   * `end` exclusive. Days already gone are not searched.
+   */
+  readonly searchRange?: DateTimeRange;
+  /** Prototype. Shown under the times in place of "Show more days", for a host that pages `searchRange`. */
+  readonly nextRangeLabel?: string;
+  readonly onNextRange?: () => void;
+  /** Prototype. Called with the offered time the pointer or focus is on, and with undefined once it leaves. */
+  readonly onHoverTime?: (appointment: Appointment | undefined) => void;
+  /** Prototype. Called with the site on mount and whenever it changes. */
+  readonly onChangeServiceFacility?: (serviceFacility: Reference<Location> | WithId<Location> | undefined) => void;
+  /** Prototype. Called with the actors asked for on mount and whenever they change. */
+  readonly onChangeSelections?: (selections: ActorSelections) => void;
+  /** Prototype. See {@link AppointmentProposalFormActions}. */
+  readonly actionsRef?: Ref<AppointmentProposalFormActions>;
 }
 
 /** What `onBook` is told about the proposal it was handed. */
@@ -270,6 +305,14 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     canBypassSchedulingRules,
     appointmentExtensions,
     allowRecurring,
+    finderAlwaysOpen = false,
+    searchRange,
+    nextRangeLabel,
+    onNextRange,
+    onHoverTime,
+    onChangeServiceFacility,
+    onChangeSelections,
+    actionsRef,
   } = props;
 
   const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
@@ -340,7 +383,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   // Derived, not a flag: closing is never its own rule, so losing the last resource
   // closes the search however it was lost.
-  const searching = finding && !selectionError;
+  // A host's days already gone hold nothing to find, and `$find` would answer for today instead.
+  const searchRangePast = searchRange !== undefined && searchRange.end.getTime() <= Date.now();
+  const searching = (finding || finderAlwaysOpen) && !selectionError && !searchRangePast;
 
   // Nothing is searched until the time search is open, so the answers above cost no
   // request per keystroke.
@@ -391,6 +436,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     occurrenceCount: effectiveOccurrenceCount,
   });
   const { reset: resetDaySearch } = daySearch;
+
+  // Follows the host's days, during render so no time from the days before is offered under the new ones.
+  // Held to what `$find` answers at once, as a month on show is more than that.
+  const searchRangeKey = searchRange && `${searchRange.start.getTime()}-${searchRange.end.getTime()}`;
+  const [appliedSearchRangeKey, setAppliedSearchRangeKey] = useState<string>();
+  if (searchRangeKey !== appliedSearchRangeKey) {
+    setAppliedSearchRangeKey(searchRangeKey);
+    if (searchRange && !searchRangePast) {
+      const first = floorToNow(searchRange.start);
+      const last = Math.min(searchRange.end.getTime() - 1, first.getTime() + (MAX_FIND_WINDOW_DAYS - 1) * DAY_MS);
+      daySearch.chooseDayRange(first, new Date(last));
+    }
+  }
 
   // Compared by day, so a host building `new Date()` each render moves nothing.
   // A day already gone opens the search on today, so it is on show whenever today is.
@@ -447,6 +505,9 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     latestOnChangeProposal.current = onChangeProposal;
   }, [onChangeProposal]);
   useEffect(() => () => latestOnChangeProposal.current?.(undefined), []);
+
+  useEffect(() => onChangeServiceFacility?.(serviceFacility), [serviceFacility, onChangeServiceFacility]);
+  useEffect(() => onChangeSelections?.(selections), [selections, onChangeSelections]);
 
   const finderButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -528,11 +589,47 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     // The fields show the picked time, so a typed one goes.
     clearManualTime();
     setWritten(false);
-    setFinding(false);
     setPickCount((count) => count + 1);
+    if (finderAlwaysOpen) {
+      return;
+    }
+    setFinding(false);
     // The picked time's button goes with the search, so focus would fall to the page.
     finderButtonRef.current?.focus();
   }
+
+  const revealPick = useRef(false);
+  useImperativeHandle(actionsRef, () => ({
+    pickAt: (instant: Date): boolean => {
+      const at = instant.getTime();
+      const covering = daySearch.timeResultsByDay
+        .flatMap((day) => day.groups.flatMap((group) => group.appointments))
+        .filter((offered) => {
+          return (
+            offered.start &&
+            offered.end &&
+            new Date(offered.start).getTime() <= at &&
+            new Date(offered.end).getTime() > at
+          );
+        })
+        .sort((a, b) => new Date(b.start as string).getTime() - new Date(a.start as string).getTime());
+      if (!searching || covering.length === 0) {
+        return false;
+      }
+      chooseTime(covering[0]);
+      revealPick.current = true;
+      return true;
+    },
+  }));
+
+  // Brings a time picked from the host's calendar into view among the times. One picked from the times
+  // themselves is already in view.
+  useEffect(() => {
+    if (revealPick.current) {
+      revealPick.current = false;
+      resultsRef.current?.querySelector('[data-selected-time]')?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [pickCount]);
 
   const configuredDurationMinutes = useMemo(
     () => (service ? resolveBookingGeometry(service, manualCandidates[0]?.schedule).duration : undefined),
@@ -817,6 +914,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           timezone={timezone}
           searching={searching}
           blockedBy={blockedBy}
+          hideFinderButton={finderAlwaysOpen}
           onToggleFinder={toggleFinder}
           finderButtonRef={finderButtonRef}
           // Only a pick flashes, as the search closes on it. Typing keeps the key, so the field
@@ -876,6 +974,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         </Stack>
       </Stack>
 
+      {finderAlwaysOpen && !searching && (
+        <div className={classes.results}>
+          <Title order={5} size="h4">
+            Select a time
+          </Title>
+          <Divider mt="sm" />
+          <FinderZeroState service={service} blocker={selectionError} past={searchRangePast} />
+        </div>
+      )}
       {searching && (
         <div className={classes.results}>
           <Title order={5} size="h4">
@@ -883,36 +990,39 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           </Title>
           <Divider mt="sm" />
           <Stack ref={resultsRef} className={classes.resultsList} gap="xl">
-            <div className={classes.monthPicker}>
-              <CalendarDateInput
-                availableDates={NO_MARKED_DATES}
-                allowUnavailableDates
-                earliestDate={new Date()}
-                month={month}
-                range={daySearch.selectedDayRange}
-                onChangeMonth={setMonth}
-                onClick={daySearch.chooseDayRange}
-                onSelectRange={daySearch.chooseDayRange}
-                monthLabel={
-                  <MonthPickerButton
-                    label={
-                      <Text component="span" fz="md" fw={800}>
-                        {formatMonth(month ?? new Date())}
-                      </Text>
-                    }
-                    date={month ?? new Date()}
-                    minDate={new Date()}
-                    onChange={setMonth}
-                  />
-                }
-              />
-              {daySearch.windowError && (
-                <Alert color="yellow" mt={4}>
-                  {daySearch.windowError}
-                </Alert>
-              )}
-              <Divider mt="sm" />
-            </div>
+            {!searchRange && (
+              <div className={classes.monthPicker}>
+                <CalendarDateInput
+                  availableDates={NO_MARKED_DATES}
+                  allowUnavailableDates
+                  earliestDate={new Date()}
+                  month={month}
+                  range={daySearch.selectedDayRange}
+                  onChangeMonth={setMonth}
+                  onClick={daySearch.chooseDayRange}
+                  onSelectRange={daySearch.chooseDayRange}
+                  monthLabel={
+                    <MonthPickerButton
+                      label={
+                        <Text component="span" fz="md" fw={800}>
+                          {formatMonth(month ?? new Date())}
+                        </Text>
+                      }
+                      date={month ?? new Date()}
+                      minDate={new Date()}
+                      onChange={setMonth}
+                    />
+                  }
+                />
+                {daySearch.windowError && (
+                  <Alert color="yellow" mt={4}>
+                    {daySearch.windowError}
+                  </Alert>
+                )}
+                <Divider mt="sm" />
+              </div>
+            )}
+            {searchRange && daySearch.windowError && <Alert color="yellow">{daySearch.windowError}</Alert>}
             {daySearch.loadingFirstDays && <Loader size="sm" />}
             {daySearch.findRequestError && (
               <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>
@@ -928,6 +1038,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   // A typed time is written as typed, even when the search offers the same one.
                   selected={picked}
                   onSelectAppointment={chooseTime}
+                  onHoverAppointment={onHoverTime}
                 />
               ))}
             {settled && (
@@ -950,9 +1061,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   </Stack>
                 )}
                 {/* No signal for how far ahead there's anything to find, so this has no end state. */}
-                <Button variant="outline" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
-                  Show more days
-                </Button>
+                {onNextRange ? (
+                  <Button variant="outline" onClick={onNextRange}>
+                    {nextRangeLabel ?? 'Next days'}
+                  </Button>
+                ) : (
+                  <Button variant="outline" loading={daySearch.loadingMoreDays} onClick={daySearch.showMoreDays}>
+                    Show more days
+                  </Button>
+                )}
               </>
             )}
           </Stack>
@@ -970,6 +1087,8 @@ interface ChosenTimeProps {
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
   readonly onToggleFinder: () => void;
+  /** Prototype. Leaves out the button and what blocks it, for a search that is always open. */
+  readonly hideFinderButton?: boolean;
   readonly finderButtonRef: RefObject<HTMLButtonElement | null>;
   /** Changing this flashes the chosen time; at 0, the time is shown without a flash. */
   readonly flashKey: number;
@@ -1032,20 +1151,55 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         />
       )}
 
-      <Stack gap={4}>
-        <Button
-          ref={finderButtonRef}
-          variant="outline"
-          fullWidth
-          leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
-          disabled={!!blockedBy}
-          onClick={onToggleFinder}
-        >
-          {getFinderLabel(searching, !!appointment)}
-        </Button>
-        {blockedBy && <BlockerMessage blocker={blockedBy} />}
-      </Stack>
+      {!props.hideFinderButton && (
+        <Stack gap={4}>
+          <Button
+            ref={finderButtonRef}
+            variant="outline"
+            fullWidth
+            leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
+            disabled={!!blockedBy}
+            onClick={onToggleFinder}
+          >
+            {getFinderLabel(searching, !!appointment)}
+          </Button>
+          {blockedBy && <BlockerMessage blocker={blockedBy} />}
+        </Stack>
+      )}
     </>
+  );
+}
+
+interface FinderZeroStateProps {
+  readonly service: WithId<HealthcareService> | undefined;
+  readonly blocker: SelectionBlocker | undefined;
+  /** Whether the host's days on show are all gone. */
+  readonly past: boolean;
+}
+
+/**
+ * Prototype. What an always-open time search shows before it can search: what is still needed, naming a
+ * provider as the usual way to fill in who.
+ * @param props - The React props.
+ * @returns The message.
+ */
+function FinderZeroState(props: FinderZeroStateProps): JSX.Element {
+  const { service, blocker, past } = props;
+  let message = 'Choose a visit type and a provider to see available times.';
+  if (service && blocker?.severity === 'invalid') {
+    message = blocker.message;
+  } else if (service && blocker) {
+    message = 'Choose a provider to see available times.';
+  } else if (service && past) {
+    message = 'These days have passed. Page the calendar forward to see available times.';
+  }
+  return (
+    <Stack align="center" gap="xs" py="xl" px="md">
+      <IconCalendarSearch size={32} stroke={1.4} color="var(--mantine-color-dimmed)" />
+      <Text c="dimmed" ta="center">
+        {message}
+      </Text>
+    </Stack>
   );
 }
 
