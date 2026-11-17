@@ -89,6 +89,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'restoreReadonlyFields',
   'removePolicyHiddenFields',
   'logPostMetadataFieldMatch',
+  'logAccountsChange',
   'logEvent',
   'getCacheEntry',
   'getCacheEntries',
