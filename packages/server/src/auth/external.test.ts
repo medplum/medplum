@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, Logger, OAuthTokenAuthMethod } from '@medplum/core';
-import type { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type {
+  ClientApplication,
+  DomainConfiguration,
+  Login,
+  Project,
+  ProjectMembership,
+  User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
@@ -14,9 +21,11 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-import { getUserByEmailWithoutProject } from '../oauth/utils';
+import { getUserByEmailWithoutProject, hashCode } from '../oauth/utils';
+import { getCacheRedis } from '../redis';
 import { withTestContext } from '../test.setup';
 import { mockFetchJson, mockFetchText } from '../test.setup.fetch';
+import { EXTERNAL_AUTH_STATE_TTL_SECONDS } from './external';
 import { registerNew } from './register';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
@@ -1247,6 +1256,189 @@ describe('External', () => {
     expect(redirect.host).toStrictEqual(domain);
     expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
+  });
+
+  describe('Start', () => {
+    const codeChallenge = 'app-code-challenge';
+    const codeChallengeMethod = 'S256';
+
+    async function start(body: Record<string, unknown>): Promise<request.Response> {
+      return request(app).post('/auth/external/start').type('json').send(body);
+    }
+
+    async function startState(body: Record<string, unknown>): Promise<string> {
+      const res = await start(body);
+      expect(res).toHaveStatus(200);
+      return new URL(res.body.url).searchParams.get('state') as string;
+    }
+
+    const pkce = { codeChallenge, codeChallengeMethod };
+    test.each<[string, () => Record<string, unknown>, string]>([
+      ['missing code challenge', () => ({ clientId: otherClient.id, codeChallengeMethod }), 'Missing code challenge'],
+      [
+        'plain code challenge',
+        () => ({ clientId: otherClient.id, codeChallenge, codeChallengeMethod: 'plain' }),
+        'Invalid code challenge method',
+      ],
+      [
+        'unregistered redirect URI',
+        () => ({ ...pkce, clientId: otherClient.id, redirectUri: 'https://example.com/other' }),
+        'Invalid redirect URI',
+      ],
+      [
+        'project of another client',
+        () => ({ ...pkce, clientId: otherClient.id, projectId: project.id }),
+        'Invalid project',
+      ],
+      [
+        'returnTo not allowed by the domain',
+        () => ({ ...pkce, domain, returnTo: 'https://example.com/' }),
+        'Invalid returnTo URL',
+      ],
+      ['domain without identity provider', () => ({ ...pkce, domain: domain2 }), 'Identity provider not found'],
+      [
+        'client without identity provider',
+        () => ({ ...pkce, clientId: defaultClient.id }),
+        'Identity provider not found',
+      ],
+    ])('Start rejects %s', async (_name, buildBody, message) => {
+      const res = await start(buildBody());
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toBe(message);
+    });
+
+    test('Client identity provider round trip', async () => {
+      const res = await start({ clientId: otherClient.id, redirectUri, codeChallenge, codeChallengeMethod });
+      expect(res).toHaveStatus(200);
+
+      const url = new URL(res.body.url);
+      expect(url.origin + url.pathname).toBe(identityProvider.authorizeUrl);
+      expect(url.searchParams.get('client_id')).toBe(identityProvider.clientId);
+      expect(url.searchParams.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external/' + otherClient.id);
+      expect(url.searchParams.get('response_type')).toBe('code');
+      expect(url.searchParams.has('code_challenge')).toBe(false);
+      const state = url.searchParams.get('state') as string;
+      expect(state).toMatch(/^[\w-]{43}$/);
+
+      fetchMock.mockClear();
+      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+
+      // Login fields in the callback URL are ignored
+      const callbackUrl = appendQueryParams(`/auth/external/${otherClient.id}`, {
+        code: randomUUID(),
+        state,
+        code_challenge: 'other-code-challenge',
+      });
+      const res2 = await request(app).get(callbackUrl);
+      expect(res2).toHaveStatus(302);
+      const redirect = new URL(res2.header.location);
+      expect(redirect.origin + redirect.pathname).toBe(redirectUri);
+      expect(redirect.searchParams.get('code')).toBeTruthy();
+
+      const login = await systemRepo.readResource<Login>('Login', redirect.searchParams.get('login') as string);
+      expect(login.codeChallenge).toBe(codeChallenge);
+      expect(login.codeChallengeMethod).toBe(codeChallengeMethod);
+
+      // No identity provider PKCE configured
+      const tokenBody = new URLSearchParams(fetchMock.mock.calls[0][1]?.body as string);
+      expect(tokenBody.has('code_verifier')).toBe(false);
+      expect(warnSpy).not.toHaveBeenCalledWith('External auth signed in with JSON state', expect.anything());
+      warnSpy.mockRestore();
+
+      // Single use
+      const res3 = await request(app).get(callbackUrl);
+      expect(res3).toHaveStatus(400);
+      expect(res3.body.issue[0].details.text).toBe('Invalid state');
+    });
+
+    test('Identity provider PKCE uses a server-side verifier', async () => {
+      const pkceClient = await createClient(await getProjectSystemRepo(otherProject), {
+        project: otherProject,
+        name: 'PKCE External Auth Client',
+        redirectUri,
+        identityProvider: {
+          ...identityProvider,
+          usePkce: true,
+          identitySource: 'email',
+          identityMappingMode: 'user-email',
+        },
+      });
+
+      const res = await start({ clientId: pkceClient.id, codeChallenge, codeChallengeMethod });
+      expect(res).toHaveStatus(200);
+      const url = new URL(res.body.url);
+      expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+
+      fetchMock.mockClear();
+      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
+      const res2 = await request(app).get(
+        appendQueryParams(`/auth/external/${pkceClient.id}`, {
+          code: randomUUID(),
+          state: url.searchParams.get('state') as string,
+        })
+      );
+      expect(res2).toHaveStatus(302);
+
+      const tokenBody = new URLSearchParams(fetchMock.mock.calls[0][1]?.body as string);
+      expect(hashCode(tokenBody.get('code_verifier') as string)).toBe(url.searchParams.get('code_challenge'));
+    });
+
+    test('Domain identity provider round trip', async () => {
+      const res = await start({ domain, codeChallenge, codeChallengeMethod, scope: 'openid' });
+      expect(res).toHaveStatus(200);
+      const url = new URL(res.body.url);
+      expect(url.searchParams.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external');
+      expect(url.searchParams.get('scope')).toBe('openid profile email');
+
+      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+      const res2 = await request(app).get(
+        appendQueryParams('/auth/external', { code: randomUUID(), state: url.searchParams.get('state') as string })
+      );
+      expect(res2).toHaveStatus(302);
+      const redirect = new URL(res2.header.location);
+      expect(redirect.pathname).toBe('/signin');
+      expect(redirect.searchParams.get('scope')).toBe('openid');
+      expect(redirect.searchParams.get('code_challenge')).toBe(codeChallenge);
+    });
+
+    test('State expires', async () => {
+      const state = await startState({ domain, codeChallenge, codeChallengeMethod });
+      const ttl = await getCacheRedis().ttl('medplum:external-auth-state:' + state);
+      expect(ttl).toBeGreaterThan(0);
+      expect(ttl).toBeLessThanOrEqual(EXTERNAL_AUTH_STATE_TTL_SECONDS);
+    });
+
+    test('Callback path must match the stored path', async () => {
+      fetchMock.mockClear();
+
+      const state = await startState({ clientId: otherClient.id, codeChallenge, codeChallengeMethod });
+      const res = await request(app).get(appendQueryParams('/auth/external', { code: randomUUID(), state }));
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toBe('Invalid client');
+
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    test('JSON state sign-ins are logged', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
+      const res = await request(app).get(
+        appendQueryParams(`/auth/external/${otherClient.id}`, {
+          code: randomUUID(),
+          state: JSON.stringify({ redirectUri, clientId: otherClient.id }),
+        })
+      );
+      expect(res).toHaveStatus(302);
+      expect(warnSpy).toHaveBeenCalledWith('External auth signed in with JSON state', {
+        clientId: otherClient.id,
+        projectId: otherProject.id,
+        domain: undefined,
+        issuer: undefined,
+        callback: 'per-client',
+      });
+      warnSpy.mockRestore();
+    });
   });
 });
 

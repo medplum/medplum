@@ -14,16 +14,19 @@ import {
 } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, IdentityProvider, Project, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
+import { body } from 'express-validator';
 import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
-import { getClientApplication, isExternalEmailUnverified, tryLogin } from '../oauth/utils';
+import { getClientApplication, hashCode, isExternalEmailUnverified, tryLogin } from '../oauth/utils';
+import { getCacheRedis } from '../redis';
 import { safeFetch } from '../util/url';
+import { makeValidationMiddleware } from '../util/validator';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -45,12 +48,131 @@ export interface ExternalAuthState {
   returnTo?: string;
 }
 
+const EXTERNAL_AUTH_STATE_FIELDS = [
+  'domain',
+  'issuer',
+  'projectId',
+  'clientId',
+  'scope',
+  'nonce',
+  'launch',
+  'codeChallenge',
+  'codeChallengeMethod',
+  'redirectUri',
+  'returnTo',
+] as const;
+
+/** Long enough for a slow sign-in at the identity provider, such as one with MFA. */
+export const EXTERNAL_AUTH_STATE_TTL_SECONDS = 10 * 60;
+
+interface ExternalAuthStateRecord {
+  loginRequest: ExternalAuthState;
+  /** Sent as `code_verifier` to the identity provider token endpoint when `usePkce` is set. */
+  idpVerifier?: string;
+  /** Undefined for the shared `/auth/external` callback. */
+  callbackClientId?: string;
+}
+
 type IdentitySource = NonNullable<IdentityProvider['identitySource']>;
 type IdentityMappingMode = NonNullable<IdentityProvider['identityMappingMode']>;
 
 export interface ExternalLoginIdentity {
   email?: string;
   externalId?: string;
+}
+
+export const externalStartValidator = makeValidationMiddleware([
+  body(EXTERNAL_AUTH_STATE_FIELDS as unknown as string[])
+    .optional()
+    .isString(),
+  body('codeChallenge').notEmpty().withMessage('Missing code challenge'),
+  body('codeChallengeMethod').equals('S256').withMessage('Invalid code challenge method'),
+]);
+
+/**
+ * Starts sign in with an external identity provider: stores the login request under a random `state` and returns
+ * the identity provider authorize URL. The callback trusts only the stored request, not its own URL.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ */
+export async function externalStartHandler(req: Request, res: Response): Promise<void> {
+  const loginRequest: ExternalAuthState = {};
+  for (const field of EXTERNAL_AUTH_STATE_FIELDS) {
+    if (req.body[field] !== undefined) {
+      (loginRequest as Record<string, string>)[field] = req.body[field];
+    }
+  }
+
+  // Client identity providers always use the per-client callback
+  let client: ClientApplication | undefined;
+  let callbackClientId: string | undefined;
+  if (loginRequest.clientId) {
+    client = await getClientApplication(loginRequest.clientId);
+    if (client.identityProvider) {
+      callbackClientId = loginRequest.clientId;
+    }
+  }
+
+  let domainConfig: DomainConfiguration | undefined;
+  if (loginRequest.domain && callbackClientId === undefined) {
+    domainConfig = await getDomainConfiguration(loginRequest.domain);
+  }
+
+  const { idp } = await getIdentityProvider(loginRequest, domainConfig, callbackClientId);
+  if (!idp?.authorizeUrl || !idp.clientId) {
+    sendOutcome(res, badRequest('Identity provider not found'));
+    return;
+  }
+
+  if (client) {
+    if (loginRequest.projectId !== undefined && loginRequest.projectId !== client.meta?.project) {
+      sendOutcome(res, badRequest('Invalid project'));
+      return;
+    }
+    if (loginRequest.redirectUri && !(await matchClientRedirectUri(client, loginRequest.redirectUri))) {
+      sendOutcome(res, badRequest('Invalid redirect URI'));
+      return;
+    }
+  }
+
+  if (loginRequest.returnTo && domainConfig && !isValidReturnToUrl(loginRequest.returnTo, domainConfig)) {
+    sendOutcome(res, badRequest('Invalid returnTo URL'));
+    return;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(idp.authorizeUrl);
+  } catch {
+    sendOutcome(res, badRequest('Invalid authorize URL for external identity provider'));
+    return;
+  }
+
+  const state = randomBytes(32).toString('base64url');
+  const idpVerifier = idp.usePkce ? randomBytes(32).toString('base64url') : undefined;
+  const record: ExternalAuthStateRecord = { loginRequest, idpVerifier, callbackClientId };
+  await getCacheRedis().set(
+    getExternalAuthStateKey(state),
+    JSON.stringify(record),
+    'EX',
+    EXTERNAL_AUTH_STATE_TTL_SECONDS
+  );
+
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('client_id', idp.clientId);
+  url.searchParams.set('redirect_uri', getExternalCallbackUrl(callbackClientId));
+  // Matches the scope sent by `getExternalAuthRedirectUri` (client) and `isExternalAuth` (domain)
+  url.searchParams.set(
+    'scope',
+    (callbackClientId === undefined ? undefined : loginRequest.scope) ?? 'openid profile email'
+  );
+  url.searchParams.set('state', state);
+  if (idpVerifier) {
+    url.searchParams.set('code_challenge', hashCode(idpVerifier));
+    url.searchParams.set('code_challenge_method', 'S256');
+  }
+
+  res.status(200).json({ url: url.toString() });
 }
 
 export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
@@ -69,12 +191,32 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
+  // JSON state is the legacy form built by the browser; any other state was issued by externalStartHandler
+  const jsonState = state.startsWith('{');
   let body: ExternalAuthState;
-  try {
-    body = JSON.parse(state);
-  } catch {
-    sendOutcome(res, badRequest('Invalid state'));
-    return;
+  let idpVerifier: string | undefined;
+  if (jsonState) {
+    try {
+      body = JSON.parse(state);
+    } catch {
+      sendOutcome(res, badRequest('Invalid state'));
+      return;
+    }
+    idpVerifier = body.codeChallenge;
+  } else {
+    // Single use
+    const value = await getCacheRedis().getdel(getExternalAuthStateKey(state));
+    if (!value) {
+      sendOutcome(res, badRequest('Invalid state'));
+      return;
+    }
+    const record = JSON.parse(value) as ExternalAuthStateRecord;
+    if (record.callbackClientId !== callbackClientId) {
+      sendOutcome(res, badRequest('Invalid client'));
+      return;
+    }
+    body = record.loginRequest;
+    idpVerifier = record.idpVerifier;
   }
 
   if (callbackClientId !== undefined && body.clientId !== callbackClientId) {
@@ -101,7 +243,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const userInfo = await verifyExternalCode(idp, code, body.codeChallenge, callbackClientId);
+  const userInfo = await verifyExternalCode(idp, code, idpVerifier, callbackClientId);
 
   let identity: ExternalLoginIdentity;
   try {
@@ -159,27 +301,23 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     });
   }
 
+  if (jsonState) {
+    getLogger().warn('External auth signed in with JSON state', {
+      clientId: body.clientId,
+      projectId,
+      domain: body.domain,
+      issuer: idp.issuer,
+      callback: callbackClientId === undefined ? 'shared' : 'per-client',
+    });
+  }
+
   // The identity provider authenticated the user, which is the control this flag records.
   await getGlobalSystemRepo().patchResource<User>('User', resolveId(login.user) as string, [
     { op: 'add', path: '/emailVerified', value: true },
   ]);
 
   if (login.membership && body.redirectUri && client) {
-    // Get the redirect URI from the client application
-    let redirectUri = getClientRedirectUri(client, body.redirectUri);
-
-    if (!redirectUri && (await isDangerousRedirectUriPartialMatchAllowed(client))) {
-      // If projects have the allow-dangerous-redirect setting enabled, then we will allow partial matches for redirect URIs.
-      // This is generally NOT recommended by the OAuth spec.
-      // However, we need to support it here for backwards compatibility with existing clients.
-      redirectUri = getClientRedirectUri(client, body.redirectUri, true);
-      getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
-        clientId: client.id,
-        requestedUri: body.redirectUri,
-        partialMatchUri: redirectUri,
-      });
-    }
-
+    const redirectUri = await matchClientRedirectUri(client, body.redirectUri);
     if (!redirectUri) {
       sendOutcome(res, badRequest('Invalid redirect URI'));
       return;
@@ -340,10 +478,7 @@ async function verifyExternalCode(
   const params = new URLSearchParams();
   params.append('grant_type', OAuthGrantType.AuthorizationCode);
   // Must match the redirect_uri of the authorization request
-  params.append(
-    'redirect_uri',
-    getConfig().baseUrl + 'auth/external' + (callbackClientId === undefined ? '' : '/' + callbackClientId)
-  );
+  params.append('redirect_uri', getExternalCallbackUrl(callbackClientId));
   params.append('code', code);
 
   if (idp.usePkce && codeVerifier) {
@@ -419,6 +554,37 @@ async function verifyExternalIdToken(idp: IdentityProvider, idToken: unknown): P
   }
 
   return parseJWTPayload(idToken);
+}
+
+/**
+ * Returns the redirect URI registered with the identity provider.
+ * @param callbackClientId - The client ID for the per-client callback, or undefined for the shared callback.
+ * @returns The callback URL.
+ */
+function getExternalCallbackUrl(callbackClientId: string | undefined): string {
+  return getConfig().baseUrl + 'auth/external' + (callbackClientId === undefined ? '' : '/' + callbackClientId);
+}
+
+function getExternalAuthStateKey(state: string): string {
+  return 'medplum:external-auth-state:' + state;
+}
+
+async function matchClientRedirectUri(client: ClientApplication, requestedUri: string): Promise<string | undefined> {
+  let redirectUri = getClientRedirectUri(client, requestedUri);
+
+  if (!redirectUri && (await isDangerousRedirectUriPartialMatchAllowed(client))) {
+    // If projects have the allow-dangerous-redirect setting enabled, then we will allow partial matches for redirect URIs.
+    // This is generally NOT recommended by the OAuth spec.
+    // However, we need to support it here for backwards compatibility with existing clients.
+    redirectUri = getClientRedirectUri(client, requestedUri, true);
+    getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
+      clientId: client.id,
+      requestedUri,
+      partialMatchUri: redirectUri,
+    });
+  }
+
+  return redirectUri;
 }
 
 /**
