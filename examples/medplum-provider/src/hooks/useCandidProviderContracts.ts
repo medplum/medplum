@@ -3,8 +3,8 @@
 import type { Contract, Parameters } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { getErrorMessage } from '../components/insurance/utils';
 import { CANDID_GET_CONTRACTS_BOT_IDENTIFIER, isContractInForce } from '../utils/candid';
+import { getErrorMessage } from '../utils/errors';
 
 /** Candid pages contract searches; one page of this size covers any real provider's effective contracts. */
 const CONTRACT_PAGE_SIZE = 100;

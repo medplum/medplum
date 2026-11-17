@@ -6,9 +6,9 @@ import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router';
-import { getErrorMessage } from '../../components/insurance/utils';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
 import { useScriptSurePractice } from '../../scriptsure/ScriptSurePractice';
+import { getErrorMessage } from '../../utils/errors';
 
 export function ScriptSureTab(): JSX.Element {
   const { patientId } = useParams();

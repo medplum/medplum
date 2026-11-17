@@ -5,8 +5,8 @@ import { showNotification } from '@mantine/notifications';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
-import { getErrorMessage } from '../../components/insurance/utils';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
+import { getErrorMessage } from '../../utils/errors';
 import classes from './EPrescribingPage.module.css';
 
 export function ScriptSurePage(): JSX.Element {

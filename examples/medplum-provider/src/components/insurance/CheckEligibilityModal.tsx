@@ -26,9 +26,9 @@ import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTyp
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
 import { buildEligibilityServiceTypeItems, pickServiceTypes } from '../../utils/eligibility';
+import { getErrorMessage } from '../../utils/errors';
 import { showErrorNotification } from '../../utils/notifications';
 import { EligibilityServiceTypeSelect } from './EligibilityServiceTypeSelect';
-import { getErrorMessage } from './utils';
 
 /**
  * Props for CheckEligibilityModal.
