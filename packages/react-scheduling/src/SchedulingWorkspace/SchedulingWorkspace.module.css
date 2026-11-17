@@ -23,6 +23,11 @@
   overflow-y: auto;
 }
 
+/* Greyed out while the booking form's actors, not the panel, decide the calendars on show. */
+.sidebarOverridden {
+  opacity: 0.5;
+}
+
 .calendarsToggle[aria-expanded='true'] {
   border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
@@ -121,6 +126,23 @@
   .paneWide {
     animation-duration: 1ms;
   }
+}
+
+/*
+ * Prototype: the booking pane, always open and wide enough for the form and the times beside it. It
+ * takes its own room, so the calendar narrows rather than being covered.
+ */
+.paneDocked {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: calc(var(--pane-width) + var(--mantine-spacing-lg) + 350px);
+  max-width: 100cqi;
+  min-height: 0;
+}
+
+.paneDocked[hidden] {
+  display: none;
 }
 
 /* The booking pane's tabs pass the pane's height down to the form, so the form and the

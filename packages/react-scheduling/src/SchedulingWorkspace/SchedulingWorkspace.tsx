@@ -6,8 +6,10 @@ import {
   Alert,
   Anchor,
   Box,
+  Divider,
   getThemeColor,
   Indicator,
+  Stack,
   Tabs,
   Text,
   Tooltip,
@@ -32,7 +34,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
-import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
+import { IconFilter2Search } from '@tabler/icons-react';
 import cx from 'clsx';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -40,13 +42,21 @@ import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
-import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import type { ActorSelections, ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
+import {
+  getCandidateDisplay,
+  getRequirements,
+  searchScheduleCandidates,
+} from '../AppointmentFinder/AppointmentFinder.schedules';
+import { getAppointmentKey } from '../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
+import type { AppointmentProposalFormActions } from '../AppointmentFinder/AppointmentProposalForm';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
+import type { AvailabilityShadingCalendar } from '../availabilityShading';
+import { computeBookingShading } from '../availabilityShading';
+import { resolveBookingGeometry } from '../bookingGeometry';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
-import { DiscardChangesModal } from '../ConfirmModal/DiscardChangesModal';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
@@ -54,7 +64,6 @@ import type { CalendarSelection, DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import { BlockTimeForm } from './BlockTimeForm/BlockTimeForm';
 import type { CalendarFilterValues } from './CalendarFilters';
-import { CalendarFilters } from './CalendarFilters';
 import type { ServiceTypeLegendItem } from './CalendarLegend';
 import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
@@ -69,7 +78,6 @@ import {
   matchesCalendarFilters,
 } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
-import { useBookingPaneGuard } from './useBookingPaneGuard';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -80,6 +88,10 @@ const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], D
 const NO_SERVICES: ReadonlyMap<string, HealthcareService | undefined> = new Map();
 
 const NO_FILTERS: CalendarFilterValues = {};
+
+const NO_SELECTIONS: ActorSelections = {};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const NONE_DESELECTED: DeselectedIdsByActorType = {
   Practitioner: new Set(),
@@ -155,10 +167,16 @@ export interface SchedulingWorkspaceProps {
    * the workspace to start it over on another site.
    */
   readonly defaultServiceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
+  /** Prototype. Called with the site the booking form is on, on mount and whenever it changes. */
+  readonly onChangeServiceFacility?: (serviceFacility: Reference<Location> | WithId<Location> | undefined) => void;
 }
 
 /**
  * A data-coordination component pairing `CalendarsPanel` with {@link MultiCalendar}.
+ *
+ * Prototype: on this branch the booking form is always open and drives the calendar, so the notes below
+ * on opening the form from a click and on the panel's filters describe the workspace as it is on main.
+ * The Find And Book story says what changed.
  *
  * - Draws each appointment once, however many of the calendars on show it is held on,
  *   in the color of its service type: the one its HealthcareService names, or else one
@@ -213,6 +231,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     canBypassSchedulingRules,
     appointmentExtensions,
     defaultServiceFacility,
+    onChangeServiceFacility,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -224,19 +243,28 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const [deselectedIds, setDeselectedIds] = useState<DeselectedIdsByActorType>(NONE_DESELECTED);
 
-  // Owned by `CalendarFilters`, which reports both whenever either changes. Held here
-  // because they narrow the calendars listed and the appointments drawn, and start the
-  // booking form.
-  const initialFilters: CalendarFilterValues = defaultServiceFacility
-    ? { serviceFacility: defaultServiceFacility }
-    : NO_FILTERS;
-  const [filters, setFilters] = useState<CalendarFilterValues>(initialFilters);
-  const { service: selectedService, serviceFacility: selectedServiceFacility } = filters;
+  // Prototype: the booking form's own answers, reported by the form, are what drive the calendar. Its
+  // site narrows the calendars listed and the appointments drawn. Its visit type narrows the calendars
+  // to the ones serving it, whose other appointments stay drawn, as they explain gaps in the shading.
+  // Its visit type and actors decide the availability shaded, and its actors, once any is named, the
+  // calendars on show.
+  const [filters, setFilters] = useState<CalendarFilterValues>(
+    defaultServiceFacility ? { serviceFacility: defaultServiceFacility } : NO_FILTERS
+  );
+  const { serviceFacility: selectedServiceFacility } = filters;
+  const [formService, setFormService] = useState<WithId<HealthcareService>>();
+  const [formSelections, setFormSelections] = useState<ActorSelections>(NO_SELECTIONS);
+  // Remounts the form, starting it over on the site it was last on.
+  const [formSeed, setFormSeed] = useState({ key: 0, serviceFacility: defaultServiceFacility });
+  // The offered time under the pointer in the time search, drawn on the calendar as a fainter draft.
+  const [hoveredTime, setHoveredTime] = useState<Appointment>();
+  const formActionsRef = useRef<AppointmentProposalFormActions>(null);
 
   const [range, setRange] = useState<DateTimeRange>();
 
   // What was selected
-  const [bookingSelection, setBookingSelection] = useState<CalendarSelection>();
+  const [blockRange, setBlockRange] = useState<DateTimeRange>(getNextHalfHour);
+  const [blockSeed, setBlockSeed] = useState(0);
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlot, setSelectedSlot] = useState<WithId<Slot>>();
   // The Slots of a block just written, one per calendar, listed beside whichever is open.
@@ -250,9 +278,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // opened it, so each has one writer.
   const [proposal, setProposal] = useState<Appointment>();
   // What the calendar highlights while blocking: the block form's time, which a click resets.
-  const [blockHighlight, setBlockHighlight] = useState<DateTimeRange>();
-  const [timeFinderOpen, setTimeFinderOpen] = useState(false);
-  const [calendarsOpen, setCalendarsOpen] = useState(true);
+  const [blockHighlight, setBlockHighlight] = useState<DateTimeRange | undefined>(blockRange);
+  const [calendarsOpen, setCalendarsOpen] = useState(false);
   const sidebarId = useId();
   const appliedFiltersId = useId();
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
@@ -267,7 +294,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         // We search for a large number of schedule candidates here because we
         // do client-side filtering based on locations in the list. Follow up:
         // https://github.com/medplum/medplum/issues/10618
-        const candidates = await searchScheduleCandidates(medplum, selectedService, {
+        const candidates = await searchScheduleCandidates(medplum, formService, {
           actorType,
           query: '',
           location: selectedServiceFacility,
@@ -294,13 +321,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum, selectedService, selectedServiceFacility]);
+  }, [medplum, formService, selectedServiceFacility]);
+
+  // The actors the booking form names, once it names any, are the calendars on show. Until then the
+  // Calendars panel decides.
+  const formCandidates = useMemo(() => {
+    const byId = new Map(
+      getRequirements(formSelections).flatMap((row) => row.candidates.map((c) => [c.schedule.id, c] as const))
+    );
+    return [...byId.values()];
+  }, [formSelections]);
+  const formNamesActors = formCandidates.length > 0;
 
   const activeCandidates = useMemo(() => {
+    if (formCandidates.length > 0) {
+      return formCandidates;
+    }
     return BOOKABLE_ACTOR_TYPES.flatMap((actorType) =>
       candidatesByActorType[actorType].filter((c) => !deselectedIds[actorType].has(c.schedule.id))
     );
-  }, [candidatesByActorType, deselectedIds]);
+  }, [formCandidates, candidatesByActorType, deselectedIds]);
 
   const schedules = useMemo(() => activeCandidates.map((c) => c.schedule), [activeCandidates]);
   const {
@@ -365,20 +405,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       slots: [],
       appointments: group,
     }));
-    // Hidden with the Book Appointment tab, as the selection follows the tab on show. A draft, and
+    // Hidden with the Book Appointment tab, as the selection follows the tab on show. Drafts, and
     // not clickable: there is nothing booked yet to open.
-    const drawnProposal = paneTab === 'appointment' ? proposal : undefined;
-    const proposalReference = extractServiceTypeReferences(drawnProposal?.serviceType)[0]?.reference;
-    const proposalSources = drawnProposal
+    const draftsOnShow = paneTab === 'appointment' && !selectedAppointment && !selectedSlot;
+    const toDraftSource = (draft: Appointment, label: string, ghost: boolean): MultiCalendarSource => {
+      const reference = extractServiceTypeReferences(draft.serviceType)[0]?.reference;
+      return {
+        color: reference ? serviceColor(reference) : 'gray',
+        slots: [],
+        appointments: [draft],
+        interactive: false,
+        draft: true,
+        ghost,
+        label,
+      };
+    };
+    const hoverIsProposal = hoveredTime && proposal && getAppointmentKey(hoveredTime) === getAppointmentKey(proposal);
+    const proposalSources = draftsOnShow
       ? [
-          {
-            color: proposalReference ? serviceColor(proposalReference) : 'gray',
-            slots: [],
-            appointments: [drawnProposal],
-            interactive: false,
-            draft: true,
-            label: 'Draft New Appointment',
-          } satisfies MultiCalendarSource,
+          ...(proposal ? [toDraftSource(proposal, 'Draft New Appointment', false)] : []),
+          ...(hoveredTime && !hoverIsProposal ? [toDraftSource(hoveredTime, 'Proposed Time', true)] : []),
         ]
       : [];
     const legend = groups
@@ -398,38 +444,107 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       shownSlots,
       isOnShownCalendar,
     };
-  }, [activeCandidates, slots, appointments, filters, services, medplum, theme, paneTab, proposal]);
+  }, [
+    activeCandidates,
+    slots,
+    appointments,
+    filters,
+    services,
+    medplum,
+    theme,
+    paneTab,
+    proposal,
+    hoveredTime,
+    selectedAppointment,
+    selectedSlot,
+  ]);
+
+  // Where the visit the form describes could go, shaded behind the events. With only a visit type, any
+  // provider on show will do; once the form names actors, its rows decide, as they do for `$find`.
+  const availabilityShading = useMemo(() => {
+    if (!formService || !range) {
+      return undefined;
+    }
+    const toCalendar = (candidate: ScheduleCandidate): AvailabilityShadingCalendar => {
+      const scheduleReference = getReferenceString(candidate.schedule);
+      const actors = new Set(candidate.schedule.actor.map((actor) => actor.reference));
+      return {
+        schedule: candidate.schedule,
+        appointments: (appointments ?? []).filter((appointment) =>
+          appointment.participant.some((participant) => actors.has(participant.actor?.reference))
+        ),
+        slots: (slots ?? []).filter((slot) => slot.schedule?.reference === scheduleReference),
+      };
+    };
+    const namedRows = getRequirements(formSelections).filter((row) => row.candidates.length > 0);
+    const rows =
+      namedRows.length > 0
+        ? namedRows.map((row) => row.candidates.map(toCalendar))
+        : [
+            candidatesByActorType.Practitioner.filter((c) => !deselectedIds.Practitioner.has(c.schedule.id)).map(
+              toCalendar
+            ),
+          ];
+    return computeBookingShading({
+      rows,
+      service: formService,
+      serviceFacility: selectedServiceFacility,
+      range,
+      color: resolveThemeColor(
+        theme,
+        getSchedulingColor(formService),
+        fallbackColorIndex(getReferenceString(formService))
+      ),
+      minMinutes: resolveBookingGeometry(formService).duration,
+      from: new Date(),
+    });
+  }, [
+    formService,
+    formSelections,
+    selectedServiceFacility,
+    range,
+    appointments,
+    slots,
+    candidatesByActorType,
+    deselectedIds,
+    theme,
+  ]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
-  const startBooking = useCallback((interval: CalendarSelection): void => {
-    setSelectedAppointment(undefined);
-    setSelectedSlot(undefined);
-    setNewBlockSlots(undefined);
-    setBookingSelection(interval);
-    setBlockHighlight(interval);
+  const changeFormServiceFacility = useCallback(
+    (serviceFacility: Reference<Location> | WithId<Location> | undefined): void => {
+      setHoveredTime(undefined);
+      setFilters(
+        serviceFacility && (isResourceWithId(serviceFacility) || serviceFacility.reference)
+          ? { serviceFacility: serviceFacility as CalendarFilterValues['serviceFacility'] }
+          : NO_FILTERS
+      );
+      onChangeServiceFacility?.(serviceFacility);
+    },
+    [onChangeServiceFacility]
+  );
+
+  const changeFormService = useCallback((service: WithId<HealthcareService> | undefined): void => {
+    setHoveredTime(undefined);
+    setFormService(service);
   }, []);
 
-  const startBookingNow = useCallback((): void => {
-    const durationMinutes = 30;
-    const start = new Date();
-    start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
-    const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-    setPaneTab('appointment');
-    startBooking({ start, end });
-    calendarRef.current?.gotoDate(start);
-  }, [startBooking]);
+  const changeFormSelections = useCallback((selections: ActorSelections): void => {
+    setHoveredTime(undefined);
+    setFormSelections(selections);
+  }, []);
 
-  const discard = useBookingPaneGuard();
-  const { guard, reset: resetDirty } = discard;
-
-  const closeBooking = useCallback((): void => {
-    setBookingSelection(undefined);
+  // Starts the booking form over on the site it was on, as closing and reopening it used to.
+  const resetBookingForm = useCallback((): void => {
+    setFormSeed((seed) => ({ key: seed.key + 1, serviceFacility: selectedServiceFacility }));
+    setFormService(undefined);
+    setFormSelections(NO_SELECTIONS);
     setProposal(undefined);
-    setBlockHighlight(undefined);
-    setTimeFinderOpen(false);
-    resetDirty();
-  }, [resetDirty]);
+    setHoveredTime(undefined);
+  }, [selectedServiceFacility]);
+
+  const goToNextRange = useCallback((): void => calendarRef.current?.next(), []);
 
   // Hides are kept across a service change rather than pruned: a calendar hidden under
   // one service type stays hidden if another offers it again.
@@ -441,7 +556,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // shown where there is one, with the others listed beside it.
   const finishBlock = useCallback(
     (slots: WithId<Slot>[]): void | Promise<void> => {
-      closeBooking();
+      setBlockSeed((seed) => seed + 1);
+      setBlockHighlight(undefined);
       const shown = new Set(schedules.map(getReferenceString));
       const opened = slots.find((slot) => shown.has(slot.schedule.reference ?? '')) ?? slots[0];
       setSelectedSlot(opened);
@@ -451,7 +567,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       }
       return onBlocked?.(slots);
     },
-    [closeBooking, onBlocked, schedules]
+    [onBlocked, schedules]
   );
 
   const showAppointment = useCallback(
@@ -459,21 +575,20 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       if (appointment.id !== selectedAppointment?.id) {
         setRescheduleFinderOpen(false);
       }
-      closeBooking();
       setSelectedSlot(undefined);
       setNewBlockSlots(undefined);
       setSelectedAppointment(appointment);
     },
-    [closeBooking, selectedAppointment?.id]
+    [selectedAppointment?.id]
   );
 
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (isResourceWithId(appointment)) {
-        guard(() => showAppointment(appointment));
+        showAppointment(appointment);
       }
     },
-    [guard, showAppointment]
+    [showAppointment]
   );
 
   // Opens what was booked, the first visit of a recurring series, and brings it on screen,
@@ -485,9 +600,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       if (first.start) {
         calendarRef.current?.gotoDate(new Date(first.start));
       }
+      resetBookingForm();
       return onBooked?.(booking);
     },
-    [showAppointment, onBooked]
+    [showAppointment, resetBookingForm, onBooked]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -498,21 +614,35 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectSlot = useCallback(
     (slot: Slot): void => {
       if (isResourceWithId(slot)) {
-        guard(() => {
-          closeBooking();
-          closeAppointment();
-          setSelectedSlot(slot);
-          setNewBlockSlots(undefined);
-        });
+        closeAppointment();
+        setSelectedSlot(slot);
+        setNewBlockSlots(undefined);
       }
     },
-    [guard, closeBooking, closeAppointment]
+    [closeAppointment]
   );
 
   const closeSlot = useCallback((): void => {
     setSelectedSlot(undefined);
     setNewBlockSlots(undefined);
   }, []);
+
+  // The form is always open, so open time on the grid has no form to open. On the Block Time tab it
+  // sets the block's time. On the Book Appointment tab it picks the offered time covering the click,
+  // which there only is inside the shading.
+  const selectInterval = useCallback(
+    (interval: CalendarSelection): void => {
+      closeAppointment();
+      closeSlot();
+      if (paneTab === 'block') {
+        setBlockRange(interval);
+        setBlockHighlight(interval);
+      } else if (!interval.allDay) {
+        formActionsRef.current?.pickAt(interval.start);
+      }
+    },
+    [closeAppointment, closeSlot, paneTab]
+  );
 
   // Held apart from the calendar's, like the open appointment, so it closes on being deleted
   // rather than on leaving the calendar.
@@ -622,8 +752,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.
   const showSlot = openSlot !== undefined && openAppointment === undefined;
-  const showBooking = bookingSelection !== undefined && openAppointment === undefined && openSlot === undefined;
+  const showBooking = openAppointment === undefined && openSlot === undefined;
   const blocking = showBooking && paneTab === 'block';
+  const nextRangeLabel = range ? getNextRangeLabel(range) : undefined;
 
   return (
     <div
@@ -636,12 +767,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     >
       {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
       <Box id={sidebarId} className={classes.sidebar} display={calendarsOpen ? undefined : 'none'}>
-        <CalendarsPanel
-          items={panelItems}
-          candidatesLoading={candidatesLoading}
-          onToggle={toggleCandidate}
-          filters={<CalendarFilters defaultValue={initialFilters} onChange={setFilters} />}
-        />
+        {formNamesActors && (
+          <Text size="sm" c="dimmed" mb="xs">
+            The calendar is showing who the booking form names.
+          </Text>
+        )}
+        <Box className={cx({ [classes.sidebarOverridden]: formNamesActors })} inert={formNamesActors}>
+          <CalendarsPanel items={panelItems} candidatesLoading={candidatesLoading} onToggle={toggleCandidate} />
+        </Box>
       </Box>
       <div className={classes.calendar}>
         {displayError !== undefined && (
@@ -681,18 +814,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
               {appliedFiltersLabel && <VisuallyHidden id={appliedFiltersId}>{appliedFiltersLabel}</VisuallyHidden>}
             </>
           }
-          toolbarEnd={
-            <Tooltip label="New appointment" position="bottom" openDelay={500}>
-              <ActionIcon size={32} radius="xl" aria-label="New appointment" onClick={startBookingNow}>
-                <IconPlus size={16} />
-              </ActionIcon>
-            </Tooltip>
-          }
+          availabilityShading={showBooking && paneTab === 'appointment' ? availabilityShading : undefined}
           loading={resourcesLoading || servicesPending}
-          onSelectInterval={startBooking}
+          onSelectInterval={selectInterval}
           onSelectAppointment={selectAppointment}
           onSelectSlot={selectSlot}
-          selection={blocking ? blockHighlight : bookingSelection}
+          selection={blocking ? blockHighlight : undefined}
           selectedId={openAppointment?.id ?? openSlot?.id}
         />
         <div className={classes.footer}>
@@ -748,58 +875,58 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <SlotDetails slot={openSlot} />
         </SidePane>
       )}
-      {showBooking && (
-        <SidePane label="Book appointment" wide={timeFinderOpen && !blocking}>
-          {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
-          <Tabs
-            value={paneTab}
-            onChange={(value) => setPaneTab(value as PaneTab)}
-            variant="pills"
-            radius="xl"
-            classNames={{ root: classes.paneTabs, tab: classes.paneTab, panel: classes.paneTabPanel }}
-          >
-            <PaneHeader
-              title={
-                <Tabs.List>
-                  <Tabs.Tab value="appointment">Book Appointment</Tabs.Tab>
-                  <Tabs.Tab value="block">Block Time</Tabs.Tab>
-                </Tabs.List>
-              }
-              closeLabel="Close booking form"
-              onClose={closeBooking}
+      {/* Always mounted, and only hidden while details are open, so its answers are there to come back to. */}
+      <section className={classes.paneDocked} aria-label="Book appointment" hidden={!showBooking}>
+        {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
+        <Tabs
+          value={paneTab}
+          onChange={(value) => setPaneTab(value as PaneTab)}
+          variant="pills"
+          radius="xl"
+          classNames={{ root: classes.paneTabs, tab: classes.paneTab, panel: classes.paneTabPanel }}
+        >
+          <Stack gap="sm" mb="sm">
+            <Tabs.List>
+              <Tabs.Tab value="appointment">Book Appointment</Tabs.Tab>
+              <Tabs.Tab value="block">Block Time</Tabs.Tab>
+            </Tabs.List>
+            <Divider />
+          </Stack>
+          <Tabs.Panel value="appointment">
+            <AppointmentBookingForm
+              key={formSeed.key}
+              procedureBinding={procedureBinding}
+              diagnosisBinding={diagnosisBinding}
+              mrnSystem={mrnSystem}
+              commentMaxLength={appointmentCommentMaxLength}
+              canBypassSchedulingRules={canBypassSchedulingRules}
+              appointmentExtensions={appointmentExtensions}
+              allowRecurring
+              finderAlwaysOpen
+              searchRange={range}
+              nextRangeLabel={nextRangeLabel}
+              onNextRange={goToNextRange}
+              onHoverTime={setHoveredTime}
+              onChangeProposal={setProposal}
+              onChangeServiceFacility={changeFormServiceFacility}
+              onChangeService={changeFormService}
+              onChangeSelections={changeFormSelections}
+              actionsRef={formActionsRef}
+              onBooked={finishBooking}
+              defaultServiceFacility={formSeed.serviceFacility}
             />
-            <Tabs.Panel value="appointment">
-              <AppointmentBookingForm
-                defaultStart={bookingSelection.start}
-                defaultDateTime={bookingSelection.allDay ? undefined : bookingSelection.start}
-                procedureBinding={procedureBinding}
-                diagnosisBinding={diagnosisBinding}
-                mrnSystem={mrnSystem}
-                commentMaxLength={appointmentCommentMaxLength}
-                canBypassSchedulingRules={canBypassSchedulingRules}
-                appointmentExtensions={appointmentExtensions}
-                allowRecurring
-                onToggleTimeFinder={setTimeFinderOpen}
-                onChangeProposal={setProposal}
-                onDirtyChange={discard.onBookingDirtyChange}
-                onBooked={finishBooking}
-                defaultServiceFacility={selectedServiceFacility}
-                defaultService={selectedService}
-              />
-            </Tabs.Panel>
-            <Tabs.Panel value="block">
-              <BlockTimeForm
-                candidatesByActorType={candidatesByActorType}
-                defaultRange={bookingSelection}
-                onChangeTime={setBlockHighlight}
-                onDirtyChange={discard.onBlockDirtyChange}
-                onBlocked={finishBlock}
-              />
-            </Tabs.Panel>
-          </Tabs>
-        </SidePane>
-      )}
-      <DiscardChangesModal {...discard.modalProps}>Your changes haven't been saved.</DiscardChangesModal>
+          </Tabs.Panel>
+          <Tabs.Panel value="block">
+            <BlockTimeForm
+              key={blockSeed}
+              candidatesByActorType={candidatesByActorType}
+              defaultRange={blockRange}
+              onChangeTime={setBlockHighlight}
+              onBlocked={finishBlock}
+            />
+          </Tabs.Panel>
+        </Tabs>
+      </section>
     </div>
   );
 }
@@ -925,4 +1052,23 @@ function toggleId(ids: ReadonlySet<string>, id: string): Set<string> {
     next.add(id);
   }
   return next;
+}
+
+// The next half hour, which is where a block starts until the calendar is clicked.
+function getNextHalfHour(): DateTimeRange {
+  const start = new Date();
+  start.setMinutes(start.getMinutes() < 30 ? 30 : 60, 0, 0);
+  return { start, end: new Date(start.getTime() + 30 * 60 * 1000) };
+}
+
+// Names the button paging the calendar on, by how many days the calendar has on show.
+function getNextRangeLabel(range: DateTimeRange): string {
+  const days = Math.round((range.end.getTime() - range.start.getTime()) / DAY_MS);
+  if (days <= 1) {
+    return 'Next day';
+  }
+  if (days < 5) {
+    return `Next ${days} days`;
+  }
+  return days <= 7 ? 'Next week' : 'Next month';
 }

@@ -462,3 +462,109 @@ export function computeAvailabilityShading(input: AvailabilityShadingInput): Ava
   }
   return { mode: chosen ? 'service' : 'calendar', shades };
 }
+
+export interface BookingShadingInput {
+  /**
+   * What the visit needs, as the booking form asks for it: every row has to be filled, by any one of the
+   * calendars in it. A visit type chosen with nobody named is one row of every provider's calendar.
+   */
+  readonly rows: readonly (readonly AvailabilityShadingCalendar[])[];
+  readonly service: WithId<HealthcareService>;
+  /** Leaves out windows scoped to another service facility. */
+  readonly serviceFacility?: Reference<Location> | WithId<Location>;
+  /** The days on show. */
+  readonly range: DateTimeRange;
+  readonly color: string;
+  /** The visit's length. A stretch shorter than this is left out: the visit would not fit in it. */
+  readonly minMinutes?: number;
+  /** Time before this is left out, as it can no longer be booked. */
+  readonly from?: Date;
+}
+
+// The stretches two lists of intervals, each in order and free of overlaps, both cover.
+function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
+  const both: Interval[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) {
+    const start = Math.max(a[i].start, b[j].start);
+    const end = Math.min(a[i].end, b[j].end);
+    if (start < end) {
+      both.push({ start, end });
+    }
+    if (a[i].end < b[j].end) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  return both;
+}
+
+/**
+ * Works out where a visit the booking form describes could go: the open time of the calendars in each row
+ * joined together, then narrowed to the time every row has open at once.
+ *
+ * A prototype, alongside {@link computeAvailabilityShading}. Open time is a calendar's windows for the
+ * visit type with its appointments and blocked time taken out.
+ * @param input - The rows, the visit type and the days on show.
+ * @returns The blocks, unlabeled, each listing the calendars open through it.
+ */
+export function computeBookingShading(input: BookingShadingInput): AvailabilityShade[] {
+  const { rows, service, range, color } = input;
+  const facility = input.serviceFacility && getReferenceString(input.serviceFacility);
+  const minMs = (input.minMinutes ?? 0) * MINUTE_MS;
+  const from = input.from?.getTime() ?? -Infinity;
+
+  const sources = rows
+    .filter((row) => row.length > 0)
+    .map((row) =>
+      row.map((calendar) => ({
+        schedule: calendar.schedule,
+        busy: busyIntervals(calendar),
+        windows: getScheduleAvailabilityWindows(calendar.schedule, service).filter(
+          (window) => !facility || !window.serviceFacility || window.serviceFacility.reference === facility
+        ),
+      }))
+    );
+  if (sources.length === 0) {
+    return [];
+  }
+
+  const shades: AvailabilityShade[] = [];
+  for (const day of eachDay(range)) {
+    const rowPieces = sources.map((row) =>
+      row.flatMap(({ schedule, busy, windows }) =>
+        windows.flatMap((window): DayWindow[] => {
+          const interval = intervalOn(day, window.availableTime);
+          return interval ? subtract(interval, busy).map((piece) => ({ ...piece, window, schedule })) : [];
+        })
+      )
+    );
+    const open = rowPieces
+      .map((pieces): Interval[] => merge(pieces))
+      .reduce(intersect)
+      .map((block) => ({ start: Math.max(block.start, from), end: block.end }))
+      .filter((block) => block.end > block.start && block.end - block.start >= minMs);
+
+    open.forEach((block, index) => {
+      const details = rowPieces
+        .flat()
+        .filter((piece) => piece.start < block.end && piece.end > block.start)
+        .map((piece) =>
+          toDetail({ ...piece, start: Math.max(piece.start, block.start), end: Math.min(piece.end, block.end) })
+        );
+      shades.push({
+        id: `booking-availability-${day.getTime()}-${index}`,
+        start: new Date(block.start),
+        end: new Date(block.end),
+        kind: 'service',
+        color,
+        left: 0,
+        width: 1,
+        details,
+      });
+    });
+  }
+  return shades;
+}

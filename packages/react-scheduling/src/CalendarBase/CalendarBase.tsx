@@ -236,6 +236,8 @@ export interface CalendarHandle {
    * if the date is on a weekend.
    */
   readonly gotoDate: (date: Date) => void;
+  /** Pages the calendar on by one of whatever the view shows: a day, four days, a week or a month. */
+  readonly next: () => void;
 }
 
 // Some common calendar features:
@@ -262,6 +264,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         }
         controller.gotoDate(date);
       },
+      next: () => controller.next(),
     }),
     [controller]
   );
@@ -505,6 +508,11 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
               return;
             }
             onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end, allDay: eventInfo.allDay });
+            // A host holding no selection would otherwise leave the gesture's highlight up for good, as
+            // `unselectAuto` is off. One that answers with a selection has it pushed back in above.
+            if (!selection) {
+              calendarRef.current?.getApi().unselect();
+            }
           }}
           eventContent={renderEventContent}
           backgroundEventContent={renderBackgroundEventContent}

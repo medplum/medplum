@@ -20,6 +20,8 @@ export interface AppointmentSlotGroupCardProps {
   readonly viewerTimezone?: string;
   readonly selected?: Appointment;
   readonly disabled?: boolean;
+  /** Prototype. Called with the time the pointer or focus is on, and with undefined once it leaves. */
+  readonly onHoverAppointment?: (appointment: Appointment | undefined) => void;
 }
 
 function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Element {
@@ -42,7 +44,7 @@ function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Elemen
  * @returns The card.
  */
 export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): JSX.Element {
-  const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled } = props;
+  const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled, onHoverAppointment } = props;
 
   // Times are written with their zone only when that is not the zone the viewer is reading them in.
   const withTimezone = !isViewerTimezone(timezone, viewerTimezone);
@@ -74,7 +76,12 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
               size="sm"
               px="sm"
               disabled={disabled}
+              data-selected-time={isSelected || undefined}
               onClick={() => onSelectAppointment(appointment)}
+              onMouseEnter={() => onHoverAppointment?.(appointment)}
+              onMouseLeave={() => onHoverAppointment?.(undefined)}
+              onFocus={() => onHoverAppointment?.(appointment)}
+              onBlur={() => onHoverAppointment?.(undefined)}
             >
               {appointment.start ? formatZonedTime(new Date(appointment.start), timezone, { withTimezone }) : ''}
             </Button>
