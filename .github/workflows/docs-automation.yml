@@ -1,0 +1,180 @@
+name: Documentation assistant (manual pilot)
+
+# Keep manual-only until classifications and drafts have been evaluated.
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Merged PR number targeting the default branch
+        required: true
+        type: string
+      mode:
+        description: Classify only, generate a patch artifact, or explicitly publish a draft PR
+        type: choice
+        default: draft
+        options: [classify, draft, open-pr]
+
+concurrency:
+  group: docs-automation-${{ github.repository }}-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    outputs:
+      publishable: ${{ steps.validation.outputs.publishable }}
+      base_sha: ${{ steps.prepare.outputs.base_sha }}
+    steps:
+      - name: Check out reviewed automation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check out current documentation and implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: repo
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Collect source change and configure bounded agent calls
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          MODE: ${{ inputs.mode }}
+        run: node scripts/docs-automation/run.ts prepare
+      - name: Classify documentation impact
+        id: classify
+        if: steps.prepare.outputs.analyze == 'true'
+        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          settings: '{"disableAllHooks":true}'
+          prompt: Read scripts/docs-automation/prompts/classify.md and follow its instructions. Return the requested structured result.
+          claude_args: ${{ steps.prepare.outputs.classify_args }}
+      - name: Validate and save classification
+        id: classification
+        if: steps.prepare.outputs.analyze == 'true'
+        env:
+          EXECUTION_FILE: ${{ steps.classify.outputs.execution_file }}
+        run: node scripts/docs-automation/run.ts classify
+      - name: Draft proposed documentation
+        id: draft
+        if: inputs.mode != 'classify' && steps.classification.outputs.draft == 'true'
+        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          settings: '{"disableAllHooks":true}'
+          prompt: Read scripts/docs-automation/prompts/draft.md and follow its instructions. Return proposed file contents as structured output without editing files.
+          claude_args: ${{ steps.prepare.outputs.draft_args }}
+      - name: Validate and apply allowed edits
+        id: apply
+        if: inputs.mode != 'classify' && steps.classification.outputs.draft == 'true'
+        env:
+          EXECUTION_FILE: ${{ steps.draft.outputs.execution_file }}
+        run: node scripts/docs-automation/run.ts draft
+      - name: Install documentation dependencies
+        id: install
+        if: steps.apply.outcome == 'success'
+        working-directory: repo
+        run: npm ci
+      - name: Format and capture the final patch
+        id: format
+        if: steps.apply.outcome == 'success'
+        run: node scripts/docs-automation/run.ts format
+      - name: Independently verify the proposed documentation
+        id: verify
+        if: steps.format.outcome == 'success'
+        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          settings: '{"disableAllHooks":true}'
+          prompt: Read scripts/docs-automation/prompts/verify.md and independently verify the draft. Return the requested structured result.
+          claude_args: ${{ steps.prepare.outputs.verify_args }}
+      - name: Validate and save the verification
+        id: verification
+        if: steps.verify.outcome == 'success'
+        env:
+          EXECUTION_FILE: ${{ steps.verify.outputs.execution_file }}
+        run: node scripts/docs-automation/run.ts verify
+      - name: Build documentation
+        id: build
+        if: steps.verification.outcome == 'success'
+        working-directory: repo
+        run: npm run build:docs
+      - name: Record validation results and publication decision
+        id: validation
+        if: always() && steps.prepare.outcome == 'success'
+        env:
+          INSTALL_RESULT: ${{ steps.install.outcome }}
+          FORMAT_RESULT: ${{ steps.format.outcome }}
+          BUILD_RESULT: ${{ steps.build.outcome }}
+        run: node scripts/docs-automation/run.ts validation
+      - name: Summarize decisions, evidence, and checks
+        if: always()
+        run: node scripts/docs-automation/run.ts summary
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: docs-review-${{ inputs.pr_number }}
+          path: .docs-run/
+          include-hidden-files: true
+          retention-days: 14
+
+  publish:
+    if: inputs.mode == 'open-pr' && needs.analyze.outputs.publishable == 'true'
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.analyze.outputs.base_sha }}
+          path: repo
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Download validated draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: docs-review-${{ inputs.pr_number }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir .docs-run
+      - name: Publish with deterministic checks and assign the original author
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/docs-automation/run.ts publish
+      - name: Summarize publication
+        if: always()
+        run: node scripts/docs-automation/run.ts summary
+      - name: Upload publication result
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: docs-publication-${{ inputs.pr_number }}
+          path: .docs-run/publication.json
+          retention-days: 14
