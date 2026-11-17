@@ -1,8 +1,8 @@
 ---
-
-## id: results-display-requirements
+id: results-display-requirements
 title: Results Display Requirements
 weight: 35
+---
 
 Performing labs such as Quest and Labcorp set requirements for how their results are displayed in the applications that receive them. This guide describes what you need to display to remain compliant when showing results received through the Medplum Health Gorilla integration.
 
