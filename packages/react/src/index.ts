@@ -66,7 +66,6 @@ export * from './HumanNameInput/HumanNameInput';
 export * from './IdentifierDisplay/IdentifierDisplay';
 export * from './IdentifierInput/IdentifierInput';
 export * from './InfoBar/InfoBar';
-export * from './LabOrdersPanel/documentReference';
 export * from './LabOrdersPanel/LabOrderDetails';
 export * from './LabOrdersPanel/LabOrdersPanel';
 export * from './LabOrdersPanel/LabResultDetails';
