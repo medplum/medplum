@@ -772,6 +772,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           onChange={chooseResources}
         />
 
+        {takesDetails && (
+          <AppointmentPatientInput
+            defaultValue={defaultPatient}
+            mrnSystem={mrnSystem}
+            required
+            onChange={choosePatient}
+          />
+        )}
+
         {offersRecurring && (
           <Select
             label="Repeat"
@@ -779,15 +788,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
             allowDeselect={false}
             value={occurrenceCount.toString()}
             onChange={(value) => setOccurrenceCount(Number(value ?? 1))}
-          />
-        )}
-
-        {takesDetails && (
-          <AppointmentPatientInput
-            defaultValue={defaultPatient}
-            mrnSystem={mrnSystem}
-            required
-            onChange={choosePatient}
           />
         )}
 

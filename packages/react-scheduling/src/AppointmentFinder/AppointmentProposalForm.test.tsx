@@ -1312,10 +1312,12 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Identifying the patient', () => {
-    test('Asks for the patient above the action that finds a time', async () => {
-      setup(medplum);
+    test('Asks for the patient above the repeat and the action that finds a time', async () => {
+      setup(medplum, { allowRecurring: true });
 
-      expect(isBefore(field(/patient/i), finderButton())).toBe(true);
+      const repeat = screen.getByRole('textbox', { name: 'Repeat' });
+      expect(isBefore(field(/patient/i), repeat)).toBe(true);
+      expect(isBefore(repeat, finderButton())).toBe(true);
     });
 
     test('Offers patients matching the name typed', async () => {
