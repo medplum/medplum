@@ -20,6 +20,7 @@ import {
   gone,
   isGone,
   isNotFound,
+  isObject,
   isOk,
   isResource,
   isResourceType,
@@ -168,13 +169,26 @@ import { Condition, Constant, DeleteQuery, Disjunction, InsertQuery, SelectQuery
 
 const accountsChangeLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
-/**
- * Allocation-free check for whether `meta.account` or `meta.accounts` holds anything.
- * @param meta - The resource meta, if any.
- * @returns True if there is at least one account reference slot populated.
- */
 function hasAccountReferences(meta: Meta | undefined): boolean {
   return !!(meta?.account || meta?.accounts?.length);
+}
+
+function isAccountReference(value: unknown): value is Reference {
+  return isObject(value) && (value.reference === undefined || typeof value.reference === 'string');
+}
+
+function validateAccountFields(resource: { resourceType: string; meta: unknown }): void {
+  const { resourceType, meta } = resource;
+  if (!isObject(meta)) {
+    return;
+  }
+  if (meta.account !== undefined && !isAccountReference(meta.account)) {
+    throw new OperationOutcomeError(badRequest('Invalid account reference', `${resourceType}.meta.account`));
+  }
+  const accounts = meta.accounts;
+  if (accounts !== undefined && !(Array.isArray(accounts) && accounts.every(isAccountReference))) {
+    throw new OperationOutcomeError(badRequest('Invalid account references', `${resourceType}.meta.accounts`));
+  }
 }
 
 export interface InteractionOptions {
@@ -1143,6 +1157,7 @@ export class Repository extends FhirRepository implements Disposable {
     if (projectId) {
       resultMeta.project = projectId;
     }
+    validateAccountFields(updated);
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
