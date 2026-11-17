@@ -26,7 +26,7 @@ import { useEligibilityServiceTypes } from '../../hooks/useEligibilityServiceTyp
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
 import { isSelfPayCoverage } from '../../utils/coverage';
 import { buildEligibilityServiceTypeItems, pickServiceTypes } from '../../utils/eligibility';
-import { getErrorMessage } from '../../utils/errors';
+import { getBotErrorMessage } from '../../utils/errors';
 import { showErrorNotification } from '../../utils/notifications';
 import { EligibilityServiceTypeSelect } from './EligibilityServiceTypeSelect';
 
@@ -135,7 +135,7 @@ export function CheckEligibilityModal(props: CheckEligibilityModalProps): JSX.El
       try {
         await medplum.post(medplum.fhirUrl('CoverageEligibilityRequest', savedRequest.id, '$submit'));
       } catch (err) {
-        showErrorNotification(getErrorMessage(err));
+        showErrorNotification(getBotErrorMessage(err));
       }
       onCreated(savedRequest);
       handleClose();

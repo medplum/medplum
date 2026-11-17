@@ -9,7 +9,7 @@ import { normalizeErrorString } from '@medplum/core';
  * @param err - The error thrown by the call.
  * @returns A human-readable message.
  */
-export function getErrorMessage(err: unknown): string {
+export function getBotErrorMessage(err: unknown): string {
   const message = normalizeErrorString(err);
   try {
     const payload: unknown = JSON.parse(message);
