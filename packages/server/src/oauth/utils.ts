@@ -458,6 +458,8 @@ export async function getMembershipsForLogin(login: Login): Promise<WithId<Proje
 
 /**
  * Returns the project membership for the client application.
+ * The search is scoped to the explicit project if given, otherwise to the client's own Project, so a membership in
+ * another Project is found only through a project-scoped URL. A client without `meta.project` is searched by user only.
  * @param systemRepo - The system repository.
  * @param client - The client application.
  * @param projectId - Optional project ID (e.g. from a project-scoped URL) to restrict the search to.
@@ -468,15 +470,10 @@ export function getClientApplicationMembership(
   client: WithId<ClientApplication>,
   projectId?: string
 ): Promise<WithId<ProjectMembership> | undefined> {
-  const filters: Filter[] = [
-    {
-      code: 'user',
-      operator: Operator.EQUALS,
-      value: getReferenceString(client),
-    },
-  ];
-  if (projectId) {
-    filters.push({ code: 'project', operator: Operator.EQUALS, value: 'Project/' + projectId });
+  const filters: Filter[] = [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(client) }];
+  const targetProjectId = projectId ?? client.meta?.project;
+  if (targetProjectId) {
+    filters.push({ code: 'project', operator: Operator.EQUALS, value: 'Project/' + targetProjectId });
   }
   return systemRepo.searchOne<ProjectMembership>({ resourceType: 'ProjectMembership', filters });
 }

@@ -1091,6 +1091,21 @@ describe('FHIR Repo', () => {
       );
     }));
 
+  test('Update deleted or missing resource with ifMatch', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      await systemRepo.deleteResource('Patient', patient.id);
+
+      // With no previous version, no version can match
+      await expect(systemRepo.updateResource(patient, { ifMatch: patient.meta?.versionId })).rejects.toThrow(
+        new OperationOutcomeError(preconditionFailed)
+      );
+      await expect(
+        systemRepo.updateResource({ ...patient, id: randomUUID() }, { ifMatch: patient.meta?.versionId })
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+      await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow('Gone');
+    }));
+
   test('Patch resource with matching versionId', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
@@ -2150,11 +2165,12 @@ describe('FHIR Repo', () => {
       const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
 
       // Create a user in the project
-      const user1 = await repo.createResource<User>({
+      const user1 = await systemRepo.createResource<User>({
         resourceType: 'User',
         email: randomUUID() + '@example.com',
         firstName: randomUUID(),
         lastName: randomUUID(),
+        meta: { project: project.id },
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
       expect(await getProjectIdColumn('User', user1.id)).toStrictEqual(project.id);

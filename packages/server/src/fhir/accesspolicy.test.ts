@@ -38,6 +38,7 @@ import type {
   Task,
   User,
   UserConfiguration,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { inviteUser } from '../admin/invite';
@@ -2338,7 +2339,7 @@ describe('AccessPolicy', () => {
       // This should succeed
       const check5 = await repo2.updateResource<ProjectMembership>({
         ...check4,
-        profile: { reference: 'Practitioner/' + randomUUID() },
+        identifier: [{ system: 'https://example.com', value: randomUUID() }],
       });
       expect(check5.id).toStrictEqual(check4.id);
       expect(check5.meta?.versionId).not.toStrictEqual(check4.meta?.versionId);
@@ -2397,7 +2398,246 @@ describe('AccessPolicy', () => {
     }
   });
 
-  test('Project admin creates User and ProjectMembership in own project', () =>
+  test('PUT over a deleted resource and upsert over a missing id require create', () =>
+    withTestContext(async () => {
+      const deleted = await systemRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        meta: { project: testProject.id },
+      });
+      await systemRepo.deleteResource('Communication', deleted.id);
+      const missing: WithId<Communication> = {
+        resourceType: 'Communication',
+        id: randomUUID(),
+        status: 'completed',
+        meta: { project: testProject.id },
+      };
+
+      for (const interaction of [
+        ['read', 'update'],
+        ['read', 'update', 'create'],
+      ] satisfies AccessPolicyResource['interaction'][]) {
+        const accessPolicy: AccessPolicy = {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Communication', interaction }],
+        };
+        const repo = getRepository({ projects: [testProject], accessPolicy });
+        // canSetId (needed to upsert over a missing id) is limited to super admins
+        const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true, accessPolicy });
+        for (const [writer, resource] of [
+          [repo, deleted],
+          [superAdminRepo, missing],
+        ] as const) {
+          const write = writer.updateResource<Communication>({ ...resource, priority: 'stat' });
+          if (interaction.includes('create')) {
+            await expect(write).resolves.toMatchObject({ id: resource.id, priority: 'stat' });
+          } else {
+            await expect(write).rejects.toThrow('Forbidden');
+          }
+        }
+      }
+    }));
+
+  test.each<[string, AccessPolicyResource[], Communication['status'], string | undefined]>([
+    [
+      'cannot restore a version the user could not update',
+      [
+        { resourceType: 'Communication', interaction: ['read', 'search'] },
+        { resourceType: 'Communication', criteria: 'Communication?status=in-progress' },
+      ],
+      'in-progress',
+      'Forbidden',
+    ],
+    [
+      'hides a version the user could not read',
+      [{ resourceType: 'Communication', criteria: 'Communication?status=in-progress' }],
+      'in-progress',
+      'Not found',
+    ],
+    [
+      'restores a version that matches criteria the tombstone cannot',
+      [{ resourceType: 'Communication', criteria: 'Communication?status=completed' }],
+      'completed',
+      undefined,
+    ],
+  ])('PUT over a deleted resource %s', (_name, resource, status, error) =>
+    withTestContext(async () => {
+      const deleted = await systemRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        meta: { project: testProject.id },
+      });
+      await systemRepo.deleteResource('Communication', deleted.id);
+      const repo = getRepository({ projects: [testProject], accessPolicy: { resourceType: 'AccessPolicy', resource } });
+
+      const write = repo.updateResource<Communication>({ ...deleted, status });
+      if (error) {
+        await expect(write).rejects.toThrow(error);
+      } else {
+        await expect(write).resolves.toMatchObject({ id: deleted.id, status });
+      }
+    })
+  );
+
+  test('PUT over a deleted resource cannot move it to another project', () =>
+    withTestContext(async () => {
+      const { project: linkedProject, repo: linkedRepo } = await createTestProject({ withRepo: true });
+      const { repo } = await createTestProject({
+        project: { link: [{ project: createReference(linkedProject) }] },
+        withRepo: true,
+      });
+      const own = await repo.createResource<Communication>({ resourceType: 'Communication', status: 'completed' });
+      const linked = await linkedRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+      });
+      await repo.deleteResource('Communication', own.id);
+      await linkedRepo.deleteResource('Communication', linked.id);
+
+      await expect(repo.updateResource<Communication>(own)).resolves.toMatchObject({ id: own.id });
+      await expect(repo.updateResource<Communication>(linked)).rejects.toThrow('Forbidden');
+
+      // Without an explicit meta.project, a super admin restores it into its own project, not theirs
+      const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true, extendedMode: true });
+      const restored = await superAdminRepo.updateResource<Communication>({ ...linked, meta: undefined });
+      expect(restored.meta?.project).toBe(linkedProject.id);
+    }));
+
+  test('PUT over a deleted system resource keeps it out of every project', () =>
+    withTestContext(async () => {
+      const valueSet = await systemRepo.createResource<ValueSet>({ resourceType: 'ValueSet', status: 'active' });
+      expect(valueSet.meta?.project).toBeUndefined();
+      await systemRepo.deleteResource('ValueSet', valueSet.id);
+
+      const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true, extendedMode: true });
+      const restored = await superAdminRepo.updateResource<ValueSet>({ ...valueSet, meta: undefined });
+      expect(restored.meta?.project).toBeUndefined();
+    }));
+
+  test('PUT over a Binary whose securityContext was deleted is gone', () =>
+    withTestContext(async () => {
+      const meta = { project: testProject.id };
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
+      const binary = await systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+        securityContext: createReference(patient),
+        meta,
+      });
+      await systemRepo.deleteResource('Patient', patient.id);
+      const repo = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Binary' }, { resourceType: 'Patient' }],
+        },
+      });
+
+      await expect(repo.updateResource<Binary>({ ...binary, contentType: 'text/html' })).rejects.toThrow('Gone');
+      const current = await getRepository({ superAdmin: true }).readResource<Binary>('Binary', binary.id);
+      expect(current.meta?.versionId).toBe(binary.meta?.versionId);
+      expect(current.contentType).toBe('text/plain');
+    }));
+
+  test('PUT over a deleted resource ignores a backdated meta.lastUpdated', () =>
+    withTestContext(async () => {
+      const communication = await systemRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        meta: { project: testProject.id },
+      });
+      await systemRepo.deleteResource('Communication', communication.id);
+
+      const before = Date.now();
+      const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true });
+      const restored = await superAdminRepo.updateResource<Communication>({
+        ...communication,
+        meta: { ...communication.meta, lastUpdated: '2000-01-01T00:00:00.000Z' },
+      });
+      expect(new Date(restored.meta?.lastUpdated as string).getTime()).toBeGreaterThanOrEqual(before);
+
+      // The restored version stays the newest non-deleted version in history, so it can be restored again
+      await systemRepo.deleteResource('Communication', communication.id);
+      const repo = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Communication', interaction: ['read', 'update', 'create'] }],
+        },
+      });
+      await expect(repo.updateResource<Communication>(restored)).resolves.toMatchObject({ id: communication.id });
+    }));
+
+  test('PUT over a deleted resource is redacted as a create', () =>
+    withTestContext(async () => {
+      const communication = await systemRepo.createResource<Communication>({
+        resourceType: 'Communication',
+        status: 'completed',
+        meta: { project: testProject.id },
+      });
+      await systemRepo.deleteResource('Communication', communication.id);
+      const repo = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            { resourceType: 'Communication', interaction: ['update'] },
+            // Hidden input fields are already dropped before the write, but meta.versionId is set by the server
+            { resourceType: 'Communication', interaction: ['create'], hiddenFields: ['meta.versionId'] },
+          ],
+        },
+      });
+
+      const restored = await repo.updateResource<Communication>(communication);
+      expect(restored.id).toBe(communication.id);
+      expect(restored.meta?.lastUpdated).toBeDefined();
+      expect(restored.meta?.versionId).toBeUndefined();
+    }));
+
+  test('PUT over a deleted resource keeps the accounts and readonly fields of the deleted version', () =>
+    withTestContext(async () => {
+      const account = { reference: 'Organization/' + randomUUID() };
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'https://example.com', value: 'original' }],
+        meta: { project: testProject.id, accounts: [account] },
+      });
+      await systemRepo.deleteResource('Patient', patient.id);
+      const repo = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', readonlyFields: ['identifier'] }],
+        },
+      });
+
+      await repo.updateResource<Patient>({
+        ...patient,
+        identifier: [{ system: 'https://example.com', value: 'changed' }],
+        meta: undefined,
+      });
+      const restored = await systemRepo.readResource<Patient>('Patient', patient.id);
+      expect(restored.identifier).toStrictEqual(patient.identifier);
+      expect(restored.meta?.accounts).toStrictEqual([account]);
+    }));
+
+  test('PUT over a deleted User by a super admin keeps its project', () =>
+    withTestContext(async () => {
+      const user = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        email: randomUUID() + '@example.com',
+        firstName: 'Restored',
+        lastName: 'User',
+        meta: { project: testProject.id },
+      });
+      await systemRepo.deleteResource('User', user.id);
+
+      const superAdminRepo = getRepository({ projects: [testProject], superAdmin: true, extendedMode: true });
+      const restored = await superAdminRepo.updateResource<User>({ ...user, meta: undefined });
+      expect(restored.meta?.project).toBe(testProject.id);
+    }));
+
+  test('Project admin cannot create User or ProjectMembership, but can update and delete them', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
       const otherProject = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Other' });
@@ -2413,53 +2653,56 @@ describe('AccessPolicy', () => {
         true
       );
 
-      const user = await repo2.createResource<User>({
+      // Users and memberships are created through invite, client, and bot endpoints instead
+      await expect(
+        repo2.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Own',
+          lastName: 'User',
+          project: createReference(project),
+        })
+      ).rejects.toThrow('Forbidden');
+      await expect(
+        repo2.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(project),
+          user: { reference: 'User/' + randomUUID() },
+          profile: { reference: 'Practitioner/' + randomUUID() },
+        })
+      ).rejects.toThrow('Forbidden');
+
+      const user = await systemRepo.createResource<User>({
         resourceType: 'User',
         firstName: 'Own',
         lastName: 'User',
         project: createReference(project),
+        meta: { project: project.id },
       });
-      const member = await repo2.createResource<ProjectMembership>({
+      const member = await systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
         project: createReference(project),
         user: createReference(user),
         profile: { reference: 'Practitioner/' + randomUUID() },
       });
-      expect(member.project.reference).toBe(getReferenceString(project));
 
-      // Updates still work, with project restored by readonlyFields
+      // Updates still work, with project and profile restored by readonlyFields
       const updated = await repo2.updateResource<ProjectMembership>({
         ...member,
         admin: true,
         project: createReference(otherProject),
+        profile: { reference: 'Practitioner/' + randomUUID() },
       });
       expect(updated.admin).toBe(true);
       expect(updated.project.reference).toBe(getReferenceString(project));
+      expect(updated.profile).toStrictEqual(member.profile);
+      const updatedUser = await repo2.updateResource<User>({ ...user, firstName: 'Changed' });
+      expect(updatedUser.firstName).toBe('Changed');
 
-      await expect(
-        repo2.createResource<User>({
-          resourceType: 'User',
-          firstName: 'Other',
-          lastName: 'User',
-          project: createReference(otherProject),
-        })
-      ).rejects.toThrow('Forbidden');
-      const serverUser = await repo2.createResource<User>({
-        resourceType: 'User',
-        firstName: 'No',
-        lastName: 'Project',
-      });
-      expect(serverUser.project).toBeUndefined();
-      // Defense in depth: meta.project of a ProjectMembership comes from its project element,
-      // so this create is also outside the admin's _project criteria
-      await expect(
-        repo2.createResource<ProjectMembership>({
-          resourceType: 'ProjectMembership',
-          project: createReference(otherProject),
-          user: createReference(user),
-          profile: { reference: 'Practitioner/' + randomUUID() },
-        })
-      ).rejects.toThrow('Forbidden');
+      // A PUT over a deleted resource is a create
+      await repo2.deleteResource('ProjectMembership', member.id);
+      await expect(repo2.updateResource<ProjectMembership>(member)).rejects.toThrow('Forbidden');
+      await repo2.deleteResource('User', user.id);
+      await expect(repo2.updateResource<User>(user)).rejects.toThrow('Forbidden');
     }));
 
   test('Project admin cannot override synthetic access policy for admin types', () =>
@@ -2512,7 +2755,7 @@ describe('AccessPolicy', () => {
       // This should succeed
       const check5 = await repo.updateResource<ProjectMembership>({
         ...check4,
-        profile: { reference: 'Practitioner/' + randomUUID() },
+        identifier: [{ system: 'https://example.com', value: randomUUID() }],
       });
       expect(check5.id).toStrictEqual(check4.id);
       expect(check5.meta?.versionId).not.toStrictEqual(check4.meta?.versionId);

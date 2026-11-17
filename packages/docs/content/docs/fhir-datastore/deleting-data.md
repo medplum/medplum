@@ -83,6 +83,8 @@ If you expunge a [`Project`](/docs/api/fhir/medplum/project), it will be _perman
 
 Sometimes you may want to restore data that has been accidentally deleted. The following script looks at the history of a resource and restores it if it is currently deleted.
 
+Restoring requires [access policy](/docs/access/access-policies#fhir-interactions) `update` access to the last version before the deletion, and `create` access to the restored resource. A restore with an `If-Match` header fails with `412 Precondition Failed`, since a deleted resource has no current version to match. The restored version always takes the current time as `meta.lastUpdated`, even when the request supplies one.
+
 ```typescript
 import { MedplumClient } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
