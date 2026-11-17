@@ -256,8 +256,12 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * shades only the time they share.
  *
  * Hover a time and the visit it would book is drawn on the calendar, moving as the pointer does. Click
- * one and it stays, as the draft. Clicking inside a shaded block picks the offered time under the click.
- * "Next week" under the cards pages the calendar and the cards together.
+ * one and it stays, as the draft. "Next week" under the cards pages the calendar and the cards together.
+ *
+ * The shading works the other way round too. Moving the pointer over a shaded block draws the offered
+ * time under it and marks that time among the cards, and a click picks it. It follows the pointer to the
+ * visit type's own start times rather than the grid's half hours: try "Injections" with Dr. Chen, whose
+ * 20 minute visits start every 10.
  *
  * @returns The story.
  */

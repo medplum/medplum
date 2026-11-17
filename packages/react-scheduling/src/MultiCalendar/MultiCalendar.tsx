@@ -52,6 +52,8 @@ export interface MultiCalendarProps {
    * `computeAvailabilityShading` works them out for the days on show.
    */
   availabilityShading?: readonly AvailabilityShade[];
+  /** Prototype. See `CalendarBaseProps.onHoverAvailability`. */
+  onHoverAvailability?: (instant: Date | undefined) => void;
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;

@@ -19,6 +19,8 @@ export interface AppointmentDayTimesProps {
   readonly selected?: Appointment;
   /** Prototype. Called with the time the pointer or focus is on, and with undefined once it leaves. */
   readonly onHoverAppointment?: (appointment: Appointment | undefined) => void;
+  /** Prototype. An offered time to mark, such as the one under the pointer on a host's calendar. */
+  readonly highlighted?: Appointment;
 }
 
 /**
@@ -48,6 +50,7 @@ export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Elemen
           selected={selected}
           onSelectAppointment={onSelectAppointment}
           onHoverAppointment={onHoverAppointment}
+          highlighted={props.highlighted}
         />
       ))}
     </Stack>
