@@ -2,14 +2,14 @@
 
 This example syncs a practitioner's Medplum schedule with their primary Google Calendar. Medplum Appointments and blocks become Google events. Google Busy events become `busy-unavailable` Slots in Medplum.
 
-**NOTE**: This example has no user interface. Your application runs Google's OAuth flow and calls the operations below. The example has passed unit tests and live tests in a single project. See [Limitations](#limitations) for what is untested.
+**NOTE**: This example has no user interface. Your application runs Google's OAuth flow and calls the operations below. The unit tests mock Google, so run the [manual check](#testing) against a test calendar before relying on it. See [Limitations](#limitations).
 
 ## Features
 
-- **Medplum to Google**: Creates, updates and removes a Google event for each Appointment and block. Writes only to events the integration owns.
+- **Medplum to Google**: Creates, updates and removes a Google event for each eligible Appointment and block. An Appointment is eligible while it is booked, arrived, checked in, fulfilled or a no-show; a block is a `busy-unavailable` Slot with no service type. Writes only to events the integration owns.
 - **Google to Medplum**: Creates a Slot on each of the practitioner's active Schedules for each timed Busy event, including each occurrence of a recurring event. Skips all-day, Free, cancelled and declined events. Never creates or changes an Appointment.
 - **Privacy**: Sends every event as Busy by default. A project can let each practitioner choose `busy-only`, `initials` or `full`. Never adds a patient as an attendee. Never copies a Google title, description or guest list into Medplum.
-- **Recovery**: An hourly Cron repairs missed changes. A Cron that runs every minute retries unfinished work.
+- **Recovery**: An hourly Cron repairs missed changes in both directions, including a Schedule that changed hands. A Cron that runs every minute retries unfinished work.
 
 ## Bots
 
@@ -20,13 +20,12 @@ This example syncs a practitioner's Medplum schedule with their primary Google C
 | `google-calendar-status-bot`     | Returns connection status                           |
 | `google-calendar-settings-bot`   | Changes a practitioner's detail level               |
 | `google-calendar-disconnect-bot` | Queues disconnect cleanup                           |
-| `google-calendar-sync-range-bot` | Queues a sync of a date range                       |
 | `google-calendar-sync-bot`       | Sends Appointment and block changes to Google       |
 | `google-calendar-reconcile-bot`  | Runs on the Crons and repairs missed changes        |
 | `google-calendar-import-bot`     | Imports Google Busy events; cleans up on disconnect |
 | `google-calendar-webhook-bot`    | Receives Google's change notifications              |
 
-The first six implement the [custom FHIR operations](#custom-fhir-operations). The last four run in the background.
+The first five implement the [custom FHIR operations](#custom-fhir-operations). The last four run in the background.
 
 ## Prerequisites
 
@@ -110,24 +109,23 @@ npm run connect-local --workspace=medplum-google-calendar-sync
 
 Every operation takes a FHIR `Parameters` resource. The practitioner is always the authenticated user.
 
-| Operation                                        | Inputs                                                             | Result                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------- |
-| `POST /Project/$google-calendar-install`         | None                                                               | AccessPolicy entries to add                         |
-| `POST /Practitioner/$google-calendar-connect`    | `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel` | Connection summary. Queues the first sync.          |
-| `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status and Google client ID              |
-| `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events. |
-| `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential  |
-| `POST /Practitioner/$google-calendar-sync`       | Optional `start` and `end`                                         | The queued range                                    |
+| Operation                                        | Inputs                                                             | Result                                                                                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /Project/$google-calendar-install`         | None                                                               | AccessPolicy entries to add                                                                                                                                  |
+| `POST /Practitioner/$google-calendar-connect`    | `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel` | Connection summary. Queues the first sync.                                                                                                                   |
+| `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status and Google client ID                                                                                                                       |
+| `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events.                                                                                                          |
+| `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential. If Google access was revoked, cleanup waits until `forgetRevoked` is `true`, and the Google events stay. |
 
 `$google-calendar-status` returns these parameters, among others:
 
-| Parameter                           | Meaning                                                  |
-| ----------------------------------- | -------------------------------------------------------- |
-| `connected`                         | The practitioner has a connection                        |
-| `status`                            | `active`, `reauth-required` or `disconnecting`           |
-| `stale`, `staleReason`              | The last import failed, is overdue or has not run        |
-| `inboundPending`, `outboundPending` | Queued work is unfinished                                |
-| `privacyCleanupPending`             | A lowered detail level is not yet applied to every event |
+| Parameter                           | Meaning                                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `connected`                         | The practitioner has a connection                                                                                                                |
+| `status`                            | `active`, `reauth-required` or `disconnecting`                                                                                                   |
+| `stale`, `staleReason`              | The last import failed, is overdue or has not run; `watch-unavailable` means Google notifications could not be registered and imports run hourly |
+| `inboundPending`, `outboundPending` | Queued work is unfinished                                                                                                                        |
+| `privacyCleanupPending`             | A lowered detail level is not yet applied to every event                                                                                         |
 
 When `status` is `reauth-required`, the practitioner must connect again. `src/common/contracts.ts` defines every input and output.
 
@@ -139,22 +137,20 @@ Run the unit tests. They mock Google.
 npm test --workspace=medplum-google-calendar-sync
 ```
 
-Run the live tests against a test project and a test Google account. They need a CLI login for a connected practitioner who is a project admin and has an active Schedule. They create one Appointment and one Google event, check create, update and removal in both directions, then remove what they created.
+Then check a real calendar by hand, in a test project with a test Google account:
 
-```bash
-export E2E_MANIFEST="$PWD/test-results/gcal-e2e-$(date +%s).json"
-npm run test:e2e --workspace=medplum-google-calendar-sync
-```
-
-Add `-- --extended` to also test event filtering, a new Schedule and recurring events. If a run is interrupted, run `test:e2e:cleanup` with the same `E2E_MANIFEST`.
+1. Connect a practitioner who has an active Schedule, and wait for `$google-calendar-status` to report `lastSuccessfulInbound`.
+2. Book an Appointment for the practitioner. An event titled "Appointment" appears in Google. Cancel it; the event disappears.
+3. Create a timed Busy event in Google. A `busy-unavailable` Slot appears on the Schedule. Delete the event; the Slot disappears.
+4. Call `$google-calendar-disconnect`. The imported Slots and the mirrored events are removed.
 
 ## Limitations
 
 - Untested: linked projects, Google Workspace Internal consent, calendars with thousands of events, Google quota limits, recurrence exceptions.
 - The refresh token is stored unencrypted in a `Basic` resource. AccessPolicy is the only protection: a project admin, or a user whose policy grants `Basic`, can read it.
-- Without a range, sync covers 90 days from now. `$google-calendar-sync` accepts a range of up to 366 days.
-- Any user who can write Slots can change an imported Slot. To prevent that, replace the user's Slot write grant with `ORDINARY_SLOT_POLICY_SNIPPET` from `src/common/policies.ts`.
-- The integration sends no notifications. `notificationSubscription()` in `src/common/subscriptions.ts` returns a Subscription that fires on `reauth-required`.
+- Sync covers 90 days from now in both directions.
+- Any user who can write Slots can change an imported Slot.
+- The integration sends no notifications. Subscribe to the status record if you need to know when a practitioner must reconnect.
 - Disconnect deletes the imported Slots, so those times become bookable.
 - Google expires the refresh tokens of an OAuth app in Testing status after seven days.
 
