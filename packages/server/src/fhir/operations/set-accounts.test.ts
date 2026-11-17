@@ -25,7 +25,7 @@ import { runInAuthenticatedContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
-import { FhirRateLimiter } from '../fhirquota';
+import { FhirQuotaCost, FhirRateLimiter } from '../fhirquota';
 import { setAccountsHandler } from './set-accounts';
 
 const app = express();
@@ -123,6 +123,7 @@ describe('Patient Set Accounts Operation', () => {
 
   test('Updates target patient and compartment resources', async () => {
     // Execute the operation adding the organization to the patient's compartment
+    const consumeSpy = vi.spyOn(FhirRateLimiter.prototype, 'consume');
     const res3 = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -144,6 +145,9 @@ describe('Patient Set Accounts Operation', () => {
         ],
       });
     expect(res3).toHaveStatus(200);
+    // Sync propagation charges the user's FHIR quota for each system repo write
+    expect(consumeSpy.mock.calls.filter(([points]) => points === FhirQuotaCost.WRITE)).toHaveLength(3);
+    consumeSpy.mockRestore();
     const result = res3.body;
     expect(result.parameter?.[0].name).toBe('resourcesUpdated');
     expect(result.parameter?.[0].valueInteger).toBe(3); // Observation and DiagnosticReport
