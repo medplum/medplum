@@ -14,7 +14,7 @@ import {
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { parseIfMatchHeader } from '@medplum/fhir-router';
-import type { EncryptedSecret, Reference } from '@medplum/fhirtypes';
+import type { EncryptedSecret, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { AuditEventOutcome } from '../../util/auditevent';
 import type { EncryptionContext } from '../../util/secret-encryption';
@@ -50,7 +50,8 @@ export const getValueOperation = makeOperationDefinition(
 
 /**
  * Handles EncryptedSecret $set-value: encrypts the value and saves it as a new version of the secret.
- * Requires update access to the secret. The plaintext is never returned.
+ * Requires an access policy entry that names the `set-value` operation; update access alone is not enough.
+ * The plaintext is never returned.
  * @param req - The FHIR request.
  * @returns The updated EncryptedSecret.
  */
@@ -63,11 +64,9 @@ export async function encryptedSecretSetValueHandler(req: FhirRequest): Promise<
 
   using unrestrictedRepo = getUnrestrictedRepo(repo);
   const secret = await readStoredSecret(unrestrictedRepo, req.params.id);
-  if (!secret || !repo.canPerformInteraction(AccessPolicyInteraction.READ, secret)) {
-    return [notFound];
-  }
-  if (!(await repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'EncryptedSecret', secret.id))) {
-    return [forbidden];
+  const denied = checkOperation(repo, 'set-value', secret, req.params.id);
+  if (denied || !secret) {
+    return [denied ?? notFound];
   }
   if (secret.status === 'revoked') {
     return [businessRule('revoked', 'Cannot set the value of a revoked secret')];
@@ -92,9 +91,11 @@ export async function encryptedSecretSetValueHandler(req: FhirRequest): Promise<
     throw err;
   }
   logSecretEvent(AuditEventOutcome.Success, secret, 'set-value');
-  // Return the secret as the caller's own access policy presents it
-  const updated = await repo.readResource<EncryptedSecret>('EncryptedSecret', secret.id);
-  return [allOk, buildOutputParameters(setValueOperation, updated)];
+  // Return the secret as the caller's own access policy presents it, or without its fields if the caller can't read it
+  const updated = repo.canPerformInteraction(AccessPolicyInteraction.READ, secret)
+    ? await repo.readResource<EncryptedSecret>('EncryptedSecret', secret.id)
+    : undefined;
+  return updated ? [allOk, buildOutputParameters(setValueOperation, updated)] : [allOk];
 }
 
 /**
@@ -107,12 +108,9 @@ export async function encryptedSecretGetValueHandler(req: FhirRequest): Promise<
   const { repo } = getAuthenticatedContext();
   using unrestrictedRepo = getUnrestrictedRepo(repo);
   const secret = await readStoredSecret(unrestrictedRepo, req.params.id);
-  const reference: Reference = { reference: `EncryptedSecret/${req.params.id}` };
-
-  if (!secret || !repo.canPerformOperation('get-value', secret)) {
-    logSecretEvent(AuditEventOutcome.MinorFailure, secret ?? reference, 'get-value denied');
-    // Callers who cannot read the secret cannot learn that it exists
-    return [secret && repo.canPerformInteraction(AccessPolicyInteraction.READ, secret) ? forbidden : notFound];
+  const denied = checkOperation(repo, 'get-value', secret, req.params.id);
+  if (denied || !secret) {
+    return [denied ?? notFound];
   }
 
   const unavailable = getUnavailableReason(secret);
@@ -125,8 +123,7 @@ export async function encryptedSecretGetValueHandler(req: FhirRequest): Promise<
   try {
     value = open(getEncryptionContext(secret), secret.encryptedValue as string);
   } catch (err) {
-    // Ciphertext that does not match this secret, or whose key is gone, is a server-side integrity failure
-    // The reason goes to the audit event only; the caller learns nothing about the key or ciphertext
+    // A server-side integrity failure: the reason goes to the audit event, not to the caller
     logSecretEvent(AuditEventOutcome.SeriousFailure, secret, `get-value failed: ${normalizeErrorString(err)}`);
     return [serverError(new Error('Unable to decrypt secret value'))];
   }
@@ -135,13 +132,39 @@ export async function encryptedSecretGetValueHandler(req: FhirRequest): Promise<
 }
 
 /**
- * Returns a repository with the caller's identity and project scope but no access policy.
+ * Checks that the caller is granted an operation on the secret, and audits a denial.
+ * @param repo - The caller's repository.
+ * @param operation - The operation name.
+ * @param secret - The stored secret, if it exists.
+ * @param id - The requested EncryptedSecret ID.
+ * @returns An error outcome if the operation is not granted, or undefined if it is.
+ */
+function checkOperation(
+  repo: Repository,
+  operation: string,
+  secret: WithId<EncryptedSecret> | undefined,
+  id: string
+): OperationOutcome | undefined {
+  if (secret && repo.canPerformOperation(operation, secret)) {
+    return undefined;
+  }
+  logSecretEvent(
+    AuditEventOutcome.MinorFailure,
+    secret ?? { reference: `EncryptedSecret/${id}` },
+    `${operation} denied`
+  );
+  // Callers who cannot read the secret cannot learn that it exists
+  return secret && repo.canPerformInteraction(AccessPolicyInteraction.READ, secret) ? forbidden : notFound;
+}
+
+/**
+ * Returns a repository with the caller's identity, project scope, connection, and transaction, but no access policy.
  * Callers must check the caller's own access before using or revealing anything it returns.
  * @param repo - The caller's repository.
  * @returns The unrestricted repository, in extended mode so reads keep `meta.project`.
  */
 function getUnrestrictedRepo(repo: Repository): Repository {
-  return repo.clone({ accessPolicy: undefined, extendedMode: true });
+  return repo.withOverrideConfig({ accessPolicy: undefined, extendedMode: true });
 }
 
 /**

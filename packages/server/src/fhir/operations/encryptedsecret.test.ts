@@ -1,7 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { AccessPolicyResource, EncryptedSecret, Parameters, Project, ProjectMembership } from '@medplum/fhirtypes';
+import type {
+  AccessPolicyResource,
+  Bundle,
+  EncryptedSecret,
+  Parameters,
+  Project,
+  ProjectMembership,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import { randomBytes, randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -17,7 +24,7 @@ import { getProjectSystemRepo } from '../repo';
 const app = express();
 
 const fullAccess: AccessPolicyResource[] = [
-  { resourceType: 'EncryptedSecret', interaction: ['create', 'read', 'update'], operation: ['get-value'] },
+  { resourceType: 'EncryptedSecret', interaction: ['create', 'read', 'update'], operation: ['get-value', 'set-value'] },
 ];
 
 const testKey: EncryptedSecretKeyConfig = { kid: 'test', key: randomBytes(32).toString('base64'), status: 'active' };
@@ -130,6 +137,54 @@ describe('EncryptedSecret $set-value and $get-value', () => {
     expect((await getValue(accessToken, secret.id)).body.parameter).toStrictEqual([
       { name: 'value', valueString: 'hunter2' },
     ]);
+  });
+
+  test('Update access without a set-value grant is 403', async () => {
+    const { accessToken, secret } = await setup([{ resourceType: 'EncryptedSecret', interaction: ['read', 'update'] }]);
+    expect((await setValue(accessToken, secret.id, 'hunter2')).status).toBe(403);
+  });
+
+  test('set-value grant alone sets the value but does not return the resource', async () => {
+    const { accessToken, secret } = await setup([{ resourceType: 'EncryptedSecret', operation: ['set-value'] }]);
+    const res = await setValue(accessToken, secret.id, 'hunter2');
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('OperationOutcome');
+    const stored = await systemRepo.readResource<EncryptedSecret>('EncryptedSecret', secret.id);
+    expect(stored.encryptedValue).toBeDefined();
+  });
+
+  test('set-value in a transaction bundle rolls back with the bundle', async () => {
+    const { accessToken, project } = await createTestProject({
+      withAccessToken: true,
+      accessPolicy: { resource: fullAccess },
+      project: { features: ['transaction-bundles'] },
+    });
+    const secret = await systemRepo.createResource<EncryptedSecret>({
+      resourceType: 'EncryptedSecret',
+      meta: { project: project.id },
+      status: 'active',
+      code: 'test-token',
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4')
+      .auth(accessToken, { type: 'bearer' })
+      .send({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            request: { method: 'POST', url: `EncryptedSecret/${secret.id}/$set-value` },
+            resource: { resourceType: 'Parameters', parameter: [{ name: 'value', valueString: 'hunter2' }] },
+          },
+          // Operations run before reads in a transaction, so this failed read rolls back the $set-value
+          { request: { method: 'GET', url: `EncryptedSecret/${randomUUID()}` } },
+        ],
+      } satisfies Bundle);
+    expect(res.status).not.toBe(200);
+
+    const stored = await systemRepo.readResource<EncryptedSecret>('EncryptedSecret', secret.id);
+    expect(stored.encryptedValue).toBeUndefined();
   });
 
   test('Value does not decrypt on another secret', async () => {

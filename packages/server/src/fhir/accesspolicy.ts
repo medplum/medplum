@@ -307,12 +307,14 @@ function applyServerWriteRules(resourcePolicy: AccessPolicyResource): void {
 /**
  * Search parameters that may appear in the criteria of an entry granting each operation.
  *
- * These operations release protected values, so their grants may only filter on elements that cannot change after
- * create. Otherwise anyone able to write the resource could edit it into a shape that matches someone else's grant.
+ * These operations release or replace protected values, so their grants may only filter on elements that cannot
+ * change after create. Otherwise anyone able to write the resource could edit it into a shape that matches someone
+ * else's grant.
  * Operations not listed here may use any criteria.
  */
 const operationCriteriaParams: Record<string, string[]> = {
   'get-value': ['_id', 'owner', 'code'],
+  'set-value': ['_id', 'owner', 'code'],
 };
 
 /**
@@ -464,7 +466,9 @@ function applyProjectAdminAccessPolicy(
   if (project.superAdmin) {
     for (const resourceType of wildcardExcludedResourceTypes) {
       if (!accessPolicy.resource.some((r) => r.resourceType === resourceType)) {
-        accessPolicy.resource.push({ resourceType });
+        const entry: AccessPolicyResource = { resourceType };
+        applyServerWriteRules(entry);
+        accessPolicy.resource.push(entry);
       }
     }
   } else if (membership.admin) {

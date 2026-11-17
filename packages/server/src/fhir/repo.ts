@@ -450,7 +450,7 @@ export class Repository extends FhirRepository implements Disposable {
     return systemRepo;
   }
 
-  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode'>): Repository {
+  withOverrideConfig(config: Pick<RepositoryContext, 'extendedMode' | 'accessPolicy'>): Repository {
     this.assertUsable();
     let repo: Repository;
     if (this.connections.hasConnection()) {

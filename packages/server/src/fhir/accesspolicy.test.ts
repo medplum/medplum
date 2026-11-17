@@ -2527,6 +2527,18 @@ describe('AccessPolicy', () => {
         })
     );
 
+    test('Super admin entries carry the write rules', () =>
+      withTestContext(async () => {
+        const { project, login, membership } = await createTestProject({
+          superAdmin: true,
+          withAccessToken: true,
+          withClient: true,
+        });
+        const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
+        const created = await repo.createResource<EncryptedSecret>({ ...secret, encryptedValue: 'forged' });
+        expect(created.encryptedValue).toBeUndefined();
+      }));
+
     test('Revoked secret cannot be updated', () =>
       withTestContext(async () => {
         const repo = await getSecretRepo();
@@ -2537,17 +2549,18 @@ describe('AccessPolicy', () => {
       }));
   });
 
-  test.each<[string, boolean]>([
-    ['EncryptedSecret?owner=%profile&code=test-token', true],
-    ['EncryptedSecret?_id=123', true],
-    ['EncryptedSecret?code:not=test-token', true],
-    ['EncryptedSecret?status=active', false],
-  ])('get-value grant with criteria %s kept=%s', (criteria, kept) =>
+  test.each<[string, string, boolean]>([
+    ['get-value', 'EncryptedSecret?owner=%profile&code=test-token', true],
+    ['get-value', 'EncryptedSecret?_id=123', true],
+    ['get-value', 'EncryptedSecret?code:not=test-token', true],
+    ['get-value', 'EncryptedSecret?status=active', false],
+    ['set-value', 'EncryptedSecret?status=active', false],
+  ])('%s grant with criteria %s (kept: %s)', (operation, criteria, kept) =>
     withTestContext(async () => {
       const policy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         meta: { project: testProject.id },
-        resource: [{ resourceType: 'EncryptedSecret', criteria, operation: ['get-value'] }],
+        resource: [{ resourceType: 'EncryptedSecret', criteria, operation: [operation] }],
       });
       const accessPolicy = await buildAccessPolicy({
         resourceType: 'ProjectMembership',
@@ -2558,7 +2571,7 @@ describe('AccessPolicy', () => {
       });
       const entry = accessPolicy.resource.find((r) => r.resourceType === 'EncryptedSecret');
       expect(entry?.interaction).toStrictEqual([]);
-      expect(entry?.operation).toStrictEqual(kept ? ['get-value'] : []);
+      expect(entry?.operation).toStrictEqual(kept ? [operation] : []);
     })
   );
 
