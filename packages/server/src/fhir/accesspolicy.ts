@@ -306,7 +306,8 @@ function operationCriteriaAllowed(resourcePolicy: AccessPolicyResource, operatio
   if (!resourcePolicy.criteria) {
     return true;
   }
-  // Chained and `_has` filters keep their full key as the code, so they never match an allowed parameter
+  // An allowlist: every filter must use an allowed parameter, but none is required.
+  // Chained and `_has` filters keep their full key as the code, so they never match an allowed parameter.
   const filters = parseSearchRequest(resourcePolicy.criteria).filters ?? EMPTY;
   return filters.every((filter) => allowedParams.includes(filter.code));
 }

@@ -2454,6 +2454,26 @@ describe('AccessPolicy', () => {
     })
   );
 
+  test('Super admin with no access policy can search EncryptedSecret', () =>
+    withTestContext(async () => {
+      const { project, login, membership } = await createTestProject({
+        superAdmin: true,
+        withAccessToken: true,
+        withClient: true,
+      });
+      const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
+      const secret = await repo.createResource<EncryptedSecret>({
+        resourceType: 'EncryptedSecret',
+        status: 'active',
+        code: 'test-token',
+      });
+      const results = await repo.searchResources<EncryptedSecret>({
+        resourceType: 'EncryptedSecret',
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: secret.id }],
+      });
+      expect(results.map((r) => r.id)).toStrictEqual([secret.id]);
+    }));
+
   test.each<[string, boolean]>([
     ['EncryptedSecret?owner=%profile&code=test-token', true],
     ['EncryptedSecret?_id=123', true],
