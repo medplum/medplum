@@ -27,11 +27,14 @@ import cx from 'clsx';
 import type { JSX, ReactNode } from 'react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
+import type { AvailabilityShade } from '../availabilityShading';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import type { CalendarSelection, DateTimeRange } from '../types';
 import { AppointmentPatientName } from './AppointmentPatientName';
+import { AvailabilityShadeEvent } from './AvailabilityShadeEvent';
 import classes from './CalendarBase.module.css';
 import { availableTimeToBusinessHoursEntry, filterBookedSlots } from './CalendarBase.utils';
+import { AvailabilityShadeHoverContext, useAvailabilityShadeHover } from './useAvailabilityShadeHover';
 
 export interface FhirEventSource {
   schedule?: WithId<Schedule>;
@@ -56,6 +59,10 @@ export type ExtendedEvent = (
       type: 'slot';
       slot: Slot;
       schedule?: WithId<Schedule>;
+    }
+  | {
+      type: 'availability';
+      shade: AvailabilityShade;
     }
 ) & {
   interactive?: boolean;
@@ -101,6 +108,16 @@ function renderEventContent(info: EventDisplayInfo): JSX.Element | true {
       <div className={info.titleClass}>{ext.label ?? <AppointmentPatientName appointment={ext.appointment} />}</div>
     </>
   );
+}
+
+/**
+ * Draws a block of availability; every other background event is left to FullCalendar.
+ * @param info - What FullCalendar hands a background event's content.
+ * @returns The block, or `true` to keep FullCalendar's own content.
+ */
+function renderBackgroundEventContent(info: EventDisplayInfo): JSX.Element | true {
+  const ext = info.event.extendedProps as ExtendedEvent;
+  return ext.type === 'availability' ? <AvailabilityShadeEvent shade={ext.shade} /> : true;
 }
 
 function isTodaysWeekday(info: DayHeaderInfo): boolean {
@@ -199,6 +216,11 @@ export interface CalendarBaseProps extends Omit<
   onRangeChange?: (range: DateTimeRange) => void;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
+  /**
+   * Colored blocks drawn behind the events to say when visit types can be booked, as
+   * `computeAvailabilityShading` works them out for the days on show. Not drawn in month view.
+   */
+  availabilityShading?: readonly AvailabilityShade[];
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;
@@ -248,6 +270,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     onRangeChange,
     className,
     availableTime,
+    availabilityShading,
     onSelectAppointment,
     onSelectSlot,
     onDoubleClickAppointment,
@@ -262,9 +285,20 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     ...fullCalendarProps
   } = props;
 
-  const eventSources = useMemo(
-    () =>
-      props.eventSources.map((fhirSource): EventSourceInput => {
+  const eventSources = useMemo(() => {
+    // Transparent, so the theme's own background fill stays out of the way of the block's color.
+    const shadingSource: EventSourceInput = {
+      color: 'transparent',
+      display: viewType === 'dayGridMonth' ? 'none' : 'background',
+      events: (availabilityShading ?? []).map((shade) => ({
+        id: shade.id,
+        start: shade.start,
+        end: shade.end,
+        extendedProps: { type: 'availability', shade } satisfies ExtendedEvent,
+      })),
+    };
+    return [
+      ...props.eventSources.map((fhirSource): EventSourceInput => {
         const { schedule, slots, appointments, interactive, label, ...source } = fhirSource;
         const filteredSlots = filterBookedSlots(slots, appointments);
 
@@ -285,15 +319,17 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
           ],
         };
       }),
-    [
-      props.eventSources,
-      props.onDoubleClickAppointment,
-      props.onSelectAppointment,
-      props.onSelectSlot,
-      props.onDoubleClickSlot,
-      viewType,
-    ]
-  );
+      ...(availabilityShading?.length ? [shadingSource] : []),
+    ];
+  }, [
+    props.eventSources,
+    availabilityShading,
+    props.onDoubleClickAppointment,
+    props.onSelectAppointment,
+    props.onSelectSlot,
+    props.onDoubleClickSlot,
+    viewType,
+  ]);
 
   const rawEventClick = useCallback(
     (eventClickInfo: EventClickInfo) => {
@@ -306,7 +342,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         onSelectAppointment?.(ext.appointment, ext.schedule);
       } else if (ext.type === 'slot') {
         onSelectSlot?.(ext.slot, ext.schedule);
-      } else {
+      } else if (ext.type !== 'availability') {
         assertNever(ext);
       }
     },
@@ -321,7 +357,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         return true;
       } else if (ext.type === 'slot') {
         onDoubleClickSlot?.(ext.slot, ext.schedule);
-      } else {
+      } else if (ext.type !== 'availability') {
         assertNever(ext);
       }
       return false;
@@ -382,8 +418,10 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     }
   }, [startMs, endMs]);
 
+  const shadeHover = useAvailabilityShadeHover(Boolean(availabilityShading?.length));
+
   return (
-    <div data-testid="calendar" className={cx(classes.wrapper, className)}>
+    <div data-testid="calendar" className={cx(classes.wrapper, className)} {...shadeHover.hoverProps}>
       <Group justify="space-between" pb="sm">
         <Group gap="md">
           {toolbarStart}
@@ -446,69 +484,72 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
           {toolbarEnd}
         </Group>
       </Group>
-      <FullCalendar
-        height="100%"
-        plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
-        initialView={initialView}
-        slotMinHeight={38}
-        eventShortHeight={33}
-        colorScheme={colorScheme}
-        displayEventEnd={false}
-        eventTimeFormat={{ timeStyle: 'short' }}
-        allDaySlot={false}
-        views={VIEWS}
-        selectable={selectable}
-        unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
-        select={(eventInfo) => {
-          // `api.select` above comes back through here with a null `jsEvent`; only a
-          // pointer gesture is news to the host.
-          if (!eventInfo.jsEvent) {
-            return;
+      <AvailabilityShadeHoverContext.Provider value={shadeHover.hoveredId}>
+        <FullCalendar
+          height="100%"
+          plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
+          initialView={initialView}
+          slotMinHeight={38}
+          eventShortHeight={33}
+          colorScheme={colorScheme}
+          displayEventEnd={false}
+          eventTimeFormat={{ timeStyle: 'short' }}
+          allDaySlot={false}
+          views={VIEWS}
+          selectable={selectable}
+          unselectAuto={false} // keep selected even if user clicks elsewhere, like booking form
+          select={(eventInfo) => {
+            // `api.select` above comes back through here with a null `jsEvent`; only a
+            // pointer gesture is news to the host.
+            if (!eventInfo.jsEvent) {
+              return;
+            }
+            onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end, allDay: eventInfo.allDay });
+          }}
+          eventContent={renderEventContent}
+          backgroundEventContent={renderBackgroundEventContent}
+          dayHeaderContent={renderDayHeaderContent}
+          dayCellTopInnerClass={classes.dayCellTopInner}
+          slotHeaderInnerClass={classes.slotHeaderInner}
+          nowIndicatorLineClass={classes.nowIndicatorLine}
+          nowIndicatorDotClass={classes.nowIndicatorDot}
+          nowIndicatorHeaderClass={classes.nowIndicatorHeader}
+          {...fullCalendarProps}
+          ref={calendarRef}
+          eventSources={eventSources}
+          controller={controller}
+          headerToolbar={false}
+          datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
+          className={cx(classes.calendar, controller.view?.type)}
+          eventDidMount={(info) => {
+            if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
+              eventDataRef.current.set(info.el, info.event);
+              info.el.addEventListener('dblclick', handleDblClick);
+            }
+          }}
+          businessHours={businessHours}
+          eventClick={eventClick}
+          eventClass={(evt) =>
+            cx(props.eventClass, classes.event, {
+              [classes.clickable]: evt.isInteractive,
+              [classes.shortEvent]: evt.isShort,
+              // Judged when the event is drawn, so one that ends while on show stays unmarked until redrawn.
+              past: !!evt.event.end && evt.event.end.getTime() <= Date.now(),
+              selected: evt.event.id === selectedId,
+            })
           }
-          onSelectInterval?.({ start: eventInfo.start, end: eventInfo.end, allDay: eventInfo.allDay });
-        }}
-        eventContent={renderEventContent}
-        dayHeaderContent={renderDayHeaderContent}
-        dayCellTopInnerClass={classes.dayCellTopInner}
-        slotHeaderInnerClass={classes.slotHeaderInner}
-        nowIndicatorLineClass={classes.nowIndicatorLine}
-        nowIndicatorDotClass={classes.nowIndicatorDot}
-        nowIndicatorHeaderClass={classes.nowIndicatorHeader}
-        {...fullCalendarProps}
-        ref={calendarRef}
-        eventSources={eventSources}
-        controller={controller}
-        headerToolbar={false}
-        datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
-        className={cx(classes.calendar, controller.view?.type)}
-        eventDidMount={(info) => {
-          if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
-            eventDataRef.current.set(info.el, info.event);
-            info.el.addEventListener('dblclick', handleDblClick);
-          }
-        }}
-        businessHours={businessHours}
-        eventClick={eventClick}
-        eventClass={(evt) =>
-          cx(props.eventClass, classes.event, {
-            [classes.clickable]: evt.isInteractive,
-            [classes.shortEvent]: evt.isShort,
-            // Judged when the event is drawn, so one that ends while on show stays unmarked until redrawn.
-            past: !!evt.event.end && evt.event.end.getTime() <= Date.now(),
-            selected: evt.event.id === selectedId,
-          })
-        }
-        eventTimeClass={cx(props.eventTimeClass, classes.eventTime)}
-        eventTitleClass={cx(props.eventTitleClass, classes.eventTitle)}
-        eventInnerClass={cx(props.eventInnerClass, classes.eventInner)}
-        backgroundEventClass={cx(props.backgroundEventClass, classes.backgroundEvent)}
-        backgroundEventInnerClass={cx(props.backgroundEventInnerClass, classes.backgroundEventInner)}
-        listItemEventBeforeClass={cx(props.listItemEventBeforeClass, classes.listItemEventBefore)}
-        nonBusinessHoursClass={cx(props.nonBusinessHoursClass, classes.nonBusinessHours)}
-        dayLaneClass={cx(props.dayLaneClass, selectable && classes.clickable)}
-        dayCellClass={cx(props.dayCellClass, selectable && classes.clickable)}
-        highlightClass={cx(props.highlightClass, classes.selectedRange)}
-      />
+          eventTimeClass={cx(props.eventTimeClass, classes.eventTime)}
+          eventTitleClass={cx(props.eventTitleClass, classes.eventTitle)}
+          eventInnerClass={cx(props.eventInnerClass, classes.eventInner)}
+          backgroundEventClass={cx(props.backgroundEventClass, classes.backgroundEvent)}
+          backgroundEventInnerClass={cx(props.backgroundEventInnerClass, classes.backgroundEventInner)}
+          listItemEventBeforeClass={cx(props.listItemEventBeforeClass, classes.listItemEventBefore)}
+          nonBusinessHoursClass={cx(props.nonBusinessHoursClass, classes.nonBusinessHours)}
+          dayLaneClass={cx(props.dayLaneClass, selectable && classes.clickable)}
+          dayCellClass={cx(props.dayCellClass, selectable && classes.clickable)}
+          highlightClass={cx(props.highlightClass, classes.selectedRange)}
+        />
+      </AvailabilityShadeHoverContext.Provider>
     </div>
   );
 });

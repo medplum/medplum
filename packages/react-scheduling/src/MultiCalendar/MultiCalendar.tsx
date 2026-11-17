@@ -11,6 +11,7 @@ import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
+import type { AvailabilityShade } from '../availabilityShading';
 import { getSchedulingColor, resolveThemeColor } from '../colors';
 import type { CalendarSelection, DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
@@ -44,6 +45,11 @@ export interface MultiCalendarProps {
   selectedId?: string;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
+  /**
+   * Colored blocks drawn behind the events to say when visit types can be booked, as
+   * `computeAvailabilityShading` works them out for the days on show.
+   */
+  availabilityShading?: readonly AvailabilityShade[];
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;
