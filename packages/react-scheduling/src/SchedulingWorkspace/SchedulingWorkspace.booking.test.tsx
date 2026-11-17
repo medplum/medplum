@@ -39,6 +39,7 @@ import {
   clickBook,
   codePill,
   dragDays,
+  durationEditorButton,
   enterAuthorizationDetails,
   enterCode,
   field,
@@ -315,8 +316,7 @@ describe('SchedulingWorkspace booking', () => {
       fireEvent.click(screen.getAllByRole('button', { name: `click appointment ${appointment.id}` })[0]);
       fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
       await settleAutocomplete();
-      await openTimeFinder();
-      expect(screen.queryByText('Or enter a time') !== null).toBe(canBypassSchedulingRules);
+      expect(durationEditorButton() !== null).toBe(canBypassSchedulingRules);
     }
   );
 
