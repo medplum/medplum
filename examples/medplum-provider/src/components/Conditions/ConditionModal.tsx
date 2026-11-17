@@ -97,7 +97,6 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
         <CodeableConceptInput
           binding="http://hl7.org/fhir/sid/icd-10-cm/vs/billable"
           label="ICD-10 Code"
-          description="Billable ICD-10-CM codes"
           placeholder="Search by code or name"
           name="diagnosis"
           path="Condition.code"

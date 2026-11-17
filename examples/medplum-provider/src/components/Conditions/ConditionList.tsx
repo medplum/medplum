@@ -134,9 +134,14 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
         return;
       }
 
-      const resolved =
-        (condition.code && (await findExistingPatientCondition(medplum, encounter, condition.code))) ||
-        (await medplum.createResource(condition));
+      const existing = condition.code && (await findExistingPatientCondition(medplum, encounter, condition.code));
+      const pickedStatus = condition.clinicalStatus;
+      let resolved = existing || (await medplum.createResource(condition));
+      if (existing && pickedStatus && existing.clinicalStatus?.coding?.[0]?.code !== pickedStatus.coding?.[0]?.code) {
+        resolved = await medplum.patchResource('Condition', existing.id, [
+          { op: existing.clinicalStatus ? 'replace' : 'add', path: '/clinicalStatus', value: pickedStatus },
+        ]);
+      }
       linkCondition(resolved);
     } catch (err) {
       showErrorNotification(err);

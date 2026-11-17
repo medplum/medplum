@@ -324,12 +324,13 @@ describe('ConditionList', () => {
     });
   }, 15000);
 
-  test('reuses the patient existing condition with the same code', async () => {
+  test('reuses the patient existing condition with the same code and applies the chosen status', async () => {
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
     const existing = await medplum.createResource<Condition>({
       resourceType: 'Condition',
       subject: { reference: 'Patient/patient-123' },
+      clinicalStatus: { coding: [{ code: 'resolved' }] },
       code: { coding: [{ code: 'A00.9', display: 'Cholera, unspecified' }] },
     });
     const createSpy = vi.spyOn(medplum, 'createResource');
@@ -337,7 +338,10 @@ describe('ConditionList', () => {
     setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
     await submitCholeraDiagnosis(userEvent.setup());
 
-    await waitFor(() => expect(setConditions).toHaveBeenCalledWith([mockCondition, existing]), { timeout: 10000 });
+    await waitFor(() => expect(setConditions).toHaveBeenCalled(), { timeout: 10000 });
+    const linked = setConditions.mock.calls[0][0][1] as Condition;
+    expect(linked.id).toBe(existing.id);
+    expect(linked.clinicalStatus?.coding?.[0]?.code).toBe('active');
     expect(onDiagnosisChange).toHaveBeenCalledWith([
       { condition: { reference: 'Condition/condition-123' }, rank: 1 },
       { condition: { reference: `Condition/${existing.id}` }, rank: 2 },

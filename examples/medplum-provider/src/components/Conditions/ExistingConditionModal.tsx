@@ -106,9 +106,15 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
 
   const selected = conditions?.find((c) => c.id === selectedId);
 
-  const close = (): void => {
+  const reset = (): void => {
     setSelectedId(undefined);
     setQuery('');
+    setConditions(undefined);
+    setLoadedKey(undefined);
+  };
+
+  const close = (): void => {
+    reset();
     onClose();
   };
 
@@ -123,8 +129,7 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
           disabled={!selected}
           onClick={() => {
             if (selected) {
-              setSelectedId(undefined);
-              setQuery('');
+              reset();
               onSubmit(selected);
             }
           }}

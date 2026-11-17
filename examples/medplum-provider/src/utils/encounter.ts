@@ -363,7 +363,7 @@ export async function addDiagnosesToEncounter(
 }
 
 /**
- * Finds the patient's existing Condition with the diagnosis code, ignoring entered-in-error records.
+ * Finds the patient's existing Condition with the diagnosis code, ignoring entered-in-error and refuted records.
  *
  * @param medplum - The Medplum client.
  * @param encounter - The encounter whose subject owns the Condition.
@@ -385,11 +385,12 @@ export async function findExistingPatientCondition(
     {
       subject: encounter.subject.reference,
       code: coding.system ? `${coding.system}|${coding.code}` : coding.code,
+      'verification-status:not': 'entered-in-error,refuted',
     },
     { cache: 'no-cache' }
   );
 
-  return matches.find((condition) => !condition.verificationStatus?.coding?.some((c) => c.code === 'entered-in-error'));
+  return matches[0];
 }
 
 export function encounterUrl(encounter: WithId<Encounter>): string {

@@ -7,6 +7,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render } from '../../test-utils/render';
 import ExistingConditionModal from './ExistingConditionModal';
@@ -98,6 +99,33 @@ describe('ExistingConditionModal', () => {
     setup();
     await screen.findAllByRole('radio');
     expect(screen.getAllByRole('radio')).toHaveLength(5);
+  });
+
+  test('does not show the previous results when reopened', async () => {
+    await medplum.createResource(condition('E11.9', 'active'));
+    const onClose = vi.fn();
+    const modal = (opened: boolean): JSX.Element => (
+      <MedplumProvider medplum={medplum}>
+        <ExistingConditionModal
+          opened={opened}
+          onClose={onClose}
+          patient={patient}
+          excludeCodes={[]}
+          onSubmit={vi.fn()}
+        />
+      </MedplumProvider>
+    );
+    const { rerender } = render(modal(true));
+    await screen.findByRole('radio', { name: 'E11.9 Dx E11.9' });
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalled();
+    rerender(modal(false));
+    rerender(modal(true));
+
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Searching')).toBeInTheDocument();
+    expect(await screen.findByRole('radio', { name: 'E11.9 Dx E11.9' })).toBeInTheDocument();
   });
 
   test('shows an empty state when the patient has no other current conditions', async () => {
