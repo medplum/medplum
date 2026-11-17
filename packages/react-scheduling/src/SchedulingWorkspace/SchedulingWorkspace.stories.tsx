@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import { SchedulingColorURI } from '@medplum/core';
-import type { Appointment } from '@medplum/fhirtypes';
+import { createReference, SchedulingColorURI } from '@medplum/core';
+import type { Appointment, PractitionerRole, Resource } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { AvailabilityShadingFixtures } from '../stories/availabilityShading';
 import {
   withBookStub,
   withCancelStub,
@@ -60,6 +61,26 @@ const LOCAL_FIXTURES = inViewerTimezone(ELSEWHERE_FIXTURES).map((resource) =>
       }
     : resource
 );
+
+/**
+ * `LOCAL_FIXTURES`, and beside it the two facilities and four providers of `AvailabilityShadingFixtures`,
+ * who set the hours availability is drawn from.
+ *
+ * The clinic's own providers are given a role at its two sites, so that choosing Riverside Clinic or
+ * Northgate Hospital leaves only the providers who work there.
+ */
+const BASIC_FIXTURES: Resource[] = [
+  ...LOCAL_FIXTURES,
+  ...inViewerTimezone(AvailabilityShadingFixtures),
+  ...LOCAL_FIXTURES.filter((resource) => resource.resourceType === 'Practitioner').map(
+    (practitioner): PractitionerRole => ({
+      resourceType: 'PractitionerRole',
+      id: `role-${practitioner.id}`,
+      practitioner: createReference(practitioner),
+      location: [{ reference: 'Location/main-clinic' }, { reference: 'Location/satellite-clinic' }],
+    })
+  ),
+];
 
 // Fixtures are per story rather than shared here: the two stories differ in nothing but
 // the zones theirs declare, and a set installed for both would decide that for both.
@@ -148,6 +169,26 @@ export default {
  * Monday morning's visits ended before the pinned "now" (12:05 that day), so they are drawn
  * faded: an imaging visit that was seen, and a telehealth visit the patient missed.
  *
+ * This story turns on `showAvailabilityShading`, a prototype: blocks behind the appointments, in a
+ * visit type's color, saying when it can be booked. They are drawn for one visit type or for one
+ * provider, so the story opens without them, and a line under the calendar says how to bring them
+ * up. Four made-up providers at **Riverside Clinic** and **Northgate Hospital** set the hours:
+ *
+ * - Set **Service facility** to Riverside Clinic and hide every provider but **Dr. Sofia Alvarez**:
+ *   New Patient mornings in green and Follow-up afternoons in blue, on Monday, Wednesday and Friday,
+ *   each with the appointments already booked cut out. Switch the facility to Northgate Hospital for
+ *   the Tuesday and Thursday hours there.
+ * - Show only **Dr. Irene Castillo** at Riverside: hours that overlap sit side by side on Monday and
+ *   Wednesday, New Patient and Consult share green and so make one block on Tuesday morning, and
+ *   Thursday afternoon's five visit types leave two to a "+2".
+ * - Show Dr. Alvarez and **Dr. Marcus Bennett** and choose the visit type **New Patient**: green covers
+ *   every time either can take one, and hovering a block says who. Thursday's stops at 2, when Dr.
+ *   Bennett's time off starts.
+ * - Show only Dr. Castillo and choose **Injections**: Monday's 10:30 Procedures appointment is hidden
+ *   by the filter and still leaves its gap in the orange.
+ * - Show only **Dr. Ryan Dalton**, who sets no hours of their own: nothing is drawn until a visit type
+ *   is chosen, and then its default hours are, marked as such.
+ *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled
  * somewhere else.
@@ -160,8 +201,8 @@ export default {
  * @param args - The props set from the Controls panel.
  * @returns The story.
  */
-export const Basic = (args: WorkspaceProps): JSX.Element => <Workspace {...args} />;
-Basic.decorators = [withFixtures(LOCAL_FIXTURES)];
+export const Basic = (args: WorkspaceProps): JSX.Element => <Workspace {...args} showAvailabilityShading />;
+Basic.decorators = [withFixtures(BASIC_FIXTURES)];
 Basic.argTypes = {
   appointmentCommentMaxLength: { control: { type: 'number', min: 1 } },
 };
@@ -254,11 +295,13 @@ interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
   readonly appointmentCommentMaxLength?: number;
+  readonly showAvailabilityShading?: boolean;
 }
 
 /**
  * Fills the viewport under the package banner, which is 72px.
- * @param props - Whether the story lets a time be typed, the site it starts on, and the cap on notes.
+ * @param props - Whether the story lets a time be typed, the site it starts on, the cap on notes, and
+ * whether availability is drawn.
  * @returns The workspace as a host would mount it.
  */
 function Workspace(props: WorkspaceProps): JSX.Element {
@@ -271,6 +314,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultServiceFacility={props.defaultServiceFacility}
         appointmentCommentMaxLength={props.appointmentCommentMaxLength}
+        showAvailabilityShading={props.showAvailabilityShading}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}
         onBooked={({ appointments }) => {

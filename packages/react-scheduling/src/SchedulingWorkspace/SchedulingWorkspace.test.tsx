@@ -6,8 +6,9 @@ import type { Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { SinonFakeTimers } from 'sinon';
 import { useFakeTimers } from 'sinon';
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
+import { AvailabilityShadingFixtures } from '../stories/availabilityShading';
 import { CalendarWeekFixtures, SatelliteClinic, SchedulingFixtures, TelehealthService } from '../stories/scheduling';
 import { pillRemoveButton } from '../test-utils/asyncAutocomplete';
 import { act, renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
@@ -537,6 +538,64 @@ describe('SchedulingWorkspace', () => {
       releaseTelehealth();
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(1));
       expect(screen.getAllByText('Blocked')).toHaveLength(2);
+    });
+  });
+
+  describe('showAvailabilityShading', () => {
+    const HINT = 'Select a visit type or show a single provider to see availability colors.';
+    let clock: SinonFakeTimers | undefined;
+
+    beforeEach(() => {
+      // A Monday, which every provider in the fixtures sets hours on or inherits them for.
+      clock = useFakeTimers({ now: new Date(2020, 4, 4, 12, 5), shouldAdvanceTime: false, toFake: ['Date'] });
+    });
+
+    afterEach(() => {
+      clock?.restore();
+      clock = undefined;
+    });
+
+    async function renderShadingClinic(showAvailabilityShading: boolean): Promise<void> {
+      const medplum = await setupClient(AvailabilityShadingFixtures);
+      renderWithMedplum(<SchedulingWorkspace showAvailabilityShading={showAvailabilityShading} />, medplum);
+      await waitFor(() => expect(screen.getByText('Dr. Ryan Dalton')).toBeInTheDocument());
+    }
+
+    test('draws nothing for several providers until a visit type is chosen, and says how to', async () => {
+      await renderShadingClinic(true);
+      expect(screen.getByText(HINT)).toBeInTheDocument();
+      expect(screen.queryByTestId('availability-shade')).not.toBeInTheDocument();
+
+      await chooseFilter('All visit types', 'Injections');
+
+      const shades = await screen.findAllByTestId('availability-shade');
+      expect(shades.some((shade) => shade.textContent?.includes('Injections'))).toBe(true);
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    });
+
+    test("draws the one provider on show's hours in each visit type's color", async () => {
+      await renderShadingClinic(true);
+      // Alice Smith's calendar is one the mock client is seeded with.
+      for (const hidden of ['Alice Smith', 'Dr. Marcus Bennett', 'Dr. Irene Castillo', 'Dr. Ryan Dalton']) {
+        await userEvent.click(calendarRow(hidden));
+      }
+
+      const shades = await screen.findAllByTestId('availability-shade');
+      const colorOf = (label: string): string | undefined =>
+        shades.find((shade) => shade.textContent?.includes(label))?.style.getPropertyValue('--shade-color');
+      expect(colorOf('New Patient')).toBe('var(--mantine-color-green-6)');
+      expect(colorOf('Follow-up')).toBe('var(--mantine-color-blue-6)');
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+    });
+
+    test('draws none unless asked to', async () => {
+      await renderShadingClinic(false);
+      expect(screen.queryByText(HINT)).not.toBeInTheDocument();
+
+      await chooseFilter('All visit types', 'Injections');
+      await waitFor(() => expect(screen.queryByText('Dr. Ryan Dalton')).not.toBeInTheDocument());
+
+      expect(screen.queryByTestId('availability-shade')).not.toBeInTheDocument();
     });
   });
 

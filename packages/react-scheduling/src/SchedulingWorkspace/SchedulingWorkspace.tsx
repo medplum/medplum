@@ -56,15 +56,15 @@ import {
   matchesCalendarFilters,
 } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
+import { useAvailabilityShading } from './useAvailabilityShading';
 import { useBookingPaneGuard } from './useBookingPaneGuard';
+import { useHealthcareServices } from './useHealthcareServices';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
 type PaneTab = 'appointment' | 'block';
 
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
-
-const NO_SERVICES: ReadonlyMap<string, HealthcareService | undefined> = new Map();
 
 const NO_FILTERS: CalendarFilterValues = {};
 
@@ -136,6 +136,11 @@ export interface SchedulingWorkspaceProps {
    * the workspace to start it over on another site.
    */
   readonly defaultServiceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
+  /**
+   * Draws availability behind the events, in each visit type's color. A prototype, and off by default.
+   * See {@link computeAvailabilityShading} for what is drawn when.
+   */
+  readonly showAvailabilityShading?: boolean;
 }
 
 /**
@@ -178,6 +183,10 @@ export interface SchedulingWorkspaceProps {
  *   filters or hidden calendars are why.
  * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
+ * - Can draw when providers are available, with `showAvailabilityShading`: with a Visit Type chosen, a
+ *   block in its color wherever a provider on show can take it, and with none chosen and one provider on
+ *   show, that provider's hours for each visit type. Several providers and no Visit Type draw none, and
+ *   a line under the calendar says how to bring the colors back.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -194,6 +203,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     canBypassSchedulingRules,
     appointmentExtensions,
     defaultServiceFacility,
+    showAvailabilityShading = false,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -290,6 +300,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     error: resourcesError,
   } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
   const services = useAppointmentServices(appointments);
+  const availability = useAvailabilityShading({
+    enabled: showAvailabilityShading,
+    candidates: activeCandidates,
+    appointments,
+    slots,
+    filters,
+    range,
+  });
 
   const { sources, serviceTypes, servicesPending, shownSlots, isOnShownCalendar } = useMemo(() => {
     const isSettled = (reference: string): boolean =>
@@ -619,6 +637,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           ref={calendarRef}
           className={classes.multiCalendar}
           sources={sources}
+          availabilityShading={availability.shades}
           onRangeChange={setRange}
           toolbarStart={
             <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
@@ -653,6 +672,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
+          {availability.hint && (
+            <Text size="xs" c="dimmed">
+              {availability.hint}
+            </Text>
+          )}
           <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
         </div>
       </div>
@@ -829,41 +853,11 @@ function SidePane(props: SidePaneProps): JSX.Element {
 function useAppointmentServices(
   appointments: readonly Appointment[] | undefined
 ): ReadonlyMap<string, HealthcareService | undefined> {
-  const medplum = useMedplum();
-  const [services, setServices] = useState(NO_SERVICES);
-
-  // A string, so the effect below runs only when the references themselves change.
-  const referencesKey = useMemo(() => {
-    const references = new Set(
-      (appointments ?? []).map((a) => extractServiceTypeReferences(a.serviceType)[0]?.reference).filter(isDefined)
-    );
-    return [...references].sort((a, b) => a.localeCompare(b)).join(',');
-  }, [appointments]);
-
-  useEffect(() => {
-    if (!referencesKey) {
-      return;
-    }
-    // No abort signal: these reads are shared, through the client's cache, with the event
-    // titles, which would fail along with them. A late result is still worth keeping.
-    // Each settles on its own, so one slow read doesn't hold back the other service types.
-    const settle = (reference: string, read: HealthcareService | undefined): void =>
-      setServices((previous) => {
-        // A failed read settles the service without forgetting one read before.
-        const service = read ?? previous.get(reference);
-        return previous.has(reference) && previous.get(reference) === service
-          ? previous
-          : new Map(previous).set(reference, service);
-      });
-    for (const reference of referencesKey.split(',')) {
-      medplum
-        .readReference<HealthcareService>({ reference })
-        .then((service) => settle(reference, service))
-        .catch(() => settle(reference, undefined));
-    }
-  }, [medplum, referencesKey]);
-
-  return services;
+  const references = useMemo(
+    () => (appointments ?? []).map((a) => extractServiceTypeReferences(a.serviceType)[0]?.reference).filter(isDefined),
+    [appointments]
+  );
+  return useHealthcareServices(references);
 }
 
 // Whether `resource` was last updated before `than`. Either without a time is taken as current.
