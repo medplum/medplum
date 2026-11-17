@@ -30,6 +30,7 @@ import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { buildClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
+import { getBotErrorMessage } from '../../utils/errors';
 import { showErrorNotification } from '../../utils/notifications';
 import {
   CANDID_SUBMIT_CLAIM_OPERATION,
@@ -322,17 +323,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           await fetchClaimResponse();
         }
       } catch (err) {
-        try {
-          const parsed = JSON.parse((err as Error).message);
-          notifications.show({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: parsed?.errorMessage,
-          });
-        } catch {
-          showErrorNotification(err);
-        }
+        notifications.show({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: getBotErrorMessage(err),
+        });
       } finally {
         setSubmitting(false);
       }
