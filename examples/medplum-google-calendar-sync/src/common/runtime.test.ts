@@ -67,6 +67,7 @@ describe('calendar runtime', () => {
   let appointment: WithId<Appointment>;
   let tokenRevoked: boolean;
   let snapshotFails: boolean;
+  let watchFails: boolean;
   let watch: { id: string; token: string };
   let requests: { url: string; method: string }[];
   const originalFetch = globalThis.fetch;
@@ -97,6 +98,7 @@ describe('calendar runtime', () => {
     });
     tokenRevoked = false;
     snapshotFails = false;
+    watchFails = false;
     requests = [];
     watch = { id: '', token: '' };
     globalThis.fetch = vi.fn(async (input, init) => {
@@ -111,6 +113,9 @@ describe('calendar runtime', () => {
         return response(tokenRevoked ? 400 : 200);
       }
       if (url.endsWith('/events/watch')) {
+        if (watchFails) {
+          return response(403, { error: { message: 'unavailable', errors: [{ reason: 'forbidden' }] } });
+        }
         const body = JSON.parse(String(init?.body));
         watch = { id: body.id, token: body.token };
         return response(200, {
@@ -297,6 +302,19 @@ describe('calendar runtime', () => {
     await runInbound(medplum, moved, connection.basic.id);
     expect(watch.id).not.toBe(legacy);
     expect(readState(await current()).channels).toHaveLength(1);
+  });
+
+  test('a failed watch registration does not stop the import', async () => {
+    watchFails = true;
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
+    const failed = readState(await current());
+    expect(failed.lastInbound).toBeTruthy();
+    expect(failed.staleReason).toBe('watch-unavailable');
+    watchFails = false;
+    await requestSync(medplum, connection.basic.id, ['inbound']);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(readState(await current()).staleReason).toBeUndefined();
   });
 
   test('an outage or revocation preserves blocks and last successful import', async () => {
