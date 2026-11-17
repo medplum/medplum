@@ -11,7 +11,7 @@ import { requireOperationBot } from './authorization';
 import { readProjectCeiling, writeProjectCeiling } from './configuration';
 import { findConnection, saveConnection } from './connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
-import { CREDENTIAL_SEARCH, migrateCredential, readCredential, TOKEN_URL } from './credentials';
+import { CREDENTIAL_SEARCH, readCredential } from './credentials';
 import { importedSlots } from './import';
 import { withConnectionLease } from './lease';
 import {
@@ -27,36 +27,12 @@ beforeEach(() => {
 });
 const args = { practitionerRef: 'Practitioner/doctor', accountSub: 'sub', refreshToken: 'private-token' };
 
-test('moves credentials under a lease, preserves identity and can resume after a connection-write failure', async () => {
+test('the refresh token is stored apart from the connection', async () => {
   const connection = await saveConnection(medplum, args);
   expect(JSON.stringify(connection.basic)).not.toContain('private-token');
   expect(await readCredential(medplum, connection)).toBe('private-token');
-  await medplum.updateResource({
-    ...connection.basic,
-    extension: [...(connection.basic.extension ?? []), { url: TOKEN_URL, valueString: 'legacy-token' }],
-  });
-  const update = medplum.updateResource.bind(medplum);
-  let fail = true;
-  vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource, options) => {
-    if (
-      fail &&
-      resource.resourceType === 'Basic' &&
-      resource.id === connection.basic.id &&
-      !resource.extension?.some((e) => e.url === TOKEN_URL)
-    ) {
-      fail = false;
-      throw new Error('injected interruption');
-    }
-    return update(resource, options);
-  });
-  await expect(withConnectionLease(medplum, connection.basic.id, migrateCredential)).rejects.toThrow('interruption');
-  await withConnectionLease(medplum, connection.basic.id, migrateCredential);
-  const migrated = await findConnection(medplum, args.practitionerRef);
-  expect(migrated?.basic.id).toBe(connection.basic.id);
-  expect(JSON.stringify(migrated?.basic)).not.toContain('legacy-token');
-  expect(migrated && (await readCredential(medplum, migrated))).toBe('legacy-token');
-  expect(await medplum.searchResources('Basic', CREDENTIAL_SEARCH)).toHaveLength(1);
 });
+
 test('practitioner and webhook policies deny credential and historical-token access', async () => {
   const connection = await saveConnection(medplum, args);
   const [credential] = await medplum.searchResources('Basic', CREDENTIAL_SEARCH);
@@ -157,20 +133,6 @@ test('mutations reject caller fallback, missing membership, and cross-project pr
     meta: { project: 'other' },
   });
   await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('different project');
-});
-
-test('credential migration adds the missing legacy connection identity without replacing its resource', async () => {
-  const connection = await saveConnection(medplum, args);
-  await medplum.updateResource({
-    ...connection.basic,
-    meta: { ...connection.basic.meta, profile: [] },
-    identifier: connection.basic.identifier?.filter((i) => i.system !== `${N}/connection`),
-    extension: [...(connection.basic.extension ?? []), { url: TOKEN_URL, valueString: 'legacy-token' }],
-  });
-  await withConnectionLease(medplum, connection.basic.id, migrateCredential);
-  const saved = await medplum.readResource('Basic', connection.basic.id);
-  expect(saved.identifier).toContainEqual({ system: `${N}/connection`, value: args.practitionerRef });
-  expect(saved.extension?.some((e) => e.url === TOKEN_URL)).toBe(false);
 });
 
 test('operation authorization accepts the server session summary and rejects a missing effective policy', async () => {

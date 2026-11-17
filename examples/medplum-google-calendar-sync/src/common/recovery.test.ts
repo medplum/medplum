@@ -8,7 +8,6 @@ import { GoogleCalendarClient } from './google-calendar';
 import { withConnectionLease } from './lease';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
-import { migrateMirrors } from './migration';
 import { MIRROR_SEARCH, ownershipStore } from './ownership';
 
 const sourceId = '12345678-1234-1234-1234-123456789abc';
@@ -100,51 +99,6 @@ test('receipts are account/source/connection bound and retry without duplicates'
   });
   expect(await medplum.searchResources('Basic', MIRROR_SEARCH)).toHaveLength(1);
 });
-test('legacy migration is dry-run by default, scrubs attendees on apply, and refuses ambiguous sources', async () => {
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'account',
-    refreshToken: 'token',
-  });
-  await medplum.createResource({
-    resourceType: 'Appointment',
-    id: sourceId,
-    status: 'booked',
-    participant: [{ actor: { reference: 'Practitioner/p' }, status: 'accepted' }],
-  });
-  const legacy = {
-    ...event,
-    etag: 'old',
-    attendees: [{ email: 'patient@example.test' }],
-    extendedProperties: { private: { medplumProject: 'p', medplumSource: `Appointment/${sourceId}` } },
-  };
-  const calendar = {
-    listEvents: vi.fn().mockResolvedValue([legacy]),
-    getEvent: vi.fn().mockResolvedValue(legacy),
-    updateEvent: vi.fn().mockResolvedValue(legacy),
-  };
-  await withConnectionLease(medplum, connection.basic.id, async (lease) => {
-    expect(await migrateMirrors(lease, connection, calendar)).toEqual([{ eventId: event.id, action: 'migrate' }]);
-    expect(calendar.updateEvent).not.toHaveBeenCalled();
-    await migrateMirrors(lease, connection, calendar, true);
-    expect(calendar.updateEvent).toHaveBeenCalledWith(
-      event.id,
-      expect.objectContaining({
-        attendees: [],
-        summary: 'Busy',
-        extendedProperties: { private: expect.objectContaining({ medplumConnection: connection.basic.id }) },
-      }),
-      'old'
-    );
-    await medplum.deleteResource('Appointment', sourceId);
-    calendar.updateEvent.mockClear();
-    expect(await migrateMirrors(lease, connection, calendar, true)).toEqual([
-      { eventId: event.id, action: 'repair-required' },
-    ]);
-    expect(calendar.updateEvent).not.toHaveBeenCalled();
-  });
-});
-
 test('same account can reclaim a predecessor mirror, but another account or practitioner cannot', async () => {
   const old = await saveConnection(medplum, {
     practitionerRef: 'Practitioner/p',

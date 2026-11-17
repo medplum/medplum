@@ -18,7 +18,6 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix && prettier --write src",
     "live-api-probe": "tsx src/scripts/live-google-test.ts",
-    "migrate-mirrors": "tsx src/scripts/migrate-mirrors.ts",
     "setup:project": "tsx src/scripts/install-project.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
