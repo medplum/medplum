@@ -1,0 +1,82 @@
+Refer to the [US Core AllergyIntolerance profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-allergyintolerance.html) details on representing specific substances, statuses and reaction types.
+
+## Usage
+
+A record of a clinical assessment of an allergy or intolerance; a propensity, or a potential risk to an individual, to have an adverse reaction on future exposure to the specified substance, or class of substance.
+
+Where a propensity is identified, to record information or evidence about a reaction event that is characterized by any harmful or undesirable physiological response that is specific to the individual and triggered by exposure of an individual to the identified substance or class of substance.
+
+[Substances](/docs/api/fhir/resources/substance) include, but are not limited to: a therapeutic substance administered correctly at an appropriate dosage for the individual; food; material derived from plants or animals; or venom from insect stings.
+
+**Note for Reviewers**
+
+Presently open issues for this resource:
+
+- This resource represents a condition of susceptibility to a substance, with a list of supporting events and/or symptoms, and has no direct relationship to an event reporting framework; this will be re-assessed when adverse event reporting resource(s) and/or profiles are added to FHIR
+- Other HL7 models and the openEHR archetype have "exposure date" but this is not found in any surveyed systems, so this is left as an extension (more appropriate for adverse event reporting)
+
+## Relationships
+
+This resource is used to provide a single place within the health record to document a range of clinical statements about adverse reactions to substances/products, including:
+
+- record a clinical assessment of the individual's propensity to a potential future reaction upon re-exposure
+- record cumulative information about the reaction to each exposure, including 'no reaction' if appropriate
+
+Use to record information about the positive presence of the risk of an adverse reaction:
+
+- to support direct clinical care of an individual
+- as part of a managed adverse reaction or allergy/intolerance list
+- to support exchange of information about the propensity and events related to adverse reactions
+- to inform adverse reaction reporting
+- to assist computerized knowledge-based activities such as clinical decision support and alerts
+
+Use to record information about adverse reactions to a broad range of substances, including: biological & blood products; incipients and excipients in medicinal preparations; foods; metal salts; and organic chemical compounds.
+
+Adverse reactions may be:
+
+- an allergy (typically type I hypersensitivity, plus other "allergy-like" reactions, including pseudoallergy)
+- an intolerance (typically non-immune adverse reactions that are not determined or perceived to be allergic or "allergy-like", and are to some degree idiosyncratic and/or individually specific \[i.e. are not a reaction that is expected to occur with most or all patients given similar circumstances\])
+
+In clinical practice distinguishing between allergy and intolerance is difficult and might not be practical. Often the term "allergy" is used rather generically and may overlap with "intolerance", and the boundaries between these concepts might not be well-defined or understood. As noted above, the term "intolerance" should generally be applied to a propensity for adverse reactions which is either determined (to the extent that is possible) or perceived to not be allergic or "allergy-like". If it is not possible to determine whether a particular propensity condition is an allergy or an intolerance, then the type element should be omitted from the resource. Identification of the type of reaction is not a proxy for seriousness or risk of harm to the patient, which is better expressed in the documentation of the clinical manifestation and the assessment of criticality.
+
+The sensitivity in the case of either an allergy or intolerance is unique to the individual, and is distinguished from those reactions that are a property of the circumstance, such as toxicity of a food or drug, overdose, drug-drug, drug-food, or drug-disease interaction (which are reactions that would be expected to occur for any individual given the same circumstances).
+
+The risk of an adverse reaction event or manifestation should not be recorded without identifying a proposed causative substance (including pharmaceutical products) or class of substance. If there is uncertainty that a specific substance is the cause, this uncertainty can be recorded using the 'verificationStatus' data element. If there are multiple possible substances that may have caused a reaction/manifestation, each substance should be recorded using a separate instance of this resource with the 'verificationStatus' set to an initial state of 'unconfirmed' so that adverse reaction checking can be supported in clinical systems. If a substance, agent or class is later proven not to be the cause for a given reaction then the 'verificationStatus' can be modified to 'refuted'.
+
+This resource has been designed to allow recording of information about a specific substance (e.g., amoxicillin, oysters, or bee sting venom) or pharmaceutical product or, alternatively, a class of substance (e.g., penicillins). If a class of substance is recorded, then identification of the exact substance can be recorded on a per exposure basis.
+
+The scope of this FHIR resource has deliberately focused on identifying a pragmatic data set that is used in most clinical systems or will be suitable for most common clinical scenarios; [extensions can be used](https://www.hl7.org/fhir/extensibility.html) to add additional detail if required. Examples of clinical situations where the extension may be required include: a detailed allergist/immunologist assessment, for reporting to regulatory bodies or use in a clinical trial.
+
+The act of recording any adverse reaction in a health record involves the clinical assessment that a potential hazard exists for an individual if they are exposed to the same substance/product/class in the future - that is, a relative contraindication - and, in the absence of additional information indicating a higher level of potential risk, the default 'criticality' value should be set to 'Low Risk'. If a clinician considers that it is not safe for the individual to be deliberately re-exposed to the substance/product again, for example, following a manifestation of a life-threatening anaphylaxis, then the 'criticality' data element should be amended to 'High Risk'.
+
+A formal adverse event report to regulatory bodies is a document that will contain a broad range of information in addition to the specific details about the adverse reaction. The report could utilize parts of this resource plus include additional data as required per jurisdiction.
+
+An adverse reaction or allergy/intolerance list is a record of all identified propensities for an adverse reaction for the individual upon future exposure to the substance/product or class, plus provides potential access to the evidence provided by details about each reaction event, such as manifestation.
+
+Valuable first-level information that could be presented to the clinician when they need to assess propensity for future reactions are:
+
+- statements about previous clinical manifestations following exposure
+- source of the information/reporter
+- the 'criticality' flag
+
+Second-level information can be drawn from each exposure event and links to additional detailed information such as history, examination and diagnoses stored elsewhere in the record, if it is available.
+
+**AllergyIntolerance and [RiskAssessment](/docs/api/fhir/resources/riskassessment)**
+
+[AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) describes a specific type of risk - propensity to reaction to a substance/product while [RiskAssessment](/docs/api/fhir/resources/riskassessment) describes general risks to a subject, not generally based on a reaction.
+
+**AllergyIntolerance and [Immunization](/docs/api/fhir/resources/immunization).reaction**
+
+[Immunization.reaction](https://www.hl7.org/fhir/immunization-definitions.html#Immunization.reaction) may be an indication of an allergy or intolerance. If this is deemed to be the case, a separate [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) record should be created to indicate it, as most systems will not query against past immunization.reactions.
+
+**Misuse**
+
+- The allergy/intolerance list exists as a patient safety tool to inform decision support around ordering of medications and nutrition and to guide clinical treatment. Other reactions triggered by physical stimuli -- light, heat, cold, pressure, vibration, which may mimic allergic or intolerance reactions, should be recorded as [Condition](/docs/api/fhir/resources/condition) on the problem list, not using [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance).
+- Not to be used to record adverse events, including failures of clinical process, interventions or products. For example, abnormal use or mistakes/errors made in maladministration of an agent or substance, incorrect dosage, mislabeling, harm or injury caused by an intervention or procedure, overdose/poisoning, etc.
+- Not to be used as a proxy for an adverse event report. See above for how it may be used as one component of an adverse event report.
+- Not to be used for recording alerts. Alerts are handled using [Flag](/docs/api/fhir/resources/flag) or - where event-specific, [DetectedIssue](/docs/api/fhir/resources/detectedissue).
+- Not to be used for recording failed therapy.
+
+> **Trial-Use Note:** Requests have been received (GF#10369) to add codes to the extension-allergyintolerance-certainty value set (reaction-event-certainty), which is a required binding. The requested codes include "unknown", "ruled out" and "possible". The [Patient](/docs/api/fhir/resources/patient) Care WG has voted to add "unknown" to the value set, but recommends that if other terms (including "ruled out" and "possible") are desired for use in a specific setting, an extension or profile should be used. During the STU period feedback is solicited regarding (1) the need and desirability of adding the code "unknown" to the value set, vs. omitting the element if the certainty is not known; and (2) whether or not additional codes besides "unknown" should be added to the value set for the core specification, or whether additional codes, if needed, should be added in an extension/profile.
+>
+> Feedback is welcome [here](http://hl7.org/fhir-issues) .

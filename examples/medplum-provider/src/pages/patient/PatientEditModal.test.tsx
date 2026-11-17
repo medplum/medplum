@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { loadDataType } from '@medplum/core';
 import type { Patient, Reference, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { PatientEditModal } from './PatientEditModal';
 
 describe('PatientEditModal', () => {
@@ -47,10 +47,8 @@ describe('PatientEditModal', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <PatientEditModal patient={patient} opened={opened} onClose={onClose} />
-          </MantineProvider>
+          <Notifications />
+          <PatientEditModal patient={patient} opened={opened} onClose={onClose} />
         </MedplumProvider>
       </MemoryRouter>
     );

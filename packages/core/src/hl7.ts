@@ -856,21 +856,23 @@ export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7D
     return undefined;
   }
 
-  const year = parseIntOrDefault(hl7DateTime.slice(0, 4), 0);
-  const month = parseIntOrDefault(hl7DateTime.slice(4, 6), 1) - 1; // Months are 0-indexed in JavaScript Date
-  const day = parseIntOrDefault(hl7DateTime.slice(6, 8), 1); // Default to first day of month
-  const hour = parseIntOrDefault(hl7DateTime.slice(8, 10), 0);
-  const minute = parseIntOrDefault(hl7DateTime.slice(10, 12), 0);
-  const second = parseIntOrDefault(hl7DateTime.slice(12, 14), 0);
+  // Split off the optional +/-ZZZZ suffix so it does not shift the fixed-position fields
+  const offsetIndex = hl7DateTime.search(/[+-]/);
+  const dateTime = offsetIndex === -1 ? hl7DateTime : hl7DateTime.slice(0, offsetIndex);
+  const offsetStr = offsetIndex === -1 ? options?.tzOffset : hl7DateTime.slice(offsetIndex);
+  const [main, fraction] = dateTime.split('.');
 
-  let millisecond = 0;
-  if (hl7DateTime.includes('.')) {
-    millisecond = parseIntOrDefault(hl7DateTime.slice(15, 19), 0);
-  }
+  const year = parseIntOrDefault(main.slice(0, 4), 0);
+  const month = parseIntOrDefault(main.slice(4, 6), 1) - 1; // Months are 0-indexed in JavaScript Date
+  const day = parseIntOrDefault(main.slice(6, 8), 1); // Default to first day of month
+  const hour = parseIntOrDefault(main.slice(8, 10), 0);
+  const minute = parseIntOrDefault(main.slice(10, 12), 0);
+  const second = parseIntOrDefault(main.slice(12, 14), 0);
+  const millisecond = fraction ? Math.round((Number(`0.${fraction}`) || 0) * 1000) : 0;
 
   let date = new Date(Date.UTC(year, month, day, hour, minute, second, millisecond));
 
-  const tzOffset = parseTimeZoneOffset(hl7DateTime, options?.tzOffset);
+  const tzOffset = parseTimeZoneOffset(offsetStr);
   if (tzOffset !== 0) {
     date = new Date(date.getTime() - tzOffset);
   }
@@ -891,23 +893,10 @@ function parseIntOrDefault(str: string, defaultValue: number): number {
 
 /**
  * Returns the timezone offset in milliseconds.
- * @param hl7DateTime - The HL7 date/time string.
- * @param defaultOffset - Optional default timezone offset.
+ * @param offsetStr - The timezone offset string, such as "-0500" or "+02:00".
  * @returns The timezone offset in milliseconds.
  */
-function parseTimeZoneOffset(hl7DateTime: string, defaultOffset?: string): number {
-  let offsetStr = defaultOffset;
-
-  const plusIndex = hl7DateTime.indexOf('+');
-  if (plusIndex !== -1) {
-    offsetStr = hl7DateTime.slice(plusIndex);
-  }
-
-  const minusIndex = hl7DateTime.indexOf('-');
-  if (minusIndex !== -1) {
-    offsetStr = hl7DateTime.slice(minusIndex);
-  }
-
+function parseTimeZoneOffset(offsetStr: string | undefined): number {
   if (!offsetStr) {
     return 0;
   }
@@ -938,7 +927,7 @@ export function formatHl7DateTime(isoDate: Date | string): string {
 
   const milliseconds = date.getUTCMilliseconds();
   if (milliseconds > 0) {
-    result += '.' + milliseconds.toString();
+    result += '.' + milliseconds.toString().padStart(3, '0');
   }
 
   return result;

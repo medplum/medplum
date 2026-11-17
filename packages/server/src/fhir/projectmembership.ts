@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   badRequest,
-  isResource,
   notFound,
   OperationOutcomeError,
   Operator,
@@ -11,8 +11,9 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { getAllowedProjects, getRepoForProjects } from './accesspolicy';
 import type { SystemRepository } from './repo';
-import { getGlobalSystemRepo, getPermittedProjectIds } from './repo';
+import { getGlobalSystemRepo } from './repo';
 
 export const membershipProfileTypes: readonly ResourceType[] = [
   'Bot',
@@ -21,8 +22,6 @@ export const membershipProfileTypes: readonly ResourceType[] = [
   'Practitioner',
   'RelatedPerson',
 ];
-
-const projectlessMembershipReferenceTypes: readonly ResourceType[] = ['AccessPolicy', 'UserConfiguration'];
 
 /**
  * Returns why a membership cannot be used, or undefined if it can.
@@ -75,15 +74,16 @@ export function findProjectMembership(
 /**
  * Reads a resource referenced by a ProjectMembership, such as the profile, access policy, or user configuration.
  *
- * Membership references are followed with a system repository, so this verifies that the target is one of
- * the expected resource types and belongs to the membership's project (or a linked project, if allowed).
+ * Reads the target with `systemRepo`, so the read joins the caller's transaction and shard, then checks it against
+ * the project rules of a repository scoped to the membership's project (and its linked projects, if allowed).
  * Always use this function instead of reading membership references directly.
- * @param systemRepo - The system repository.
+ * @param systemRepo - The system repository used for the reads.
  * @param membership - The project membership that holds the reference.
  * @param reference - The reference to read.
  * @param allowedTypes - The resource types the reference may point to.
  * @param options - Optional read options.
  * @param options.allowLinkedProjects - Whether the target may belong to a project linked from the membership's project.
+ *   Do not set this when the result is written back with a system repository, which would write into the linked project.
  * @returns The referenced resource.
  */
 export async function readMembershipReference<T extends Resource>(
@@ -104,24 +104,16 @@ export async function readMembershipReference<T extends Resource>(
   }
 
   const resource = await systemRepo.readReference<T>(reference);
-  const resourceProjectId = resource.meta?.project;
-  if (resourceProjectId && resourceProjectId === resolveId(membership.project)) {
+
+  // Runs on every authenticated request, so skip loading projects in the common case
+  if (resource.meta?.project && resource.meta.project === resolveId(membership.project)) {
     return resource;
   }
 
-  // Only super admins can create resources without a project, such as shared access policies
-  if (!resourceProjectId && projectlessMembershipReferenceTypes.includes(resource.resourceType)) {
-    return resource;
+  const project = await systemRepo.readReference<Project>(membership.project);
+  const projects = options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project];
+  if (!getRepoForProjects(projects).canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+    throw new OperationOutcomeError(notFound);
   }
-
-  if (options?.allowLinkedProjects && resourceProjectId) {
-    const project = await systemRepo.readReference<Project>(membership.project);
-    const linkedProjects = await systemRepo.readReferences<Project>(project.link?.map((link) => link.project) ?? []);
-    const projects = [project, ...linkedProjects.filter((p): p is WithId<Project> => isResource(p))];
-    if (getPermittedProjectIds(projects, resource.resourceType)?.includes(resourceProjectId)) {
-      return resource;
-    }
-  }
-
-  throw new OperationOutcomeError(notFound);
+  return resource;
 }

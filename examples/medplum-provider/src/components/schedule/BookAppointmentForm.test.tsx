@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { SchedulingEncounterCodingURI, SchedulingPlanDefinitionURI } from '@medplum/core';
 import type { Appointment, Bundle, Encounter, HealthcareService, PlanDefinition, Slot } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { BookAppointmentForm } from './BookAppointmentForm';
@@ -60,14 +60,12 @@ describe('BookAppointmentForm', () => {
       render(
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <BookAppointmentForm
-                appointment={appointment}
-                healthcareService={healthcareService}
-                onSuccess={onSuccess}
-              />
-            </MantineProvider>
+            <Notifications />
+            <BookAppointmentForm
+              appointment={appointment}
+              healthcareService={healthcareService}
+              onSuccess={onSuccess}
+            />
           </MedplumProvider>
         </MemoryRouter>
       );

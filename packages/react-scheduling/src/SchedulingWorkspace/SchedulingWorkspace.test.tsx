@@ -368,13 +368,13 @@ describe('SchedulingWorkspace', () => {
       expect(within(appointmentDetails).queryByText(FILTERED_NOTICE)).not.toBeInTheDocument();
 
       // Dr. Brown names no site and Exam Room A is at the main clinic, so both stay listed. Liam
-      // Jones's visit records no site, and no visit drawn holds Exam Room A's maintenance, so the one
-      // block left is the buffer of Dr. Chen's infusion, at the main clinic.
+      // Jones's visit records no site, so goes. Exam Room A's maintenance is held by no visit, so
+      // stays on its calendar, beside the buffer of Dr. Chen's infusion at the main clinic.
       await chooseFilter('All service facilities', 'Uro Associates - Main Clinic');
       await waitFor(() => expect(appointmentEvents('Liam Jones')).toHaveLength(0));
       expect(within(appointmentDetails).getByText(FILTERED_NOTICE)).toBeInTheDocument();
       expect(appointmentEvents('Miles Cooper')).toHaveLength(1);
-      expect(screen.getAllByText('Blocked')).toHaveLength(1);
+      expect(screen.getAllByText('Blocked')).toHaveLength(2);
       expect(calendarRow('Dr. Olivia Brown')).toHaveAttribute('aria-pressed', 'true');
       expect(calendarRow('Exam Room A')).toHaveAttribute('aria-pressed', 'true');
     });

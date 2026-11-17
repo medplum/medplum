@@ -63485,6 +63485,10 @@
           "description": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
           "$ref": "#/definitions/uri"
         },
+        "requester": {
+          "description": "The user or client application that started the job. Assigned by the server when the job is created.",
+          "$ref": "#/definitions/Reference"
+        },
         "output": {
           "description": "Outputs resulting from the async job.",
           "$ref": "#/definitions/Parameters"
@@ -65322,6 +65326,10 @@
         "passcodeHash": {
           "description": "Optional hash of the SMART Health Link passcode.",
           "$ref": "#/definitions/string"
+        },
+        "passcodeFailures": {
+          "description": "Number of incorrect passcodes submitted for the SMART Health Link.",
+          "$ref": "#/definitions/integer"
         },
         "file": {
           "description": "Encrypted file available from the SMART Health Link.",

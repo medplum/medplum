@@ -1,0 +1,19 @@
+Refer to the [US Core Medication Request profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-medicationrequest.html).
+
+For Medplum best practices on using the `MedicationRequest` resource, please refer to [Representing Prescriptions and Medication Orders](https://www.medplum.com/docs/medications/representing-prescriptions-and-medication-orders).
+
+## Usage
+
+This resource covers all type of orders for medications for a patient. This includes inpatient medication orders as well as community orders (whether filled by the prescriber or by a pharmacy). It also includes orders for over-the-counter medications (e.g. Aspirin), total parenteral nutrition and diet/ vitamin supplements. It may be used to support the order of medication-related devices. It is not intended for use in prescribing particular diets, or for ordering non-medication-related items (eyeglasses, supplies, etc.). In addition, the [MedicationRequest](/docs/api/fhir/resources/medicationrequest) may be used to report orders/request from external systems that have been reported for informational purposes and are not authoritative and are not expected to be acted upon (e.g. dispensed or administered).
+
+The [MedicationRequest](/docs/api/fhir/resources/medicationrequest) resource is a "request" resource from a FHIR workflow perspective - see [Workflow Request.](https://www.hl7.org/fhir/workflow.html#request)
+
+The [MedicationRequest](/docs/api/fhir/resources/medicationrequest) resource allows requesting only a single medication. If a workflow requires requesting multiple items simultaneously, this is done using multiple instances of this resource. These instances can be linked in different ways, depending on the needs of the workflow. For guidance, refer to [the Request pattern](https://www.hl7.org/fhir/request.html#compound)
+
+## Relationships
+
+The [MedicationRequest](/docs/api/fhir/resources/medicationrequest) resource is used to request or order medication for a subject. It may also be used to report a medication request or order from one organization or source to another. When requesting supplies or devices when there is a patient focus or instructions regarding their use, [SupplyRequest](/docs/api/fhir/resources/supplyrequest) or [DeviceRequest](/docs/api/fhir/resources/devicerequest) should be used instead. When reporting on the usage of a medication by a patient, the [MedicationStatement](https://www.hl7.org/fhir/medicationStatement.html)t resource should be used.
+
+**The [Medication](/docs/api/fhir/resources/medication) domain includes a number of related resources**
+
+<table border="1" cellpadding="1" cellspacing="2" frame="box"><tbody><tr><td>MedicationRequest</td><td>An order for both supply of the medication and the instructions for administration of the medicine to a patient.</td></tr><tr><td><a href="/docs/api/fhir/resources/medicationdispense">MedicationDispense</a></td><td>Provision of a supply of a medication with the intention that it is subsequently consumed by a patient (usually in response to a prescription).</td></tr><tr><td><a href="/docs/api/fhir/resources/medicationadministration">MedicationAdministration</a></td><td>When a patient actually consumes a medicine, or it is otherwise administered to them</td></tr><tr><td><a href="/docs/api/fhir/resources/medicationstatement">MedicationStatement</a></td><td>This is a record of medication being taken by a patient, or that the medication has been given to a patient where the record is the result of a report from the patient, or another clinician. A medication statement is not a part of the prescribe-&gt;dispense-&gt;administer sequence but is a report that such a sequence (or at least a part of it) did take place resulting in a belief that the patient has received a particular medication.</td></tr></tbody></table>

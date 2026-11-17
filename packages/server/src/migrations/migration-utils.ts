@@ -15,6 +15,7 @@ import type { PgQueryable } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion, markPostDeployMigrationCompleted } from '../migration-sql';
 import { getServerVersion } from '../util/version';
+import { requireSystemAsyncJob } from '../workers/base';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
@@ -217,8 +218,12 @@ export async function completePostDeployMigration(
   output?: Parameters
 ): Promise<WithId<AsyncJob>> {
   const asyncJob = exec.getAsyncJob();
-  if (asyncJob.type !== 'data-migration' || !asyncJob.dataVersion) {
+  await requireSystemAsyncJob(exec);
+  if (asyncJob.type !== 'data-migration') {
     return exec.completeJob(output);
+  }
+  if (!asyncJob.dataVersion) {
+    throw new Error(`Invalid post-deploy migration job ${getReferenceString(asyncJob)}`);
   }
 
   // dataVersion should be moved into post-deploy job data and pass it to this function alongside targetShardId.

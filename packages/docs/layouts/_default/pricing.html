@@ -1,0 +1,105 @@
+{{- /* The pricing page, from data/pricing.yaml (src/pages/pricing.tsx on the Docusaurus site) */ -}}
+{{ define "main" }}
+  {{- $pricing := hugo.Data.pricing }}
+  {{- $plans := $pricing.plans }}
+  <div class="margin-vert--xl">
+    <header class="text--center padding-vert--lg margin-bottom--xl">
+      <h1 class="pricing-hero-title">Build the Future of Healthcare</h1>
+      <p class="pricing-lead">Plans for startups, enterprises, and everyone in between.</p>
+      <p>
+        Questions about pricing? {{ partial "pricing/link.html" (dict "text" "Contact Us" "href" $pricing.salesUrl) }} or email
+        {{ partial "pricing/link.html" (dict "text" "hello@medplum.com" "href" "mailto:hello@medplum.com") }}.
+      </p>
+    </header>
+
+    <h2 id="hosted-plans" class="pricing-section-title">Plans<a href="#hosted-plans" class="hash-link" aria-label="Direct link to Plans" title="Direct link to Plans" translate="no">&#8203;</a></h2>
+    <div class="row pricing-plans">
+      {{- range $plans }}
+        <div class="col col--3 margin-bottom--lg">
+          <div class="pricing-plan-card{{ if ne .id "free" }} pricing-paid-card{{ end }}">
+            <div class="card__header"><h3>{{ .name }}</h3></div>
+            <div class="card__body">
+              <p>{{ .audience }}</p>
+              {{- with .details }}{{ partial "pricing/link.html" (dict "text" .label "href" .href) }}{{ end }}
+            </div>
+            <div class="card__footer">
+              {{- if .price }}
+                <p>{{ if .startingPrice }}Starts at<br />{{ end }}<span class="pricing-price">{{ .price }}</span> {{ .period }}</p>
+              {{- end }}
+              {{ partial "pricing/link.html" (dict "text" .cta "href" .href "class" "landing-button landing-button-purple pricing-cta") }}
+            </div>
+          </div>
+        </div>
+      {{- end }}
+    </div>
+    <p>Paid plans include a usage allowance. Additional usage is billed separately.</p>
+
+    <div class="pricing-comparison-header margin-top--xl">
+      <h2 id="comparison" class="pricing-section-title">Plan Comparison<a href="#comparison" class="hash-link" aria-label="Direct link to Plan Comparison" title="Direct link to Plan Comparison" translate="no">&#8203;</a></h2>
+      <div class="pricing-legend">
+        <span>{{ partial "pricing/mark.html" (dict "included" true) }} Included</span>
+        <span>{{ partial "pricing/mark.html" (dict "included" false) }} Not Included</span>
+      </div>
+    </div>
+    <table class="pricing-comparison">
+      <thead>
+        <tr>
+          <th>Features</th>
+          {{- range $plans }}
+            <th>
+              {{ .name }}
+              {{- if .price }}<br /><small>{{ if .startingPrice }}From {{ end }}{{ .price }}{{ .period }}</small>{{ end }}
+            </th>
+          {{- end }}
+        </tr>
+      </thead>
+      {{- range $pricing.groups }}
+        <tbody>
+          <tr>
+            <th colspan="{{ add (len $plans) 1 }}"><span>{{ .title }}</span></th>
+          </tr>
+          {{- with .note }}
+            <tr>
+              <td colspan="{{ add (len $plans) 1 }}">
+                <span>{{ .prefix }} {{ partial "pricing/link.html" (dict "text" .link.text "href" .link.href) }} {{ .suffix }}</span>
+              </td>
+            </tr>
+          {{- end }}
+          {{- range .rows }}
+            {{- $row := . }}
+            <tr>
+              <td>
+                {{- if .docsHref }}{{ partial "pricing/link.html" (dict "text" .label "href" .docsHref) }}{{ else }}{{ .label }}{{ end }}
+                {{- with .description }}<br /><small>{{ . }}</small>{{ end }}
+              </td>
+              {{- range $plans }}
+                {{- $value := index $row.values .id }}
+                <td>
+                  {{- if reflect.IsMap $value }}
+                    {{ $value.text }} {{ partial "pricing/link.html" (dict "text" $value.link.text "href" $value.link.href) }}
+                  {{- else if eq (printf "%T" $value) "bool" }}
+                    {{ partial "pricing/mark.html" (dict "included" $value "label" (cond $value "Included" "Not included")) }}
+                  {{- else }}
+                    {{ $value }}
+                  {{- end }}
+                </td>
+              {{- end }}
+            </tr>
+          {{- end }}
+        </tbody>
+      {{- end }}
+    </table>
+    <p>
+      Technical limits shown apply to Medplum-hosted deployments. See our
+      {{ partial "pricing/link.html" (dict "text" "API rate limits" "href" "/docs/rate-limits") }}.
+    </p>
+    <p>
+      <strong>Enterprise Self-Hosting:</strong> Enterprise includes optional setup, provisioning, and upgrade assistance with
+      temporary, customer-approved access. Your team handles ongoing operations, monitoring, and on-call response.
+    </p>
+    <p>
+      Medplum’s hosted service can also be purchased through
+      {{ partial "pricing/link.html" (dict "text" "AWS Marketplace" "href" "https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma") }}.
+    </p>
+  </div>
+{{ end }}

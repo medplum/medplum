@@ -1,0 +1,9 @@
+{{- $name := . -}}
+{{- $path := printf "icons/tabler/%s.svg" $name -}}
+{{- $svg := resources.Get $path -}}
+
+{{- if $svg -}}
+    {{ $svg.Content | safeHTML }}
+{{- else -}}
+  {{- warnf "Icon %q not found at %q" $name $path -}}
+{{- end -}}

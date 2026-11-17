@@ -168,6 +168,7 @@ describe('OAuth2 Token', () => {
     // Create access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
       resourceType: 'AccessPolicy',
+      meta: { project: project.id },
       resource: [{ resourceType: '*' }],
       ipAccessRule: [
         { name: 'Block test', value: '6.6.6.6', action: 'block' },

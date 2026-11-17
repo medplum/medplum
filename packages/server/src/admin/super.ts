@@ -457,7 +457,7 @@ superAdminRouter.post(
       sendOutcome(res, allOk);
       return;
     }
-    const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
+    const exec = new AsyncJobExecutor(ctx.systemRepo, dataMigrationJob);
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   }
 );
@@ -482,7 +482,7 @@ superAdminRouter.post('/reconcile-db-schema-drift', [shardIdValidator()], async 
   }
 
   const shardId = getShardId(req.body);
-  const exec = new AsyncJobExecutor(ctx.repo);
+  const exec = new AsyncJobExecutor(ctx.systemRepo);
   await exec.init(req.originalUrl);
   await exec.run(async (asyncJob) => {
     const jobData = prepareDynamicMigrationJobData({ shardId, asyncJob }, migrationActions);

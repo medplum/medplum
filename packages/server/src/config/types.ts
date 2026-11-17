@@ -107,7 +107,10 @@ export interface MedplumServerConfig {
   defaultMfaRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
-  /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */
+  /**
+   * @deprecated Ignored. Async work no longer consumes FHIR quota or self-throttles; limit async load with
+   * `workers.bullmq.<workerName>.globalConcurrency` instead.
+   */
   asyncDelayScaling?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
   defaultMaxUserWebSocketSubscriptions?: number;

@@ -245,7 +245,7 @@ Section: base
 Priority: optional
 Architecture: amd64
 Depends: debconf, nodejs
-Recommends: nginx, postgresql-16, redis-server
+Recommends: nginx, postgresql-16, valkey-server | redis-server
 Suggests: certbot
 Maintainer: Medplum <hello@medplum.com>
 Description: Medplum Server

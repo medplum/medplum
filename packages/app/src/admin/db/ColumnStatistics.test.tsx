@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { ContentType, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
@@ -16,10 +15,8 @@ describe('ColumnStatistics', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super/db']} initialIndex={0}>
-          <MantineProvider>
-            <Notifications />
-            <ColumnStatistics />
-          </MantineProvider>
+          <Notifications />
+          <ColumnStatistics />
         </MemoryRouter>
       </MedplumProvider>
     );

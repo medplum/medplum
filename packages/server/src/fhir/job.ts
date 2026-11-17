@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { accepted, allOk, isOk, singularize } from '@medplum/core';
 import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
-import type { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
-import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
+import { AsyncJobExecutor, readAsyncJob } from './operations/utils/asyncjobexecutor';
 import { sendOutcome } from './outcomes';
 import { sendFhirResponse } from './response';
 
@@ -24,7 +24,7 @@ jobRouter.get('/:id/status', async (req: Request, res: Response) => {
   const id = singularize(req.params.id) ?? '';
   // This inexpensive read should be exempt from rate limits so that users can poll
   // for job state when the job exhausts the available FHIR quota
-  const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
+  const asyncJob = await readAsyncJob(id);
 
   let outcome: OperationOutcome;
   if (finalJobStatusCodes.includes(asyncJob.status)) {

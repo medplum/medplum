@@ -98,6 +98,8 @@ describe('Project Admin routes', () => {
     expect(res4.body.resourceType).toStrictEqual('ProjectMembership');
     expect(res4.body.id).toBeDefined();
     expect(res4.body.meta.project).toStrictEqual(project.id);
+    const practitionerDefault = project.defaultAccessPolicies?.find((p) => p.profileType === 'Practitioner');
+    expect(res4.body.accessPolicy).toStrictEqual(practitionerDefault?.accessPolicy);
 
     // Try a naughty request using a different resource type
     const res5 = await request(app)
@@ -139,6 +141,8 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8).toHaveStatus(200);
     expect(res8.body.admin).toBe(true);
+    // Promoting to admin does not change the access policy
+    expect(res8.body.accessPolicy).toStrictEqual(practitionerDefault?.accessPolicy);
   });
 
   test('Get project access denied', async () => {

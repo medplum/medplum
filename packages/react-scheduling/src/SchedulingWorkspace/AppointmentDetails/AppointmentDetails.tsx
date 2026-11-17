@@ -27,6 +27,7 @@ import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
+import { AppointmentPatientName } from '../../CalendarBase/AppointmentPatientName';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { getMedicalRecordNumber } from '../../patients';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
@@ -86,6 +87,8 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  /** See {@link AppointmentDetailsFormProps.commentMaxLength}. */
+  readonly commentMaxLength?: number;
   /** Called with the appointment as written, after the visit type's codes or the notes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
@@ -190,6 +193,7 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
  * @param props.procedureBinding - The value set the procedure code field binds to
  * @param props.diagnosisBinding - The value set the diagnosis code field binds to
  * @param props.mrnSystem - The system a project issues medical record numbers under
+ * @param props.commentMaxLength - The most characters the notes may be edited to hold
  * @param props.onToggleTimeFinder - A callback told when the reschedule form's time search
  * opens or closes, for a host that has to widen to fit it
  * @returns The details component
@@ -205,6 +209,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     procedureBinding,
     diagnosisBinding,
     mrnSystem,
+    commentMaxLength,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
   const patientResource = useResource(patient);
@@ -216,7 +221,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const [confirmError, setConfirmError] = useState<unknown>();
 
   const patientLine = (
-    <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
+    <Detail label="Patient" value={patient && <AppointmentPatientName appointment={appointment} />} />
   );
   const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
 
@@ -353,6 +358,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           appointment={appointment}
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
+          commentMaxLength={commentMaxLength}
           onUpdated={(updated) => {
             setEditing(false);
             return onUpdated?.(updated);

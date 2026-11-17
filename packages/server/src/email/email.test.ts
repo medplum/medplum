@@ -399,6 +399,33 @@ describe('Email', () => {
     expect(mockSESv2Client.send.callCount).toBe(0);
   });
 
+  test('Block metadata URL attachment', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'creds.json', path: 'https://169.254.170.2/v2/metadata' }],
+      })
+    ).rejects.toMatchObject({
+      message: 'Invalid email attachment: fetch failed',
+      cause: { cause: { message: 'Outbound request to unsafe hostname 169.254.170.2 is blocked' } },
+    });
+
+    expect(mockSESv2Client.send.callCount).toBe(0);
+  });
+
+  test('Block nodemailer URL access', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'creds.json', href: 'https://169.254.170.2/v2/metadata' }],
+      })
+    ).rejects.toThrow('Invalid email options: Url access rejected for https://169.254.170.2/v2/metadata');
+  });
+
   test('Catch invalid options', async () => {
     await expect(
       sendEmail(systemRepo, {

@@ -1,0 +1,9 @@
+{{- /* Resolve bundle-relative images to absolute URLs: page URLs have no trailing slash, so the browser would resolve
+  a relative src against the parent directory */ -}}
+{{- $src := .Destination -}}
+{{- if not (urls.Parse $src).IsAbs -}}
+  {{- with .Page.Resources.Get (strings.TrimPrefix "./" $src) -}}
+    {{- $src = .RelPermalink -}}
+  {{- end -}}
+{{- end -}}
+<img src="{{ $src }}" alt="{{ .PlainText }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy" />

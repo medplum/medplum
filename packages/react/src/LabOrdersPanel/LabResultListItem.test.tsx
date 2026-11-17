@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
+import { render } from '../test-utils/render';
 import { LabResultListItem } from './LabResultListItem';
 
 const report: DiagnosticReport = { resourceType: 'DiagnosticReport', status: 'final', code: { text: 'CBC Panel' } };
@@ -15,9 +15,7 @@ describe('LabResultListItem', () => {
   const setup = (report: DiagnosticReport, selected = false): ReturnType<typeof render> =>
     render(
       <MedplumProvider medplum={new MockClient()}>
-        <MantineProvider>
-          <LabResultListItem report={report} selected={selected} to="/lab/1" />
-        </MantineProvider>
+        <LabResultListItem report={report} selected={selected} to="/lab/1" />
       </MedplumProvider>
     );
 
@@ -41,4 +39,23 @@ describe('LabResultListItem', () => {
     expect(container.querySelector('[class*="selected"]')).toBeInTheDocument();
     expect(screen.queryByText(/Collected|Performed by/)).not.toBeInTheDocument();
   });
+
+  test.each<[DiagnosticReport['status'], string]>([
+    ['preliminary', 'Preliminary'],
+    ['partial', 'Partial'],
+  ])('shows a %s badge and "Received" instead of "Completed"', async (status, badgeText) => {
+    setup({ ...report, status, issued: '2024-01-15T10:00:00Z' });
+    expect(await screen.findByText(badgeText)).toBeInTheDocument();
+    expect(screen.getByText('Received 1/15/2024')).toBeInTheDocument();
+    expect(screen.queryByText(/^Completed/)).not.toBeInTheDocument();
+  });
+
+  test.each<DiagnosticReport['status']>(['final', 'corrected', 'amended'])(
+    'shows no status badge for a %s report',
+    (status) => {
+      setup({ ...report, status });
+      expect(screen.queryByText('Preliminary')).not.toBeInTheDocument();
+      expect(screen.queryByText('Partial')).not.toBeInTheDocument();
+    }
+  );
 });

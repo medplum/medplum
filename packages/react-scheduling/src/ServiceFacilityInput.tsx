@@ -6,7 +6,7 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import { ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { AppointmentOptionRow } from './AppointmentFinder/AppointmentOptionRow';
-import { SERVICE_FACILITY_SEARCH_CRITERIA } from './constants';
+import { SERVICE_FACILITY_SEARCH_CRITERIA, SERVICE_FACILITY_SEARCH_PARAM } from './constants';
 
 export interface ServiceFacilityInputProps {
   readonly label: string;
@@ -33,6 +33,7 @@ export function ServiceFacilityInput(props: Readonly<ServiceFacilityInputProps>)
       label={props.label}
       placeholder={props.placeholder}
       searchCriteria={props.searchCriteria ?? SERVICE_FACILITY_SEARCH_CRITERIA}
+      searchParam={SERVICE_FACILITY_SEARCH_PARAM}
       defaultValue={props.defaultValue as WithId<Location> | Reference<WithId<Location>> | undefined}
       itemComponent={ServiceFacilityItem}
       onChange={props.onChange}

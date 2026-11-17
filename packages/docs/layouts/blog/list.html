@@ -1,0 +1,8 @@
+{{ define "main" }}
+  {{- /* No visible title, as on Docusaurus; "Blog" stays in the <title> */}}
+  {{ $paginator := .Paginate (partial "blog/sort-posts.html" .Pages) }}
+  {{ range $paginator.Pages }}
+    {{ partial "blog/summary.html" . }}
+  {{ end }}
+  {{ partial "blog/pagination.html" $paginator }}
+{{ end }}

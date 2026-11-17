@@ -1,10 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import dns from 'node:dns';
-import { createServer } from 'node:http';
+import { once } from 'node:events';
+import type { Server } from 'node:http';
+import { createServer as createHttpServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { fetch } from 'undici';
+import tls from 'node:tls';
 import { vi } from 'vitest';
+import { getConfig, loadTestConfig } from '../config/loader';
+import { generateSelfSignedCert } from '../test.setup';
 import {
   createSafeConnect,
   getNormalizedPath,
@@ -13,7 +18,7 @@ import {
   isAllowedOutboundUrlForQueue,
   isUnsafeHostname,
   isUnsafeIpAddress,
-  safeAgent,
+  safeFetch,
   validateOutboundUrl,
 } from './url';
 
@@ -188,43 +193,87 @@ describe('createSafeConnect', () => {
   });
 });
 
-describe('safeAgent', () => {
-  test('requires HTTPS', async () => {
-    await expect(fetch('http://example.com/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+describe('safeFetch', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
   });
 
-  test('blocks localhost fetches before opening a socket', async () => {
-    const server = createServer((_req, res) => res.end('ok'));
-    await listen(server);
+  afterEach(() => {
+    vi.restoreAllMocks();
+    getConfig().allowUnsafeOutbound = undefined;
+  });
 
-    try {
-      await expect(fetch(`https://localhost:${getPort(server)}`, { dispatcher: safeAgent })).rejects.toThrow(
-        'fetch failed'
+  test('fetches public HTTPS hosts', async () => {
+    const { cert, privateKey } = generateSelfSignedCert('CN=example.com');
+    const server = createHttpsServer({ cert, key: privateKey }, (_req, res) => res.end('ok'));
+
+    // Route the TLS connection for the public address to the local server and trust its certificate.
+    // Relies on undici's connector calling tls.connect through the module object at call time.
+    const tlsConnect = tls.connect;
+    const connectSpy = vi
+      .spyOn(tls, 'connect')
+      .mockImplementation(((options: tls.ConnectionOptions) =>
+        tlsConnect({ ...options, host: '127.0.0.1', ca: cert })) as typeof tls.connect);
+
+    await withServer(server, async (port) => {
+      mockDnsLookup(null, [{ address: '93.184.216.34', family: 4 }]);
+      const response = await safeFetch(`https://example.com:${port}/`);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('ok');
+      expect(connectSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ host: '93.184.216.34', servername: 'example.com' })
       );
-    } finally {
-      await close(server);
-    }
+    });
+  });
+
+  test('allows local HTTP targets when unsafe outbound is enabled', async () => {
+    getConfig().allowUnsafeOutbound = true;
+    const server = createHttpServer((_req, res) => res.end('ok'));
+
+    await withServer(server, async (port) => {
+      const response = await safeFetch(`http://127.0.0.1:${port}/`);
+      expect(response.status).toBe(200);
+      expect(await response.text()).toBe('ok');
+    });
+  });
+
+  test('requires HTTPS', async () => {
+    await expect(safeFetch('http://example.com/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request blocked: HTTPS is required' },
+    });
+  });
+
+  test('blocks localhost', async () => {
+    await expect(safeFetch('https://localhost/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request to unsafe hostname localhost is blocked' },
+    });
   });
 
   test('blocks private literal targets', async () => {
-    await expect(fetch('https://127.0.0.1/', { dispatcher: safeAgent })).rejects.toThrow('fetch failed');
+    await expect(safeFetch('https://127.0.0.1/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request to unsafe hostname 127.0.0.1 is blocked' },
+    });
+  });
+
+  test('blocks hostnames that resolve to private addresses', async () => {
+    mockDnsLookup(null, [{ address: '169.254.169.254', family: 4 }]);
+    await expect(safeFetch('https://metadata.example.com/')).rejects.toMatchObject({
+      cause: { message: 'Outbound request to unsafe address metadata.example.com is blocked' },
+    });
   });
 });
 
-function getPort(server: ReturnType<typeof createServer>): number {
-  return (server.address() as AddressInfo).port;
-}
-
-function listen(server: ReturnType<typeof createServer>): Promise<void> {
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', resolve);
-  });
-}
-
-function close(server: ReturnType<typeof createServer>): Promise<void> {
-  return new Promise((resolve, reject) => {
-    server.close((err) => (err ? reject(err) : resolve()));
-  });
+async function withServer(server: Server, fn: (port: number) => Promise<void>): Promise<void> {
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  try {
+    await fn((server.address() as AddressInfo).port);
+  } finally {
+    // close() waits for active connections, so drop them to keep a failed assertion from stalling teardown
+    server.closeAllConnections();
+    server.close();
+    await once(server, 'close');
+  }
 }
 
 function callConnect(

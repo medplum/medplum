@@ -29,6 +29,9 @@ export const APPOINTMENT_CANCELLATION_REASON_CODE_SYSTEM =
  */
 export const SERVICE_FACILITY_SEARCH_CRITERIA = { _count: '25', _sort: 'name', 'physical-type:not': 'ro,bd' };
 
+/** Matches typed text anywhere in a site's name, since a site is often known by a word past its first (`Uro Associates - North`). */
+export const SERVICE_FACILITY_SEARCH_PARAM = 'name:contains';
+
 /**
  * The search a Location typeahead offers sites from where one is booked at, which
  * leaves out a site that is inactive because it isn't live yet.

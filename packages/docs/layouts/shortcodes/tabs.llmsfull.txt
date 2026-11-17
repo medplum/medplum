@@ -1,0 +1,2 @@
+{{- /* Plain text for /llms-full.txt: the tabs one after another (see tab.llmsfull.txt) */ -}}
+{{ trim .Inner "\n" }}
