@@ -146,7 +146,7 @@ vi.mock('../MultiCalendar/MultiCalendar', () => ({
     const { onRangeChange } = props;
     useEffect(() => onRangeChange?.(CALENDAR_WEEK), [onRangeChange]);
     const [pagedTo, setPagedTo] = useState<Date>();
-    useImperativeHandle(ref, () => ({ gotoDate: setPagedTo }), []);
+    useImperativeHandle(ref, () => ({ gotoDate: setPagedTo, next: () => undefined }), []);
 
     return (
       <div>
