@@ -14,12 +14,7 @@ import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPA
 import { CREDENTIAL_SEARCH, readCredential } from './credentials';
 import { importedSlots } from './import';
 import { withConnectionLease } from './lease';
-import {
-  ensureInboundPolicy,
-  ensureSyncAccessPolicy,
-  ORDINARY_SLOT_POLICY_SNIPPET,
-  PRACTITIONER_POLICY_SNIPPET,
-} from './policies';
+import { ensureInboundPolicy, ensureSyncAccessPolicy, PRACTITIONER_POLICY_SNIPPET } from './policies';
 
 let medplum: MockClient;
 beforeEach(() => {
@@ -85,21 +80,6 @@ test('linked Basic visibility cannot select foreign settings or connections', as
   await expect(withConnectionLease(medplum, connection.basic.id, async () => undefined)).rejects.toThrow(
     'different project'
   );
-});
-test('a broad Slot grant preceding the snippet defeats it and must be replaced', () => {
-  const slot: Slot = {
-    resourceType: 'Slot',
-    status: 'busy-unavailable',
-    schedule: { reference: 'Schedule/s' },
-    start: '2026-11-01T10:00:00Z',
-    end: '2026-11-01T11:00:00Z',
-    identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'forged' }],
-  };
-  const policy = {
-    resourceType: 'AccessPolicy' as const,
-    resource: [{ resourceType: 'Slot' as const }, ...(ORDINARY_SLOT_POLICY_SNIPPET ?? [])],
-  };
-  expect(satisfiedAccessPolicy(slot, AccessPolicyInteraction.CREATE, policy)).toBeDefined();
 });
 test('malformed identifiers are retained and reported without aborting unrelated scans', async () => {
   const slot = await medplum.createResource<Slot>({

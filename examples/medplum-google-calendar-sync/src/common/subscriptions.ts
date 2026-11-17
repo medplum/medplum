@@ -5,9 +5,8 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { Bot, Subscription } from '@medplum/fhirtypes';
 import { CONNECTION_SEARCH } from './connection';
-import { GOOGLE_CALENDAR_NAMESPACE, IMPORT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM } from './constants';
+import { IMPORT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM } from './constants';
 import { projectQuery } from './project';
-import { PUBLIC_STATUS_SEARCH } from './public-status';
 import { STATE_URL } from './state';
 import { ifMatch } from './versioning';
 
@@ -108,29 +107,4 @@ export async function ensureWorkSubscription(
     await projectQuery(medplum, { _tag: `${tag.system}|${tag.code}` })
   );
   await medplum.updateResource({ ...desired, id: saved.id, meta: { ...saved.meta, ...desired.meta } }, ifMatch(saved));
-}
-
-/**
- * Customer-owned workflow; this helper does not install or send notifications.
- * @param botReference - Customer-owned workflow Bot endpoint.
- * @returns A Subscription for the administrator to install.
- */
-export function notificationSubscription(botReference: string): Subscription {
-  if (!/^Bot\/[A-Za-z0-9.-]+$/.test(botReference)) {
-    throw new Error('A customer Bot reference is required');
-  }
-  const status = `extension.where(url='${GOOGLE_CALENDAR_NAMESPACE}/status').valueCode`;
-  const expression = `%current.${status} = 'reauth-required' and (%previous.${status}.empty() or %previous.${status} != 'reauth-required')`;
-  return {
-    resourceType: 'Subscription',
-    status: 'active',
-    reason: 'Customer workflow for Google Calendar reauthorization',
-    criteria: `Basic?${PUBLIC_STATUS_SEARCH}`,
-    channel: { type: 'rest-hook', endpoint: botReference },
-    extension: [
-      { url: SUBSCRIPTION_INTERACTION_EXTENSION_URL, valueCode: 'create' },
-      { url: SUBSCRIPTION_INTERACTION_EXTENSION_URL, valueCode: 'update' },
-      { url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression', valueString: expression },
-    ],
-  };
 }

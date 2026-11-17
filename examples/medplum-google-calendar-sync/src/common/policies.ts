@@ -41,15 +41,6 @@ export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> 
 ];
 
 /**
- * Optional hardening: entries that stop a Slot writer from changing imported Slots. They take
- * effect only when they replace that writer's broader Slot write grants. Install does not apply them.
- */
-export const ORDINARY_SLOT_POLICY_SNIPPET: AccessPolicy['resource'] = [
-  { resourceType: 'Slot', criteria: `Slot?identifier:not=${IMPORT_IDENTIFIER_SYSTEM}|` },
-  { resourceType: 'Slot', criteria: `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|`, readonly: true },
-];
-
-/**
  * The policy the sync and reconcile Bots run under in the customer project: read what the
  * mapping needs, and read and update Calendar Connections.
  * @param medplum - The client.

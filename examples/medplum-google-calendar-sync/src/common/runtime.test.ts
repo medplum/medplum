@@ -20,9 +20,9 @@ import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import { importedSlots } from './import';
 import { runInbound } from './inbound';
 import { ConnectionBusyError, LEASE_MS, LEASE_URL, withConnectionLease } from './lease';
-import { ensureInboundPolicy, ORDINARY_SLOT_POLICY_SNIPPET } from './policies';
+import { ensureInboundPolicy } from './policies';
 import { readState, requestSync, withState } from './state';
-import { notificationSubscription, transitionExpression } from './subscriptions';
+import { transitionExpression } from './subscriptions';
 import { ensureWatch, receiveNotification } from './watch';
 
 const PRACTITIONER = 'Practitioner/test-practitioner';
@@ -444,45 +444,6 @@ describe('calendar runtime', () => {
     }
     expect(satisfiedAccessPolicy(owned, AccessPolicyInteraction.READ, policy)).toBeDefined();
   });
-  test('ordinary Slot writers cannot assign or retain the reserved identifier', async () => {
-    const policy = { resourceType: 'AccessPolicy' as const, resource: ORDINARY_SLOT_POLICY_SNIPPET };
-    const slot: Slot = {
-      resourceType: 'Slot',
-      status: 'busy-unavailable',
-      schedule: { reference: `Schedule/${schedule.id}` },
-      start: appointment.start as string,
-      end: appointment.end as string,
-    };
-    const forged = { ...slot, identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'forged' }] };
-    for (const action of [
-      AccessPolicyInteraction.CREATE,
-      AccessPolicyInteraction.UPDATE,
-      AccessPolicyInteraction.DELETE,
-    ]) {
-      expect(satisfiedAccessPolicy(slot, action, policy)).toBeDefined();
-      expect(satisfiedAccessPolicy(forged, action, policy)).toBeUndefined();
-    }
-    expect(satisfiedAccessPolicy(forged, AccessPolicyInteraction.READ, policy)).toBeDefined();
-  });
-
-  test('reauth notifications fire only on the transition', async () => {
-    const before = await current();
-    await updateConnection(medplum, (await findConnection(medplum, PRACTITIONER)) as CalendarConnection, {
-      status: 'reauth-required',
-    });
-    const after = await current();
-    const expression = notificationSubscription('Bot/customer-workflow').extension?.find((e) => e.valueString)
-      ?.valueString as string;
-    const evaluate = (previous: Basic, current: Basic): unknown[] =>
-      evalFhirPath(expression, current, {
-        '%previous': { type: 'Basic', value: previous },
-        '%current': { type: 'Basic', value: current },
-      });
-    expect(evaluate(before, after)).toEqual([true]);
-    expect(evaluate(after, after)).toEqual([false]);
-    expect(evaluate(after, before)).toEqual([false]);
-  });
-
   test('lease release rebases after a webhook changes the version', async () => {
     const spy = vi.mocked(medplum.updateResource);
     const update = spy.getMockImplementation();
