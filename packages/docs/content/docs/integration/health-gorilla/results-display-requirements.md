@@ -4,11 +4,13 @@ title: Results Display Requirements
 weight: 35
 ---
 
-Performing labs such as Quest and Labcorp set requirements for how their results are displayed in the applications that receive them. This guide describes what you need to display to remain compliant when showing results received through the Medplum Health Gorilla integration.
+Performing labs such as Quest and Labcorp have a minimum set of requirements for how results are displayed in the applications that receive them. This guide describes best practices for remaining compliant when showing results received through the Medplum Health Gorilla integration.
 
-{{< warning title="Use the certified component" >}}
-Display Health Gorilla lab results with Medplum's certified [`LabOrdersPanel`](https://storybook.medplum.com/?path=/story/medplum-laborderspanel--completed) component from `@medplum/react`. Display requirements are not standardized across labs and may be reviewed during an audit. Using the certified component is the safest way to ensure your application meets them.
-{{< /warning >}}
+## Use the certified component
+
+Display requirements are not standardized across labs and may be reviewed during an audit. Using Medplum's certified [`LabOrdersPanel`](https://storybook.medplum.com/?path=/story/medplum-laborderspanel--completed) component from `@medplum/react` is the safest way to ensure your application meets them.
+
+![LabOrdersPanel showing a completed Quest result: the Completed, Open, and Revoked order list, the lab and Health Gorilla PDF reports, and the structured results](/img/integrations/health-gorilla/lab-orders-panel.png)
 
 ## What the certified component displays
 
@@ -52,10 +54,6 @@ The component does not handle routing. Your application derives the search, acti
 - **Use `LabOrdersPanel` as the primary results view in your application.** Clinicians must use it for clinical and diagnostic decisions.
 - **Keep the component intact.** Place it anywhere in your layout, but do not fork it, hide sections, or filter out results.
 - **Preserve result data.** Do not edit result values or delete the PDF `DocumentReference` resources. Corrections come from the performing lab as updated reports.
-
-{{< note title="Additional results views" >}}
-You can build additional views of lab results in your application, as long as `LabOrdersPanel` remains the primary results view.
-{{< /note >}}
 
 ## Related Reading
 
