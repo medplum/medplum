@@ -7,7 +7,7 @@ This workflow evaluates one merged PR against the current default branch, produc
 | File | What to review |
 | --- | --- |
 | [Classification prompt](prompts/classify.md) | User-impact rubric, positive/negative examples, coverage evidence, uncertainty handling |
-| [Drafting prompt](prompts/draft.md) | Medplum rules, Hugo formatting, examples, scope, tone, and availability |
+| [Drafting prompt](prompts/draft.md) | Medplum rules, voice, heading case, lists/tables, code examples, visuals, Hugo formatting, and availability |
 | [Verification prompt](prompts/verify.md) | Independent accuracy, completeness, links, and example checks |
 | [Configuration](config.json) | Model, effort, cost/turn limits, source-to-docs hints, fallback assignee |
 | [Workflow](../../.github/workflows/docs-automation.yml) | Manual inputs, read-only agent jobs, validation, and separate publication job |
@@ -41,6 +41,25 @@ Claude returns `no-docs`, `already-covered`, `update-docs`, or `needs-human`. A 
 All three agent passes use only local read/search tools and return structured JSON. The drafting agent returns replacement file contents. A deterministic controller validates the response and applies only planned Markdown edits. The publisher runs separately with write permissions and without the Anthropic credential.
 
 Pilot writes are limited to ordinary Markdown guides in `packages/docs/content/docs/` and hand-written FHIR notes in `packages/docs/assets/fhir/resources/`. SDK/API-generated pages, decision guides with downloadable exports, examples, application code, templates, navigation configuration, and agent/workflow instructions need human work. New pages must be linked from an existing relevant page in the proposed patch.
+
+## Basis for the writing guidance
+
+The drafting guidance was calibrated on a cross-section of the repository's docs on 2026-11-17, at upstream revision `c956ffb66`. These are examples of editorial patterns; technical claims still require current implementation and documentation evidence.
+
+| Sample | Pattern used in the drafting guidance |
+| --- | --- |
+| [FHIR Basics](../../packages/docs/content/docs/fhir-basics.md) and [Working with FHIR Data](../../packages/docs/content/docs/fhir-datastore/working-with-fhir.md) | Explain FHIR concepts through familiar relationships and a concrete healthcare workflow; connect examples with consistent resources. |
+| [Basic Search](../../packages/docs/content/docs/search/basic-search.md) | Introduce the operation, show source-backed TypeScript/cURL examples, explain the returned data, and use tables for parameter comparisons. |
+| [Appointment $book](../../packages/docs/content/docs/scheduling/appointment-book.md) | Operation references cover inputs, constraints, output, and errors; lists distinguish use cases and ordered behavior. |
+| [Messaging Data Model](../../packages/docs/content/docs/communications/messaging-data-model.md) and [Scheduling](../../packages/docs/content/docs/scheduling/_index.md) | Mermaid explains resource relationships; nearby prose and field labels supply the meaning. |
+| [Bot Basics](../../packages/docs/content/docs/bots/bot-basics.md) and [Provider Tasks](../../packages/docs/content/docs/provider/tasks/index.md) | Screenshots accompany UI actions and identify controls; examples and instructions establish the expected result. |
+| [Choosing React Components](../../packages/docs/content/docs/react/choosing-components.md) and [Project Settings](../../packages/docs/content/docs/self-hosting/project-settings.md) | Direct task-oriented prose, comparison tables, explicit defaults/limitations, and links to deeper guidance. |
+
+The samples mix heading conventions. Basic Search has both "Searching Multiple Criteria" and "Reversing the sort order". Choosing React Components uses a title-case page title with sentence-case sections such as "Field and resource controls". Project Settings uses "Project feature flags" and "Open patient registration".
+
+The agreed pilot convention is **title case for page titles and all section headings on new pages**. Small updates preserve the target page's existing headings, anchors, and local style. This convention, restrained emphasis, ordinary Markdown spacing, and concise openings are explicit editorial choices for the pilot; the samples do not establish a uniform repository-wide style policy. The [docs README](../../packages/docs/README.md) supplies the supported Hugo markup and preference for source-backed examples.
+
+The verifier reads the same editorial guidance. Draft notes identify the neighboring style examples and any code-execution or rendered-preview checks still needed. Images must already exist and fit the current UI; required new screenshots are routed to human work. This pilot adds no image-generation or screenshot-capture capability.
 
 ## Quality and publication gates
 
