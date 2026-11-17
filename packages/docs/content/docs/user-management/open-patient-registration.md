@@ -11,15 +11,33 @@ Medplum projects can be easily configured to allow open patient registration so 
 
 ## Enabling Open Patient Registration
 
-To enable open patient registration:
+Open registration stays off until the project opts in and has a Patient access policy:
 
-1. **Create a Patient [`AccessPolicy`](/docs/api/fhir/medplum/accesspolicy)** - Open registration requires patients to have an access policy to restrict them to only viewing their own data. It should prevent them from accessing data for other patients and sensitive system level resources like [`AccessPolicy`](/docs/api/fhir/medplum/accesspolicy). See [this example](/docs/access/access-policies#patient-access) for a good starting point for a patient access policy.
-2. **Set the [`AccessPolicy`](/docs/api/fhir/medplum/accesspolicy) as the default** - Navigate to https://app.medplum.com/Project and select your project. In the "Edit" tab, set the "Default Patient Access Policy" field to your new policy and click "Update".
+1. **Turn on `openPatientRegistration`** - Add an entry to [`Project.setting`](/docs/self-hosting/project-settings) with `name` `openPatientRegistration` and `valueBoolean` `true`.
+2. **Set the Patient access policy** - Self-registered patients receive the `Patient` entry in [`Project.defaultAccessPolicies`](/docs/access/access-policies#default-access-policies). New projects already have that entry, scoped to the patient's own data. Replace it to use a different [`AccessPolicy`](/docs/api/fhir/medplum/accesspolicy). If the `Patient` entry is absent, registration falls back to the deprecated `Project.defaultPatientAccessPolicy` field.
 
-Once the field is set, anyone who knows your project ID can register as a Patient and will be given that policy. To turn open registration off, clear the field. Changing it affects future registrations only, not existing patients.
+Anyone who knows the project ID can then register as a Patient and receives that policy. To turn open registration off, set `openPatientRegistration` to `false` or remove it. Removing the Patient policy also turns it off. Changes affect future registrations only, not existing patients.
+
+```json
+{
+  "resourceType": "Project",
+  "setting": [
+    {
+      "name": "openPatientRegistration",
+      "valueBoolean": true
+    }
+  ],
+  "defaultAccessPolicies": [
+    {
+      "profileType": "Patient",
+      "accessPolicy": { "reference": "AccessPolicy/example-patient-policy" }
+    }
+  ]
+}
+```
 
 {{< note >}}
 
-The "Default Patient Access Policy" field is separate from [`Project.defaultAccessPolicies`](/docs/access/access-policies#default-access-policies). `defaultAccessPolicies` only applies when an administrator [invites](/docs/app/invite) a user without choosing a policy, and it does not enable or affect open registration. If you use both invites and open registration, set both to the same Patient policy so invited and self-registered patients get the same access.
+`defaultPatientAccessPolicy` is deprecated. Open registration, [patient invites](/docs/app/invite) that omit an access policy, and [SCIM](/docs/api/scim/users) patient provisioning all prefer the `Patient` entry in `defaultAccessPolicies`, and use `defaultPatientAccessPolicy` only when that entry is absent. The `openPatientRegistration` setting is what turns self-registration on. A Patient policy by itself does not. Invites and SCIM do not require the setting. SCIM refuses to create a Patient when neither policy is set.
 
 {{< /note >}}

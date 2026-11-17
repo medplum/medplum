@@ -1,9 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError } from '@medplum/core';
-import type { Project, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { MAX_PASSWORD_LENGTH } from '../constants';
-import { bcryptHashPassword, isMfaRequired, isPractitionerEmailDomainAllowed } from './utils';
+import type { AuthenticatedRequestContext } from '../context';
+import {
+  bcryptHashPassword,
+  getCallerUserReference,
+  getOpenRegistrationAccessPolicy,
+  hasSmartResourceScopes,
+  isMfaRequired,
+  isPractitionerEmailDomainAllowed,
+} from './utils';
 
 describe('isMfaRequired', () => {
   function createMfaTestUser(mfaRequired?: boolean): User {
@@ -40,6 +48,51 @@ describe('isMfaRequired', () => {
     expect(isMfaRequired(createMfaTestUser(true), undefined)).toBe(true);
     // A project that does not require MFA leaves an unset user unaffected.
     expect(isMfaRequired(createMfaTestUser(), projectWithSetting(false))).toBe(false);
+  });
+});
+
+describe('getOpenRegistrationAccessPolicy', () => {
+  const patientPolicy: Reference<AccessPolicy> = { reference: 'AccessPolicy/patient' };
+  const legacyPolicy: Reference<AccessPolicy> = { reference: 'AccessPolicy/legacy' };
+  const enabled: Project['setting'] = [{ name: 'openPatientRegistration', valueBoolean: true }];
+
+  function project(overrides: Partial<Project> = {}): Project {
+    return { resourceType: 'Project', ...overrides };
+  }
+
+  test('Requires openPatientRegistration to be true', () => {
+    const policies = {
+      defaultAccessPolicies: [{ profileType: 'Patient' as const, accessPolicy: patientPolicy }],
+      defaultPatientAccessPolicy: legacyPolicy,
+    };
+    expect(getOpenRegistrationAccessPolicy(project(policies))).toBeUndefined();
+    expect(
+      getOpenRegistrationAccessPolicy(
+        project({ ...policies, setting: [{ name: 'openPatientRegistration', valueBoolean: false }] })
+      )
+    ).toBeUndefined();
+  });
+
+  test('Prefers the Patient defaultAccessPolicies entry, then defaultPatientAccessPolicy', () => {
+    expect(
+      getOpenRegistrationAccessPolicy(
+        project({
+          setting: enabled,
+          defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: patientPolicy }],
+          defaultPatientAccessPolicy: legacyPolicy,
+        })
+      )
+    ).toEqual(patientPolicy);
+    expect(
+      getOpenRegistrationAccessPolicy(
+        project({
+          setting: enabled,
+          defaultAccessPolicies: [{ profileType: 'Practitioner', accessPolicy: { reference: 'AccessPolicy/pract' } }],
+          defaultPatientAccessPolicy: legacyPolicy,
+        })
+      )
+    ).toEqual(legacyPolicy);
+    expect(getOpenRegistrationAccessPolicy(project({ setting: enabled }))).toBeUndefined();
   });
 });
 

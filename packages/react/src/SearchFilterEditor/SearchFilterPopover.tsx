@@ -168,7 +168,7 @@ function FilterConditionRow(props: FilterConditionRowProps): JSX.Element {
         <SearchFilterValueInput
           key={`filter-${props.rowId}-value-${value.code}-${value.operator}`}
           name={`filter-${index}-value`}
-          ariaLabel={`Filter ${index + 1} value`}
+          aria-label={`Filter ${index + 1} value`}
           resourceType={props.resourceType}
           searchParam={searchParam}
           defaultValue={value.value}

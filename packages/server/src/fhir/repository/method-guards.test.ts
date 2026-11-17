@@ -87,6 +87,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'isResourceWriteable',
   'isCacheOnly',
   'restoreReadonlyFields',
+  'removePolicyHiddenFields',
   'logPostMetadataFieldMatch',
   'logEvent',
   'getCacheEntry',
@@ -106,6 +107,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'assertUsable',
   'authorizeBinarySecurityContext',
   'shouldAddBackgroundJobs',
+  'redactWriteResult',
 ]);
 
 interface MethodInvocation {

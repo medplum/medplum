@@ -62,12 +62,13 @@ export function getMcpServer(): McpServer {
       const baseFhirUrl = concatUrls(baseUrl, 'fhir/R4');
       const fhirUrl = concatUrls(baseFhirUrl, path);
 
-      // SSRF / token-exfiltration guard (GHSA-fjgc-c3pj-xx2c).
-      // concatUrls() is new URL(path, base); an absolute or protocol-absolute `path`
-      // discards the base and points the proxy at an attacker-controlled URL. Because
-      // the proxy request carries the caller's bearer token, an off-origin URL both
-      // performs SSRF and leaks the token. Pin the resolved URL to the server origin.
-      if (new URL(fhirUrl).origin !== new URL(baseUrl).origin) {
+      // The proxy request carries the caller's token, so keep it on this server and under the FHIR base
+      const resolved = new URL(fhirUrl);
+      const fhirBase = new URL(baseFhirUrl);
+      if (
+        resolved.origin !== fhirBase.origin ||
+        (resolved.pathname !== fhirBase.pathname && !resolved.pathname.startsWith(fhirBase.pathname + '/'))
+      ) {
         throw new Error('Invalid path: must be relative to the FHIR base URL');
       }
 

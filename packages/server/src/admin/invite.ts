@@ -36,7 +36,7 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getAllowedProjects, getRepoForProjects } from '../fhir/accesspolicy';
-import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
+import { getDefaultAccessPolicy, getDefaultPatientAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
@@ -412,18 +412,16 @@ async function upsertProjectMembership(
 
   // Patients only. RelatedPerson and Practitioner invites are unchanged.
   // Also applies on upsert when no policy is provided in the request.
-  // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
   if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const defaultPolicy = getDefaultAccessPolicy(project, 'Patient');
+    const defaultPolicy = getDefaultPatientAccessPolicy(project);
     if (defaultPolicy) {
       partialMembership.accessPolicy = defaultPolicy;
-    } else if (project.defaultPatientAccessPolicy) {
-      // Fallback to legacy field for backwards compatibility
-      partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
     }
   }
 
-  // Apply default membership policy for RelatedPerson invites, with patient as a parameter.
+  // RelatedPerson's profile is not the patient. Put the associated Patient on
+  // ProjectMembership.access.parameter so login substitutes it for %patient in the policy
+  // criteria. Without that parameter, login would substitute the RelatedPerson profile.
   if (
     request.resourceType === 'RelatedPerson' &&
     !partialMembership.accessPolicy &&

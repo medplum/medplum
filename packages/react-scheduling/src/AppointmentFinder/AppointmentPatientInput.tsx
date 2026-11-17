@@ -7,8 +7,8 @@ import type { AsyncAutocompleteOption } from '@medplum/react';
 import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { useCallback } from 'react';
-import { getMedicalRecordNumber, hasMedicalRecordNumber } from '../patients';
+import { useCallback, useState } from 'react';
+import { getMedicalRecordNumber, hasMedicalRecordNumber, isDeceased } from '../patients';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 
 // Alphabetical, then by birth date: a short prefix — or the first click, before
@@ -20,13 +20,14 @@ const NAME_SEARCH_CRITERIA = { _count: '25', _sort: 'name,birthdate' };
 // systems that share the value and are filtered out below.
 const IDENTIFIER_SEARCH_CRITERIA = { _count: '10' };
 
+const LIVING_CRITERIA = { deceased: 'false' };
+
 export interface AppointmentPatientInputProps {
   /** Read once, at mount. */
   readonly defaultValue?: WithId<Patient>;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
   readonly required?: boolean;
-  readonly error?: string;
   readonly onChange: (patient: WithId<Patient> | undefined) => void;
 }
 
@@ -37,15 +38,18 @@ export interface AppointmentPatientInputProps {
  * @returns The field.
  */
 export function AppointmentPatientInput(props: AppointmentPatientInputProps): JSX.Element {
-  const { defaultValue, mrnSystem, required, onChange, error } = props;
+  const { defaultValue, mrnSystem, required, onChange } = props;
   const medplum = useMedplum();
+  const [error, setError] = useState<string>();
 
   const loadPatients = useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<Patient>[]> => {
       const mrn = input.trim();
+      // An exact medical record number still finds a patient who has died, so the
+      // field can say why they can't be booked rather than finding nobody.
       const [byIdentifier, byName] = await Promise.all([
         mrn ? medplum.searchResources('Patient', { identifier: mrn, ...IDENTIFIER_SEARCH_CRITERIA }, { signal }) : [],
-        medplum.searchResources('Patient', { name: input, ...NAME_SEARCH_CRITERIA }, { signal }),
+        medplum.searchResources('Patient', { name: input, ...NAME_SEARCH_CRITERIA, ...LIVING_CRITERIA }, { signal }),
       ]);
 
       // `identifier` matches every system, and a number typed may be somebody's
@@ -66,7 +70,19 @@ export function AppointmentPatientInput(props: AppointmentPatientInputProps): JS
     [mrnSystem]
   );
 
-  const handleChange = useCallback((patients: WithId<Patient>[]) => onChange(patients[0]), [onChange]);
+  const handleChange = useCallback(
+    (patients: WithId<Patient>[]) => {
+      const patient = patients[0];
+      if (patient && isDeceased(patient)) {
+        setError("This patient is deceased and can't be booked.");
+        onChange(undefined);
+      } else {
+        setError(undefined);
+        onChange(patient);
+      }
+    },
+    [onChange]
+  );
 
   return (
     <AsyncAutocomplete<WithId<Patient>>
@@ -98,5 +114,9 @@ function toPatientOption(patient: WithId<Patient>): AsyncAutocompleteOption<With
  */
 function formatPatientDetail(patient: Patient, mrnSystem: string | undefined): string | undefined {
   const mrn = getMedicalRecordNumber(patient, mrnSystem);
-  return [formatDate(patient.birthDate), mrn && `MRN ${mrn}`].filter(Boolean).join(' · ') || undefined;
+  return (
+    [isDeceased(patient) && 'Deceased', formatDate(patient.birthDate), mrn && `MRN ${mrn}`]
+      .filter(Boolean)
+      .join(' · ') || undefined
+  );
 }

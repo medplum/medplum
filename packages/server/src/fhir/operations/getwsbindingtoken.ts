@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, isResourceType, normalizeErrorString, resolveId } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  forbidden,
+  getWebSocketUrl,
+  isResourceType,
+  normalizeErrorString,
+  resolveId,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
@@ -14,6 +22,15 @@ export type AdditionalWsBindingClaims = {
   subscription_id: string;
   membership_id: string;
 };
+
+/**
+ * Returns the audience of WebSocket binding tokens, which is the WebSocket subscriptions endpoint.
+ * General access tokens are audienced to the issuer, so binding tokens are rejected everywhere else.
+ * @returns The WebSocket subscriptions URL.
+ */
+export function getWsBindingTokenAudience(): string {
+  return getWebSocketUrl(getConfig().baseUrl, 'ws/subscriptions-r4');
+}
 
 // Source (for backport version): https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/OperationDefinition-backport-subscription-get-ws-binding-token.json.html
 // R5 definition: https://build.fhir.org/operation-subscription-get-ws-binding-token.json.html
@@ -191,6 +208,7 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
       username: userId,
       scope: login.scope as string,
       profile: profile.reference as string,
+      aud: getWsBindingTokenAudience(),
     },
     {
       additionalClaims: {
@@ -205,7 +223,7 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
     token,
     expiration: new Date(Date.now() + ONE_HOUR).toISOString(),
     subscription: subscriptionId,
-    'websocket-url': `${baseUrl.replace('http://', 'ws://').replace('https://', 'wss://')}ws/subscriptions-r4`,
+    'websocket-url': getWsBindingTokenAudience(),
   };
 
   return [allOk, buildOutputParameters(operation, output)];

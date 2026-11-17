@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference, WithId } from '@medplum/core';
 import { assertNever, isDefined, isResource, parseReference } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, Reference, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, Patient, Reference, Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
@@ -91,8 +91,13 @@ export function getActorTypeLabel(resourceType: SchedulingActorType): string {
  * @param appointment - The appointment being described.
  * @returns The participant, or undefined when no patient is on it.
  */
-export function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
-  return appointment.participant.find((participant) => participant.actor?.reference?.startsWith('Patient/'));
+export function getPatientParticipant(
+  appointment: Appointment
+): (AppointmentParticipant & { actor: Reference<Patient> }) | undefined {
+  return appointment.participant.find(
+    (participant): participant is AppointmentParticipant & { actor: Reference<Patient> } =>
+      participant.actor?.reference?.startsWith('Patient/') === true
+  );
 }
 
 /**

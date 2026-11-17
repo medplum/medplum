@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ResourceBox } from './ResourceBox';
 
 const onClick = vi.fn();
@@ -13,9 +13,7 @@ const onClick = vi.fn();
 function setup(medplum: MockClient, resourceReference: string): void {
   render(
     <MedplumProvider medplum={medplum}>
-      <MantineProvider>
-        <ResourceBox resourceReference={resourceReference} onClick={onClick} />
-      </MantineProvider>
+      <ResourceBox resourceReference={resourceReference} onClick={onClick} />
     </MedplumProvider>
   );
 }

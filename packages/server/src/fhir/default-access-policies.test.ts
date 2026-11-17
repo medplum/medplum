@@ -89,6 +89,8 @@ describe('Default access policies', () => {
       others: 'write',
       except: {
         ActivityDefinition: 'read',
+        Bot: 'read',
+        ClientApplication: 'read',
         CodeSystem: 'read',
         MedicationKnowledge: 'read',
         ObservationDefinition: 'read',
@@ -116,7 +118,7 @@ describe('Default access policies', () => {
     Patient: {},
     RelatedPerson: {},
     Admin: {},
-    Practitioner: {},
+    Practitioner: { ClientApplication: ['secret', 'retiringSecret'] },
     Bot: { ClientApplication: ['secret', 'retiringSecret'] },
     ClientApplication: { ClientApplication: ['secret', 'retiringSecret'] },
   };
@@ -149,7 +151,10 @@ describe('Default access policies', () => {
     '%s default is limited to the patient compartment',
     (profileType) => {
       const policy = buildPolicy(profileType);
-      expect(policy.compartment).toStrictEqual({ reference: '%patient' });
+      // Reads come from resource criteria. %patient is filled at login, from the profile for a
+      // Patient and from ProjectMembership.access.parameter for a RelatedPerson.
+      expect(policy.compartment).toBeUndefined();
+      expect(policy.resource?.every((entry) => entry.criteria?.includes('%patient'))).toBe(true);
       // Access to a patient's resources depends on the compartment criteria, so an unrelated resource doesn't match
       expect(
         satisfiedAccessPolicy({ resourceType: 'Observation' } as Resource, AccessPolicyInteraction.READ, policy)
