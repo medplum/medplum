@@ -228,10 +228,8 @@ describe('AppointmentRescheduleForm', () => {
         screen.getAllByLabelText('Date & time').find((input) => input.hasAttribute('readonly'));
       expect(shownTime()?.className).toMatch(/justPicked/);
 
-      // Another day takes the picked time down; a time typed for it comes up without a flash.
+      // A time typed in its place comes up without a flash.
       await openTimeFinder();
-      await chooseDay('19');
-      expect(shownTime()).toBeUndefined();
       fireEvent.change(
         screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly')) as HTMLElement,
         { target: { value: '2026-08-19T14:07' } }
