@@ -167,7 +167,6 @@ export async function setResourceAccounts(
   if (!userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, target)) {
     throw new OperationOutcomeError(forbidden);
   }
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   await systemRepo.updateResource(target);
   let count = 1; // Target resource is updated already
 
@@ -240,7 +239,6 @@ async function updateCompartmentResource<T extends Resource>(
     account: accountList?.[0],
   };
   // Use system repo to force update meta.accounts
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   return systemRepo.updateResource(resource);
 }
 

@@ -25,6 +25,7 @@ import { runInAuthenticatedContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
+import { FhirRateLimiter } from '../fhirquota';
 import { setAccountsHandler } from './set-accounts';
 
 const app = express();
@@ -430,13 +431,20 @@ describe('Patient Set Accounts Operation', () => {
     const jobData = queue.add.mock.calls[0][1] as SetAccountsJobData;
     const job = { id: 1, data: jobData } as unknown as Job<SetAccountsJobData>;
 
-    await runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
-      undefined,
-      undefined,
-      { async: true },
-      () => execSetAccountsJob(job)
-    );
+    const consumeSpy = vi.spyOn(FhirRateLimiter.prototype, 'consume');
+    try {
+      await runInAuthenticatedContext(
+        { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+        undefined,
+        undefined,
+        { async: true },
+        () => execSetAccountsJob(job)
+      );
+      // Async propagation must not charge the user's FHIR quota
+      expect(consumeSpy).not.toHaveBeenCalled();
+    } finally {
+      consumeSpy.mockRestore();
+    }
 
     await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
     const statusRes = await request(app)
