@@ -57,8 +57,8 @@ The On-Behalf-Of model is designed to use individual users' `ProjectMembership`s
 ```
 
 - Delegated requests use only the delegated membership's access policy, so this policy doesn't limit what users can do.
-- Requests without the header fail closed instead of running with broad application access.
-- [IP Access Rules](/docs/access/ip-access-rules) are checked on every `client_credentials` token request and every Basic auth request, so a leaked client secret can't be used from outside your network.
+- Requests without the header can't read or write clinical data.
+- [IP Access Rules](/docs/access/ip-access-rules) are checked on every `client_credentials` token request and every Basic auth request.
 
 ### Live updates
 
