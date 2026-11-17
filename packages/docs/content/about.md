@@ -60,22 +60,21 @@ title="CEO"
 imgUrl="/img/people/reshma.webp"
 linkedInUrl="https://www.linkedin.com/in/reshmakhilnani/"
 githubUrl="https://github.com/reshmakh"
-
-> }}
-> {{< profile-card
->     name="Cody Ebberson"
->     title="CTO"
->     imgUrl="/img/people/cody.webp"
->     linkedInUrl="https://www.linkedin.com/in/codyebberson/"
->     githubUrl="https://github.com/codyebberson"
-> }}
-> {{< profile-card
->     name="Rahul Agarwal"
->     title="COO"
->     imgUrl="/img/people/rahul.webp"
->     linkedInUrl="https://www.linkedin.com/in/rahul-agarwal-330a979/"
->     githubUrl="https://github.com/rahul1"
-> }}
+>}}
+{{< profile-card
+name="Cody Ebberson"
+title="CTO"
+imgUrl="/img/people/cody.webp"
+linkedInUrl="https://www.linkedin.com/in/codyebberson/"
+githubUrl="https://github.com/codyebberson"
+>}}
+{{< profile-card
+name="Rahul Agarwal"
+title="COO"
+imgUrl="/img/people/rahul.webp"
+linkedInUrl="https://www.linkedin.com/in/rahul-agarwal-330a979/"
+githubUrl="https://github.com/rahul1"
+>}}
 {{< /card-container >}}
 
 {{< card-container >}}
@@ -85,22 +84,21 @@ title="Founding Engineer"
 imgUrl="/img/people/matt.webp"
 linkedInUrl="https://www.linkedin.com/in/matt-willer-0b779463/"
 githubUrl="https://github.com/mattwiller"
-
-> }}
-> {{< profile-card
->     name="Derrick Farris"
->     title="Founding Engineer"
->     imgUrl="/img/people/derrick.webp"
->     linkedInUrl="https://www.linkedin.com/in/derrickfarris/"
->     githubUrl="https://github.com/ThatOneBro"
-> }}
-> {{< profile-card
->     name="Matt Long"
->     title="Founding Engineer"
->     imgUrl="/img/people/ml.webp"
->     linkedInUrl="https://www.linkedin.com/in/mateolargo/"
->     githubUrl="https://github.com/mattlong"
-> }}
+>}}
+{{< profile-card
+name="Derrick Farris"
+title="Founding Engineer"
+imgUrl="/img/people/derrick.webp"
+linkedInUrl="https://www.linkedin.com/in/derrickfarris/"
+githubUrl="https://github.com/ThatOneBro"
+>}}
+{{< profile-card
+name="Matt Long"
+title="Founding Engineer"
+imgUrl="/img/people/ml.webp"
+linkedInUrl="https://www.linkedin.com/in/mateolargo/"
+githubUrl="https://github.com/mattlong"
+>}}
 {{< /card-container >}}
 
 {{< card-container >}}
@@ -110,22 +108,21 @@ title="Forward Deployed Engineer"
 imgUrl="/img/people/ian.webp"
 linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
 githubUrl="https://github.com/ianplunkett"
-
-> }}
-> {{< profile-card
->     name="David Yanez"
->     title="Senior Software Engineer"
->     imgUrl="/img/people/david.webp"
->     linkedInUrl="https://www.linkedin.com/in/jorge-david-yanez-a427b459/"
->     githubUrl="https://github.com/techdavidy"
-> }}
-> {{< profile-card
->     name="Finn Bergquist"
->     title="Lead Forward Deployed Engineer"
->     imgUrl="/img/people/finn.webp"
->     linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
->     githubUrl="https://github.com/finnbergquist"
-> }}
+>}}
+{{< profile-card
+name="David Yanez"
+title="Senior Software Engineer"
+imgUrl="/img/people/david.webp"
+linkedInUrl="https://www.linkedin.com/in/jorge-david-yanez-a427b459/"
+githubUrl="https://github.com/techdavidy"
+>}}
+{{< profile-card
+name="Finn Bergquist"
+title="Lead Forward Deployed Engineer"
+imgUrl="/img/people/finn.webp"
+linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
+githubUrl="https://github.com/finnbergquist"
+>}}
 {{< /card-container >}}
 
 {{< card-container >}}
@@ -135,22 +132,21 @@ title="Lead Forward Deployed Engineer"
 imgUrl="/img/people/maddy.webp"
 linkedInUrl="https://www.linkedin.com/in/maddy-li/"
 githubUrl="https://github.com/maddyli"
-
-> }}
-> {{< profile-card
->     name="Kevin Shaw"
->     title="Product Designer"
->     imgUrl="/img/people/kevin.webp"
->     linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
->     githubUrl="https://github.com/kevinwadeshaw"
-> }}
-> {{< profile-card
->     name="Karl Pietrzak"
->     title="Senior Software Engineer"
->     imgUrl="/img/people/karlpietrzak.webp"
->     linkedInUrl="https://www.linkedin.com/in/karl-p-30525a5"
->     githubUrl="https://github.com/The-Alchemist"
-> }}
+>}}
+{{< profile-card
+name="Kevin Shaw"
+title="Product Designer"
+imgUrl="/img/people/kevin.webp"
+linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
+githubUrl="https://github.com/kevinwadeshaw"
+>}}
+{{< profile-card
+name="Karl Pietrzak"
+title="Senior Software Engineer"
+imgUrl="/img/people/karlpietrzak.webp"
+linkedInUrl="https://www.linkedin.com/in/karl-p-30525a5"
+githubUrl="https://github.com/The-Alchemist"
+>}}
 {{< /card-container >}}
 
 {{< card-container >}}
@@ -160,22 +156,21 @@ title="Forward Deployed Engineer"
 imgUrl="/img/people/darren.webp"
 linkedInUrl="https://www.linkedin.com/in/darren-eam/"
 githubUrl="https://github.com/deam65"
-
-> }}
-> {{< profile-card
->     name="Noah Silas"
->     title="Staff Software Engineer"
->     imgUrl="/img/people/noah.webp"
->     linkedInUrl="https://www.linkedin.com/in/noahsilas"
->     githubUrl="https://github.com/noahsilas"
-> }}
-> {{< profile-card
->     name="Everett Williams"
->     title="Deployment Strategist"
->     imgUrl="/img/people/everett.webp"
->     linkedInUrl="https://www.linkedin.com/in/everetttwilliams/"
->     githubUrl="https://github.com/everett-williams"
-> }}
+>}}
+{{< profile-card
+name="Noah Silas"
+title="Staff Software Engineer"
+imgUrl="/img/people/noah.webp"
+linkedInUrl="https://www.linkedin.com/in/noahsilas"
+githubUrl="https://github.com/noahsilas"
+>}}
+{{< profile-card
+name="Everett Williams"
+title="Deployment Strategist"
+imgUrl="/img/people/everett.webp"
+linkedInUrl="https://www.linkedin.com/in/everetttwilliams/"
+githubUrl="https://github.com/everett-williams"
+>}}
 {{< /card-container >}}
 
 {{< card-container >}}
@@ -185,22 +180,21 @@ title="Forward Deployed Engineer"
 imgUrl="/img/people/alex.webp"
 linkedInUrl="https://www.linkedin.com/in/alexanderxlin/"
 githubUrl="https://github.com/alexanderxlin"
-
-> }}
-> {{< profile-card
->     name="Oleg Rocklin"
->     title="Integration Engineer"
->     imgUrl="/img/people/oleg.webp"
->     linkedInUrl="https://www.linkedin.com/in/olegrocklin/"
->     githubUrl="https://github.com/oleg-mp"
-> }}
-> {{< profile-card
->     name="Tim Ray"
->     title="Business Operations Associate"
->     imgUrl="/img/people/tim.webp"
->     linkedInUrl="https://www.linkedin.com/in/tim-ray98/"
->     githubUrl="https://github.com/timray721"
-> }}
+>}}
+{{< profile-card
+name="Oleg Rocklin"
+title="Integration Engineer"
+imgUrl="/img/people/oleg.webp"
+linkedInUrl="https://www.linkedin.com/in/olegrocklin/"
+githubUrl="https://github.com/oleg-mp"
+>}}
+{{< profile-card
+name="Tim Ray"
+title="Business Operations Associate"
+imgUrl="/img/people/tim.webp"
+linkedInUrl="https://www.linkedin.com/in/tim-ray98/"
+githubUrl="https://github.com/timray721"
+>}}
 {{< /card-container >}}
 
 {{< card-container >}}
@@ -210,20 +204,19 @@ title="Software Engineer"
 imgUrl="/img/people/philip.webp"
 linkedInUrl="https://www.linkedin.com/in/philip-knott"
 githubUrl="https://github.com/Filupnot"
-
-> }}
-> {{< profile-card
->     name="Aanish Sachdev"
->     title="Forward Deployed Engineer"
->     imgUrl="/img/people/aanish.webp"
->     linkedInUrl="https://www.linkedin.com/in/aanishsachdev/"
->     githubUrl="https://github.com/aanishs"
-> }}
-> {{< profile-card
->     name="Sanjana Badhya"
->     title="Forward Deployed Engineer"
->     imgUrl="/img/people/sanjana.webp"
->     linkedInUrl="https://www.linkedin.com/in/sanjanabadhya/"
->     githubUrl="https://github.com/sanjana-medplum"
-> }}
+>}}
+{{< profile-card
+name="Aanish Sachdev"
+title="Forward Deployed Engineer"
+imgUrl="/img/people/aanish.webp"
+linkedInUrl="https://www.linkedin.com/in/aanishsachdev/"
+githubUrl="https://github.com/aanishs"
+>}}
+{{< profile-card
+name="Sanjana Badhya"
+title="Forward Deployed Engineer"
+imgUrl="/img/people/sanjana.webp"
+linkedInUrl="https://www.linkedin.com/in/sanjanabadhya/"
+githubUrl="https://github.com/sanjana-medplum"
+>}}
 {{< /card-container >}}
