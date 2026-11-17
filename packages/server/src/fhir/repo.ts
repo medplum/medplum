@@ -20,6 +20,7 @@ import {
   gone,
   isGone,
   isNotFound,
+  isObject,
   isOk,
   isResource,
   isResourceType,
@@ -104,6 +105,7 @@ import {
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
+import { LogThrottle } from '../util/logthrottle';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -164,6 +166,28 @@ import {
 } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, Constant, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
+
+const accountsChangeLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
+
+function hasAccountReferences(meta: Meta | undefined): boolean {
+  return !!(meta?.account || meta?.accounts?.length);
+}
+
+function isAccountReference(value: unknown): value is Reference {
+  return isObject(value) && (value.reference === undefined || typeof value.reference === 'string');
+}
+
+function hasValidAccounts(resource: Resource): boolean {
+  const meta = resource.meta as unknown;
+  if (!isObject(meta)) {
+    return true;
+  }
+  if (meta.account !== undefined && !isAccountReference(meta.account)) {
+    return false;
+  }
+  const accounts = meta.accounts;
+  return accounts === undefined || (Array.isArray(accounts) && accounts.every(isAccountReference));
+}
 
 export interface InteractionOptions {
   verbose?: boolean;
@@ -1175,6 +1199,8 @@ export class Repository extends FhirRepository implements Disposable {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
+
+    this.logAccountsChange(existing, updated, accounts, result);
 
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
@@ -2654,6 +2680,75 @@ export class Repository extends FhirRepository implements Disposable {
         criteria: policy?.criteria,
         fields: present,
       });
+    }
+  }
+
+  private logAccountsChange(
+    existing: Resource | undefined,
+    updated: Resource,
+    assigned: Reference[] | undefined,
+    result: Resource
+  ): void {
+    if (!hasValidAccounts(updated)) {
+      return;
+    }
+    if (
+      !assigned?.length &&
+      !hasAccountReferences(updated.meta) &&
+      !hasAccountReferences(result.meta) &&
+      !hasAccountReferences(existing?.meta)
+    ) {
+      // Fast path for the common case where no accounts are involved
+      return;
+    }
+
+    const isAdmin = this.isSuperAdmin() || this.isProjectAdmin();
+    if (isAdmin && this.context.extendedMode) {
+      // Admin is allowed to set accounts directly
+      return;
+    }
+
+    const toSet = (refs: Reference[] | undefined): Set<string> =>
+      new Set(refs?.map((r) => r.reference).filter((r): r is string => !!r));
+    const requested = toSet(extractAccountReferences(updated.meta));
+    const stored = toSet(extractAccountReferences(result.meta));
+    const serverAssigned = toSet([...(assigned ?? EMPTY), ...(extractAccountReferences(existing?.meta) ?? EMPTY)]);
+
+    const meta = result.meta;
+    const throttleKey = `${meta?.project}|${result.resourceType}|${meta?.onBehalfOf?.reference ?? meta?.author?.reference}`;
+    const log = (message: string, details: Record<string, unknown>): void => {
+      accountsChangeLogThrottle.maybeLog(`${message}|${throttleKey}`, (suppressed) =>
+        getLogger().warn(message, {
+          projectId: meta?.project,
+          resourceType: result.resourceType,
+          id: result.id,
+          author: meta?.author?.reference,
+          onBehalfOf: meta?.onBehalfOf?.reference,
+          serverAssigned: [...serverAssigned],
+          ...details,
+          suppressed,
+        })
+      );
+    };
+
+    if (!existing && !isAdmin) {
+      const rejected = [...requested].filter((r) => !serverAssigned.has(r));
+      if (rejected.length) {
+        log('Requested account would be rejected on create', {
+          accounts: rejected,
+          stored: rejected.filter((r) => stored.has(r)),
+        });
+      }
+      return;
+    }
+
+    const ignored = [...stored].filter((r) => !serverAssigned.has(r));
+    if (ignored.length) {
+      log('Requested account would be ignored', { interaction: existing ? 'update' : 'create', accounts: ignored });
+    }
+    const retained = [...serverAssigned].filter((r) => !stored.has(r));
+    if (retained.length) {
+      log('Removed account would be retained on update', { accounts: retained });
     }
   }
 
