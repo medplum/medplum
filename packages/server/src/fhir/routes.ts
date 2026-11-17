@@ -340,7 +340,6 @@ function initInternalFhirRouter(): FhirRouter {
   // Binary $scan operation
   router.add('POST', '/Binary/:id/$scan', binaryScanHandler);
 
-  // EncryptedSecret $set-value and $get-value operations
   router.add('POST', '/EncryptedSecret/:id/$set-value', encryptedSecretSetValueHandler);
   router.add('POST', '/EncryptedSecret/:id/$get-value', encryptedSecretGetValueHandler);
 

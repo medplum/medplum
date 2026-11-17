@@ -177,6 +177,51 @@ describe('Config', () => {
     expect(config.externalAuthProviders?.[0].userInfoUrl).toStrictEqual('https://idp.example.com/userinfo');
   });
 
+  describe('encryptedSecretKeys', () => {
+    const key = Buffer.alloc(32, 1).toString('base64');
+
+    test('Env config loads keys as JSON', async () => {
+      setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+      setEnv(
+        'MEDPLUM_ENCRYPTED_SECRET_KEYS',
+        JSON.stringify([
+          { kid: 'new', key, status: 'active' },
+          { kid: 'old', key, status: 'decrypt-only' },
+        ])
+      );
+      const config = await loadConfig('env');
+      expect(config.encryptedSecretKeys?.map((k) => k.kid)).toStrictEqual(['new', 'old']);
+    });
+
+    test.each<[string, unknown, string]>([
+      ['not an array', { kid: 'a', key, status: 'active' }, 'expected an array'],
+      ['missing kid', [{ key, status: 'active' }], 'each key needs a kid and a key'],
+      [
+        'duplicate kid',
+        [
+          { kid: 'a', key, status: 'active' },
+          { kid: 'a', key, status: 'decrypt-only' },
+        ],
+        'duplicate kid a',
+      ],
+      ['short key', [{ kid: 'a', key: Buffer.alloc(16).toString('base64'), status: 'active' }], 'key a must be'],
+      ['unknown status', [{ kid: 'a', key, status: 'retired' }], 'key a status must be'],
+      ['no active key', [{ kid: 'a', key, status: 'decrypt-only' }], 'exactly one key must be active'],
+      [
+        'two active keys',
+        [
+          { kid: 'a', key, status: 'active' },
+          { kid: 'b', key, status: 'active' },
+        ],
+        'exactly one key must be active',
+      ],
+    ])('Rejects %s', async (_name, keys, message) => {
+      setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+      setEnv('MEDPLUM_ENCRYPTED_SECRET_KEYS', JSON.stringify(keys));
+      await expect(loadConfig('env')).rejects.toThrow(message);
+    });
+  });
+
   test('Env config integer values', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_PORT', '9000');

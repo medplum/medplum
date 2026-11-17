@@ -2413,7 +2413,7 @@ export class Repository extends FhirRepository implements Disposable {
       if (protectedResourceTypes.includes(resource.resourceType)) {
         return undefined;
       }
-      if (resource.meta?.project !== this.context.projects?.[0]?.id) {
+      if (!resource.meta?.project || resource.meta.project !== this.currentProject()?.id) {
         return undefined;
       }
     }

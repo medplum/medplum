@@ -7,6 +7,7 @@ import {
   badRequest,
   businessRule,
   forbidden,
+  normalizeErrorString,
   notFound,
   serverError,
 } from '@medplum/core';
@@ -110,8 +111,9 @@ export async function encryptedSecretGetValueHandler(req: FhirRequest): Promise<
     value = open(getEncryptionContext(secret), secret.encryptedValue as string);
   } catch (err) {
     // Ciphertext that does not match this secret, or whose key is gone, is a server-side integrity failure
-    logSecretEvent(AuditEventOutcome.SeriousFailure, secret, 'get-value failed: decryption error');
-    return [serverError(err as Error)];
+    // The reason goes to the audit event only; the caller learns nothing about the key or ciphertext
+    logSecretEvent(AuditEventOutcome.SeriousFailure, secret, `get-value failed: ${normalizeErrorString(err)}`);
+    return [serverError(new Error('Unable to decrypt secret value'))];
   }
   logSecretEvent(AuditEventOutcome.Success, secret, 'get-value');
   return [allOk, buildOutputParameters(getValueOperation, { value })];

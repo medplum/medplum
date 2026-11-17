@@ -78,8 +78,45 @@ export async function loadConfig(configName: string): Promise<ServerConfig> {
   }
 
   validateShardingConfig(config);
+  validateEncryptedSecretKeys(config);
   cachedConfig = addDefaults(config);
   return cachedConfig;
+}
+
+/**
+ * Validates `encryptedSecretKeys` as loaded, so a bad key fails at startup rather than on the first `$set-value`.
+ * @param config - The merged config from all sources.
+ */
+function validateEncryptedSecretKeys(config: MedplumServerConfig): void {
+  const keys: unknown = config.encryptedSecretKeys;
+  if (keys === undefined) {
+    return;
+  }
+  if (!Array.isArray(keys)) {
+    throw new Error('Invalid encryptedSecretKeys config: expected an array');
+  }
+  const kids = new Set<string>();
+  let activeCount = 0;
+  for (const entry of keys) {
+    if (!isObject(entry) || typeof entry.kid !== 'string' || !entry.kid || typeof entry.key !== 'string') {
+      throw new Error('Invalid encryptedSecretKeys config: each key needs a kid and a key');
+    }
+    if (kids.has(entry.kid)) {
+      throw new Error(`Invalid encryptedSecretKeys config: duplicate kid ${entry.kid}`);
+    }
+    kids.add(entry.kid);
+    if (Buffer.from(entry.key, 'base64').length !== 32) {
+      throw new Error(`Invalid encryptedSecretKeys config: key ${entry.kid} must be a base64-encoded 256-bit key`);
+    }
+    if (entry.status === 'active') {
+      activeCount++;
+    } else if (entry.status !== 'decrypt-only') {
+      throw new Error(`Invalid encryptedSecretKeys config: key ${entry.kid} status must be active or decrypt-only`);
+    }
+  }
+  if (activeCount !== 1) {
+    throw new Error('Invalid encryptedSecretKeys config: exactly one key must be active');
+  }
 }
 
 /**

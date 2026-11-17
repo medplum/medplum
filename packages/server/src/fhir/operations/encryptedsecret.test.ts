@@ -7,6 +7,8 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import type { EncryptedSecretKeyConfig } from '../../config/types';
+import type { ServerConfig } from '../../config/utils';
 import { createTestProject } from '../../test.setup';
 import { seal } from '../../util/secret-encryption';
 import type { SystemRepository } from '../repo';
@@ -18,14 +20,21 @@ const fullAccess: AccessPolicyResource[] = [
   { resourceType: 'EncryptedSecret', interaction: ['create', 'read', 'update'], operation: ['get-value'] },
 ];
 
+const testKey: EncryptedSecretKeyConfig = { kid: 'test', key: randomBytes(32).toString('base64'), status: 'active' };
+
 describe('EncryptedSecret $set-value and $get-value', () => {
+  let config: ServerConfig;
   let systemRepo: SystemRepository;
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
-    config.encryptedSecretKeys = [{ kid: 'test', key: randomBytes(32).toString('base64'), status: 'active' }];
+    config = await loadTestConfig();
+    config.encryptedSecretKeys = [testKey];
     await initApp(app, config);
     systemRepo = await getProjectSystemRepo('');
+  });
+
+  afterEach(() => {
+    config.encryptedSecretKeys = [testKey];
   });
 
   afterAll(async () => {
@@ -121,7 +130,22 @@ describe('EncryptedSecret $set-value and $get-value', () => {
 
     const getRes = await getValue(accessToken, other.id);
     expect(getRes.status).toBe(500);
-    expect(JSON.stringify(getRes.body)).not.toContain('hunter2');
+    expect(getRes.body.issue[0].diagnostics).toBe('Error: Unable to decrypt secret value');
+  });
+
+  test('Key rotation: decrypt-only keys still decrypt, removed keys do not', async () => {
+    const { accessToken, secret } = await setup(fullAccess);
+    await setValue(accessToken, secret.id, 'hunter2');
+
+    const newKey: EncryptedSecretKeyConfig = { kid: 'new', key: randomBytes(32).toString('base64'), status: 'active' };
+    config.encryptedSecretKeys = [newKey, { ...testKey, status: 'decrypt-only' }];
+    expect((await getValue(accessToken, secret.id)).body.parameter[0].valueString).toBe('hunter2');
+
+    const rotated = await setValue(accessToken, secret.id, 'hunter3');
+    expect(JSON.parse(Buffer.from(rotated.body.encryptedValue, 'base64url').toString()).kid).toBe('new');
+
+    config.encryptedSecretKeys = [{ ...testKey, status: 'active' }];
+    expect((await getValue(accessToken, secret.id)).status).toBe(500);
   });
 
   test.each<[string, Partial<EncryptedSecret>]>([
