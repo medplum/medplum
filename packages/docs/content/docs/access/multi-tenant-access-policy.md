@@ -10,7 +10,7 @@ Use the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design) to
 
 Represent your tenants, assign their records, then grant users access. The same compartment mechanism can add finer permissions within a tenant, such as care-team access. For a separate project per tenant, see [Projects](/docs/access/projects#project-per-customer-tenancy).
 
-The enrollment examples below assign a Patient and its patient-compartment resources to the same tenants. They support tenant-specific Patients and intentional chart sharing. A shared Patient with isolated clinical records needs the [resource-specific rules](/docs/tenancy-design/patient-records#clinical-record-isolation) described in the Patient-records guide.
+The enrollment examples below assign a Patient and the resources in its FHIR compartment, such as Observations and Tasks, to the same tenants. They support tenant-specific Patients and intentional chart sharing. A shared Patient with isolated clinical records needs the [resource-specific rules](/docs/tenancy-design/patient-records#clinical-record-isolation) described in the Patient-records guide.
 
 ## Overview
 
@@ -79,7 +79,7 @@ This read-only example requires **both** the practice and care-team compartments
 
 Supply `organization` and `care_team` as reference parameters in the **same** `ProjectMembership.access` entry. Verify that the team belongs to the intended practice and that the member is authorized for it. Repeat the combined grant for each approved practice/team pair. Repeated `_compartment` parameters require both matches; comma-separated values would match either.
 
-The example grants only Patient and Encounter reads. Add explicit rules for other needed types and keep broader grants off memberships that need this restriction. Maintain the assignments when teams change. Patient-wide assignment and propagation apply to the whole patient compartment; if a shared Patient has different clinical audiences, use [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation).
+The example grants only Patient and Encounter reads. Add explicit rules for other needed types and keep broader grants off memberships that need this restriction. Maintain the assignments when teams change. Patient-wide assignment and propagation apply to the Patient and the resources in its FHIR compartment, such as Observations and Tasks; if a shared Patient has different clinical audiences, use [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
 ### Tenant hierarchies {#tenant-hierarchies-and-shared-directories}
 
@@ -101,6 +101,14 @@ For shared Bots, configure permission to invoke the Bot separately from its exec
 
 For this compartment-based pattern, assign the chosen group references with `$set-accounts`, then configure policies to match them. The Organization and HealthcareService examples assign tenant scope. The **Care-team access** tabs apply the same mechanism to finer groups; combine those assignments with the tenant scope when both restrictions are required.
 
+### Understanding Compartments
+
+The **Patient's FHIR compartment** is the collection of resources related to that Patient through the relationships in the [Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html), such as Observations, Tasks, and DiagnosticReports. For example, an Observation whose `subject` references `Patient/alice` belongs to Alice's Patient compartment.
+
+The **Patient's `meta.compartment` field** records which compartments that Patient resource belongs to. For example, it can contain `Organization/clinic-a` to record the Patient's tenant assignment. It contains compartment references, rather than a list of the Patient's clinical records.
+
+Tenant assignments are stored in `meta.accounts` and included in the server-computed `meta.compartment`. AccessPolicy and ProjectMembership grants determine who can access the assigned resources.
+
 The IDs below are illustrative. Substitute the actual resource IDs returned by Medplum before running the examples.
 
 When a Patient and its patient-compartment resources have the same intended tenant audience, assign the Patient to those tenants and use propagation for existing resources. For tenant-specific Patients, assign each Patient only to its intended tenant. For a shared Patient with different clinical audiences, follow [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).
@@ -117,19 +125,6 @@ Tenant assignment controls which tenant-scoped policies can match the Patient. P
 </details>
 
 Find other example enrollment methods [here](https://github.com/medplum/medplum/blob/main/examples/medplum-mso-demo/src/utils/enrollment.ts).
-
-### Understanding Compartments
-
-FHIR compartments group resources related to an anchor resource. For example, a Patient compartment includes clinical resources linked to that Patient through defined fields. Medplum also supports explicit account references for application tenants and finer access groups.
-
-| Concept | What it does |
-| :--- | :--- |
-| Patient-compartment references, such as `Encounter.subject` | Relate a clinical resource to a Patient according to the compartment definition. |
-| `meta.accounts` | Holds explicit references used to assign tenants or finer access groups, such as an Organization, HealthcareService, or CareTeam. Set these through `$set-accounts`. |
-| `meta.compartment` | Server-computed membership, including applicable patient, project, and account references. Read it to inspect assignments. |
-| `AccessPolicy` and `ProjectMembership.access` | Determine which assigned records the authenticated member can access. Assignment alone does not grant a user access. |
-
-Organization, HealthcareService, and CareTeam account compartments use Medplum's account mechanism. They are distinct from the standard FHIR Patient compartment.
 
 ### Assigning account references {#adding-references-to-the-metacompartment-field}
 

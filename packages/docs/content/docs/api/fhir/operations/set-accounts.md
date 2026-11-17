@@ -6,51 +6,45 @@ weight: 61
 
 Medplum implements a custom `$set-accounts` operation to manage `meta.accounts` references for compartment-based access. The server includes these references in the resource's computed `meta.compartment`.
 
-Within one project, an account reference can identify a tenant or finer access group, such as an `Organization`, `HealthcareService`, or `CareTeam`. It does not have to reference the FHIR `Account` resource. Choose the representation in [Modeling your tenants](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants). Multiple assignments form a set; they do not create nested compartments. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both scopes must apply.
+Within one project, an account reference can identify a tenant or finer access group, such as an `Organization`, `HealthcareService`, or `CareTeam`. Choose the representation in [Modeling your tenants](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants). Multiple assignments form a set; they do not create nested compartments. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both scopes must apply.
+
+{{< note >}}
+
+The **Patient's FHIR compartment** is the collection of related resources, such as Observations, Tasks, and DiagnosticReports, identified by the [FHIR Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html). For example, an Observation belongs to this collection when its `subject` references the Patient.
+
+The **Patient's `meta.compartment` field** records the compartments the Patient resource belongs to, including its tenant assignments. It contains references such as `Organization/clinic-a`, rather than a list of the Patient's clinical records. `$set-accounts` updates `meta.accounts`, and Medplum computes `meta.compartment`. See [Understanding Compartments](/docs/access/multi-tenant-access-policy#understanding-compartments) for the full distinction.
+
+{{< /note >}}
 
 ## Use Cases
 
 - **Multi-Tenant Data Segmentation**: Assign resources to application tenants represented by organizations or services
 - **Care-Team Access**: Assign finer access groups within a tenant or a single care operation
 - **Tenant Access Control**: Set account references that parameterized access policies can match
-- **Patient Compartment Management**: Propagate account assignments to all resources in a patient's compartment for consistent access
+- **Patient Compartment Management**: Propagate account assignments to resources in the Patient's FHIR compartment, such as Observations and Tasks
 - **Batch Account Assignment**: Update account references across large sets of resources during migrations or onboarding
 
-For a Patient target, optional propagation applies account additions and removals to existing resources in its patient compartment. Use this when the Patient and those resources have the same intended tenant audience. Resource assignment and permission grants must both be configured.
+This operation sets the target resource's `meta.accounts` references. For a Patient, it can also propagate account changes to existing resources in the Patient's FHIR compartment, such as Observations and Tasks. This keeps account assignments consistent across the Patient and its related records.
 
 ## Required access
 
-Calling `$set-accounts` requires project-admin or super-admin authority, and access checks apply to the target resource. Generic read/write access alone does not grant permission to run this operation. This requirement also applies to the membership used by a Bot or ClientApplication.
+Calling `$set-accounts` requires explicit permission to run the operation. Generic read, create, update, or delete access to the target resource type does not automatically grant access to `$set-accounts`.
 
-Propagation applies only to compartment resources in the target project that the caller can read and update. It skips inaccessible or read-only resources and resources in linked projects. Verify the resulting assignments before treating a transfer as complete; successful completion can leave some resources unchanged.
+If a `User`, `Bot`, or `ClientApplication` receives `403 Forbidden` when calling `$set-accounts`, confirm that the principal's access configuration grants the operation in addition to the resource interactions needed for the target resources.
 
 {{< warning >}}
 
-It is recommended that you run this operation with `Prefer: respond-async` header to avoid any timeouts while waiting for resources in patient compartment to update.
+Use the `Prefer: respond-async` header when propagating account changes to avoid timeouts while related resources, such as Observations and Tasks, are updated.
 
 {{< /warning >}}
 
-For example, when this operation is used to add a new organization to a patient's `meta.accounts`, it can update both the patient and all resources in the patient's compartment to include a new organization in their `meta.accounts` lists. Additionally, each resource's _meta.compartment_ will also be updated to include the references in _meta.accounts_.
-
-{{< note >}}
-
-Resources in a patient's compartment are defined by the [FHIR Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html). This includes resources where the patient is the `subject`, as well as resources that are directly linked to the patient through specific references (`performer`, `author`, `participant`, etc.).
-
-{{< /note >}}
+For example, adding an Organization to a Patient's `meta.accounts` with propagation can add that Organization to the `meta.accounts` of related Observations and Tasks. Medplum also includes the Organization in each updated resource's `meta.compartment` field.
 
 ## Patient sharing and clinical isolation
 
-Choose [shared or tenant-specific Patient records](/docs/tenancy-design/patient-records) before applying patient-wide assignments. Propagating two tenant references to one Patient's compartment can make the clinical records match both tenant policies.
+Choose [shared or tenant-specific Patient records](/docs/tenancy-design/patient-records) before applying patient-wide assignments. Propagating two tenant references to resources in one Patient's FHIR compartment, such as Observations and Tasks, can make the clinical records match both tenant policies.
 
-`propagate: false` skips updates to existing compartment resources. It does not disable account inheritance on later resource writes. A shared Patient with separate clinical records needs [resource-specific access rules and write handling](/docs/tenancy-design/patient-records#clinical-record-isolation).
-
-## Assign accounts during a resource write
-
-A trusted backend with project-admin or super-admin authority can include `meta.accounts` in a resource create or update request with the `X-Medplum: extended` header. The supplied accounts override Patient-account inheritance for that write, so the resource can have its intended assignment from creation. Medplum still computes its Patient and Project compartment references.
-
-Include the complete intended account list on every such write. If `meta` is present but both `meta.accounts` and legacy `meta.account` are absent, the write clears explicit account assignments. Extended responses include legacy `meta.account`; remove or update it when replacing `meta.accounts`, because the server combines both fields.
-
-Direct writes affect only the target resource. Use `$set-accounts` when you need to propagate a Patient's account changes to existing patient-compartment resources.
+`propagate: false` skips updates to existing resources in the Patient's FHIR compartment, such as Observations and Tasks. It does not disable account inheritance on later resource writes. A shared Patient with separate clinical records needs [resource-specific access rules and write handling](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
 ## Invoke the `$set-accounts` operation
 
@@ -63,7 +57,7 @@ POST [base]/R4/<ResourceType>/<id>/$set-accounts
 The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource containing:
 
 - `accounts`: repeat this parameter for every intended account reference. The list replaces the target resource’s account list; include existing accounts that should remain.
-- `propagate`: an optional boolean that applies the Patient account additions and removals to existing resources in its patient compartment.
+- `propagate`: an optional boolean that applies the Patient account additions and removals to existing resources in its FHIR compartment, such as Observations and Tasks.
 
 Example request payload:
 
@@ -101,7 +95,7 @@ The output is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource 
 
 - `resourcesUpdated` The number of resources that were updated
 
-Example response if patient has 3 resources in their compartment:
+Example response when 3 resources were updated:
 
 ```json
 {
@@ -114,3 +108,11 @@ Example response if patient has 3 resources in their compartment:
   ]
 }
 ```
+
+## Assign accounts during a resource write
+
+A trusted backend with project-admin or super-admin authority can include `meta.accounts` in a resource create or update request with the `X-Medplum: extended` header. The supplied accounts override Patient-account inheritance for that write, so the resource can have its intended assignment from creation. Medplum still computes its Patient and Project compartment references.
+
+Include the complete intended account list on every such write. If `meta` is present but both `meta.accounts` and legacy `meta.account` are absent, the write clears explicit account assignments. Extended responses include legacy `meta.account`; remove or update it when replacing `meta.accounts`, because the server combines both fields.
+
+Direct writes affect only the target resource. Use `$set-accounts` when you need to propagate a Patient's account changes to existing resources in its FHIR compartment, such as Observations and Tasks.

@@ -42,7 +42,7 @@ The steps below use compartment-based tenant assignment within one project. Firs
 
 1. Assign stable, tenant-specific identifier namespaces. A matching key must distinguish the tenant's record; email alone is insufficient.
 2. Use an [identifier-based conditional create](/docs/fhir-datastore/working-with-fhir#creating-patient) for each Patient, so retries reuse the intended record.
-3. Assign the Patient to its tenant using `$set-accounts`, and confirm success before creating dependent resources or enabling tenant access. For a newly created Patient with no dependents, a propagation sweep is unnecessary. Keep provisioning credentials on a trusted backend; `$set-accounts` requires project-admin or super-admin authority. Check the resulting compartment before granting ordinary tenant users access.
+3. Assign the Patient to its tenant using `$set-accounts`, and confirm success before creating dependent resources or enabling tenant access. For a newly created Patient with no dependents, a propagation sweep is unnecessary. Keep provisioning credentials on a trusted backend; `$set-accounts` requires project-admin or super-admin authority. Check the tenant references in the Patient's `meta.compartment` field before granting ordinary tenant users access.
 4. Reference that Patient from the tenant's clinical resources and enforce the corresponding tenant criteria in its staff policies.
 5. If the person needs portal access, provision the intended Patient profile explicitly using [Identity, Memberships, and Sessions](/docs/access/tenant-selector#option-1-one-tenant-per-session).
 

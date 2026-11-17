@@ -56,14 +56,16 @@ _Two Logins share one User. Each Login selects one membership, which supplies it
 Use the [Invite API](/docs/api/project-admin/invite) from a trusted backend with project-admin authority:
 
 1. Supply the intended `membership.profile` and tenant- or patient-scoped policy grants.
-2. Keep the same email and identity scope to reuse the User. Use `forceNewMembership: true` for each additional membership; normal User and profile matching still runs.
+2. Keep the same email and identity scope to reuse the User. Use `forceNewMembership: true` for each additional membership.
 3. Save the returned membership IDs. Repeating a forced invite creates another membership, so reconcile uncertain results before retrying.
 
 For patients, provision and assign the [tenant-specific Patients](/docs/tenancy-design/patient-records#provision-the-data-before-access) first. The following example assumes the referenced policy restricts access to the selected profile's patient compartment using `%profile`. Use actual resource IDs and the same project-scoped email for both calls; set `additionalMembership` false for the first and true for the second.
 
 {{< code-example file="packages/examples/src/access/tenant-patient-records.ts" language="ts" blocks="invite-tenant-patient" >}}
 
-Supplying only an email may reuse an existing Patient by email or fail if multiple Patients match. Explicit `membership.profile` selects the intended record. The example uses `sendEmail: false`; complete activation through your [custom invitation flow](/docs/user-management/custom-emails), or enable built-in invitation email. Adding a membership preserves an existing User's sign-in identity.
+Email-based [profile selection](/docs/api/project-admin/invite#profile-selection) searches across the project, including with `forceNewMembership: true`. Supplying `membership.profile` ensures that each membership uses the intended practice's Patient.
+
+The example uses `sendEmail: false`; complete activation through your [custom invitation flow](/docs/user-management/custom-emails), or enable built-in invitation email. Adding a membership preserves an existing User's sign-in identity.
 
 <details>
 <summary>Practitioner invitation examples</summary>
