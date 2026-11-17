@@ -35,7 +35,7 @@ The user must not retrieve or modify the data, including through direct API requ
 
 #### Option B: Change the displayed view
 
-The user is authorized to access the data, but the application should show a narrower view. **UI filtering does not require compartments.** Use [search parameters](/docs/search/basic-search) based on existing fields and relationships, such as a Task's owner and status, or filter already-loaded authorized data. Compartment filters are an option when you use those assignments.
+The user is authorized to access the data, but the application should show a narrower view. **UI filtering does not require tenant or care-team assignments.** Use [search parameters](/docs/search/basic-search) based on existing fields and relationships, such as a Task's owner and status, or filter already-loaded authorized data. `_compartment` filters can match tenant or care-team references in `meta.compartment` when your model uses those assignments.
 
 For example, a clinician authorized for three clinics can view one clinic at a time using a UI selector. If each session must only access one clinic's data, its authenticated permissions must also be limited to that clinic.
 

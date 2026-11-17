@@ -34,11 +34,11 @@ _Both Patients can represent the same person. Arrows show FHIR references; each 
 
 These Patients are intentional independent records. Preserve that distinction during matching, imports, and [deduplication](/docs/fhir-datastore/patient-deduplication). A platform identity mapping can connect the person to both records when authorized; it should not make either practice's data visible to the other.
 
-Within each practice, use [care-team access criteria](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) if the API must limit clinicians to their assigned patients. A focused care-team view can use UI filters within broader permitted access, without compartment assignments.
+Within each practice, use [care-team access criteria](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) if the API must limit clinicians to their assigned patients. A focused care-team view can use UI filters within broader permitted access, without tenant or care-team assignments in `meta.compartment`.
 
 ### Provision the data before access
 
-The steps below use compartment-based tenant assignment within one project. First [choose the tenant resource](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants), such as Organization for a practice or HealthcareService for a service. `$set-accounts` sets its reference in `meta.accounts`; Medplum computes `meta.compartment`. The same mechanism applies to each tenant resource choice.
+The steps below use tenant references in `meta.accounts` and the computed `meta.compartment` field within one project. First [choose the tenant resource](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants), such as Organization for a practice or HealthcareService for a service. `$set-accounts` sets its reference in `meta.accounts`; Medplum computes `meta.compartment`. The same mechanism applies to each tenant resource choice.
 
 1. Assign stable, tenant-specific identifier namespaces. A matching key must distinguish the tenant's record; email alone is insufficient.
 2. Use an [identifier-based conditional create](/docs/fhir-datastore/working-with-fhir#creating-patient) for each Patient, so retries reuse the intended record.
@@ -46,15 +46,15 @@ The steps below use compartment-based tenant assignment within one project. Firs
 4. Reference that Patient from the tenant's clinical resources and enforce the corresponding tenant criteria in its staff policies.
 5. If the person needs portal access, provision the intended Patient profile explicitly using [Identity, Memberships, and Sessions](/docs/access/tenant-selector#option-1-one-tenant-per-session).
 
-`Patient.managingOrganization` can represent the organization responsible for maintaining the record. Setting it alone does not apply the compartment assignments used by the [multi-tenant access pattern](/docs/access/multi-tenant-access-policy).
+`Patient.managingOrganization` can represent the organization responsible for maintaining the record. Setting it alone does not populate the tenant references in `meta.compartment` used by the [multi-tenant access pattern](/docs/access/multi-tenant-access-policy).
 
 ## Clinical-record isolation
 
-Sharing a Patient and sharing clinical records are separate choices. Define access for each clinical resource type, including resources with no patient-compartment reference.
+Sharing a Patient and sharing clinical records are separate choices. Define access for each clinical resource type, including resources with no reference that places them in a FHIR Patient compartment.
 
 ### Shared clinical records
 
-If the tenants intentionally share the Patient and its patient-compartment resources, use [tenant enrollment with propagation](/docs/access/multi-tenant-access-policy#why-is-patient-a-special-case). `$set-accounts` with `propagate: true` updates existing patient-compartment resources. Ordinary writes of resources referring to the Patient can inherit its tenant accounts.
+If the tenants intentionally share the Patient and the resources in its FHIR compartment, such as Observations and Tasks, use [tenant enrollment with propagation](/docs/access/multi-tenant-access-policy#why-is-patient-a-special-case). `$set-accounts` with `propagate: true` updates existing resources in the Patient's FHIR compartment. Ordinary writes of resources referring to the Patient can inherit its tenant accounts.
 
 ### Separate clinical records with a shared Patient
 
@@ -70,11 +70,11 @@ Verify that the member is authorized for that Patient and organization before as
 
 `Encounter.serviceProvider` references an Organization. A HealthcareService tenant or CareTeam access group needs its own supported resource criteria or account-assignment workflow; changing the reference type in this example does not implement that model.
 
-Where clinical fields do not express the intended boundary, design a controlled resource-assignment workflow using [`$set-accounts`](/docs/api/fhir/operations/set-accounts) and compartment-based policies. Cover both creation and later updates: ordinary clinical-resource writes can derive account assignments from the referenced Patient again. Keep all write paths consistent, including Bots and imports. Initial writes must obey the intended boundary; an asynchronous correction after a resource becomes readable can expose it to the wrong tenant.
+Where clinical fields do not express the intended boundary, design a controlled resource-assignment workflow using [`$set-accounts`](/docs/api/fhir/operations/set-accounts) and policies that match tenant references in `meta.compartment`. Cover both creation and later updates: ordinary clinical-resource writes can derive account assignments from the referenced Patient again. Keep all write paths consistent, including Bots and imports. Initial writes must obey the intended boundary; an asynchronous correction after a resource becomes readable can expose it to the wrong tenant.
 
 A trusted backend with project-admin or super-admin authority can [set `meta.accounts` during creation or update using extended mode](/docs/api/fhir/operations/set-accounts#assign-accounts-during-a-resource-write). This sets the intended accounts in the same write, overriding Patient-account inheritance for that write. Follow the metadata handling requirements on that page for every subsequent write.
 
-**Patient-wide tenant assignment is a sharing operation.** Adding both organizations to a Patient and filtering all clinical resources only by those inherited compartments grants both organizations access. Setting `propagate: false` only skips the existing-resource sweep; it does not disable inheritance on later writes. Test the intended separation after creation, editing, and reassignment.
+**Patient-wide tenant assignment is a sharing operation.** Adding both organizations to a Patient and filtering all clinical resources only by the inherited organization references in `meta.compartment` grants both organizations access. Setting `propagate: false` only skips the existing-resource sweep; it does not disable inheritance on later writes. Test the intended separation after creation, editing, and reassignment.
 
 For files, choose a `Binary.securityContext` whose access matches the file's intended audience. A tenant-specific file linked to a shared Patient as its security context may become accessible to both tenants. See [Binary Security Context](/docs/access/binary-security-context).
 
@@ -92,12 +92,12 @@ Assign tenants with `$set-accounts`, providing the complete intended account lis
 
 | Intended result | Implementation |
 | :--- | :--- |
-| Share a Patient and its chart with another tenant | Include the additional tenant and propagate to existing patient-compartment resources. |
-| Transfer patient-compartment records to another tenant | Replace the tenant assignment and propagate; verify completion and any other grants before treating old access as revoked. |
+| Share a Patient and its chart with another tenant | Include the additional tenant and propagate to existing resources in the Patient's FHIR compartment, such as Observations and Tasks. |
+| Transfer records in the Patient's FHIR compartment to another tenant | Replace the tenant assignment and propagate; verify completion and any other grants before treating old access as revoked. |
 | Share Patient information while keeping historical clinical records separate | Maintain resource-specific clinical rules; a patient-wide propagation sweep does not distinguish historical and future records. |
 | Enroll the person in another practice with an independent Patient | Provision the second tenant's Patient and membership. Retain the original record and its access according to the agreed lifecycle. |
 
-For tenant-specific Patients, share selected records through an explicitly authorized workflow. Replacing the Patient on existing clinical resources or merging Patients can change their compartment membership and access.
+For tenant-specific Patients, share selected records through an explicitly authorized workflow. Replacing the Patient on existing clinical resources or merging Patients can change their FHIR Patient compartment membership, the references in `meta.compartment`, and access.
 
 ## Verify the boundary
 

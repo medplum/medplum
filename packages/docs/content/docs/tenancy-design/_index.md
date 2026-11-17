@@ -24,6 +24,6 @@ For **a separate project per tenant**, start with [Projects](/docs/access/projec
 
 [Projects](/docs/access/projects) explains resource containers and project administration. [Access Policies](/docs/access/access-policies) defines resource and field permissions; use the [Access Control Decision Guide](/docs/decision-guides/access-control) to choose them.
 
-With or without tenants, UI filters can organize work using existing fields and relationships; compartments are optional. When care-team restrictions must apply at the API level, use matching policies. Within a tenant, [combine practice and care-team restrictions](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both are required.
+With or without tenants, UI filters can organize work using existing fields and relationships; tenant and care-team assignments in `meta.compartment` are optional. When care-team restrictions must apply at the API level, use matching policies. Within a tenant, [combine practice and care-team restrictions](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both are required.
 
 Use [Organizations and Locations](/docs/administration/locations-and-facilities) to model your operating structure, and [Authentication](/docs/auth) and [User Management](/docs/user-management) for sign-in and account provisioning.

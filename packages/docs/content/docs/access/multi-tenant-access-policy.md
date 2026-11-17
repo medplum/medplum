@@ -5,10 +5,10 @@ breadcrumb_parent: docs/tenancy-design
 ---
 
 {{< tip title="Choosing your tenancy design?" >}}
-Use the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design) to choose your tenant boundary, Patient model, and account experience. This page implements compartment-based access within one project.
+Use the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design) to choose your tenant boundary, Patient model, and account experience. This page implements tenant access within one project using assignments in `meta.accounts` and the computed `meta.compartment` field.
 {{< /tip >}}
 
-Represent your tenants, assign their records, then grant users access. The same compartment mechanism can add finer permissions within a tenant, such as care-team access. For a separate project per tenant, see [Projects](/docs/access/projects#project-per-customer-tenancy).
+Represent your tenants, assign their records, then grant users access. References in `meta.compartment` can also support finer permissions within a tenant, such as care-team access. For a separate project per tenant, see [Projects](/docs/access/projects#project-per-customer-tenancy).
 
 The enrollment examples below assign a Patient and the resources in its FHIR compartment, such as Observations and Tasks, to the same tenants. They support tenant-specific Patients and intentional chart sharing. A shared Patient with isolated clinical records needs the [resource-specific rules](/docs/tenancy-design/patient-records#clinical-record-isolation) described in the Patient-records guide.
 
@@ -16,7 +16,7 @@ The enrollment examples below assign a Patient and the resources in its FHIR com
 
 ### What is a tenant?
 
-A tenant is a customer organization or organizational unit that your application treats as a distinct operating context, with defined rules for its data, users, and administration. The resource representing that group describes its meaning; access policies and membership grants enforce access. The same compartment mechanism can implement smaller access groups within a tenant, or care-team permissions in an application with no multi-tenant design.
+A tenant is a customer organization or organizational unit that your application treats as a distinct operating context, with defined rules for its data, users, and administration. The resource representing that group describes its meaning; access policies and membership grants enforce access. References in `meta.compartment` can also represent smaller access groups within a tenant, or care-team assignments in an application with no multi-tenant design.
 
 This guide configures the tenant resources, assignments, and permissions for the selected model. Here is an overview of the steps you will take:
 
@@ -56,7 +56,7 @@ The membership supplies the group reference to its policy; the Patient carries t
 
 ### Optional: Add care-team restrictions {#layering-tenant-and-care-team-access}
 
-A [CareTeam](https://hl7.org/fhir/R4/careteam.html) represents participants in care. Use the pattern below when the API must restrict clinicians to their care team's patients. For a focused worklist within broader permitted access, UI filters can use existing fields and relationships without compartment assignments. See [UI filtering versus API restrictions](/docs/decision-guides/access-control#does-this-restriction-need-to-prevent-api-access-or-only-change-what-the-ui-displays).
+A [CareTeam](https://hl7.org/fhir/R4/careteam.html) represents participants in care. Use the pattern below when the API must restrict clinicians to their care team's patients. For a focused worklist within broader permitted access, UI filters can use existing fields and relationships without tenant or care-team assignments in `meta.compartment`. See [UI filtering versus API restrictions](/docs/decision-guides/access-control#does-this-restriction-need-to-prevent-api-access-or-only-change-what-the-ui-displays).
 
 If a team operates as a separately governed business unit, model that unit with an Organization and its care participants with CareTeam.
 
@@ -71,9 +71,9 @@ You can preserve the practice boundary while limiting clinicians to their assign
 - **One project per practice:** The project provides the outer boundary. Use care-team criteria within that project for clinicians who must only access their assigned patients.
 - **Several practices in one project:** Enforce the practice and care-team conditions together. Separate practice-wide and team-only grants combine access; the team grant does not narrow the practice-wide grant.
 
-For tenant-specific Patients whose charts share one team audience, assign both the practice and approved CareTeam references with `$set-accounts`. A resource may belong to several compartments; those assignments form a set, with no automatic parent-child containment. `CareTeam.managingOrganization` describes the responsible organization and does not create an authorization hierarchy.
+For tenant-specific Patients whose charts share one team audience, assign both the practice and approved CareTeam references with `$set-accounts`. A resource can have several tenant or care-team references in `meta.compartment`; those assignments form a set, with no automatic parent-child containment. `CareTeam.managingOrganization` describes the responsible organization and does not create an authorization hierarchy.
 
-This read-only example requires **both** the practice and care-team compartments for Patient and Encounter access:
+This read-only example requires **both** the practice and care-team references in `meta.compartment` for Patient and Encounter access:
 
 {{< code-example file="packages/examples/src/access/tenant-access-layers.ts" language="ts" blocks="practice-care-team-policy" >}}
 
@@ -99,23 +99,23 @@ For shared Bots, configure permission to invoke the Bot separately from its exec
 
 ## Step 2: Assign data to tenants {#step-2-assigning-data-to-tenants}
 
-For this compartment-based pattern, assign the chosen group references with `$set-accounts`, then configure policies to match them. The Organization and HealthcareService examples assign tenant scope. The **Care-team access** tabs apply the same mechanism to finer groups; combine those assignments with the tenant scope when both restrictions are required.
+Assign the chosen group references with `$set-accounts`, which updates `meta.accounts` and the computed `meta.compartment` field, then configure policies to match them. The Organization and HealthcareService examples assign tenant scope. The **Care-team access** tabs apply the same mechanism to finer groups; combine those assignments with the tenant scope when both restrictions are required.
 
-### Understanding Compartments
+### FHIR compartments and `meta.compartment` {#understanding-compartments}
 
-The **Patient's FHIR compartment** is the collection of resources related to that Patient through the relationships in the [Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html), such as Observations, Tasks, and DiagnosticReports. For example, an Observation whose `subject` references `Patient/alice` belongs to Alice's Patient compartment.
+The **Patient's FHIR compartment** is the collection of resources related to that Patient through the relationships in the [Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html), such as Observations, Tasks, and DiagnosticReports. For example, an Observation whose `subject` references `Patient/alice` belongs to Alice's FHIR Patient compartment.
 
-The **Patient's `meta.compartment` field** records which compartments that Patient resource belongs to. For example, it can contain `Organization/clinic-a` to record the Patient's tenant assignment. It contains compartment references, rather than a list of the Patient's clinical records.
+The **Patient's `meta.compartment` field** is server-computed metadata describing the Patient resource's membership in Patient, Project, and account-based groups. For example, it can contain `Organization/clinic-a` to record the Patient's tenant assignment. It contains compartment references, rather than a list of the Patient's clinical records.
 
 Tenant assignments are stored in `meta.accounts` and included in the server-computed `meta.compartment`. AccessPolicy and ProjectMembership grants determine who can access the assigned resources.
 
 ### Assigning account references {#adding-references-to-the-metacompartment-field}
 
-The server computes `meta.compartment`. Use [$set-accounts](/docs/api/fhir/operations/set-accounts) to set the resource’s tenant or care-team account references, which contribute to its compartments. Supply the complete intended account list, including existing accounts you want to retain. The operation requires project-admin or super-admin authority and checks access to the target resource.
+The server computes `meta.compartment`. Use [$set-accounts](/docs/api/fhir/operations/set-accounts) to set the resource’s tenant or care-team account references, which the server includes in its `meta.compartment` field. Supply the complete intended account list, including existing accounts you want to retain. The operation requires project-admin or super-admin authority and checks access to the target resource.
 
 The IDs below are illustrative. Substitute the actual resource IDs returned by Medplum before running the examples.
 
-When a Patient and its patient-compartment resources have the same intended tenant audience, assign the Patient to those tenants and use propagation for existing resources. For tenant-specific Patients, assign each Patient only to its intended tenant. For a shared Patient with different clinical audiences, follow [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).
+When a Patient and the resources in its FHIR compartment, such as Observations and Tasks, have the same intended tenant audience, assign the Patient to those tenants and use propagation for existing resources. For tenant-specific Patients, assign each Patient only to its intended tenant. For a shared Patient with different clinical audiences, follow [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
 {{< info >}}
 Tenant assignment controls which tenant-scoped policies can match the Patient. Portal permissions come from the User’s membership and policy. See [Patient login and memberships](/docs/access/tenant-selector#patient-login-and-memberships).
@@ -184,7 +184,7 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 {{< /tab >}}
 {{< /tabs >}}
 
-Resources that support compartment-based access can be assigned to tenants with this model. `Binary` uses [securityContext](/docs/access/binary-security-context) instead. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation on that specific resource.
+Resources that support access rules based on `meta.compartment` can be assigned to tenants with this model. `Binary` uses [securityContext](/docs/access/binary-security-context) instead. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation on that specific resource.
 
 {{< tabs groupId="access-group-type" >}}
   {{< tab value="organization" label="Organization" >}}
@@ -206,11 +206,11 @@ Resources that support compartment-based access can be assigned to tenants with 
 
 ### Why is Patient a special case?
 
-**Patient supports propagation to existing patient-compartment resources.** Ordinary writes of resources referring to the Patient can also inherit the Patient’s tenant accounts. These behaviors are useful when the Patient and its clinical records share a tenant audience. **A resource is determined to _"belong"_ to a Patient based on the resource relationships defined by the [Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html)**.
+**Patient supports propagation to existing resources in its FHIR compartment, such as Observations and Tasks.** Ordinary writes of resources referring to the Patient can also inherit the Patient’s tenant accounts. These behaviors are useful when the Patient and its clinical records share a tenant audience. **A resource is determined to _"belong"_ to a Patient based on the resource relationships defined by the [Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html)**.
 
 For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse) belongs to a Patient if it has a reference to the Patient in the `subject` or `author` field, a [Communication](/docs/api/fhir/resources/communication) belongs to a Patient if it has a reference to the Patient in the `subject`, `recipient`, or `sender` field, etc.
 
-To apply account changes to existing patient-compartment resources, call [$set-accounts](/docs/api/fhir/operations/set-accounts) with `propagate: true`. Propagation updates resources in the target project that the caller can read and update; verify the resulting assignments before treating a transfer as complete.
+To apply account changes to existing resources in the Patient's FHIR compartment, such as Observations and Tasks, call [$set-accounts](/docs/api/fhir/operations/set-accounts) with `propagate: true`. Propagation updates resources in the target project that the caller can read and update; verify the resulting assignments before treating a transfer as complete.
 
 {{< tabs groupId="access-group-type" >}}
   {{< tab value="organization" label="Organization" >}}
@@ -230,11 +230,11 @@ To apply account changes to existing patient-compartment resources, call [$set-a
   {{< /tab >}}
 {{< /tabs >}}
 
-With this Patient-based assignment model, ordinary writes of patient-compartment resources inherit the Patient’s account references; the server computes their compartments. Propagation follows each resource’s own patient-compartment references, such as `subject`, rather than arbitrary links like `Communication.partOf`. `propagate: false` skips the existing-resource sweep; it does not turn off inheritance on future writes.
+With this Patient-based assignment model, ordinary writes of resources in the Patient's FHIR compartment inherit the Patient’s account references in `meta.accounts`; the server includes those references in `meta.compartment`. Propagation follows each resource’s own FHIR Patient compartment references, such as `subject`, rather than arbitrary links like `Communication.partOf`. `propagate: false` skips the existing-resource sweep; it does not turn off inheritance on future writes.
 
 ### Assigning a Patient to multiple tenants or teams {#what-if-you-need-to-assign-a-patient-to-multiple-tenants}
 
-Use the examples below when the organizations, services, or care teams intentionally share the Patient and its patient-compartment records. They call [$set-accounts](/docs/api/fhir/operations/set-accounts) with multiple account references and propagation. Matching policies can then grant access to the assigned resources.
+Use the examples below when the organizations, services, or care teams intentionally share the Patient and the resources in its FHIR compartment, such as Observations and Tasks. They call [$set-accounts](/docs/api/fhir/operations/set-accounts) with multiple account references and propagation. Matching policies can then grant access to the assigned resources.
 
 For independent Patient information, provision [tenant-specific Patients](/docs/tenancy-design/patient-records#tenant-specific-patient-records). For shared Patient information with separate clinical records, use [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
@@ -264,7 +264,7 @@ Use [Parameterized Access Policies](/docs/access/access-policies#parameterized-p
 
 ### Create AccessPolicies with Parameterized Variables
 
-Your AccessPolicy uses parameterized variables (like `%organization`, `%healthcare_service`, or `%care_team`) that get replaced at runtime with tenant or care-team references from the user's ProjectMembership. These variables are used in the [compartment](/docs/access/access-policies#compartments) section and for [Criteria-based Access Control](/docs/access/access-policies#compartments).
+Your AccessPolicy uses parameterized variables (like `%organization`, `%healthcare_service`, or `%care_team`) that get replaced at runtime with tenant or care-team references from the user's ProjectMembership. Use these variables in `_compartment` policy criteria to match the tenant or care-team references in each resource's `meta.compartment` field. See [Criteria-based Access Control](/docs/access/access-policies#criteria-based-access-control).
 
 For new multi-tenant policies, prefer resource-level `criteria` with parameterized values instead of legacy top-level `AccessPolicy.compartment` rules. This makes each resource rule explicit and lets one policy template be reused across many `ProjectMembership.access` entries.
 

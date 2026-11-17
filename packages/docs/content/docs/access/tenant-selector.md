@@ -59,7 +59,7 @@ Use the [Invite API](/docs/api/project-admin/invite) from a trusted backend with
 2. Keep the same email and identity scope to reuse the User. Use `forceNewMembership: true` for each additional membership.
 3. Save the returned membership IDs. Repeating a forced invite creates another membership, so reconcile uncertain results before retrying.
 
-For patients, provision and assign the [tenant-specific Patients](/docs/tenancy-design/patient-records#provision-the-data-before-access) first. The following example assumes the referenced policy restricts access to the selected profile's patient compartment using `%profile`. Use actual resource IDs and the same project-scoped email for both calls; set `additionalMembership` false for the first and true for the second.
+For patients, provision and assign the [tenant-specific Patients](/docs/tenancy-design/patient-records#provision-the-data-before-access) first. The following example assumes the referenced policy restricts access to the selected Patient profile's FHIR compartment, including Observations and Tasks, using `%profile`. Use actual resource IDs and the same project-scoped email for both calls; set `additionalMembership` false for the first and true for the second.
 
 {{< code-example file="packages/examples/src/access/tenant-patient-records.ts" language="ts" blocks="invite-tenant-patient" >}}
 
@@ -127,7 +127,7 @@ For an Organization-based policy using `%organization`, repeat the grant with ea
 }
 ```
 
-A criterion such as `Patient?_compartment=%organization` then permits reads across the approved assignments. Where care-team or patient restrictions also apply, [combine the conditions](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) in each grant. Independent grants add access.
+A criterion such as `Patient?_compartment=%organization` matches the organization reference in `meta.compartment` and permits reads across the approved assignments. Where care-team or patient restrictions also apply, [combine the conditions](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) in each grant. Independent grants add access.
 
 ### Choose the workspace {#key-concept-allowed-tenants-vs-active-tenant}
 
@@ -162,11 +162,11 @@ Reference this configuration from the membership as described in [User Configura
 
 ##### Filtering the active tenant in queries {#enforcing-the-active-tenant-in-queries}
 
-UI filtering does not require compartments. Use supported [search parameters](/docs/search/basic-search) for existing resource fields and relationships, or filter already-loaded authorized data. For example, a "My tasks" view can filter by owner and status. Compartment filters are useful when your model already uses those assignments.
+UI filtering does not require tenant or care-team assignments in `meta.compartment`. Use supported [search parameters](/docs/search/basic-search) for existing resource fields and relationships, or filter already-loaded authorized data. For example, a "My tasks" view can filter by owner and status. `_compartment` filters are useful when your model already uses those assignments.
 
-For Organization-based assignment, a screen can filter with `Patient?_compartment=Organization/clinic-b`. Omitting that UI filter shows the records permitted by the effective policy across practices. The API continues to enforce all policy restrictions.
+For Organization-based assignment, a screen can match the tenant reference in `meta.compartment` with `Patient?_compartment=Organization/clinic-b`. Omitting that UI filter shows the records permitted by the effective policy across practices. The API continues to enforce all policy restrictions.
 
-With a shared Patient and separate clinical audiences, use the [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation) for those screens. A Patient-wide compartment filter alone does not express that separation.
+With a shared Patient and separate clinical audiences, use the [resource-specific clinical rules](/docs/tenancy-design/patient-records#clinical-record-isolation) for those screens. A filter that matches only tenant references inherited from the shared Patient into `meta.compartment` does not express that separation.
 
 #### Combined workspace {#option-3-unified-view-no-tenant-context}
 

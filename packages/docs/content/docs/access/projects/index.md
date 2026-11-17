@@ -101,7 +101,7 @@ You can see linked Projects in the Medplum App by:
 
 ### Distinguishing Local vs. Linked Resources
 
-Because linked resources are returned alongside local resources in search results, you may need to tell them apart. The `_compartment` search parameter filters results to resources that belong to a specific project compartment:
+Because linked resources are returned alongside local resources in search results, you may need to tell them apart. The `_compartment` search parameter filters results by the Project reference in each resource's `meta.compartment` field:
 
 ```typescript
 // Search only within the current project (exclude linked projects)

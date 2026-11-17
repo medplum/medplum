@@ -36,13 +36,13 @@ One practice can have several locations, specialties, and care teams while remai
 | **A customer organization** | Each independent practice using your software. | Define practice-level sharing, membership, and departure rules. |
 | **An organizational unit you operate separately** | Service lines with distinct data-governance requirements. | Agree which responsibilities and information are independent or shared. |
 
-With or without tenants, a care team may need a focused view or restricted access. **UI filtering does not require compartments:** use existing resource fields and relationships to organize work within the user's permitted access. Add care-team policy restrictions when users must be prevented from accessing other patients through the API.
+With or without tenants, a care team may need a focused view or restricted access. **UI filtering does not require tenant or care-team assignments:** use existing resource fields and relationships to organize work within the user's permitted access. Add care-team policy restrictions when users must be prevented from accessing other patients through the API.
 
 ![Example of API-enforced care-team restrictions within Practice A and Practice B.](/img/tenancy-design/access-levels.png)
 
 _Example with API-enforced care-team restrictions within each practice. A practice can also enforce its tenant boundary while using UI filters for care-team views._
 
-**Compartments** group resources for queries and access-policy criteria. A group can represent a tenant or a finer grouping, such as a care team. The [technical guide](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants) explains how to represent these groups and enforce their permissions.
+For tenant or care-team access, Medplum records group references in `meta.accounts` and includes them in the computed `meta.compartment` field. Access policies can match those references. The [technical guide](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants) explains how to represent these groups and enforce their permissions.
 
 ## 3. What data and administration must remain independent? {#choose-the-tenancy-model}
 

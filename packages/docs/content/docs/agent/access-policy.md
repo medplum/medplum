@@ -126,9 +126,9 @@ For example, to read and update Patients already assigned to the organization, a
 }
 ```
 
-## Using Compartments for Resource Tagging
+## Resource tagging with `AccessPolicy.compartment` {#using-compartments-for-resource-tagging}
 
-An existing policy can use a top-level `compartment` to stamp an organization account on ordinary resource creation. This also applies a broad compartment restriction, so check its effect on shared reference data. For new designs, prefer resource-level criteria with a controlled [$set-accounts assignment workflow](/docs/api/fhir/operations/set-accounts); that operation requires project-admin or super-admin authority.
+An existing policy can use `AccessPolicy.compartment` to stamp an organization reference in `meta.accounts` on ordinary resource creation. Medplum includes that reference in `meta.compartment`; the resource rules below enforce access through `criteria`. For new designs, prefer resource-level criteria with a controlled [$set-accounts assignment workflow](/docs/api/fhir/operations/set-accounts); that operation requires project-admin or super-admin authority.
 
 The following example illustrates the top-level pattern:
 

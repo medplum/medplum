@@ -4,15 +4,15 @@ title: Resource $set-accounts
 weight: 61
 ---
 
-Medplum implements a custom `$set-accounts` operation to manage `meta.accounts` references for compartment-based access. The server includes these references in the resource's computed `meta.compartment`.
+Medplum implements a custom `$set-accounts` operation to manage `meta.accounts` references for tenant and care-team access. The server includes these references in the resource's computed `meta.compartment`.
 
-Within one project, an account reference can identify a tenant or finer access group, such as an `Organization`, `HealthcareService`, or `CareTeam`. Choose the representation in [Modeling your tenants](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants). Multiple assignments form a set; they do not create nested compartments. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both scopes must apply.
+Within one project, an account reference can identify a tenant or finer access group, such as an `Organization`, `HealthcareService`, or `CareTeam`. Choose the representation in [Modeling your tenants](/docs/access/multi-tenant-access-policy#step-1-modeling-your-tenants). Multiple account references in `meta.compartment` form a set, with no automatic parent-child containment. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) when both scopes must apply.
 
 {{< note >}}
 
 The **Patient's FHIR compartment** is the collection of related resources, such as Observations, Tasks, and DiagnosticReports, identified by the [FHIR Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html). For example, an Observation belongs to this collection when its `subject` references the Patient.
 
-The **Patient's `meta.compartment` field** records the compartments the Patient resource belongs to, including its tenant assignments. It contains references such as `Organization/clinic-a`, rather than a list of the Patient's clinical records. `$set-accounts` updates `meta.accounts`, and Medplum computes `meta.compartment`. See [Understanding Compartments](/docs/access/multi-tenant-access-policy#understanding-compartments) for the full distinction.
+The **Patient's `meta.compartment` field** is server-computed metadata describing the Patient resource's membership in Patient, Project, and account-based groups, including tenant assignments. It contains references such as `Organization/clinic-a`, rather than a list of the Patient's clinical records. `$set-accounts` updates `meta.accounts`, and Medplum computes `meta.compartment`. See [Understanding Compartments](/docs/access/multi-tenant-access-policy#understanding-compartments) for the full distinction.
 
 {{< /note >}}
 
@@ -111,7 +111,7 @@ Example response when 3 resources were updated:
 
 ## Assign accounts during a resource write
 
-A trusted backend with project-admin or super-admin authority can include `meta.accounts` in a resource create or update request with the `X-Medplum: extended` header. The supplied accounts override Patient-account inheritance for that write, so the resource can have its intended assignment from creation. Medplum still computes its Patient and Project compartment references.
+A trusted backend with project-admin or super-admin authority can include `meta.accounts` in a resource create or update request with the `X-Medplum: extended` header. The supplied accounts override Patient-account inheritance for that write, so the resource can have its intended assignment from creation. Medplum still includes its applicable Patient and Project references in `meta.compartment`.
 
 Include the complete intended account list on every such write. If `meta` is present but both `meta.accounts` and legacy `meta.account` are absent, the write clears explicit account assignments. Extended responses include legacy `meta.account`; remove or update it when replacing `meta.accounts`, because the server combines both fields.
 
