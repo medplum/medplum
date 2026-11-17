@@ -28,7 +28,7 @@ For `open-pr`, enable **Allow GitHub Actions to create and approve pull requests
 | [Agent settings](agent-settings.json) | Read boundaries and disabled hooks |
 | [Workflow](../../.github/workflows/docs-automation.yml) | Manual inputs, checks, and separate publication job |
 
-Classification returns `no-docs`, `already-covered`, `update-docs`, or `needs-human`. Conclusive decisions require source evidence; drafting requires a concrete plan. The controller uses the landed diff, including merge resolutions. Single-parent commits must match the complete PR patch; ambiguous multi-commit rebases and oversized changes need human review. Code is read at the recorded current default-branch revision, so the pilot finds gaps remaining today.
+Classification returns `no-docs`, `already-covered`, `update-docs`, or `needs-human`. Conclusive decisions require source evidence; drafting requires a concrete plan. The controller uses the landed diff, including merge resolutions. For single-parent commits, changed paths must match the PR file list, including renamed paths, and the parent must not belong to the same PR. Ambiguous merge histories and oversized changes need human review. Code is read at the recorded current default-branch revision, so the pilot finds gaps remaining today.
 
 All three agent passes use read/search tools and structured output. Project settings and hooks are disabled; file reads outside working directories and sensitive file reads are blocked. The controller validates and applies planned file contents. Publication runs separately with write permissions and no Anthropic credential.
 

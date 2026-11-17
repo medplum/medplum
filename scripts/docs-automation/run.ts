@@ -179,23 +179,30 @@ export function args(stage: keyof typeof schemas): string {
   );
 }
 
-// A squash commit (or a one-commit rebase) must cover the full PR. A multi-commit
-// rebase's last commit does not, so it needs human review. Preserve merge resolutions.
-export function landedDiff(root: string, mergeSha: string, headSha: string, prDiff: string): string | undefined {
+// Use what landed, tolerating changed context and merge-time edits. File coverage
+// plus the parent's PR association guards against analyzing only the last rebase commit.
+export function landedDiff(
+  root: string,
+  mergeSha: string,
+  headSha: string,
+  prFiles: string[],
+  parentFromSamePr: (sha: string) => boolean
+): { diff: string; files: string[] } | undefined {
   for (const sha of [mergeSha, headSha]) {
     if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Invalid source revision');
   }
   const parents = git(['rev-list', '--parents', '-n', '1', mergeSha], root).trim().split(' ').slice(1);
   if (parents.length !== 1 && (parents.length !== 2 || parents[1] !== headSha)) return undefined;
-  const diff = git(['diff', '--no-ext-diff', '--no-textconv', parents[0], mergeSha, '--'], root);
-  if (!diff.trim() || [diff, prDiff].some((text) => Buffer.byteLength(text) > config.maxDiffBytes)) return undefined;
-  const patchId = (text: string): string =>
-    execFileSync('git', ['patch-id', '--verbatim'], { input: text, encoding: 'utf8' }).trim().split(' ')[0];
+  const files = git(['diff', '--name-only', '--no-renames', '-z', parents[0], mergeSha, '--'], root)
+    .split('\0')
+    .filter(Boolean);
   if (parents.length === 1) {
-    const expected = patchId(prDiff);
-    if (!expected || patchId(diff) !== expected) return undefined;
+    const expected = new Set(prFiles);
+    if (files.length !== expected.size || files.some((path) => !expected.has(path)) || parentFromSamePr(parents[0]))
+      return undefined;
   }
-  return diff;
+  const diff = git(['diff', '--no-ext-diff', '--no-textconv', parents[0], mergeSha, '--'], root);
+  return diff.trim() ? { diff, files } : undefined;
 }
 
 function prepare(): void {
@@ -250,32 +257,36 @@ function prepare(): void {
   if (!/^[a-f0-9]{40}$/.test(source.merge_commit_sha)) throw new Error('Invalid source revision');
   git(['fetch', '--no-tags', 'origin', source.merge_commit_sha]);
   git(['merge-base', '--is-ancestor', source.merge_commit_sha, context.baseSha]);
-  const prDiff = execFileSync(
-    'gh',
-    ['api', `repos/${repository}/pulls/${number}`, '-H', 'Accept: application/vnd.github.diff'],
-    {
-      encoding: 'utf8',
-      maxBuffer: 20 * 1024 * 1024,
+  // The pilot's 80-file limit fits in one page; verify completeness explicitly.
+  const prFiles = api<{ filename: string; previous_filename?: string }[]>(
+    `repos/${repository}/pulls/${number}/files?per_page=100`
+  );
+  if (prFiles.length !== source.changed_files) throw new Error('Incomplete PR file list');
+  const change = landedDiff(
+    repo,
+    source.merge_commit_sha,
+    source.head.sha,
+    prFiles.flatMap((file) => (file.previous_filename ? [file.previous_filename, file.filename] : [file.filename])),
+    (parent) => {
+      const associated = api<{ number: number }[]>(`repos/${repository}/commits/${parent}/pulls?per_page=100`);
+      return associated.length === 100 || associated.some((pr) => pr.number === number);
     }
   );
-  const diff = landedDiff(repo, source.merge_commit_sha, source.head.sha, prDiff);
-  if (!diff) {
+  if (!change) {
     stop(
       'needs-human',
-      'The landed diff is empty, exceeds the pilot limit, or cannot be verified as the complete PR change (for example, a multi-commit rebase).'
+      'The landed change is empty, has a different file set, or cannot be isolated from earlier commits in this PR. Review its merge history.'
     );
     return;
   }
-  context.files = git([
-    'diff',
-    '--name-only',
-    '--no-renames',
-    `${source.merge_commit_sha}^1`,
-    source.merge_commit_sha,
-    '--',
-  ])
-    .trim()
-    .split('\n');
+  if (Buffer.byteLength(change.diff) > config.maxDiffBytes) {
+    stop(
+      'needs-human',
+      `Landed diff is ${Buffer.byteLength(change.diff)} bytes; pilot limit is ${config.maxDiffBytes}.`
+    );
+    return;
+  }
+  context.files = change.files;
   if (context.files.length > config.maxSourceFiles) {
     stop('needs-human', `Landed change exceeds the ${config.maxSourceFiles}-file pilot limit.`);
     return;
@@ -288,7 +299,7 @@ function prepare(): void {
     ),
   ];
   save('context.json', context);
-  writeFileSync(artifact('source.diff'), diff);
+  writeFileSync(artifact('source.diff'), change.diff);
   output('analyze', 'true');
 }
 

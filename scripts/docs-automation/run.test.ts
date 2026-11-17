@@ -123,7 +123,7 @@ test('accepts xhigh effort and rejects invalid configuration', () => {
     config.effort = effort;
   }
 });
-test('uses landed squash/merge changes and rejects an incomplete rebase diff', () => {
+test('uses landed contents despite changed context or merge-time edits, and rejects partial file coverage', () => {
   const { root, git } = controller();
   const base = git('rev-parse', 'HEAD').trim();
   git('checkout', '-qb', 'feature');
@@ -133,20 +133,24 @@ test('uses landed squash/merge changes and rejects an incomplete rebase diff', (
   writeFileSync(join(root, page), content);
   git('commit', '-qam', 'second change');
   const head = git('rev-parse', 'HEAD').trim();
-  const prDiff = git('diff', base, head);
+  const files = [code, page];
+  const otherPr = (): boolean => false;
   git('checkout', '-q', 'main');
   writeFileSync(join(root, 'unrelated.txt'), 'Another PR landed first.\n');
+  writeFileSync(join(root, page), original.replace('title: Example', 'title: Renamed'));
   git('add', '.');
   git('commit', '-qm', 'unrelated change');
   const newBase = git('rev-parse', 'HEAD').trim();
   git('merge', '--squash', 'feature');
+  writeFileSync(join(root, code), 'export const example = false; // Reconciled at merge time.\n');
+  git('add', '.');
   git('commit', '-qm', 'squashed PR');
   const squash = git('rev-parse', 'HEAD').trim();
-  assert.equal(landedDiff(root, squash, head, prDiff), git('diff', newBase, squash));
-  assert.equal(landedDiff(root, squash, head, prDiff + 'x'.repeat(300001)), undefined);
+  assert.equal(landedDiff(root, squash, head, files, otherPr)?.diff, git('diff', newBase, squash));
+  assert.equal(landedDiff(root, squash, head, [page], otherPr), undefined);
   git('checkout', '-qb', 'rebased', newBase);
   git('cherry-pick', first, head);
-  assert.equal(landedDiff(root, git('rev-parse', 'HEAD').trim(), head, prDiff), undefined);
+  assert.equal(landedDiff(root, git('rev-parse', 'HEAD').trim(), head, files, otherPr), undefined);
   // A real merge can resolve a conflict differently from the PR's original patch.
   git('checkout', '-qb', 'merged', newBase);
   writeFileSync(join(root, page), original.replace('Original guidance.', 'Guidance from main.'));
@@ -156,8 +160,37 @@ test('uses landed squash/merge changes and rejects an incomplete rebase diff', (
   git('add', '.');
   git('commit', '-qm', 'merge PR');
   const merge = git('rev-parse', 'HEAD').trim();
-  assert.match(landedDiff(root, merge, head, prDiff) ?? '', /Resolved while merging/);
-  assert.equal(landedDiff(root, merge, base, prDiff), undefined);
+  assert.match(landedDiff(root, merge, head, files, otherPr)?.diff ?? '', /Resolved while merging/);
+  assert.equal(landedDiff(root, merge, base, files, otherPr), undefined);
+});
+test('rejects the last rebase commit even when every commit touches the same file', () => {
+  const { root, git } = controller();
+  writeFileSync(join(root, page), content);
+  git('commit', '-qam', 'first rebased commit');
+  const parent = git('rev-parse', 'HEAD').trim();
+  writeFileSync(join(root, page), content + '\nAnother change to the same page.\n');
+  git('commit', '-qam', 'last rebased commit');
+  const head = git('rev-parse', 'HEAD').trim();
+  let checked = false;
+  assert.equal(
+    landedDiff(root, head, head, [page], (sha) => {
+      assert.equal(sha, parent);
+      checked = true;
+      return true;
+    }),
+    undefined
+  );
+  assert.ok(checked);
+});
+test('rename coverage includes both the old and new paths', () => {
+  const { root, git } = controller();
+  const renamed = 'packages/docs/content/docs/bots/renamed.md';
+  git('mv', page, renamed);
+  git('commit', '-qm', 'rename page');
+  const sha = git('rev-parse', 'HEAD').trim();
+  const change = landedDiff(root, sha, sha, [page, renamed], () => false);
+  assert.deepEqual(change?.files.sort(), [page, renamed].sort());
+  assert.match(change?.diff ?? '', /rename from/);
 });
 test('write scope excludes code, generated reference, decision guides, and traversal', () => {
   for (const path of [
