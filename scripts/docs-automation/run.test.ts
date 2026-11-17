@@ -66,14 +66,32 @@ test('accepts PR numbers and rejects command/URL/option injection', () => {
   }
 });
 test('write scope excludes code, generated reference, decision guides, and traversal', () => {
-  assert.equal(allowedDoc(page), true);
-  assert.equal(allowedDoc('packages/docs/assets/fhir/resources/patient.md'), true);
+  for (const path of [
+    page,
+    'packages/docs/assets/fhir/resources/patient.md',
+    'packages/docs/content/docs/api/_index.md',
+    'packages/docs/content/docs/api/fhir/operations/user-update-email.md',
+    'packages/docs/content/docs/api/fhir/overview.md',
+    'packages/docs/content/docs/api/auth/resetpassword.md',
+    'packages/docs/content/docs/api/oauth/token.md',
+    'packages/docs/content/docs/api/project-admin/invite.md',
+    'packages/docs/content/docs/api/scim/users.md',
+    ...['resources', 'datatypes', 'medplum'].map(
+      (section) => `packages/docs/content/docs/api/fhir/${section}/_index.md`
+    ),
+  ])
+    assert.equal(allowedDoc(path), true, path);
   for (const path of [
     '/etc/passwd',
     '../file.md',
     'packages/docs/content/docs/../evil.md',
     'packages/docs/content/docs/sdk/client.md',
-    'packages/docs/content/docs/api/x.md',
+    'packages/docs/content/docs/api/fhir/resources/patient.md',
+    'packages/docs/content/docs/api/fhir/datatypes/reference.md',
+    'packages/docs/content/docs/api/fhir/medplum/user.md',
+    'packages/docs/content/docs/api/fhir/resources.md',
+    'packages/docs/content/docs/api/fhir/resources/patient/index.md',
+    'packages/docs/content/docs/api/fhir/_content.gotmpl',
     'packages/docs/content/docs/decision-guides/access.md',
     '.github/workflows/change.yml',
     'packages/core/src/example.ts',
@@ -142,9 +160,32 @@ test('draft rejects scope expansion, duplicates, questions, scripts, missing fro
     { ...draft(), questions: ['Is this actually supported?'] },
     { ...draft(), edits: [{ path: page, content: '# Missing front matter' }] },
     { ...draft(), edits: [{ path: page, content: content + '<script>alert(1)</script>' }] },
+    { ...draft(), edits: [{ path: page, content: content + '<iframe src="https://example.com"></iframe>' }] },
     { ...draft(), edits: [{ path: page, content: content + 'x'.repeat(160001) }] },
   ])
     assert.throws(() => validateDraft(root, classification(), result));
+});
+test('hand-written API updates allow optional collapsible examples', () => {
+  const root = workspace();
+  const path = 'packages/docs/content/docs/api/fhir/operations/user-update-email.md';
+  mkdirSync(dirname(join(root, path)), { recursive: true });
+  writeFileSync(join(root, path), original);
+  const plan: Classification = {
+    ...classification(),
+    changes: [{ path, action: 'update', purpose: 'Explain the response' }],
+  };
+  validateClassification(root, plan);
+  validateDraft(root, plan, {
+    ...draft(),
+    edits: [
+      {
+        path,
+        content:
+          content +
+          '\n<details>\n<summary>Example Response</summary>\n\n```json\n{"emailVerified": false}\n```\n\n</details>\n',
+      },
+    ],
+  });
 });
 test('symlinked output directories cannot escape the docs tree', () => {
   const root = workspace();
@@ -169,7 +210,7 @@ test('uncertainty or unexecuted new examples prevent publication', () => {
   assert.equal(readyToPublish(classification(), { ...draft(), questions: ['Unknown version'] }, verification()), false);
   assert.equal(readyToPublish(classification(), draft(), { ...verification(), evidence: [] }), false);
 });
-test('controller applies only planned edits, captures new pages, and gates dry-run publication', () => {
+test('controller applies only planned edits, captures new API guides, and gates dry-run publication', () => {
   const base = workspace();
   const root = join(base, 'repo');
   mkdirSync(root);
@@ -203,7 +244,7 @@ test('controller applies only planned edits, captures new pages, and gates dry-r
       env: { ...process.env, GITHUB_OUTPUT: output, EXECUTION_FILE: execution, ...env },
     });
   };
-  const newPage = 'packages/docs/content/docs/bots/new-example.md';
+  const newPage = 'packages/docs/content/docs/api/fhir/operations/new-example.md';
   const plan = {
     ...classification(),
     changes: [...classification().changes, { path: newPage, action: 'create', purpose: 'New guide' }],

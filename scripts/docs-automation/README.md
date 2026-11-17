@@ -40,7 +40,9 @@ Claude returns `no-docs`, `already-covered`, `update-docs`, or `needs-human`. A 
 
 All three agent passes use only local read/search tools and return structured JSON. The drafting agent returns replacement file contents. A deterministic controller validates the response and applies only planned Markdown edits. The publisher runs separately with write permissions and without the Anthropic credential.
 
-Pilot writes are limited to ordinary Markdown guides in `packages/docs/content/docs/` and hand-written FHIR notes in `packages/docs/assets/fhir/resources/`. SDK/API-generated pages, decision guides with downloadable exports, examples, application code, templates, navigation configuration, and agent/workflow instructions need human work. New pages must be linked from an existing relevant page in the proposed patch.
+Pilot writes cover Markdown guides in `packages/docs/content/docs/`, including hand-written API operations, auth, OAuth, project administration, and SCIM, plus FHIR notes in `packages/docs/assets/fhir/resources/`. The FHIR adapter generates type pages under `api/fhir/resources/`, `api/fhir/datatypes/`, and `api/fhir/medplum/`; only their hand-written `_index.md` files are writable. Other Markdown paths in those three directories remain blocked.
+
+SDK pages, decision guides/downloads, examples, application code, templates, navigation configuration, assets, and agent/workflow instructions need human work. Classification checks affected companion pages and returns `needs-human` if a complete fix requires excluded files. New pages need an inbound link in the proposed patch. Plain `<details>/<summary>` is allowed for optional examples; required instructions stay visible.
 
 ## Basis for the writing guidance
 
@@ -59,14 +61,16 @@ The samples mix heading conventions. Basic Search has both "Searching Multiple C
 
 The agreed pilot convention is **title case for page titles and all section headings on new pages**. Small updates preserve the target page's existing headings, anchors, and local style. This convention, restrained emphasis, ordinary Markdown spacing, and concise openings are explicit editorial choices for the pilot; the samples do not establish a uniform repository-wide style policy. The [docs README](../../packages/docs/README.md) supplies the supported Hugo markup and preference for source-backed examples.
 
-The verifier reads the same editorial guidance. Draft notes identify the neighboring style examples and any code-execution or rendered-preview checks still needed. Images must already exist and fit the current UI; required new screenshots are routed to human work. This pilot adds no image-generation or screenshot-capture capability.
+The broader review surveyed 432 Markdown pages at `6b6c72696`. It informed guidance on operating context ([delegation](../../packages/docs/content/docs/auth/on-behalf-of/index.md)), secret handling, complete outcomes ([async batches](../../packages/docs/content/docs/fhir-datastore/processing-async-bundles.md)), [historical migrations](../../packages/docs/content/docs/react/mantine-6x-to-7x.md), and [Medplum-specific extensions](../../packages/docs/content/docs/subscriptions/subscription-extensions.md). New clinical, financial, or compliance promises require approved guidance or domain-owner confirmation.
 
-The [Mermaid guidance](prompts/draft.md#mermaid-diagrams) also reflects the site's [browser renderer](../../packages/docs/assets/js/components/mermaid.mjs) and [Hugo render hook](../../packages/docs/layouts/_markup/render-codeblock-mermaid.html), checked against upstream `6b6c72696` on 2026-11-17. The renderer selects a light/dark theme; the hook emits source for browser rendering, so a Hugo build does not validate Mermaid syntax or layout. New diagrams use the site theme, concise quoted labels, meaningful arrows, and accessible descriptions. These are explicit pilot conventions; older diagrams include custom palettes and HTML labels. Human review must check the actual page at desktop/narrow widths in both themes. Syntax references: [Mermaid flowcharts](https://mermaid.js.org/syntax/flowchart.html) and [accessible titles/descriptions](https://mermaid.js.org/config/accessibility.html).
+Keep the rules proportional to the change: they are conditional checks, not mandatory page sections. Classification owns coverage and file planning; the draft prompt holds the shared writing rules; verification refers to those rules instead of restating them. Draft notes record execution/preview work separately from published prose. A short correction should stay short.
+
+The [Mermaid guidance](prompts/draft.md#mermaid-diagrams) follows the site's [browser renderer](../../packages/docs/assets/js/components/mermaid.mjs) and [Hugo hook](../../packages/docs/layouts/_markup/render-codeblock-mermaid.html), checked at `6b6c72696`. Hugo does not validate Mermaid syntax/layout; humans preview desktop/narrow widths and both themes. PDF/Word diagrams require image assets and editable sources per the docs README; required asset/export changes need human work. Existing generated figures keep their prescribed style. Syntax references: [flowcharts](https://mermaid.js.org/syntax/flowchart.html), [accessible titles/descriptions](https://mermaid.js.org/config/accessibility.html).
 
 ## Quality and publication gates
 
 - Valid structured output, supported paths, evidence locations, and complete planned file coverage.
-- No unresolved classification/drafting questions, executable HTML, path traversal, or symlink escapes.
+- No unresolved classification/drafting questions, script/iframe tags, path traversal, or symlink escapes. This tag check is not a general HTML sanitizer; the prompts and human review also restrict markup.
 - Repository Prettier formatting, `git diff --check`, and `npm run build:docs` (Hugo plus dependency builds).
 - A separate verification session checks technical claims, coverage, links/anchors, examples, formatting, and availability. It does not share the drafting session's conversation.
 - New or changed inline executable examples require human execution review and prevent automatic PR creation in this pilot. Existing source-backed examples are preferred. The run does not claim to execute those examples or exhaustively check every site link.
@@ -91,7 +95,7 @@ node --test scripts/docs-automation/run.test.ts
 npx tsc -p scripts/docs-automation/tsconfig.json
 ```
 
-The tests cover decision validation, allowed paths, evidence, uncertain results, unexecuted examples, dry-run behavior, large drafts, and applying a patch with a new page. A publication test uses a real local Git remote and a mocked GitHub API to check draft creation, assignment, and retries without overwriting reviewer edits. Live Claude decisions, GitHub permissions, assignment, and Hugo rendering must also be checked using manual runs.
+The tests cover decision validation, hand-written API guides versus generated type pages, collapsible examples, evidence, uncertainty, unexecuted examples, dry-run behavior, large drafts, and a patch creating an API guide. A publication test uses a real local Git remote and a mocked GitHub API to check creation, assignment, and retries without overwriting reviewer edits. Live Claude decisions, GitHub permissions, assignment, and Hugo rendering still need manual runs.
 
 Before adding automatic triggers, audit a sample of skipped PRs, review noisy drafts, verify assignments, and confirm CI runs on created PRs. Automatic activation is a separate reviewed change: add a merged-PR trigger with the same controller and explicit permissions, plus retry/reconciliation handling. Do not simply substitute untrusted PR text into the workflow's shell commands or prompts.
 

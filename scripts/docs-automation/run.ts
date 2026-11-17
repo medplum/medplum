@@ -71,10 +71,14 @@ export function safePath(path: string): boolean {
 export function allowedDoc(path: string): boolean {
   if (!safePath(path) || !path.endsWith('.md')) return false;
   if (/^packages\/docs\/assets\/fhir\/resources\/[a-z0-9-]+\.md$/.test(path)) return true;
-  return (
-    path.startsWith('packages/docs/content/docs/') &&
-    !/^packages\/docs\/content\/docs\/(api|sdk|decision-guides)(\/|\.)/.test(path)
-  );
+  if (!path.startsWith('packages/docs/content/docs/')) return false;
+  if (/^packages\/docs\/content\/docs\/(sdk|decision-guides)(\/|\.)/.test(path)) return false;
+  // The FHIR content adapter owns these type-page URLs; their section indexes are hand-written.
+  // Other API Markdown (operations, auth, OAuth, project administration, etc.) is also hand-written.
+  if (/^packages\/docs\/content\/docs\/api\/fhir\/(resources|datatypes|medplum)(\/|\.)/.test(path)) {
+    return /^packages\/docs\/content\/docs\/api\/fhir\/(resources|datatypes|medplum)\/_index\.md$/.test(path);
+  }
+  return true;
 }
 function noSymlinks(root: string, path: string): void {
   let cursor = root;
