@@ -762,6 +762,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
+        {takesDetails && (
+          <AppointmentPatientInput
+            defaultValue={defaultPatient}
+            mrnSystem={mrnSystem}
+            required
+            onChange={choosePatient}
+          />
+        )}
+
         <AppointmentActorSelections
           key={`actors-${actorFieldsKey}`}
           value={selections}
@@ -771,15 +780,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           errors={actorErrors}
           onChange={chooseResources}
         />
-
-        {takesDetails && (
-          <AppointmentPatientInput
-            defaultValue={defaultPatient}
-            mrnSystem={mrnSystem}
-            required
-            onChange={choosePatient}
-          />
-        )}
 
         {offersRecurring && (
           <Select
