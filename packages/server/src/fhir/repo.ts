@@ -177,18 +177,16 @@ function isAccountReference(value: unknown): value is Reference {
   return isObject(value) && (value.reference === undefined || typeof value.reference === 'string');
 }
 
-function validateAccountFields(resource: Resource): void {
+function hasValidAccounts(resource: Resource): boolean {
   const meta = resource.meta as unknown;
   if (!isObject(meta)) {
-    return;
+    return true;
   }
   if (meta.account !== undefined && !isAccountReference(meta.account)) {
-    throw new OperationOutcomeError(badRequest('Invalid account reference', `${resource.resourceType}.meta.account`));
+    return false;
   }
   const accounts = meta.accounts;
-  if (accounts !== undefined && !(Array.isArray(accounts) && accounts.every(isAccountReference))) {
-    throw new OperationOutcomeError(badRequest('Invalid account references', `${resource.resourceType}.meta.accounts`));
-  }
+  return accounts === undefined || (Array.isArray(accounts) && accounts.every(isAccountReference));
 }
 
 export interface InteractionOptions {
@@ -1157,7 +1155,6 @@ export class Repository extends FhirRepository implements Disposable {
     if (projectId) {
       resultMeta.project = projectId;
     }
-    validateAccountFields(updated);
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
@@ -2692,6 +2689,9 @@ export class Repository extends FhirRepository implements Disposable {
     assigned: Reference[] | undefined,
     result: Resource
   ): void {
+    if (!hasValidAccounts(updated)) {
+      return;
+    }
     if (
       !assigned?.length &&
       !hasAccountReferences(updated.meta) &&
