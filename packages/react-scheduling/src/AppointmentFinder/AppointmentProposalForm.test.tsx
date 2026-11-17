@@ -810,17 +810,18 @@ describe('AppointmentProposalForm', () => {
       expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
     });
 
-    test('Clears the chosen time when a stretch is picked', async () => {
+    test('Keeps the chosen time when a stretch is picked', async () => {
       setup(medplum);
       await openFinder();
       await chooseFirstOfferedTime();
-      expect(chosenTimeField()).not.toBeNull();
+      const chosen = chosenTimeField()?.value;
+      expect(chosen).toBeDefined();
       await openTimeFinder();
 
       await dragDays('17', '21');
 
-      // A proposal carries the Slots it was found for, and the search has moved on.
-      expect(chosenTimeField()).toBeNull();
+      // Which days are on show says nothing about the time already chosen.
+      expect(chosenTimeField()).toHaveValue(chosen);
     });
   });
 
@@ -976,17 +977,18 @@ describe('AppointmentProposalForm', () => {
       expect(chosenTimeField()).not.toBeNull();
     });
 
-    test('Clears the chosen time when the day changes', async () => {
+    test('Keeps the chosen time when the day changes', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      const chosen = chosenTimeField()?.value;
       await openTimeFinder();
 
       await chooseDay('18');
 
-      expect(chosenTimeField()).not.toBeInTheDocument();
+      expect(chosenTimeField()).toHaveValue(chosen);
     });
   });
 
@@ -1221,7 +1223,7 @@ describe('AppointmentProposalForm', () => {
       expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the proposal being dropped when a different day is searched', async () => {
+    test('Reports the proposal being dropped when the actors change', async () => {
       const onChangeProposal = vi.fn();
       setup(medplum, { onChangeProposal });
       await chooseImagingService();
@@ -1229,14 +1231,13 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
       expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
-      await openTimeFinder();
 
-      await chooseDay('18');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
 
       expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the proposal, and its drop even when the host moved the day', async () => {
+    test('Reports the proposal, and keeps it when the host moves the day', async () => {
       const onChangeProposal = vi.fn();
       const { rerender } = renderWithMedplum(
         <AppointmentProposalForm onSubmit={onSubmit} onChangeProposal={onChangeProposal} />,
@@ -1250,7 +1251,9 @@ describe('AppointmentProposalForm', () => {
         expect.objectContaining({ resourceType: 'Appointment', status: 'proposed', start: expect.any(String) })
       );
 
-      // A drop the host caused is reported too: a host drawing the proposal draws only
+      const proposal = onChangeProposal.mock.lastCall?.[0];
+
+      // Searching another day leaves the time chosen, so a host drawing it keeps drawing
       // what Book would book.
       rerender(
         <AppointmentProposalForm
@@ -1259,7 +1262,7 @@ describe('AppointmentProposalForm', () => {
           defaultStart={new Date(2026, 8, 2)}
         />
       );
-      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
+      expect(onChangeProposal).toHaveBeenLastCalledWith(proposal);
     });
 
     test('Opens the time search on the day the host named', async () => {
