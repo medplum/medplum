@@ -16,14 +16,11 @@ describe('Rate limit categories', () => {
       c.name,
       [...(c.paths ?? []), ...(c.prefixes ?? []), ...(c.excludedPaths ?? []), ...(c.refundOnSuccessPaths ?? [])],
     ])
-  )(
-    '%s paths are lowercase',
-    (_name, paths) => {
-      for (const path of paths) {
-        expect(path).toBe(path.toLowerCase());
-      }
+  )('%s paths are lowercase', (_name, paths) => {
+    for (const path of paths) {
+      expect(path).toBe(path.toLowerCase());
     }
-  );
+  });
 });
 
 describe('Rate limit refunds', () => {
