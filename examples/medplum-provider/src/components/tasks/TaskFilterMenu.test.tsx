@@ -150,6 +150,27 @@ describe('TaskFilterMenu', () => {
     expect(await screen.findByText('Filter by assignee')).toBeInTheDocument();
   });
 
+  test('applies the selected assignee', async () => {
+    const user = userEvent.setup();
+    const onFilterChange = vi.fn();
+    await setup({ onFilterChange });
+
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.click(await screen.findByText('Assigned'));
+
+    const apply = await screen.findByRole('button', { name: 'Apply' });
+    expect(apply).toBeDisabled();
+
+    const search = document.querySelector('.mantine-PillsInputField-field') as HTMLInputElement;
+    await user.type(search, 'Alice');
+    await user.click(await screen.findByText(/Alice Smith/));
+
+    expect(apply).toBeEnabled();
+    await user.click(apply);
+
+    expect(onFilterChange).toHaveBeenCalledWith(TaskFilterType.OWNER, getReferenceString(DrAliceSmith));
+  });
+
   test('clears the assignee filter when the assignee is removed', async () => {
     const user = userEvent.setup();
     const onFilterChange = vi.fn();

@@ -817,7 +817,9 @@ describe('TaskBoard', () => {
     vi.spyOn(medplum, 'search').mockResolvedValue(
       searchBundle([typedTask('cardio', 'Cardiology'), typedTask('nurse', 'Nursing')])
     );
-    setup('owner=Practitioner/p1&status=in-progress&priority=urgent&_offset=20', { onChange });
+    const profile = medplum.getProfile();
+    const profileRef = `${profile?.resourceType}/${profile?.id}`;
+    setup(`owner=${profileRef}&status=in-progress&priority=urgent&_offset=20`, { onChange });
 
     expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
     await user.click(screen.getByLabelText('Filter tasks'));
@@ -833,7 +835,38 @@ describe('TaskBoard', () => {
 
     expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
     expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ code: 'owner', operator: 'eq', value: profileRef }], offset: 0 })
+    );
+  });
+
+  test('removes the assignee filter when Clear All Filters is clicked on All Tasks', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    setup('owner=Practitioner/p1&status=in-progress&_offset=20', { onChange });
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.click(await screen.findByText('Clear All Filters'));
+
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ filters: [], offset: 0 }));
+  });
+
+  test('clears only the assignee filter from the assignee modal', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    setup('owner=Practitioner/p1&status=in-progress&_offset=20', { onChange });
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.click(await screen.findByText('Assigned'));
+    await user.click(await screen.findByRole('button', { name: 'Clear' }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ code: 'status', operator: 'eq', value: 'in-progress' }], offset: 0 })
+    );
   });
 
   test('does not show the Assigned submenu when the owner filter matches the logged-in profile', async () => {
