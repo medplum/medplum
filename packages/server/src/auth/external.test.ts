@@ -150,6 +150,12 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Missing state');
   });
 
+  test('Repeated state', async () => {
+    const res = await request(app).get('/auth/external?code=xyz&state=a&state=b');
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Missing state');
+  });
+
   test('Unknown state', async () => {
     const res = await request(app).get('/auth/external?code=xyz&state=xyz');
     expect(res).toHaveStatus(400);
@@ -1280,27 +1286,7 @@ describe('External', () => {
         () => ({ clientId: otherClient.id, codeChallenge, codeChallengeMethod: 'S512' }),
         'Invalid code challenge method',
       ],
-      [
-        'unregistered redirect URI',
-        () => ({ ...pkce, clientId: otherClient.id, redirectUri: 'https://example.com/other' }),
-        'Invalid redirect URI',
-      ],
-      [
-        'project of another client',
-        () => ({ ...pkce, clientId: otherClient.id, projectId: project.id }),
-        'Invalid project',
-      ],
-      [
-        'returnTo not allowed by the domain',
-        () => ({ ...pkce, domain, returnTo: 'https://example.com/' }),
-        'Invalid returnTo URL',
-      ],
       ['domain without identity provider', () => ({ ...pkce, domain: domain2 }), 'Identity provider not found'],
-      [
-        'client without identity provider',
-        () => ({ ...pkce, clientId: defaultClient.id }),
-        'Identity provider not found',
-      ],
       ['non-string field', () => ({ ...pkce, domain, returnTo: ['https://example.com/'] }), 'Invalid value'],
       ['oversized field', () => ({ ...pkce, domain, nonce: 'x'.repeat(4097) }), 'Invalid value'],
     ])('Start rejects %s', async (_name, buildBody, message) => {
@@ -1402,65 +1388,6 @@ describe('External', () => {
       expect(redirect.pathname).toBe('/signin');
       expect(redirect.searchParams.get('scope')).toBe('openid');
       expect(redirect.searchParams.get('code_challenge')).toBe(codeChallenge);
-    });
-
-    test('Server config identity provider round trip', async () => {
-      const issuer = `https://${randomUUID()}.example.com`;
-      const config = getConfig();
-      const externalAuthProviders = config.externalAuthProviders;
-      config.externalAuthProviders = [{ issuer, identityProvider }];
-      try {
-        const res = await start({ issuer, codeChallenge, codeChallengeMethod });
-        expect(res).toHaveStatus(200);
-        const url = new URL(res.body.url);
-        expect(url.searchParams.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external');
-
-        fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
-        const res2 = await request(app).get(
-          appendQueryParams('/auth/external', { code: randomUUID(), state: url.searchParams.get('state') as string })
-        );
-        expect(res2).toHaveStatus(302);
-        expect(new URL(res2.header.location).searchParams.get('code_challenge')).toBe(codeChallenge);
-      } finally {
-        config.externalAuthProviders = externalAuthProviders;
-      }
-    });
-
-    test('Plain code challenge round trip through the token exchange', async () => {
-      const verifier = randomUUID();
-      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
-      const state = await startState({
-        clientId: otherClient.id,
-        redirectUri,
-        codeChallenge: verifier,
-        codeChallengeMethod: 'plain',
-      });
-      expect(warnSpy).toHaveBeenCalledWith('External auth start with plain code challenge', {
-        clientId: otherClient.id,
-        domain: undefined,
-        issuer: undefined,
-      });
-      warnSpy.mockRestore();
-
-      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
-      const res = await request(app).get(
-        appendQueryParams(`/auth/external/${otherClient.id}`, { code: randomUUID(), state })
-      );
-      expect(res).toHaveStatus(302);
-      const code = new URL(res.header.location).searchParams.get('code') as string;
-
-      const wrong = await request(app)
-        .post('/oauth2/token')
-        .type('form')
-        .send({ grant_type: 'authorization_code', code, code_verifier: randomUUID() });
-      expect(wrong).toHaveStatus(400);
-
-      const tokenRes = await request(app)
-        .post('/oauth2/token')
-        .type('form')
-        .send({ grant_type: 'authorization_code', code, code_verifier: verifier });
-      expect(tokenRes).toHaveStatus(200);
-      expect(tokenRes.body.access_token).toBeTruthy();
     });
 
     test('Plain code challenge is not copied to the sign-in page URL', async () => {

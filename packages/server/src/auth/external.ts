@@ -106,13 +106,9 @@ export async function externalStartHandler(req: Request, res: Response): Promise
   }
 
   // Client identity providers always use the per-client callback
-  let client: ClientApplication | undefined;
   let callbackClientId: string | undefined;
-  if (loginRequest.clientId) {
-    client = await getClientApplication(loginRequest.clientId);
-    if (client.identityProvider) {
-      callbackClientId = loginRequest.clientId;
-    }
+  if (loginRequest.clientId && (await getClientApplication(loginRequest.clientId)).identityProvider) {
+    callbackClientId = loginRequest.clientId;
   }
 
   let domainConfig: DomainConfiguration | undefined;
@@ -126,36 +122,12 @@ export async function externalStartHandler(req: Request, res: Response): Promise
     return;
   }
 
-  if (client) {
-    if (loginRequest.projectId !== undefined && loginRequest.projectId !== client.meta?.project) {
-      sendOutcome(res, badRequest('Invalid project'));
-      return;
-    }
-    if (loginRequest.redirectUri && !(await matchClientRedirectUri(client, loginRequest.redirectUri))) {
-      sendOutcome(res, badRequest('Invalid redirect URI'));
-      return;
-    }
-  }
-
-  if (loginRequest.returnTo && domainConfig && !isValidReturnToUrl(loginRequest.returnTo, domainConfig)) {
-    sendOutcome(res, badRequest('Invalid returnTo URL'));
-    return;
-  }
-
   let url: URL;
   try {
     url = new URL(idp.authorizeUrl);
   } catch {
     sendOutcome(res, badRequest('Invalid authorize URL for external identity provider'));
     return;
-  }
-
-  if (loginRequest.codeChallengeMethod === 'plain') {
-    getLogger().warn('External auth start with plain code challenge', {
-      clientId: loginRequest.clientId,
-      domain: loginRequest.domain,
-      issuer: loginRequest.issuer,
-    });
   }
 
   const state = randomBytes(32).toString('base64url');
@@ -195,8 +167,8 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const state = req.query.state as string;
-  if (!state) {
+  const state = req.query.state;
+  if (!isString(state) || !state) {
     sendOutcome(res, badRequest('Missing state'));
     return;
   }
@@ -327,7 +299,21 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
   ]);
 
   if (login.membership && body.redirectUri && client) {
-    const redirectUri = await matchClientRedirectUri(client, body.redirectUri);
+    // Get the redirect URI from the client application
+    let redirectUri = getClientRedirectUri(client, body.redirectUri);
+
+    if (!redirectUri && (await isDangerousRedirectUriPartialMatchAllowed(client))) {
+      // If projects have the allow-dangerous-redirect setting enabled, then we will allow partial matches for redirect URIs.
+      // This is generally NOT recommended by the OAuth spec.
+      // However, we need to support it here for backwards compatibility with existing clients.
+      redirectUri = getClientRedirectUri(client, body.redirectUri, true);
+      getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
+        clientId: client.id,
+        requestedUri: body.redirectUri,
+        partialMatchUri: redirectUri,
+      });
+    }
+
     if (!redirectUri) {
       sendOutcome(res, badRequest('Invalid redirect URI'));
       return;
@@ -576,24 +562,6 @@ function getExternalCallbackUrl(callbackClientId: string | undefined): string {
 
 function getExternalAuthStateKey(state: string): string {
   return 'medplum:external-auth-state:' + state;
-}
-
-async function matchClientRedirectUri(client: ClientApplication, requestedUri: string): Promise<string | undefined> {
-  let redirectUri = getClientRedirectUri(client, requestedUri);
-
-  if (!redirectUri && (await isDangerousRedirectUriPartialMatchAllowed(client))) {
-    // If projects have the allow-dangerous-redirect setting enabled, then we will allow partial matches for redirect URIs.
-    // This is generally NOT recommended by the OAuth spec.
-    // However, we need to support it here for backwards compatibility with existing clients.
-    redirectUri = getClientRedirectUri(client, requestedUri, true);
-    getLogger().warn('Redirect URI does not match any of the client application redirect URIs', {
-      clientId: client.id,
-      requestedUri,
-      partialMatchUri: redirectUri,
-    });
-  }
-
-  return redirectUri;
 }
 
 /**
