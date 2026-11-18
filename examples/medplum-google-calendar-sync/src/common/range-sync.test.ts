@@ -8,7 +8,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { writeProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, saveConnection } from './connection';
+import { MissingCalendarCredentialError } from './credentials';
 import { GoogleApiError } from './google-calendar';
+import { GoogleOAuthError } from './google-oauth';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
 import { defaultSyncRange, syncRange } from './range-sync';
@@ -325,12 +327,14 @@ describe('range-sync', () => {
     expect(upserts).toEqual([]);
   });
 
-  test('stops when the connection needs re-authorization', async () => {
+  test.each([
+    ['rejects the token', () => new GoogleOAuthError(400, 'invalid_grant', 'revoked')],
+    ['has no stored token', () => new MissingCalendarCredentialError()],
+  ])('stops for re-authorization when the connection %s', async (_name, failure) => {
     searched.appointments = [await booked(), await booked()];
     const deps = fakeDeps(upserts);
     deps.refreshAccessToken = async () => {
-      const { GoogleOAuthError } = await import('./google-oauth');
-      throw new GoogleOAuthError(400, 'invalid_grant', 'revoked');
+      throw failure();
     };
 
     const counts = await run(deps);

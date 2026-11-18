@@ -16,12 +16,7 @@ import {
   writeProjectSecrets,
 } from '../common/install';
 import { getParam } from '../common/operations';
-import {
-  ensureInboundPolicy,
-  ensureOperationPolicy,
-  ensureSyncAccessPolicy,
-  PRACTITIONER_POLICY_SNIPPET,
-} from '../common/policies';
+import { ensurePolicy, PRACTITIONER_POLICY_SNIPPET } from '../common/policies';
 import { currentProjectId, projectQuery } from '../common/project';
 import { requestSync } from '../common/state';
 import { ensureSyncSubscription, ensureWorkSubscription } from '../common/subscriptions';
@@ -70,10 +65,14 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       throw new Error('Calendar Bot timeout must not exceed 600 seconds for lease safety');
     }
   }
-  const importPolicy = await ensureInboundPolicy(medplum);
-  const webhookPolicy = await ensureInboundPolicy(medplum, true);
-  await ensureBotMembership(medplum, projectId, importBot, importPolicy);
-  const webhookMembership = await ensureBotMembership(medplum, projectId, webhookBot, webhookPolicy);
+  const policy = await ensurePolicy(medplum, 'worker');
+  await ensureBotMembership(medplum, projectId, importBot, policy);
+  const webhookMembership = await ensureBotMembership(
+    medplum,
+    projectId,
+    webhookBot,
+    await ensurePolicy(medplum, 'webhook')
+  );
   secrets[SECRET.webhookUrl] = new URL(`webhook/${webhookMembership.id}`, medplum.getBaseUrl()).toString();
   await writeProjectSecrets(medplum, project, secrets);
   await writeProjectCeiling(medplum, ceiling);
@@ -86,10 +85,9 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       medplum,
       projectId,
       bot,
-      await ensureOperationPolicy(medplum, value === BOT_IDENTIFIER_VALUE.connect)
+      await ensurePolicy(medplum, value === BOT_IDENTIFIER_VALUE.connect ? 'connect' : 'operation')
     );
   }
-  const policy = await ensureSyncAccessPolicy(medplum);
   await ensureBotMembership(medplum, projectId, syncBot, policy);
   await ensureSyncSubscription(medplum, syncBot, 'Appointment');
   await ensureSyncSubscription(medplum, syncBot, 'Slot');

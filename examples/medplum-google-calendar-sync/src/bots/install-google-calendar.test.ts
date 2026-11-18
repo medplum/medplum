@@ -202,7 +202,7 @@ describe('install-google-calendar', () => {
     expect(crons[0]).toMatchObject({ active: true, targetReference: { reference: `Bot/${reconcileBot.id}` } });
     expect(memberships.some((m) => `ProjectMembership/${m.id}` === crons[0].onBehalfOf?.reference)).toBe(true);
     const policies = await ours('AccessPolicy');
-    expect(policies).toHaveLength(5);
+    expect(policies).toHaveLength(4);
     expect(memberships.every((m) => policies.some((p) => m.accessPolicy?.reference === `AccessPolicy/${p.id}`))).toBe(
       true
     );

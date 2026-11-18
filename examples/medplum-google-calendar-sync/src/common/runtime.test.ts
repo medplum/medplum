@@ -20,7 +20,7 @@ import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import { importedSlots } from './import';
 import { runInbound } from './inbound';
 import { ConnectionBusyError, LEASE_MS, LEASE_URL, withConnectionLease } from './lease';
-import { ensureInboundPolicy } from './policies';
+import { ensurePolicy } from './policies';
 import { readState, requestSync, withState } from './state';
 import { transitionExpression } from './subscriptions';
 import { ensureWatch, receiveNotification } from './watch';
@@ -451,8 +451,8 @@ describe('calendar runtime', () => {
     expect(evaluate('inboundRequest', updated, updated)).toEqual([false]);
   });
 
-  test('import policy permits owned Slots only and denies Appointment/Schedule mutations', async () => {
-    const policy = await ensureInboundPolicy(medplum);
+  test('worker policy permits owned Slots only and denies Appointment/Schedule mutations', async () => {
+    const policy = await ensurePolicy(medplum, 'worker');
     const ordinary: Slot = {
       resourceType: 'Slot',
       status: 'busy-unavailable',

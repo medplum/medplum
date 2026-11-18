@@ -11,10 +11,10 @@ import { requireOperationBot } from './authorization';
 import { readProjectCeiling, writeProjectCeiling } from './configuration';
 import { findConnection, saveConnection } from './connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
-import { CREDENTIAL_SEARCH, readCredential } from './credentials';
+import { CREDENTIAL_CRITERIA, readCredential } from './credentials';
 import { importedSlots } from './import';
 import { withConnectionLease } from './lease';
-import { ensureInboundPolicy, ensureSyncAccessPolicy, PRACTITIONER_POLICY_SNIPPET } from './policies';
+import { ensurePolicy, PRACTITIONER_POLICY_SNIPPET } from './policies';
 
 let medplum: MockClient;
 beforeEach(() => {
@@ -30,7 +30,7 @@ test('the refresh token is stored apart from the connection', async () => {
 
 test('practitioner and webhook policies deny credential and historical-token access', async () => {
   const connection = await saveConnection(medplum, args);
-  const [credential] = await medplum.searchResources('Basic', CREDENTIAL_SEARCH);
+  const [credential] = await medplum.searchResources('Basic', CREDENTIAL_CRITERIA.split('?')[1]);
   const practitionerPolicy = {
     resourceType: 'AccessPolicy' as const,
     resource: PRACTITIONER_POLICY_SNIPPET.map((r) => ({
@@ -38,7 +38,7 @@ test('practitioner and webhook policies deny credential and historical-token acc
       criteria: r.criteria?.replace('%profile', args.practitionerRef),
     })),
   };
-  const webhook = await ensureInboundPolicy(medplum, true);
+  const webhook = await ensurePolicy(medplum, 'webhook');
   for (const action of [
     AccessPolicyInteraction.READ,
     AccessPolicyInteraction.UPDATE,
@@ -134,7 +134,7 @@ test('operation authorization accepts the server session summary and rejects a m
 });
 
 test('dispatcher can create async jobs without reading or changing other jobs', async () => {
-  const policy = await ensureSyncAccessPolicy(medplum);
+  const policy = await ensurePolicy(medplum, 'worker');
   const job = {
     resourceType: 'AsyncJob' as const,
     status: 'accepted' as const,

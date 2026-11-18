@@ -23,11 +23,11 @@ import { ceilingFromAllowEventDetails, readProjectCeiling } from './configuratio
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
 import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
-import { readCredential } from './credentials';
+import { needsReconnect, readCredential } from './credentials';
 import type { UpsertOutcome } from './google-calendar';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
 import type { GoogleOAuthClient } from './google-oauth';
-import { getOAuthClient, GoogleOAuthError, refreshAccessToken } from './google-oauth';
+import { getOAuthClient, refreshAccessToken } from './google-oauth';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
 import type { GoogleCalendarEvent } from './mapping';
@@ -686,8 +686,8 @@ export class SyncSession {
       this.accessTokens.set(connection.practitionerRef, tokens.access_token);
       return tokens.access_token;
     } catch (err) {
-      if (err instanceof GoogleOAuthError && err.isInvalidGrant) {
-        console.warn(`${connection.practitionerRef}: Google refresh token rejected; reconnect required`);
+      if (needsReconnect(err)) {
+        console.warn(`${connection.practitionerRef}: Google refresh token rejected or missing; reconnect required`);
         await updateConnection(this.medplum, connection, { status: 'reauth-required' }, this.lease);
         return undefined;
       }

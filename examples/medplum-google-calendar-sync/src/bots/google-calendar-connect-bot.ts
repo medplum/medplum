@@ -8,7 +8,7 @@ import { readProjectCeiling } from '../common/configuration';
 import { findConnection, saveConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
-import { MissingCalendarCredentialError, readCredential } from '../common/credentials';
+import { credentialRevision } from '../common/credentials';
 import { exchangeCode, getOAuthClient, hasImportScopes, readIdToken, revokeToken } from '../common/google-oauth';
 import type { ConnectionLease } from '../common/lease';
 import { ConnectionBusyError, withConnectionLease } from '../common/lease';
@@ -34,7 +34,11 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   const connect = async (lease?: ConnectionLease): Promise<Parameters> => {
     const tokens = await exchangeCode(getOAuthClient(event.secrets), { code, codeVerifier, redirectUri });
     let exchangedAccount: string | undefined;
+    let storedBefore: string | undefined;
     try {
+      // This Bot writes the token but never reads it, so it recognises its own save by the changed revision.
+      const existing = await findConnection(medplum, practitionerRef);
+      storedBefore = existing && (await credentialRevision(medplum, existing.basic.id));
       if (tokens.id_token) {
         exchangedAccount = readIdToken(tokens.id_token).sub;
       }
@@ -52,7 +56,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       const account = readIdToken(tokens.id_token);
 
       // Account switching requires a separate, explicit disconnect.
-      const existing = await findConnection(medplum, practitionerRef);
       if (existing && existing.accountSub !== account.sub) {
         throw new Error('Disconnect the existing Google account before switching accounts');
       }
@@ -75,18 +78,10 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     } catch (err) {
       // Do not revoke a grant that a partially successful save already made durable.
       const current = await findConnection(medplum, practitionerRef);
-      let persisted = false;
-      let storedCredentialExists = false;
-      if (current) {
-        try {
-          persisted = (await readCredential(medplum, current)) === tokens.refresh_token;
-          storedCredentialExists = true;
-        } catch (readError) {
-          if (!(readError instanceof MissingCalendarCredentialError)) {
-            throw err;
-          }
-        } // An unreadable store is not evidence that the grant is unused.
-      }
+      // The connection lease excludes other writers, so a changed revision is this save.
+      const storedAfter = current && (await credentialRevision(medplum, current.basic.id));
+      const storedCredentialExists = storedAfter !== undefined;
+      const persisted = storedCredentialExists && storedAfter !== storedBefore;
       // Revocation may invalidate other tokens for the same client/account. Do not revoke
       // automatically when this practitioner already has a stored grant.
       if (!persisted && storedCredentialExists && (!exchangedAccount || exchangedAccount === current?.accountSub)) {

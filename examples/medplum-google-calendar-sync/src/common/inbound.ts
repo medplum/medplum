@@ -6,9 +6,9 @@ import { randomUUID } from 'node:crypto';
 import type { CalendarConnection } from './connection';
 import { readConnection, updateConnection } from './connection';
 import { EVENT_PROPERTY, SECRET } from './constants';
-import { deleteCredential, readCredential } from './credentials';
+import { deleteCredential, MissingCalendarCredentialError, needsReconnect, readCredential } from './credentials';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
-import { getOAuthClient, GoogleOAuthError, refreshAccessToken, revokeToken } from './google-oauth';
+import { getOAuthClient, refreshAccessToken, revokeToken } from './google-oauth';
 import { importBusyTime, importedSlots } from './import';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
@@ -104,7 +104,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
       if (err instanceof InboundPending) {
         return;
       }
-      const revoked = err instanceof GoogleOAuthError && err.isInvalidGrant;
+      const revoked = needsReconnect(err);
       if (revoked && connection.status === 'active') {
         await updateConnection(medplum, connection, { status: 'reauth-required' }, lease);
       }
@@ -146,7 +146,7 @@ export async function cleanupConnection(
       token = (await refreshAccessToken(getOAuthClient(secrets), await readCredential(medplum, connection)))
         .access_token;
     } catch (err) {
-      if (!(err instanceof GoogleOAuthError && err.isInvalidGrant && state.forgetRevoked)) {
+      if (!(needsReconnect(err) && state.forgetRevoked)) {
         throw err;
       }
     }
@@ -212,7 +212,14 @@ export async function cleanupConnection(
   }
   state = readState(await lease.read());
   if (state.googleCleaned && !state.credentialRevoked) {
-    await revokeToken(await readCredential(medplum, connection));
+    try {
+      await revokeToken(await readCredential(medplum, connection));
+    } catch (err) {
+      // An explicit forget accepts that a missing token cannot be revoked.
+      if (!(err instanceof MissingCalendarCredentialError && state.forgetRevoked)) {
+        throw err;
+      }
+    }
     await lease.mutate((basic) => withState(basic, { ...readState(basic), credentialRevoked: true }));
     state = readState(await lease.read());
   }

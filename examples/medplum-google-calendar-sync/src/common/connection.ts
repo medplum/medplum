@@ -7,7 +7,7 @@ import type { Basic, Extension } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { EventDetailLevel } from './constants';
 import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE } from './constants';
-import { TOKEN_URL, writeCredential } from './credentials';
+import { writeCredential } from './credentials';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
 import { projectQuery } from './project';
@@ -185,7 +185,7 @@ export async function saveConnection(
             ...(resource.identifier ?? []),
           ],
           extension: [
-            ...(latest.extension ?? []).filter((e) => !changedUrls.has(e.url) && e.url !== TOKEN_URL),
+            ...(latest.extension ?? []).filter((e) => !changedUrls.has(e.url)),
             ...extension.map((e) =>
               e.url === EXTENSION.status && disconnecting ? { ...e, valueCode: 'disconnecting' } : e
             ),

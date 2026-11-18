@@ -6,7 +6,7 @@ import type { AccessPolicy } from '@medplum/fhirtypes';
 import { CONFIG_SEARCH } from './configuration';
 import { CONNECTION_SEARCH } from './connection';
 import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM } from './constants';
-import { CREDENTIAL_SEARCH } from './credentials';
+import { CREDENTIAL_CRITERIA } from './credentials';
 import { MIRROR_SEARCH } from './ownership';
 import { projectQuery } from './project';
 import { PUBLIC_STATUS_SEARCH } from './public-status';
@@ -39,18 +39,28 @@ export const PRACTITIONER_POLICY_SNIPPET: NonNullable<AccessPolicy['resource']> 
   { resourceType: 'Bot', criteria: OPERATION_BOT_CRITERIA, readonly: true },
 ];
 
+type PolicyEntry = NonNullable<AccessPolicy['resource']>[number];
+export type PolicyKind = 'worker' | 'webhook' | 'connect' | 'operation';
+
 /**
- * The policy the sync and reconcile Bots run under in the customer project: read what the
- * mapping needs, and read and update Calendar Connections.
- * @param medplum - The client.
- * @returns The policy.
+ * The only grants on the refresh token. Workers read it; the connect Bot writes it.
+ * @param interaction - What the policy may do with the stored token.
+ * @returns The policy entry.
  */
-export async function ensureSyncAccessPolicy(medplum: MedplumClient): Promise<WithId<AccessPolicy>> {
-  const tag = { system: INSTALL_SYSTEM, code: 'sync-policy' };
-  const desired: AccessPolicy = {
-    resourceType: 'AccessPolicy',
-    meta: { tag: [tag] },
-    name: 'Google Calendar Sync Bot',
+function credentialGrant(interaction: NonNullable<PolicyEntry['interaction']>): PolicyEntry {
+  return { resourceType: 'Basic', criteria: CREDENTIAL_CRITERIA, interaction };
+}
+
+const CONNECTION: PolicyEntry = { resourceType: 'Basic', criteria: `Basic?${CONNECTION_SEARCH}` };
+const PUBLIC_STATUS: PolicyEntry = { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` };
+const CONFIG: PolicyEntry = { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true };
+const OPERATION: PolicyEntry[] = [{ resourceType: 'Practitioner', readonly: true }, CONNECTION, PUBLIC_STATUS, CONFIG];
+
+/** One policy per trust level; every Bot membership in a customer project runs under one of these. */
+const POLICIES: Record<PolicyKind, { name: string; resource: PolicyEntry[] }> = {
+  // The sync, reconcile and import Bots: read scheduling data, write only what the integration owns.
+  worker: {
+    name: 'Google Calendar Worker',
     resource: [
       // Prefer: respond-async creates a job through the caller's repository.
       { resourceType: 'AsyncJob', interaction: ['create'] },
@@ -59,79 +69,39 @@ export async function ensureSyncAccessPolicy(medplum: MedplumClient): Promise<Wi
         criteria: `Bot?identifier=${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.reconcile},${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.inbound}`,
         readonly: true,
       },
-      { resourceType: 'Appointment', readonly: true },
-      { resourceType: 'Slot', readonly: true },
-      { resourceType: 'Schedule', readonly: true },
-      { resourceType: 'Patient', readonly: true },
-      { resourceType: 'Practitioner', readonly: true },
-      { resourceType: 'PractitionerRole', readonly: true },
-      { resourceType: 'HealthcareService', readonly: true },
-      { resourceType: 'Basic', criteria: `Basic?${CONNECTION_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${CREDENTIAL_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${MIRROR_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true },
-    ],
-  };
-  const existing = await medplum.searchOne(
-    'AccessPolicy',
-    await projectQuery(medplum, { _tag: `${tag.system}|${tag.code}` })
-  );
-  return existing
-    ? medplum.updateResource(
-        { ...desired, id: existing.id, meta: { ...existing.meta, ...desired.meta } },
-        ifMatch(existing)
-      )
-    : medplum.createResourceIfNoneExist(desired, await projectQuery(medplum, { _tag: `${tag.system}|${tag.code}` }));
-}
-
-export async function ensureInboundPolicy(medplum: MedplumClient, webhookOnly = false): Promise<WithId<AccessPolicy>> {
-  const tag = { system: INSTALL_SYSTEM, code: webhookOnly ? 'webhook-policy' : 'import-policy' };
-  const resource: AccessPolicy['resource'] = [
-    {
-      resourceType: 'Basic',
-      criteria: `Basic?${CONNECTION_SEARCH}`,
-      ...(webhookOnly ? { interaction: ['read', 'search', 'update'] as ('read' | 'search' | 'update')[] } : {}),
-    },
-  ];
-  if (!webhookOnly) {
-    resource.push(
-      { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${CREDENTIAL_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${MIRROR_SEARCH}` },
+      ...(
+        ['Appointment', 'Slot', 'Schedule', 'Patient', 'Practitioner', 'PractitionerRole', 'HealthcareService'] as const
+      ).map((resourceType) => ({ resourceType, readonly: true })),
       { resourceType: 'Slot', criteria: `Slot?identifier=${IMPORT_IDENTIFIER_SYSTEM}|` },
-      { resourceType: 'Schedule', readonly: true },
-      { resourceType: 'PractitionerRole', readonly: true }
-    );
-  }
-  const desired: AccessPolicy = {
-    resourceType: 'AccessPolicy',
-    meta: { tag: [tag] },
-    name: webhookOnly ? 'Google Calendar Webhook' : 'Google Calendar Import',
-    resource,
-  };
-  const query = await projectQuery(medplum, { _tag: `${tag.system}|${tag.code}` });
-  const saved = await medplum.createResourceIfNoneExist(desired, query);
-  return medplum.updateResource({ ...desired, id: saved.id, meta: { ...saved.meta, ...desired.meta } }, ifMatch(saved));
-}
-
-export async function ensureOperationPolicy(
-  medplum: MedplumClient,
-  credentials: boolean
-): Promise<WithId<AccessPolicy>> {
-  const tag = { system: INSTALL_SYSTEM, code: credentials ? 'connect-policy' : 'operation-policy' };
-  const desired: AccessPolicy = {
-    resourceType: 'AccessPolicy',
-    meta: { tag: [tag] },
-    name: 'Google Calendar operations',
-    resource: [
-      { resourceType: 'Practitioner', readonly: true },
-      { resourceType: 'Basic', criteria: `Basic?${CONNECTION_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${PUBLIC_STATUS_SEARCH}` },
-      { resourceType: 'Basic', criteria: `Basic?${CONFIG_SEARCH}`, readonly: true },
-      ...(credentials ? [{ resourceType: 'Basic' as const, criteria: `Basic?${CREDENTIAL_SEARCH}` }] : []),
+      CONNECTION,
+      PUBLIC_STATUS,
+      CONFIG,
+      { resourceType: 'Basic', criteria: `Basic?${MIRROR_SEARCH}` },
+      credentialGrant(['read', 'search', 'delete']),
     ],
-  };
+  },
+  // The public webhook only flags a connection for import.
+  webhook: {
+    name: 'Google Calendar Webhook',
+    resource: [{ ...CONNECTION, interaction: ['read', 'search', 'update'] }],
+  },
+  connect: {
+    name: 'Google Calendar Connect',
+    resource: [...OPERATION, credentialGrant(['create', 'read', 'search', 'update'])],
+  },
+  // The settings and disconnect Bots never touch the token.
+  operation: { name: 'Google Calendar Operations', resource: OPERATION },
+};
+
+/**
+ * Creates or repairs one of the integration's policies in the customer project.
+ * @param medplum - The client.
+ * @param kind - Which policy.
+ * @returns The policy.
+ */
+export async function ensurePolicy(medplum: MedplumClient, kind: PolicyKind): Promise<WithId<AccessPolicy>> {
+  const tag = { system: INSTALL_SYSTEM, code: `${kind}-policy` };
+  const desired: AccessPolicy = { resourceType: 'AccessPolicy', meta: { tag: [tag] }, ...POLICIES[kind] };
   const saved = await medplum.createResourceIfNoneExist(
     desired,
     await projectQuery(medplum, { _tag: `${tag.system}|${tag.code}` })
