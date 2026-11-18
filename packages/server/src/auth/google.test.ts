@@ -47,6 +47,7 @@ describe('Google Auth', () => {
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
+    getConfig().blockedEmailDomains = undefined;
   });
 
   afterAll(async () => {
@@ -181,6 +182,25 @@ describe('Google Auth', () => {
 
     const user = await getUserByEmail(email, undefined);
     expect(user).toBeDefined();
+  });
+
+  test('Blocked email domain is rejected for new server-scoped user', async () => {
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+    const email = 'new-google-' + randomUUID() + '@blocked.example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Email domain is not allowed');
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeUndefined();
   });
 
   test('Existing user for new project', async () => {

@@ -2443,4 +2443,86 @@ describe('Admin Invite', () => {
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
   });
+
+  test('Invite with blocked email domain is rejected for server-scoped non-Practitioner users', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    for (const invite of [{ resourceType: 'RelatedPerson' }, { resourceType: 'Patient', scope: 'server' }]) {
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          ...invite,
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: `bob${randomUUID()}@blocked.example.com`,
+          sendEmail: false,
+        });
+
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
+    }
+  });
+
+  test('Invite with blocked email domain succeeds for project-scoped Patient', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@blocked.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+  });
+
+  test('Super admin invite bypasses blocked email domain', async () => {
+    const { project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    const superAdminAccessToken = await getSuperAdminAccessToken();
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@blocked.example.com`,
+        sendEmail: false,
+      });
+
+    expect(res).toHaveStatus(200);
+  });
 });

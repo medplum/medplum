@@ -16,7 +16,7 @@ import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
-import { sendVerificationEmail } from './newuser';
+import { createUser, sendVerificationEmail } from './newuser';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 /*
@@ -119,19 +119,13 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
-    const systemRepo = getGlobalSystemRepo();
-    user = await systemRepo.createResource<User>({
-      resourceType: 'User',
-      firstName: claims.given_name,
-      lastName: claims.family_name,
-      email,
+    user = await createUser(
+      { firstName: claims.given_name, lastName: claims.family_name, email, projectId },
       // Google has already established that the user owns this address, so accept its
       // assertion rather than asking for a second proof. Anything but a verified claim
       // is falsy here and falls through to the email verification below.
-      emailVerified: claims.email_verified,
-      project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
-      meta: projectId && projectId !== 'new' ? { project: projectId } : undefined,
-    });
+      { emailVerified: claims.email_verified }
+    );
   } else if (claims.email_verified && !user.emailVerified) {
     // Accept Google's assertion for accounts that predate it too, so a user invited or
     // provisioned before this is not left permanently unverified. Only ever upgrades: a
