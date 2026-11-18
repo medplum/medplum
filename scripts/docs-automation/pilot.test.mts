@@ -81,7 +81,8 @@ test('edits must stay on planned, hand-written pages and citations must exist', 
   assert.throws(() => capturePatch([page], true), /plan/);
   const missing = { path: page, line: 4, note: 'Past the end.' };
   const absent = { path: 'packages/docs/missing.md', line: 1, note: 'No such file.' };
-  assert.throws(() => review(() => ({ ...plan, evidence: [missing, absent] })), /needs evidence/);
+  const folder = { path: 'packages/docs', line: 1, note: 'A directory.' };
+  assert.throws(() => review(() => ({ ...plan, evidence: [missing, absent, folder] })), /needs evidence/);
   assert.throws(() => review(() => ({ ...plan, pages: 'unexpected' })));
 });
 

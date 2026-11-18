@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod/v4';
 import config from './config.json' with { type: 'json' };
@@ -59,7 +59,7 @@ function evidence(citations: z.infer<typeof cites>): z.infer<typeof cites> {
     .filter(({ path, line }) => {
       if (!/^(packages|examples|scripts|charts|terraform|\.github)\//.test(path)) return false;
       const file = checkedPath(path);
-      if (!existsSync(file)) return false;
+      if (!statSync(file, { throwIfNoEntry: false })?.isFile()) return false;
       const lines = read(file).split(/\r\n|[\r\n]/);
       if (lines.at(-1) === '') lines.pop();
       return line <= lines.length;
