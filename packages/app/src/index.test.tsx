@@ -85,7 +85,7 @@ describe('App Index', () => {
     container = document.createElement('div');
     container.id = 'root';
     document.body.appendChild(container);
-    ({ root, medplum } = initApp());
+    ({ root, medplum } = await initApp());
 
     // createBrowserRouter + jsdom does not reliably complete HomePage URL redirects, so verify
     // initApp mounted an authenticated App shell instead of search-control specifically.
