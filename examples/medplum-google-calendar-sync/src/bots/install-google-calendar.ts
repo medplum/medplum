@@ -35,7 +35,9 @@ async function execute(medplum: MedplumClient): Promise<Parameters> {
   // The Secrets tab can store the detail switch as a Boolean.
   const secret = (name: string): string | undefined => {
     const found = project.secret?.find((s) => s.name === name);
-    return found?.valueString?.trim() || found?.valueBoolean?.toString();
+    return (
+      found?.valueString?.trim() || (name === SECRET.allowEventDetails ? found?.valueBoolean?.toString() : undefined)
+    );
   };
   for (const name of [SECRET.clientId, SECRET.clientSecret]) {
     if (!secret(name)) {
