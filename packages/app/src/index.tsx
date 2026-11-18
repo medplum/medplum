@@ -15,7 +15,7 @@ import { App } from './App';
 import { getConfig } from './config';
 import './index.css';
 
-export async function initApp(): Promise<Root> {
+export function initApp(): Root {
   const config = getConfig();
 
   const medplum = new MedplumClient({
@@ -70,5 +70,5 @@ export async function initApp(): Promise<Root> {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  initApp().catch(console.error);
+  initApp();
 }
