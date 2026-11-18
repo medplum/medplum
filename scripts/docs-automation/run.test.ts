@@ -104,8 +104,11 @@ test('accepts PR numbers and rejects command/URL/option injection', () => {
     assert.throws(() => sourceNumber(value));
   }
 });
-test('accepts xhigh effort and rejects invalid configuration', () => {
+test('passes each stage its configured model and validates effort', () => {
   const effort = config.effort;
+  for (const stage of ['classify', 'draft', 'verify'] as const) {
+    assert.ok(args(stage).startsWith(`--model ${config.models[stage]} --effort ${effort} `));
+  }
   try {
     config.effort = 'xhigh';
     assert.match(args('draft'), /--effort xhigh/);
@@ -502,7 +505,7 @@ function sourceContext(baseSha: string) {
     baseBranch: 'main',
     mode: 'open-pr',
     source: { number: 123, user: { type: 'User', login: 'original-author' } },
-    model: config.model,
+    models: config.models,
     effort: 'high',
   };
 }

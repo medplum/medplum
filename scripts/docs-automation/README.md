@@ -26,7 +26,7 @@ The workflow uses the existing `ANTHROPIC_API_KEY` secret. For `open-pr`, enable
 
 - [Classification](prompts/classify.md) defines the four outcomes and which pages the assistant may edit, including hand-written API guides and FHIR resource notes.
 - [Drafting](prompts/draft.md) covers Medplum writing style, examples, Hugo markup, and visuals. The [verifier](prompts/verify.md) checks the patch against the same guidance and current source. Reviewers run new inline examples and inspect the rendered page.
-- [Configuration](config.json) sets the model (Sonnet 5.5 at high effort), file and diff limits, and per-pass budgets. Each pass gets 40 turns and 20 minutes. The spending limits are $3 for classification, $5 for drafting, and $3 for verification.
+- Opus 5.5 drafts the docs. Sonnet 5.5 classifies PRs and verifies drafts. All three passes use high effort, with 40 turns and 20 minutes each. The spending limits are $3 for classification, $5 for drafting, and $3 for verification. [Configuration](config.json).
 
 The controller reads the landed diff and checks coverage against the current default branch. Ambiguous merge history or oversized changes go to human review. For single-parent commits, the changed paths must match the PR file list and the parent must belong outside the PR.
 

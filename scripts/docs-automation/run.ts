@@ -50,7 +50,7 @@ interface Context {
   baseBranch: string;
   mode: string;
   workflowSha: string;
-  model: string;
+  models: Record<keyof typeof schemas, string>;
   effort: string;
   files: string[];
   docsHints: string[];
@@ -154,10 +154,8 @@ export function checkDraftedFiles(root: string, classification: Classification, 
 }
 // Only the draft stage gets Edit/Write, and only for the exact planned paths. Edit rules also cover Write.
 export function args(stage: keyof typeof schemas, editPaths: string[] = []): string {
-  if (
-    !/^claude-[a-z0-9.-]+$/.test(config.model) ||
-    !['low', 'medium', 'high', 'xhigh', 'max'].includes(config.effort)
-  ) {
+  const model = config.models[stage];
+  if (!/^claude-[a-z0-9.-]+$/.test(model) || !['low', 'medium', 'high', 'xhigh', 'max'].includes(config.effort)) {
     throw new Error('Invalid model/effort configuration');
   }
   if (!Number.isInteger(config.maxTurns) || config.maxTurns < 1 || !Number.isFinite(config.budgetUsd[stage])) {
@@ -167,7 +165,7 @@ export function args(stage: keyof typeof schemas, editPaths: string[] = []): str
   const tools = ['Read', 'Glob', 'Grep', ...(editPaths.length ? ['Edit', 'Write'] : [])];
   const allowed = ['Read', 'Glob', 'Grep', ...editPaths.map((path) => `Edit(repo/${path})`)];
   return (
-    `--model ${config.model} --effort ${config.effort} --max-turns ${config.maxTurns} ` +
+    `--model ${model} --effort ${config.effort} --max-turns ${config.maxTurns} ` +
     `--max-budget-usd ${config.budgetUsd[stage]} --tools ${tools.join(',')} --allowedTools '${allowed.join(',')}' ` +
     `--disallowedTools 'mcp__*' --setting-sources user --permission-mode dontAsk ` +
     `--json-schema '${JSON.stringify(schemas[stage])}'`
@@ -218,7 +216,7 @@ function prepare(): void {
     baseBranch: details.default_branch,
     mode,
     workflowSha: process.env.GITHUB_SHA ?? 'local',
-    model: config.model,
+    models: config.models,
     effort: config.effort,
     files: [],
     docsHints: [],
@@ -375,7 +373,7 @@ function renderSummary(): void {
       blocks.push(
         `Source: ${context.repository}#${context.source.number}`,
         `Mode: ${context.mode}`,
-        `Model: ${context.model}; effort: ${context.effort}`,
+        `Configured models (${context.effort} effort): classify \`${context.models.classify}\`, draft \`${context.models.draft}\`, verify \`${context.models.verify}\`.`,
         `Docs base: ${context.baseSha}`,
         ''
       );
@@ -537,7 +535,7 @@ function publish(): void {
     '## Reviewer Checks',
     safe(draft.notes),
     '',
-    `[Verification and Hugo build](${run}) · ${context.model}, ${context.effort} effort. Inline examples require manual testing.`,
+    `Drafted with \`${context.models.draft}\` and checked with \`${context.models.verify}\` at ${context.effort} effort. [Verification and Hugo build](${run}). Inline examples require manual testing.`,
   ].join('\n');
   const created = api<{ number: number; html_url: string }>(`repos/${context.repository}/pulls`, 'POST', {
     title: `docs: follow up on #${context.source.number}${needsInput ? ' (needs input)' : ''}`,
