@@ -8,16 +8,17 @@ import { append, capturePatch, checkedPath, docPath, load, read, run, save } fro
 
 const text = z.string().min(1).max(1600);
 const list = z.array(text).max(8);
+const cites = z.array(z.strictObject({ path: text, line: z.number().int().min(1), note: text })).max(8);
 const schemas = {
   classify: z.strictObject({
     outcome: z.enum(['no-docs', 'already-covered', 'update-docs', 'needs-human']),
     summary: text,
     pages: z.array(text).max(config.maxDraftFiles),
-    evidence: list,
+    evidence: cites,
     questions: list,
   }),
   draft: z.strictObject({ notes: text, questions: list }),
-  verify: z.strictObject({ findings: list, evidence: list }),
+  verify: z.strictObject({ findings: list, evidence: cites }),
 };
 function ask(stage: keyof typeof schemas, pages: string[] = []): unknown {
   const tools = ['Read', 'Glob', 'Grep'];
@@ -51,18 +52,18 @@ function ask(stage: keyof typeof schemas, pages: string[] = []): unknown {
 }
 
 const relative = (ref: string): string => ref.replace(/^(?:\.\/)?repo\//, '');
-function evidence(citations: string[]): string[] {
-  return citations.map(relative).filter((ref) => {
-    const match =
-      /^((?:packages|examples|scripts|charts|terraform|\.github)\/[^:\s]+):([1-9]\d*)(?:-([1-9]\d*))?\b/.exec(ref);
-    if (!match) return false;
-    const lines = read(checkedPath(match[1])).split(/\r\n|[\r\n]/);
-    if (lines.at(-1) === '') lines.pop();
-    const start = Number(match[2]);
-    const end = Number(match[3] ?? match[2]);
-    assert(start <= end && end <= lines.length, `Invalid evidence: ${ref}`);
-    return true;
-  });
+const cited = (c: z.infer<typeof cites>[number]): string => `${c.path}:${c.line} ${c.note}`;
+function evidence(citations: z.infer<typeof cites>): z.infer<typeof cites> {
+  return citations
+    .map((c) => ({ ...c, path: relative(c.path) }))
+    .filter(({ path, line }) => {
+      if (!/^(packages|examples|scripts|charts|terraform|\.github)\//.test(path)) return false;
+      const file = checkedPath(path);
+      if (!existsSync(file)) return false;
+      const lines = read(file).split(/\r\n|[\r\n]/);
+      if (lines.at(-1) === '') lines.pop();
+      return line <= lines.length;
+    });
 }
 
 function classify(value: unknown): z.infer<typeof schemas.classify> {
@@ -71,7 +72,7 @@ function classify(value: unknown): z.infer<typeof schemas.classify> {
   plan.pages = plan.pages.map(relative);
   assert((plan.outcome === 'needs-human') === !!plan.questions.length, 'An unresolved decision needs questions');
   assert(plan.outcome === 'needs-human' || plan.evidence.length, 'A conclusive decision needs evidence');
-  const citesDocs = plan.evidence.some((ref) => ref.startsWith('packages/docs/'));
+  const citesDocs = plan.evidence.some(({ path }) => path.startsWith('packages/docs/'));
   assert(plan.outcome !== 'already-covered' || citesDocs, 'Cite the existing docs');
   assert((plan.outcome === 'update-docs') === !!plan.pages.length, 'Invalid page plan');
   assert(new Set(plan.pages).size === plan.pages.length, 'Duplicate planned page');
@@ -85,7 +86,7 @@ export function review(agent = ask): void {
     ? schemas.classify.parse(load('classification.json'))
     : classify(agent('classify'));
   const questions = [...plan.questions];
-  const details = [plan.summary, ...plan.evidence, ...plan.pages];
+  const details = [plan.summary, ...plan.evidence.map(cited), ...plan.pages];
   let tree = '';
   if (process.env.MODE !== 'classify' && plan.outcome === 'update-docs') {
     const draft = schemas.draft.parse(agent('draft', plan.pages));
@@ -100,7 +101,7 @@ export function review(agent = ask): void {
         check.findings.push('Check the draft against the implementation. The verifier cited no source.');
       save('verification.json', check);
       questions.push(...check.findings);
-      details.push(...check.evidence);
+      details.push(...check.evidence.map(cited));
     }
   }
   const lines = [`**${questions.length ? 'needs-human' : plan.outcome}**`];

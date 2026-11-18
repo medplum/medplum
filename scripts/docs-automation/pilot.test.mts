@@ -11,7 +11,10 @@ const page = 'packages/docs/content/docs/example.md';
 const plan = {
   outcome: 'update-docs',
   summary: 'Explain the default.',
-  evidence: [page + ':1-3 sets the title', 'A search found no other mention.'],
+  evidence: [
+    { path: page, line: 2, note: 'Sets the title.' },
+    { path: '.docs-run/docs.patch', line: 1, note: 'Run artifact.' },
+  ],
   pages: [page, page.replace('example', 'other')],
   questions: [],
 };
@@ -45,7 +48,7 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
     return plan;
   });
   assert(!fs.existsSync(run + '/docs.patch'));
-  assert.deepEqual(load<typeof plan>('classification.json').evidence, [page + ':1-3 sets the title']);
+  assert.deepEqual(load<typeof plan>('classification.json').evidence, [plan.evidence[0]]);
   process.env.MODE = 'draft';
   review((stage, pages) => {
     if (stage === 'draft') {
@@ -54,7 +57,7 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
       return { notes: 'Check rollout.', questions: ['Which release?'] };
     }
     assert.equal(stage, 'verify');
-    return { evidence: [page + ':2'], findings: ['Check the default.', 'Run the inline example.'] };
+    return { evidence: [plan.evidence[0]], findings: ['Check the default.', 'Run the inline example.'] };
   });
   assert.match(read(run + '/docs.patch'), /\+New behavior\./);
   assert.equal(load<{ findings: string[] }>('verification.json').findings.length, 2);
@@ -76,9 +79,9 @@ test('edits must stay on planned, hand-written pages and citations must exist', 
   }
   docPath('packages/docs/content/docs/api/fhir/resources/_index.md');
   assert.throws(() => capturePatch([page], true), /plan/);
-  for (const line of [':4', ':2-4 note', ':99-2']) {
-    assert.throws(() => review(() => ({ ...plan, evidence: [page + line] })), /Invalid evidence/);
-  }
+  const missing = { path: page, line: 4, note: 'Past the end.' };
+  const absent = { path: 'packages/docs/missing.md', line: 1, note: 'No such file.' };
+  assert.throws(() => review(() => ({ ...plan, evidence: [missing, absent] })), /needs evidence/);
   assert.throws(() => review(() => ({ ...plan, pages: 'unexpected' })));
 });
 
