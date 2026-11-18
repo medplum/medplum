@@ -22,7 +22,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger, globalLogger } from '../../logger';
 import { deleteOldLambdaVersions, getBotManagementLambdaClient } from './lambda';
 
-export const LAMBDA_RUNTIME = 'nodejs22.x';
+export const LAMBDA_RUNTIME = 'nodejs24.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;

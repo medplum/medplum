@@ -18,7 +18,7 @@ jobs:
     runs-on: medplum-build-16core
     timeout-minutes: 45
     env:
-      NODE_VERSION: '22'
+      NODE_VERSION: '24'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'

@@ -87,6 +87,7 @@ With the ground rules out of the way, let's talk about the coarse architecture o
 
 Here is a list of all the big technologies we use:
 
+- **Node.js 24**: Server runtime and local tooling
 - **PostgreSQL**: Data storage
 - **Redis**: Background jobs and caching
 - **Express**: API server

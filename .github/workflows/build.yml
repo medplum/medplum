@@ -23,7 +23,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -162,7 +162,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
       - name: Install npm from packageManager
         run: corepack enable npm
@@ -382,7 +382,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24]
         pg-version: [14, 18]
         datastore: [valkey, redis]
         include:
@@ -484,10 +484,10 @@ jobs:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           SERVER_TEST_CACHE_KEY: NODE${{ matrix.node-version }}-PG${{ matrix.pg-version }}-${{ matrix.datastore }}
-          NO_COVERAGE: ${{ case(matrix.node-version == 22 && matrix.pg-version == 14 && matrix.datastore == 'valkey', '', '1') }}
+          NO_COVERAGE: ${{ case(matrix.node-version == 24 && matrix.pg-version == 14 && matrix.datastore == 'valkey', '', '1') }}
 
       - name: Coveralls GitHub Action
-        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.datastore == 'valkey' }}
+        if: ${{ matrix.node-version == 24 && matrix.pg-version == 14 && matrix.datastore == 'valkey' }}
         continue-on-error: true
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
@@ -497,7 +497,7 @@ jobs:
         # Skip on fork PRs (SONAR_TOKEN is unavailable to forks). Still runs on push to
         # main and merge_group; for pull_request events, only runs when the PR head is on
         # this repo rather than a fork.
-        if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.datastore == 'valkey' }}
+        if: ${{ !github.event.pull_request.head.repo.fork && matrix.node-version == 24 && matrix.pg-version == 14 && matrix.datastore == 'valkey' }}
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -510,7 +510,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -563,7 +563,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24]
         pg-version: [14, 18]
         datastore: [valkey, redis]
         include:
@@ -724,7 +724,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 22 && matrix.pg-version == 14 && matrix.datastore == 'valkey') }}
+        if: ${{ failure() || (matrix.node-version == 24 && matrix.pg-version == 14 && matrix.datastore == 'valkey') }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-${{ matrix.datastore }}
@@ -741,7 +741,7 @@ jobs:
       pull-requests: write
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: '22'
+      NODE_VERSION: '24'
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:

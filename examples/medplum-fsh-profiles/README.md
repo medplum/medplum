@@ -21,7 +21,7 @@ The project includes custom vocabularies for healthcare service classification:
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (v14 or later)
+- [Node.js](https://nodejs.org/) (24.2 or later)
 - [SUSHI](https://fshschool.org/docs/sushi/) (installed via npm as a dev dependency)
 
 ## Project Structure
