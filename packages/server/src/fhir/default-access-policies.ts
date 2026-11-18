@@ -32,12 +32,15 @@ const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
 export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfileType, () => DefaultAccessPolicy>> = {
   Patient: () => ({
     name: 'Default Patient Access Policy',
-    compartment: { reference: '%patient' },
+    // Criteria below limit reads to the patient compartment, which the server assigns from
+    // patient references on the resource. A top-level compartment would only tag meta.accounts on create.
     resource: patientCompartmentResources(),
   }),
   RelatedPerson: () => ({
     name: 'Default RelatedPerson Access Policy',
-    compartment: { reference: '%patient' },
+    // Same criteria as the patient policy. %patient is the associated Patient, supplied by
+    // ProjectMembership.access.parameter on invite. The profile is the RelatedPerson, so it
+    // cannot fill %patient.
     resource: patientCompartmentResources(),
   }),
   Admin: () => ({
@@ -46,7 +49,10 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
   }),
   Practitioner: () => ({
     name: 'Default Practitioner Access Policy',
-    resource: writableExcept({ readonly: PRACTITIONER_READONLY_RESOURCE_TYPES }),
+    resource: writableExcept({
+      readonly: [...PRACTITIONER_READONLY_RESOURCE_TYPES, 'Bot', 'ClientApplication'],
+      hiddenFields: { ClientApplication: CLIENT_SECRET_FIELDS },
+    }),
   }),
   Bot: () => ({
     name: 'Default Bot Access Policy',

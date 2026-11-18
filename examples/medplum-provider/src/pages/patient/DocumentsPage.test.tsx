@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { DocumentReference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import type { NavigateFunction } from 'react-router';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { DocumentsPage } from './DocumentsPage';
 
 vi.mock('../../utils/notifications');
@@ -42,12 +42,10 @@ describe('DocumentsPage', () => {
     return render(
       <MemoryRouter initialEntries={[url]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/Patient/:patientId/DocumentReference" element={<DocumentsPage />} />
-              <Route path="/Patient/:patientId/DocumentReference/:documentId" element={<DocumentsPage />} />
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/Patient/:patientId/DocumentReference" element={<DocumentsPage />} />
+            <Route path="/Patient/:patientId/DocumentReference/:documentId" element={<DocumentsPage />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

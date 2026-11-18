@@ -5,6 +5,7 @@ import type {
   ResolveSmartHealthLinkParams,
   SmartHealthLinkManifestFile,
   SmartHealthLinkPayload,
+  WithId,
 } from '@medplum/core';
 import {
   allOk,
@@ -46,6 +47,14 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const EXTERNAL_SMART_HEALTH_LINK_FETCH_TIMEOUT_MS = 5000;
 const MAX_EXTERNAL_SMART_HEALTH_LINK_PAYLOAD_BYTES = 10 * 1024 * 1024;
+
+// The SHL spec requires a lifetime limit on incorrect passcodes; reaching it revokes the link
+export const SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT = 10;
+
+interface SmartHealthLinkValidationError {
+  error: string;
+  remainingAttempts?: number;
+}
 
 interface ResolvedSmartHealthLink {
   manifest?: Record<string, unknown>;
@@ -246,7 +255,8 @@ export async function smartHealthLinkManifestHandler(req: ExpressRequest, res: E
   const passcode = typeof req.body?.passcode === 'string' ? req.body.passcode : undefined;
   const outcome = await validateSmartHealthLink(smartHealthLink, passcode);
   if (outcome) {
-    res.status(400).json({ error: outcome });
+    // The SHL spec requires 401 with the remaining attempts for an incorrect passcode
+    res.status(outcome.remainingAttempts === undefined ? 400 : 401).json(outcome);
     return;
   }
   res
@@ -269,7 +279,7 @@ export async function smartHealthLinkPayloadHandler(req: ExpressRequest, res: Ex
   }
   const outcome = await validateSmartHealthLink(smartHealthLink);
   if (outcome) {
-    res.status(400).json({ error: outcome });
+    res.status(400).json(outcome);
     return;
   }
   const encrypted = await readSmartHealthLinkEncryptedFile(smartHealthLink);
@@ -293,7 +303,7 @@ async function resolveGeneratedSmartHealthLink(
   }
   const outcome = await validateSmartHealthLink(smartHealthLink, passcode);
   if (outcome) {
-    throw new Error(outcome);
+    throw new Error(outcome.error);
   }
   if (smartHealthLink.mode === 'direct' && !recipient) {
     throw new Error('Expected recipient parameter');
@@ -427,24 +437,55 @@ async function buildSmartHealthLinkManifest(
 }
 
 async function validateSmartHealthLink(
-  smartHealthLink: SmartHealthLink,
+  smartHealthLink: WithId<SmartHealthLink>,
   passcode?: string
-): Promise<string | undefined> {
+): Promise<SmartHealthLinkValidationError | undefined> {
   if (smartHealthLink.status !== 'active') {
-    return 'SMART Health Link has been revoked';
+    return { error: 'SMART Health Link has been revoked' };
   }
   if (smartHealthLink.expiresAt !== undefined && new Date(smartHealthLink.expiresAt).getTime() <= Date.now()) {
-    return 'SMART Health Link has expired';
+    return { error: 'SMART Health Link has expired' };
   }
   if (smartHealthLink.flag?.includes('P')) {
-    if (!passcode || !smartHealthLink.passcodeHash || !(await bcrypt.compare(passcode, smartHealthLink.passcodeHash))) {
-      return 'Invalid SMART Health Link passcode';
-    }
+    return checkSmartHealthLinkPasscode(smartHealthLink, passcode);
   }
   return undefined;
 }
 
-async function readSmartHealthLink(id: string | undefined): Promise<SmartHealthLink | undefined> {
+async function checkSmartHealthLinkPasscode(
+  smartHealthLink: WithId<SmartHealthLink>,
+  passcode: string | undefined
+): Promise<SmartHealthLinkValidationError | undefined> {
+  if (passcode && smartHealthLink.passcodeHash && (await bcrypt.compare(passcode, smartHealthLink.passcodeHash))) {
+    // Concurrent guesses all pass the status check before any failure is recorded,
+    // so a correct guess must not be honored if those failures have since revoked the link
+    const current = await readSmartHealthLink(smartHealthLink.id);
+    return current?.status === 'active' ? undefined : { error: 'SMART Health Link has been revoked' };
+  }
+  const failures = await recordSmartHealthLinkPasscodeFailure(smartHealthLink.id);
+  return {
+    error: 'Invalid SMART Health Link passcode',
+    remainingAttempts: Math.max(SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - failures, 0),
+  };
+}
+
+async function recordSmartHealthLinkPasscodeFailure(id: string): Promise<number> {
+  return getGlobalSystemRepo().withTransaction(
+    async (txRepo) => {
+      const smartHealthLink = await txRepo.readResource<SmartHealthLink>('SmartHealthLink', id);
+      const failures = (smartHealthLink.passcodeFailures ?? 0) + 1;
+      await txRepo.updateResource<SmartHealthLink>({
+        ...smartHealthLink,
+        passcodeFailures: failures,
+        status: failures >= SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT ? 'revoked' : smartHealthLink.status,
+      });
+      return failures;
+    },
+    { resourceTypes: ['SmartHealthLink'], source: 'recordSmartHealthLinkPasscodeFailure' }
+  );
+}
+
+async function readSmartHealthLink(id: string | undefined): Promise<WithId<SmartHealthLink> | undefined> {
   if (!id) {
     return undefined;
   }

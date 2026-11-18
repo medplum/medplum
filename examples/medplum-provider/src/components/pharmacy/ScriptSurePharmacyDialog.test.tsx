@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import type * as MedplumReactModule from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
 import { useScriptSurePharmacySearch } from '@medplum/scriptsure-react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ScriptSurePharmacyDialog } from './ScriptSurePharmacyDialog';
 
 type PharmacyDialogProps = MedplumReactModule.PharmacyDialogProps;
@@ -63,10 +63,8 @@ describe('ScriptSurePharmacyDialog', () => {
     const medplum = new MockClient();
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <Notifications />
-          <ScriptSurePharmacyDialog patient={HomerSimpson} onSubmit={vi.fn()} onClose={vi.fn()} />
-        </MantineProvider>
+        <Notifications />
+        <ScriptSurePharmacyDialog patient={HomerSimpson} onSubmit={vi.fn()} onClose={vi.fn()} />
       </MedplumProvider>
     );
   }

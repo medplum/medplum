@@ -50,6 +50,8 @@ The `item` element allows you to group and nest questions together by adding add
 
 To do this, you must set `item.type='group'`. This specifies that the item will not be a question, but instead a group of questions. When defining a group, the `text` property should be a description of the group instead of an actual question.
 
+Nested groups organize inline questions within one definition. To maintain sections independently and reuse them across forms, see [Modular and Composite Questionnaires](/docs/questionnaires/modular-questionnaires).
+
 <details>
 <summary>Example: A <code>Questionnaire</code> with nested questions</summary>
 
