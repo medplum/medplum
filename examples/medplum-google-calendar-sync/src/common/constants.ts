@@ -33,7 +33,6 @@ export const DEFAULT_EVENT_DETAIL_LEVEL: EventDetailLevel = 'busy-only';
 export const BOT_IDENTIFIER_SYSTEM = 'https://www.medplum.com/bots';
 export const BOT_IDENTIFIER_VALUE = {
   sync: 'google-calendar-sync-bot',
-  reconcile: 'google-calendar-reconcile-bot',
   connect: 'google-calendar-connect-bot',
   status: 'google-calendar-status-bot',
   settings: 'google-calendar-settings-bot',

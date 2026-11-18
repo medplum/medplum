@@ -47,13 +47,12 @@ async function execute(medplum: MedplumClient): Promise<Parameters> {
   const ceiling = ceilingFromAllowEventDetails(secret(SECRET.allowEventDetails)) ?? 'busy-only';
 
   const syncBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.sync);
-  const reconcileBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.reconcile);
   const importBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.inbound);
   const webhookBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.webhook);
   if (!webhookBot.publicWebhook) {
     throw new Error('Deploy the Google Calendar webhook Bot with publicWebhook enabled');
   }
-  for (const bot of [syncBot, reconcileBot, importBot, webhookBot]) {
+  for (const bot of [syncBot, importBot, webhookBot]) {
     if ((bot.timeout ?? 10) > 600) {
       throw new Error('Calendar Bot timeout must not exceed 600 seconds for lease safety');
     }
@@ -82,14 +81,13 @@ async function execute(medplum: MedplumClient): Promise<Parameters> {
       await ensurePolicy(medplum, value === BOT_IDENTIFIER_VALUE.connect ? 'connect' : 'operation')
     );
   }
-  await ensureBotMembership(medplum, projectId, syncBot, policy);
+  const syncMembership = await ensureBotMembership(medplum, projectId, syncBot, policy);
   await ensureSyncSubscription(medplum, syncBot, 'Appointment');
   await ensureSyncSubscription(medplum, syncBot, 'Slot');
   await ensureWorkSubscription(medplum, importBot, 'inbound');
-  await ensureWorkSubscription(medplum, reconcileBot, 'outbound');
-  const reconcileMembership = await ensureBotMembership(medplum, projectId, reconcileBot, policy);
-  const cron = await ensureReconcileCron(medplum, projectId, reconcileBot, reconcileMembership);
-  await ensureReconcileCron(medplum, projectId, reconcileBot, reconcileMembership, true);
+  await ensureWorkSubscription(medplum, syncBot, 'outbound');
+  const cron = await ensureReconcileCron(medplum, projectId, syncBot, syncMembership);
+  await ensureReconcileCron(medplum, projectId, syncBot, syncMembership, true);
   for await (const page of medplum.searchResourcePages(
     'Basic',
     await projectQuery(medplum, `${CONNECTION_SEARCH}&_count=200`)

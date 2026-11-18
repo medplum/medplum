@@ -4,13 +4,13 @@
 import type { BotEvent } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { CalendarConnection } from '../common/connection';
-import { saveConnection, updateConnection } from '../common/connection';
-import { BOT_IDENTIFIER_VALUE } from '../common/constants';
-import type * as RangeSyncModule from '../common/range-sync';
-import { readState, withState } from '../common/state';
+import type { CalendarConnection } from './connection';
+import { saveConnection, updateConnection } from './connection';
+import { BOT_IDENTIFIER_VALUE } from './constants';
+import type * as RangeSyncModule from './range-sync';
+import { readState, withState } from './state';
 import { operationIdentity } from '../test-auth';
-import { handler } from './google-calendar-reconcile-bot';
+import { handler } from '../bots/google-calendar-sync-bot';
 
 const { syncRange } = vi.hoisted(() => ({
   syncRange:
@@ -23,7 +23,7 @@ const { syncRange } = vi.hoisted(() => ({
     >(),
 }));
 
-vi.mock('../common/range-sync', async (importOriginal) => {
+vi.mock('./range-sync', async (importOriginal) => {
   const original = await importOriginal<typeof RangeSyncModule>();
   return { ...original, syncRange };
 });
@@ -33,7 +33,7 @@ const secrets: BotEvent['secrets'] = {
   GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
 };
 
-describe('google-calendar-reconcile-bot', () => {
+describe('reconcile', () => {
   let medplum: MockClient;
   const event: BotEvent = {
     bot: { reference: 'Bot/reconcile' },
@@ -44,7 +44,7 @@ describe('google-calendar-reconcile-bot', () => {
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
-    await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.reconcile);
+    await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.sync);
     vi.spyOn(medplum, 'executeBot').mockResolvedValue({});
     syncRange.mockReset();
     syncRange.mockResolvedValue({ candidates: 1, inserted: 1, errors: 0 });
@@ -175,7 +175,7 @@ describe('google-calendar-reconcile-bot', () => {
     expect(medplum.executeBot).toHaveBeenCalledTimes(4);
     for (const connection of [a, b]) {
       expect(medplum.executeBot).toHaveBeenCalledWith(
-        expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.reconcile }),
+        expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.sync }),
         { resourceType: 'Basic', id: connection.basic.id },
         expect.anything(),
         expect.anything()

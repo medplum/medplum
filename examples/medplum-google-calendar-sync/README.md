@@ -9,7 +9,7 @@ This example syncs a practitioner's Medplum schedule with their primary Google C
 - **Medplum to Google**: Creates, updates and removes a Google event for each eligible Appointment and block. An Appointment is eligible while it is booked, arrived, checked in, fulfilled or a no-show; a block is a `busy-unavailable` Slot with no service type. Writes only to events the integration owns.
 - **Google to Medplum**: Creates a Slot on each of the practitioner's active Schedules for each timed Busy event, including each occurrence of a recurring event. Skips all-day, Free, cancelled and declined events. Never creates or changes an Appointment.
 - **Privacy**: Sends every event as Busy by default. A project can let each practitioner choose `busy-only`, `initials` or `full`. Never adds a patient as an attendee. Never copies a Google title, description or guest list into Medplum.
-- **Recovery**: An hourly Cron repairs missed changes in both directions, including a Schedule that changed hands. A Cron that runs every minute retries unfinished work.
+- **Recovery**: An hourly Cron repairs missed changes in both directions, including a Schedule that changed hands. A practitioner taken off an Appointment keeps its event until that repair runs. A Cron that runs every minute retries unfinished work.
 
 ## Bots
 
@@ -20,12 +20,11 @@ This example syncs a practitioner's Medplum schedule with their primary Google C
 | `google-calendar-status-bot`     | Returns connection status                           |
 | `google-calendar-settings-bot`   | Changes a practitioner's detail level               |
 | `google-calendar-disconnect-bot` | Queues disconnect cleanup                           |
-| `google-calendar-sync-bot`       | Sends Appointment and block changes to Google       |
-| `google-calendar-reconcile-bot`  | Runs on the Crons and repairs missed changes        |
+| `google-calendar-sync-bot`       | Sends changes to Google; runs on the Crons          |
 | `google-calendar-import-bot`     | Imports Google Busy events; cleans up on disconnect |
 | `google-calendar-webhook-bot`    | Receives Google's change notifications              |
 
-The first five implement the [custom FHIR operations](#custom-fhir-operations). The last four run in the background.
+The first five implement the [custom FHIR operations](#custom-fhir-operations). The last three run in the background.
 
 ## Prerequisites
 
@@ -154,7 +153,8 @@ Then check a real calendar by hand, in a test project with a test Google account
 
 ## Limitations
 
-- Untested: linked projects, Google Workspace Internal consent, calendars with thousands of events, Google quota limits, recurrence exceptions.
+- Untested: linked projects, Google Workspace Internal consent, Google quota limits, recurrence exceptions.
+- A repair pass that cannot finish within the Bot's ten minutes starts again from the beginning, so a calendar too large for one pass never completes its repair.
 - The refresh token is stored unencrypted in a `Basic` resource. AccessPolicy is the only protection: a project admin, or a user whose policy grants `Basic`, can read it.
 - Discovery and import cover 90 days from now. A change to an Appointment or block outside that window is still sent to Google when it happens, and existing mirrored events are checked whatever their date.
 - Any user who can write Slots can change an imported Slot.

@@ -58,7 +58,7 @@ const OPERATION: PolicyEntry[] = [{ resourceType: 'Practitioner', readonly: true
 
 /** One policy per trust level; every Bot membership in a customer project runs under one of these. */
 const POLICIES: Record<PolicyKind, { name: string; resource: PolicyEntry[] }> = {
-  // The sync, reconcile and import Bots: read scheduling data, write only what the integration owns.
+  // The sync and import Bots: read scheduling data, write only what the integration owns.
   worker: {
     name: 'Google Calendar Worker',
     resource: [
@@ -66,7 +66,7 @@ const POLICIES: Record<PolicyKind, { name: string; resource: PolicyEntry[] }> = 
       { resourceType: 'AsyncJob', interaction: ['create'] },
       {
         resourceType: 'Bot',
-        criteria: `Bot?identifier=${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.reconcile},${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.inbound}`,
+        criteria: `Bot?identifier=${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.sync},${BOT_IDENTIFIER_SYSTEM}|${BOT_IDENTIFIER_VALUE.inbound}`,
         readonly: true,
       },
       ...(

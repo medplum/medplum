@@ -3,17 +3,21 @@
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import { requireBotMembership } from '../common/authorization';
-import { CONNECTION_SEARCH, readConnection } from '../common/connection';
-import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE, INSTALL_SYSTEM } from '../common/constants';
-import { LEASE_URL } from '../common/lease';
-import { assertCurrentProject, projectQuery } from '../common/project';
-import { defaultSyncRange, syncRange } from '../common/range-sync';
-import { readState, requestSync } from '../common/state';
-import { getProjectId, SyncSession } from '../common/sync';
+import { CONNECTION_SEARCH, readConnection } from './connection';
+import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE, INSTALL_SYSTEM } from './constants';
+import { LEASE_URL } from './lease';
+import { assertCurrentProject, projectQuery } from './project';
+import { defaultSyncRange, syncRange } from './range-sync';
+import { readState, requestSync } from './state';
+import { getProjectId, SyncSession } from './sync';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
-  await requireBotMembership(medplum, event, BOT_IDENTIFIER_VALUE.reconcile);
+/**
+ * The worker's non-scheduling deliveries: one connection's queued outbound work, a batch of
+ * connections to dispatch, or a Cron that starts a project-wide sweep.
+ * @param medplum - The worker client.
+ * @param event - The Bot event.
+ */
+export async function reconcile(medplum: MedplumClient, event: BotEvent): Promise<void> {
   const input = event.input as Resource | undefined;
   if (input?.resourceType === 'Basic' && input.id) {
     const connection = readConnection(await medplum.readResource('Basic', input.id, { cache: 'no-cache' }));
@@ -79,7 +83,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
             await medplum.executeBot(
               {
                 system: BOT_IDENTIFIER_SYSTEM,
-                value: direction === 'inbound' ? BOT_IDENTIFIER_VALUE.inbound : BOT_IDENTIFIER_VALUE.reconcile,
+                value: direction === 'inbound' ? BOT_IDENTIFIER_VALUE.inbound : BOT_IDENTIFIER_VALUE.sync,
               },
               { resourceType: 'Basic', id },
               'application/fhir+json',
@@ -118,7 +122,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       .map((b) => b.id);
     if (ids.length) {
       await medplum.executeBot(
-        { system: BOT_IDENTIFIER_SYSTEM, value: BOT_IDENTIFIER_VALUE.reconcile },
+        { system: BOT_IDENTIFIER_SYSTEM, value: BOT_IDENTIFIER_VALUE.sync },
         { connectionIds: ids, retry },
         'application/json',
         { headers: { Prefer: 'respond-async' } }

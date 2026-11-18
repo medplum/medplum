@@ -110,13 +110,13 @@ function hourlyCronString(projectId: string): string {
 }
 
 /**
- * The Cron that runs the reconcile Bot hourly as its membership in this project. The server
+ * The Cron that runs the sync Bot's repair hourly as its membership in this project. The server
  * only schedules it when the project has the `cron` feature; the resource is created either
  * way so enabling the feature later needs no reinstall.
  * @param medplum - The client.
  * @param projectId - The customer project ID.
- * @param reconcileBot - The shared reconcile Bot.
- * @param membership - The reconcile Bot's membership here.
+ * @param reconcileBot - The shared sync Bot.
+ * @param membership - The sync Bot's membership here.
  * @param retry - Whether this is the minute recovery sweep for unfinished work.
  * @returns The Cron.
  */

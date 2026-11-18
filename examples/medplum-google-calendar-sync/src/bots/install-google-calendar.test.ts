@@ -22,7 +22,6 @@ describe('install-google-calendar', () => {
   let medplum: MockClient;
   let project: Project;
   let syncBot: Bot;
-  let reconcileBot: Bot;
   let importBot: Bot;
   let webhookBot: Bot;
   let event: (input: Parameters) => BotEvent<Parameters>;
@@ -68,11 +67,6 @@ describe('install-google-calendar', () => {
       resourceType: 'Bot',
       name: 'sync',
       identifier: [{ system: 'https://www.medplum.com/bots', value: 'google-calendar-sync-bot' }],
-    });
-    reconcileBot = await medplum.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'reconcile',
-      identifier: [{ system: 'https://www.medplum.com/bots', value: 'google-calendar-reconcile-bot' }],
     });
     importBot = await medplum.createResource<Bot>({
       resourceType: 'Bot',
@@ -156,8 +150,6 @@ describe('install-google-calendar', () => {
     await medplum.updateResource({ ...project, features: [] });
     await expect(install(REQUIRED)).rejects.toThrow('"bots" feature');
     await medplum.updateResource({ ...project, features: ['bots', 'cron'] });
-    await medplum.deleteResource('Bot', reconcileBot.id as string);
-    await expect(install(REQUIRED)).rejects.toThrow('google-calendar-reconcile-bot not found');
     await medplum.deleteResource('Bot', syncBot.id as string);
     await expect(install(REQUIRED)).rejects.toThrow('google-calendar-sync-bot not found');
   });
@@ -193,18 +185,13 @@ describe('install-google-calendar', () => {
         .map((e) => e.valueCode)
     ).toEqual(['create', 'update', 'delete']);
     const memberships = await ours('ProjectMembership');
-    expect(memberships).toHaveLength(7);
+    expect(memberships).toHaveLength(6);
     expect(memberships.map((m) => m.profile.reference)).toEqual(
-      expect.arrayContaining([
-        `Bot/${reconcileBot.id}`,
-        `Bot/${syncBot.id}`,
-        `Bot/${importBot.id}`,
-        `Bot/${webhookBot.id}`,
-      ])
+      expect.arrayContaining([`Bot/${syncBot.id}`, `Bot/${importBot.id}`, `Bot/${webhookBot.id}`])
     );
     const crons = await ours('Cron');
     expect(crons).toHaveLength(2);
-    expect(crons[0]).toMatchObject({ active: true, targetReference: { reference: `Bot/${reconcileBot.id}` } });
+    expect(crons[0]).toMatchObject({ active: true, targetReference: { reference: `Bot/${syncBot.id}` } });
     expect(memberships.some((m) => `ProjectMembership/${m.id}` === crons[0].onBehalfOf?.reference)).toBe(true);
     const policies = await ours('AccessPolicy');
     expect(policies).toHaveLength(4);
@@ -218,7 +205,7 @@ describe('install-google-calendar', () => {
     expect(rotated.secret?.find((s) => s.name === 'GOOGLE_CALENDAR_CLIENT_SECRET')?.valueString).toBe('secret-2');
     expect(rotated.secret).toHaveLength(4);
     expect(await ours('Subscription')).toHaveLength(4);
-    expect(await ours('ProjectMembership')).toHaveLength(7);
+    expect(await ours('ProjectMembership')).toHaveLength(6);
     expect(await ours('Cron')).toHaveLength(2);
   });
 
@@ -240,7 +227,7 @@ describe('install-google-calendar', () => {
     });
     await install(REQUIRED);
     const current = await medplum.readResource('Cron', stale.id);
-    expect(current).toMatchObject({ active: true, targetReference: { reference: `Bot/${reconcileBot.id}` } });
+    expect(current).toMatchObject({ active: true, targetReference: { reference: `Bot/${syncBot.id}` } });
     const versions = (await medplum.readHistory('Cron', stale.id)).entry?.map((e) => e.resource) ?? [];
     expect(versions.some((v) => v?.active === false)).toBe(true);
 

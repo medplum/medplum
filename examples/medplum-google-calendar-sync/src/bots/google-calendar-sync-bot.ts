@@ -5,13 +5,15 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { requireBotMembership } from '../common/authorization';
 import { findConnection } from '../common/connection';
+import { reconcile } from '../common/reconcile';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { requestSync } from '../common/state';
 import type { SyncSource } from '../common/sync';
 import { getProjectId, isResourceGone, SyncSession } from '../common/sync';
 
 /*
- * Subscription handler for `Appointment` and `Slot`. Deliveries aren't ordered and the
+ * The outbound worker. Everything that is not an `Appointment` or `Slot` delivery (queued
+ * connection work, the Crons) goes to `reconcile`. Scheduling deliveries aren't ordered and the
  * payload is the version that triggered them, so the current version is re-read and the
  * payload only used when the resource is gone. A delete payload is verified the same way:
  * only a resource Medplum no longer has is treated as deleted, so neither a transient read
@@ -51,11 +53,15 @@ export async function resolveSource(medplum: MedplumClient, input: SyncBotInput)
   }
 }
 
-export async function handler(medplum: MedplumClient, event: BotEvent<SyncBotInput>): Promise<void> {
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
   await requireBotMembership(medplum, event, BOT_IDENTIFIER_VALUE.sync);
-  const source = await resolveSource(medplum, event.input);
+  const source =
+    event.input && typeof event.input === 'object'
+      ? await resolveSource(medplum, event.input as SyncBotInput)
+      : undefined;
   if (!source) {
-    console.log('Ignoring payload that is not an Appointment or Slot');
+    // Not a scheduling change: queued connection work, a dispatch batch or a Cron.
+    await reconcile(medplum, event);
     return;
   }
 

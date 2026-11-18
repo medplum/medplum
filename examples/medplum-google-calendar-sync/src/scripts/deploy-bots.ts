@@ -78,15 +78,8 @@ const botDefinitions: BotDefinition[] = [
     identifier: BOT_IDENTIFIER_VALUE.sync,
     name: 'Google Calendar Sync Bot',
     timeout: LONG_TIMEOUT_SECONDS,
-    description: 'Mirror Appointment and Slot changes to practitioners’ Google Calendars',
+    description: 'Mirror Appointment and Slot changes to Google; run the Crons and queued outbound repair',
     runAsUser: false,
-  },
-  {
-    identifier: BOT_IDENTIFIER_VALUE.reconcile,
-    name: 'Google Calendar Reconcile Bot',
-    description: 'Queue hourly repair in both directions; process outbound connection work',
-    runAsUser: false,
-    timeout: LONG_TIMEOUT_SECONDS,
   },
   {
     identifier: BOT_IDENTIFIER_VALUE.connect,
