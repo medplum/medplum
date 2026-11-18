@@ -78,10 +78,11 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     } catch (err) {
       // Do not revoke a grant that a partially successful save already made durable.
       const current = await findConnection(medplum, practitionerRef);
-      // The connection lease excludes other writers, so a changed revision is this save.
+      // A changed revision is this save, unless a concurrent first connect stored another Google account.
       const storedAfter = current && (await credentialRevision(medplum, current.basic.id));
       const storedCredentialExists = storedAfter !== undefined;
-      const persisted = storedCredentialExists && storedAfter !== storedBefore;
+      const persisted =
+        storedCredentialExists && storedAfter !== storedBefore && exchangedAccount === current?.accountSub;
       // Revocation may invalidate other tokens for the same client/account. Do not revoke
       // automatically when this practitioner already has a stored grant.
       if (!persisted && storedCredentialExists && (!exchangedAccount || exchangedAccount === current?.accountSub)) {
