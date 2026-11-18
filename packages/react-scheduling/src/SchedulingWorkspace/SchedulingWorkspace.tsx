@@ -752,13 +752,18 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setNewBlockSlots(undefined);
   }, []);
 
-  // While browsing, open time on the grid offers to start booking, beside the pointer. While booking,
-  // on the Block Time tab it sets the block's time, and on the Book Appointment tab it picks the
-  // offered time covering the click, which there only is inside the shading.
+  // With the filters pane open, open time on the grid offers to start booking, beside the pointer, as
+  // taking the pane's place unasked would lose the viewer's place in it. With both panes closed it opens
+  // the booking pane. While booking, on the Block Time tab it sets the block's time, and on the Book
+  // Appointment tab it picks the offered time covering the click, which there only is inside the shading.
   const selectInterval = useCallback(
     (interval: CalendarSelection): void => {
       if (!bookingOpen) {
-        setBookPrompt(lastPointer.current);
+        if (calendarsOpen) {
+          setBookPrompt(lastPointer.current);
+        } else {
+          openBooking();
+        }
         return;
       }
       // With details open the form and its shading are out of sight, so the click only brings them back.
@@ -795,6 +800,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     },
     [
       bookingOpen,
+      calendarsOpen,
+      openBooking,
       closeAppointment,
       closeSlot,
       paneTab,
@@ -988,7 +995,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
           <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
         </div>
-        {bookPrompt && !bookingOpen && (
+        {bookPrompt && calendarsOpen && !bookingOpen && (
           <PointerPrompt
             key={`${bookPrompt.left},${bookPrompt.top}`}
             at={bookPrompt}
