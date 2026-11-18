@@ -11,7 +11,7 @@ import { writeCredential } from './credentials';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
 import { projectQuery } from './project';
-import { mutateConnectionState, readState, withState } from './state';
+import { readState, withState } from './state';
 
 /* Connection state is worker-only. Practitioners read an allowlisted public summary.
  * Credentials are stored separately; this parser never returns a refresh token. */
@@ -267,8 +267,9 @@ export async function updateConnection(
       state
     );
   };
-  // Without a lease the change is queued behind any running work: workers rebase on the latest version.
-  await (lease ? lease.mutate(change) : mutateConnectionState(medplum, connection.basic.id, change));
+  await (lease
+    ? lease.mutate(change)
+    : withConnectionLease(medplum, connection.basic.id, (held) => held.mutate(change)));
   const updated = readConnection(await medplum.readResource('Basic', connection.basic.id, { cache: 'no-cache' }));
   if (!updated) {
     throw new Error('Updated connection is unreadable');

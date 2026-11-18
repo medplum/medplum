@@ -35,13 +35,18 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     const tokens = await exchangeCode(getOAuthClient(event.secrets), { code, codeVerifier, redirectUri });
     let exchangedAccount: string | undefined;
     let storedBefore: string | undefined;
-    let shared = false;
+    // Revoking ends every grant the account gave this client, so only revoke one known to be unused.
+    let revocable = false;
     try {
       // This Bot writes the token but never reads it, so it recognises its own save by the changed revision.
       const existing = await findConnection(medplum, practitionerRef);
       storedBefore = existing && (await credentialRevision(medplum, existing.basic.id));
       if (tokens.id_token) {
         exchangedAccount = readIdToken(tokens.id_token).sub;
+        revocable = !(await accountInUse(medplum, exchangedAccount, practitionerRef));
+        if (!revocable) {
+          throw new Error('This Google account is already connected to another practitioner');
+        }
       }
       if (!tokens.refresh_token) {
         throw new Error('Google returned no refresh token; authorize with access_type=offline and prompt=consent');
@@ -56,10 +61,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       }
       const account = readIdToken(tokens.id_token);
 
-      shared = await accountInUse(medplum, account.sub, practitionerRef);
-      if (shared) {
-        throw new Error('This Google account is already connected to another practitioner');
-      }
       // Account switching requires a separate, explicit disconnect.
       if (existing && existing.accountSub !== account.sub) {
         throw new Error('Disconnect the existing Google account before switching accounts');
@@ -96,8 +97,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
           { cause: err }
         );
       }
-      // Revoking would also end the other practitioner's grant from the same account.
-      if (!persisted && !shared && (tokens.refresh_token || tokens.access_token)) {
+      if (!persisted && revocable && (tokens.refresh_token || tokens.access_token)) {
         try {
           await revokeToken(tokens.refresh_token ?? tokens.access_token);
         } catch {

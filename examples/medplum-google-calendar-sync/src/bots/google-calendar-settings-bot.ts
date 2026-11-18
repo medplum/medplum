@@ -8,6 +8,7 @@ import { readProjectCeiling } from '../common/configuration';
 import { findConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
+import { ConnectionBusyError } from '../common/lease';
 import { getParam, mutationStatus, parseDetailLevel } from '../common/operations';
 
 async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
@@ -17,10 +18,17 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     throw new Error('Google Calendar is not connected');
   }
   const level = parseDetailLevel(getParam(event.input, 'eventDetailLevel'));
-  return mutationStatus(
-    await updateConnection(medplum, connection, { eventDetailLevel: level }),
-    await readProjectCeiling(medplum)
-  );
+  try {
+    return mutationStatus(
+      await updateConnection(medplum, connection, { eventDetailLevel: level }),
+      await readProjectCeiling(medplum)
+    );
+  } catch (err) {
+    if (err instanceof ConnectionBusyError) {
+      throw new Error('A calendar sync is running; try again in a few minutes', { cause: err });
+    }
+    throw err;
+  }
 }
 
 export const handler = operationHandler('settings', execute);

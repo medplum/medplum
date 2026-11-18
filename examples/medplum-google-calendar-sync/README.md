@@ -31,8 +31,8 @@ The first five implement the [custom FHIR operations](#custom-fhir-operations). 
 
 1. Node.js 22.22+ or 24.2+, and npm
 2. The [Medplum CLI](https://www.medplum.com/docs/cli)
-3. Two Medplum projects: a Bots project that holds the Bots, and the customer project that uses them. The customer project needs the `bots` and `cron` features. To try the example in one project, use the same project for both and skip step 4.
-4. A Google Cloud project used only for this integration, with the Google Calendar API enabled
+3. Two Medplum projects: a Bots project that holds the Bots, and the customer project that uses them. Both need the `bots` feature, and the customer project also needs `cron`. To try the example in one project, use the same project for both and skip Setup step 4.
+4. A Google Cloud project used only for this integration and this Medplum project, with the Google Calendar API enabled. Disconnecting revokes the Google account's access to everything in that Google Cloud project.
 5. A Google OAuth client with these scopes: `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned` and `https://www.googleapis.com/auth/calendar.calendars.readonly`. Register your application's exact callback URL on it.
 
 ## Setup
@@ -104,9 +104,10 @@ Your application does the following as the logged-in practitioner:
    }
    ```
 
-To connect without an application, use a Desktop app OAuth client as the project's `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`. Set `PROJECT_ID` and `MEDPLUM_PROFILE` in `.env` to the customer project and a practitioner's CLI profile, then run:
+To connect without an application, use a Desktop app OAuth client as the project's `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`. Log in as the practitioner and choose the customer project, set `PROJECT_ID` in `.env` to the customer project and `MEDPLUM_PROFILE` to `gcal-practitioner`, then run:
 
 ```bash
+medplum --profile gcal-practitioner login
 npm run connect-local --workspace=medplum-google-calendar-sync
 ```
 
@@ -119,7 +120,7 @@ Every operation takes a FHIR `Parameters` resource. The practitioner is always t
 | `POST /Project/$google-calendar-install`         | None                                                               | AccessPolicy entries to add                                                                                                                                                                                            |
 | `POST /Practitioner/$google-calendar-connect`    | `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel` | Connection summary. Queues the first sync.                                                                                                                                                                             |
 | `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status and Google client ID                                                                                                                                                                                 |
-| `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events.                                                                                                                                                                    |
+| `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events. Fails while a sync is running; retry after a few minutes.                                                                                                          |
 | `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential, and revokes the account's grant to this OAuth client. If Google access was revoked, cleanup waits until `forgetRevoked` is `true`, and the Google events may stay. |
 
 `$google-calendar-status` returns these parameters, among others:
@@ -147,9 +148,9 @@ Then check a real calendar by hand, in a test project with a test Google account
 1. Connect a practitioner who has an active Schedule, and wait for `$google-calendar-status` to report `lastSuccessfulInbound`.
 2. Book an Appointment for the practitioner. An event titled "Appointment" appears in Google. Move it to another time; the event moves. Cancel it; the event disappears.
 3. Create a timed Busy event in Google. A `busy-unavailable` Slot appears on the Schedule. Delete the event; the Slot disappears.
-4. With event details allowed, set the level to `full` and then back to `busy-only` with `$google-calendar-settings`. Wait for `privacyCleanupPending` to be false; the event title is "Appointment" again.
-5. Call `$google-calendar-disconnect`, then poll `$google-calendar-status` until `connected` is false. The imported Slots and the mirrored events are removed.
-6. In the customer project, check that the hourly Cron has run: the reconcile Bot has an AuditEvent on the hour.
+4. With event details allowed, book a future Appointment with a test patient and set the level to `full` with `$google-calendar-settings`. Wait for the patient's name to appear in the event title. Set the level back to `busy-only` and wait for `privacyCleanupPending` to be false; the title is "Appointment" again.
+5. Create another Busy event in Google and wait for its Slot. Call `$google-calendar-disconnect`, then poll `$google-calendar-status` until `connected` is false. The Appointment's event and the imported Slot are gone.
+6. In the customer project, check that the hourly Cron has run. The install response gives its minute; look for a successful AuditEvent at that minute whose entity is the Cron with identifier `reconcile-cron`. The Cron with identifier `work-cron` runs the same Bot every minute.
 
 ## Limitations
 

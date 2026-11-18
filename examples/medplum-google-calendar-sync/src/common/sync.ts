@@ -256,10 +256,7 @@ export class SyncSession {
     await this.lease.mutate((basic) => {
       const state = readState(basic);
       state.outboundError = error;
-      if (complete && error && state.privacyPending) {
-        // An event may still show the old detail level: keep the request open and retry before the hourly sweep.
-        state.outboundRetryAt = new Date(Date.now() + 15 * 60_000).toISOString();
-      } else if (complete) {
+      if (complete) {
         // The range was walked even when some sources failed: the request is done and the error
         // reported, so the minute sweep does not re-run discovery.
         state.outboundCompleted = this.outboundRequestAtStart;
