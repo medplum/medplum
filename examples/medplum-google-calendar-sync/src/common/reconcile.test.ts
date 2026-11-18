@@ -134,7 +134,7 @@ describe('reconcile', () => {
     }
   );
 
-  test('minute recovery requeues incomplete directions without changing checkpoint generations', async () => {
+  test('minute recovery requeues incomplete directions without changing request markers', async () => {
     const connection = await connected('Practitioner/a');
     const before = readState(connection.basic);
     await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });

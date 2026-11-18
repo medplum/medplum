@@ -59,7 +59,8 @@ export async function syncRange(
         return counts;
       }
       await session.recordOutbound(
-        true,
+        // A rejected token stopped discovery early: the pass did not walk the range.
+        !counts['reauth-required'],
         counts.errors || counts.unmappable || counts['reauth-required'] ? 'outbound-incomplete' : undefined
       );
       return counts;

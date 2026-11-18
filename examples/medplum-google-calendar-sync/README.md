@@ -124,13 +124,13 @@ Every operation takes a FHIR `Parameters` resource. The practitioner is always t
 
 `$google-calendar-status` returns these parameters, among others:
 
-| Parameter                           | Meaning                                                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `connected`                         | The practitioner has a connection                                                                                                                |
-| `status`                            | `active`, `reauth-required` or `disconnecting`                                                                                                   |
-| `stale`, `staleReason`              | The last import failed, is overdue or has not run; `watch-unavailable` means Google notifications could not be registered and imports run hourly |
-| `inboundPending`, `outboundPending` | Queued work is unfinished                                                                                                                        |
-| `privacyCleanupPending`             | A lowered detail level is not yet applied to every event                                                                                         |
+| Parameter                           | Meaning                                                                                                                                                                                               |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `connected`                         | The practitioner has a connection                                                                                                                                                                     |
+| `status`                            | `active`, `reauth-required` or `disconnecting`                                                                                                                                                        |
+| `stale`, `staleReason`              | The last import, outbound repair or disconnect cleanup failed, or the import is overdue or has not run; `watch-unavailable` means Google notifications could not be registered and imports run hourly |
+| `inboundPending`, `outboundPending` | Queued work is unfinished                                                                                                                                                                             |
+| `privacyCleanupPending`             | A lowered detail level is not yet applied to every event                                                                                                                                              |
 
 When `status` is `reauth-required`, the practitioner must connect again. `src/common/contracts.ts` defines every input and output.
 
@@ -154,7 +154,7 @@ Then check a real calendar by hand, in a test project with a test Google account
 ## Limitations
 
 - Untested: linked projects, Google Workspace Internal consent, Google quota limits, recurrence exceptions.
-- A repair pass that cannot finish within the Bot's ten minutes starts again from the beginning, so a calendar too large for one pass never completes its repair.
+- An outbound repair pass stops taking on new items after about seven minutes, and the minute Cron starts an unfinished pass again from the beginning. A calendar too large for one pass never completes its repair.
 - The refresh token is stored unencrypted in a `Basic` resource. AccessPolicy is the only protection: a project admin, or a user whose policy grants `Basic`, can read it.
 - Discovery and import cover 90 days from now. A change to an Appointment or block outside that window is still sent to Google when it happens, and existing mirrored events are checked whatever their date.
 - Any user who can write Slots can change an imported Slot.
