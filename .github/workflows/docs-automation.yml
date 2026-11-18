@@ -47,19 +47,17 @@ jobs:
           cache: npm
           cache-dependency-path: repo/package-lock.json
       - id: source
-        run: python3 -B repo/scripts/docs-automation/pilot.py source
+        run: node repo/scripts/docs-automation/pilot.mts source
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Install pilot tools
         run: |
-          npm install --prefix "$RUNNER_TEMP/docs-tools" @anthropic-ai/claude-code@2.1.310
-          python3 -m pip install --target "$RUNNER_TEMP/docs-tools/python" jsonschema==4.25.1
+          zod_version=$(node -p "require('./repo/package.json').devDependencies.zod")
+          npm install --prefix "$GITHUB_WORKSPACE" --no-save --package-lock=false @anthropic-ai/claude-code@2.1.310 "zod@$zod_version"
+          echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Classify, draft, and verify
         id: review
-        run: |
-          export PATH="$RUNNER_TEMP/docs-tools/node_modules/.bin:$PATH"
-          export PYTHONPATH="$RUNNER_TEMP/docs-tools/python"
-          python3 -B repo/scripts/docs-automation/analyze.py
+        run: node repo/scripts/docs-automation/analyze.mts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Build drafted documentation
@@ -100,6 +98,10 @@ jobs:
         with:
           ref: ${{ needs.analyze.outputs.base }}
           path: repo
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
       - name: Publish draft or source PR comment
         env:
           GH_TOKEN: ${{ github.token }}
@@ -107,4 +109,4 @@ jobs:
           BUILD: ${{ needs.analyze.outputs.build }}
         run: |
           gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "docs-review-$PR_NUMBER" --dir .docs-run
-          python3 -B repo/scripts/docs-automation/pilot.py publish
+          node repo/scripts/docs-automation/pilot.mts publish
