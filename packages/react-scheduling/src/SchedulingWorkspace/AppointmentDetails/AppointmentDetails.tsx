@@ -342,7 +342,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
 
   if (rescheduling) {
     return (
-      <Stack gap="sm" className={classes.details}>
+      <Stack gap="sm" className={`${classes.details} ${classes.rescheduling}`}>
         <Title order={5}>Reschedule appointment</Title>
         <AppointmentRescheduleForm
           appointment={appointment}
