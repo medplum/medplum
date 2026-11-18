@@ -523,6 +523,32 @@ describe('External auth', () => {
     expect(res2).toHaveStatus(200);
   });
 
+  test('Cached login does not outlive the token', async () => {
+    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      sub: externalSub,
+      nonce: randomUUID(),
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+    const res = await request(app)
+      .get(`/oauth2/userinfo`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res).toHaveStatus(200);
+
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.advanceTimersByTime(301 * 1000);
+      const res2 = await request(app)
+        .get(`/oauth2/userinfo`)
+        .set('Authorization', 'Bearer ' + jwt);
+      expect(res2).toHaveStatus(401);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test('Sub claim with unknown externalId', async () => {
     fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
 
