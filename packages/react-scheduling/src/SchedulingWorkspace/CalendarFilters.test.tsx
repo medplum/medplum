@@ -11,7 +11,7 @@ import {
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { renderWithMedplum, screen } from '../test-utils/render';
+import { fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
 
@@ -144,16 +144,32 @@ describe('CalendarFilters', () => {
       expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
     });
 
-    test('taking the pill off goes back to every visit type', async () => {
+    test('choosing one unticks All, and taking the last one off leaves none, until All is ticked again', async () => {
       const { latest } = setup();
+      const all = screen.getByRole('checkbox', { name: 'All visit types' });
+      expect(all).toBeChecked();
+
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Telehealth Consult');
       expect(latest().services?.map((s) => s.id)).toEqual(['telehealth-consult']);
+      expect(all).not.toBeChecked();
 
       await removePill('Telehealth Consult');
+      // An empty list includes nothing, where an absent one is every visit type.
+      expect(latest().services).toEqual([]);
+      expect(screen.getByPlaceholderText('No appointments shown')).toBeInTheDocument();
+
+      fireEvent.click(all);
+      expect(latest().services).toBeUndefined();
+      expect(serviceField()).toBeInTheDocument();
+    });
+
+    test('unticking All with nothing chosen includes no visit type', async () => {
+      const { latest } = setup();
+
+      fireEvent.click(screen.getByRole('checkbox', { name: 'All visit types' }));
 
       expect(latest().services).toEqual([]);
-      expect(serviceField()).toBeInTheDocument();
     });
 
     test('reports the chosen visit type', async () => {
@@ -191,7 +207,7 @@ describe('CalendarFilters', () => {
       await clickAutocompleteOption('Telehealth Consult');
 
       expect(latest().availabilityServices?.map((s) => s.id)).toEqual(['telehealth-consult']);
-      expect(latest().services).toEqual([]);
+      expect(latest().services).toBeUndefined();
       expect(serviceField()).toBeInTheDocument();
     });
 
@@ -250,7 +266,9 @@ describe('CalendarFilters', () => {
       await clickAutocompleteOption('Uro Associates - Satellite');
       await settleAutocomplete();
 
-      expect(latest().services).toEqual([]);
+      // Back to every visit type, not to none: it was the site that emptied the list.
+      expect(latest().services).toBeUndefined();
+      expect(screen.getByRole('checkbox', { name: 'All visit types' })).toBeChecked();
       // Reported *and* shown: the field ignores `defaultValue` after mount, so a stale
       // pill would leave the sidebar claiming a filter that no longer stands.
       expect(serviceField()).toBeInTheDocument();
