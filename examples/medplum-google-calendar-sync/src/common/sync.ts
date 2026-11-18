@@ -130,7 +130,8 @@ export class SyncSession {
     private readonly deps: SyncDeps = DEFAULT_DEPS
   ) {
     this.oauth = getOAuthClient(secrets);
-    this.detailCeiling = ceilingFromAllowEventDetails(secrets?.[SECRET.allowEventDetails]?.valueString);
+    const allow = secrets?.[SECRET.allowEventDetails];
+    this.detailCeiling = ceilingFromAllowEventDetails(allow?.valueString ?? allow?.valueBoolean?.toString());
     this.appointmentUrlTemplate = secrets?.[SECRET.appointmentUrl]?.valueString?.trim() || undefined;
   }
 

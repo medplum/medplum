@@ -210,7 +210,8 @@ describe('google-calendar-connect-bot', () => {
     const fetch = mockGoogle({
       access_token: 'at',
       refresh_token: 'rt',
-      scope: SCOPE,
+      // An incomplete grant fails validation, which must not revoke the shared account either.
+      scope: 'openid email',
       id_token: idToken({ sub: 'sub' }),
     });
     await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('another practitioner');
