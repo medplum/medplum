@@ -150,7 +150,7 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Missing state');
   });
 
-  test('Invalid JSON state', async () => {
+  test('Unknown state', async () => {
     const res = await request(app).get('/auth/external?code=xyz&state=xyz');
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid state');
@@ -1301,6 +1301,8 @@ describe('External', () => {
         () => ({ ...pkce, clientId: defaultClient.id }),
         'Identity provider not found',
       ],
+      ['non-string field', () => ({ ...pkce, domain, returnTo: ['https://example.com/'] }), 'Invalid value'],
+      ['oversized field', () => ({ ...pkce, domain, nonce: 'x'.repeat(4097) }), 'Invalid value'],
     ])('Start rejects %s', async (_name, buildBody, message) => {
       const res = await start(buildBody());
       expect(res).toHaveStatus(400);
@@ -1400,6 +1402,28 @@ describe('External', () => {
       expect(redirect.pathname).toBe('/signin');
       expect(redirect.searchParams.get('scope')).toBe('openid');
       expect(redirect.searchParams.get('code_challenge')).toBe(codeChallenge);
+    });
+
+    test('Server config identity provider round trip', async () => {
+      const issuer = `https://${randomUUID()}.example.com`;
+      const config = getConfig();
+      const externalAuthProviders = config.externalAuthProviders;
+      config.externalAuthProviders = [{ issuer, identityProvider }];
+      try {
+        const res = await start({ issuer, codeChallenge, codeChallengeMethod });
+        expect(res).toHaveStatus(200);
+        const url = new URL(res.body.url);
+        expect(url.searchParams.get('redirect_uri')).toBe(getConfig().baseUrl + 'auth/external');
+
+        fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+        const res2 = await request(app).get(
+          appendQueryParams('/auth/external', { code: randomUUID(), state: url.searchParams.get('state') as string })
+        );
+        expect(res2).toHaveStatus(302);
+        expect(new URL(res2.header.location).searchParams.get('code_challenge')).toBe(codeChallenge);
+      } finally {
+        config.externalAuthProviders = externalAuthProviders;
+      }
     });
 
     test('State expires', async () => {

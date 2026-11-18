@@ -64,6 +64,7 @@ const EXTERNAL_AUTH_STATE_FIELDS = [
 
 /** Long enough for a slow sign-in at the identity provider, such as one with MFA. */
 export const EXTERNAL_AUTH_STATE_TTL_SECONDS = 10 * 60;
+const MAX_EXTERNAL_AUTH_STATE_FIELD_LENGTH = 4096;
 
 interface ExternalAuthStateRecord {
   loginRequest: ExternalAuthState;
@@ -82,9 +83,10 @@ export interface ExternalLoginIdentity {
 }
 
 export const externalStartValidator = makeValidationMiddleware([
-  body(EXTERNAL_AUTH_STATE_FIELDS as unknown as string[])
+  body([...EXTERNAL_AUTH_STATE_FIELDS])
     .optional()
-    .isString(),
+    .isString()
+    .isLength({ max: MAX_EXTERNAL_AUTH_STATE_FIELD_LENGTH }),
   body('codeChallenge').notEmpty().withMessage('Missing code challenge'),
   body('codeChallengeMethod').equals('S256').withMessage('Invalid code challenge method'),
 ]);
