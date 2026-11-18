@@ -74,6 +74,8 @@ describe('App Index', () => {
     if (client) {
       await client.getInitPromise();
       await vi.waitFor(() => expect(client.isLoading()).toBe(false));
+      // FHIR GETs are auto-batched (autoBatchTime: 100), so a queued request can reach fetch later
+      await new Promise((resolve) => setTimeout(resolve, 150));
       await Promise.allSettled(vi.mocked(fetch).mock.results.map((result) => result.value));
     }
 
