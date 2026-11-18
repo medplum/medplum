@@ -1215,9 +1215,7 @@ describe('LabOrderDetails', () => {
           rerender(
             <MemoryRouter>
               <MedplumProvider medplum={medplum}>
-                <MantineProvider>
-                  <LabOrderDetails order={newOrder} />
-                </MantineProvider>
+                <LabOrderDetails order={newOrder} />
               </MedplumProvider>
             </MemoryRouter>
           );
