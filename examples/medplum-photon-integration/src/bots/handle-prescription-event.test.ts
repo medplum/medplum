@@ -15,6 +15,15 @@ import type {
 import { handleCreatePrescription, handler, handleUpdatePrescription } from './handle-prescription-event';
 import { getExistingMedicationRequest } from './utils';
 
+vi.mock('./utils.ts', async () => {
+  const actualModule = await vi.importActual('./utils.ts');
+  return {
+    ...actualModule,
+    verifyEvent: vi.fn().mockImplementation(() => true),
+    handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+  };
+});
+
 describe('Prescription webhooks', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -22,15 +31,6 @@ describe('Prescription webhooks', async () => {
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
       indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
     }
-  });
-
-  vi.mock('./utils.ts', async () => {
-    const actualModule = await vi.importActual('./utils.ts');
-    return {
-      ...actualModule,
-      verifyEvent: vi.fn().mockImplementation(() => true),
-      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
-    };
   });
 
   const bot: Reference<Bot> = { reference: 'Bot/123' };
