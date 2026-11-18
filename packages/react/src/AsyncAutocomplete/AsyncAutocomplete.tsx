@@ -25,11 +25,7 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly description?: ReactNode;
   readonly error?: ReactNode;
   readonly defaultValue?: T | T[];
-  /**
-   * The selected items. Passing this (`null` or `[]` for none) makes the component controlled: user
-   * edits only call `onChange`. Changing it to `undefined` makes the component uncontrolled, keeping the
-   * last selection, as a native `<input>` does. Don't pass it with `maxValues={0}`.
-   */
+  /** The selected items. Passing this makes the component controlled. */
   readonly value?: T | readonly T[] | null;
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
@@ -52,7 +48,7 @@ export interface AsyncAutocompleteProps<T> extends Omit<
   readonly maxValues?: number;
   readonly optionsDropdownMaxHeight?: number;
   readonly minInputLength?: number; // minimum number of input characters required before executing loadOptions
-  /** Shows a loader in place of the clear button, as while a search runs. */
+  /** Shows a loader in place of the clear button. */
   readonly loading?: boolean;
 }
 
@@ -121,8 +117,7 @@ export function AsyncAutocompleteControlled<T>(props: AsyncAutocompleteControlle
   const [abortController, setAbortController] = useState<AbortController>();
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
 
-  // The search input is hidden at the cap, which `value` can also reach. Clear the search so stale
-  // text and options don't linger with no input left to dismiss them.
+  // The search input is hidden at the cap, so drop the search text and options it would leave behind.
   const capReached = !!maxValues && selected.length >= maxValues;
   const [prevCapReached, setPrevCapReached] = useState(capReached);
   if (capReached !== prevCapReached) {
@@ -190,7 +185,6 @@ export function AsyncAutocompleteControlled<T>(props: AsyncAutocompleteControlle
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
 
-    // A search still pending when the cap hid the input is dropped, auto-submit included.
     if (capReachedRef.current) {
       autoSubmitRef.current = false;
       return;

@@ -11,7 +11,7 @@ export interface CodingInputProps
   extends
     Omit<ValueSetAutocompleteProps, 'defaultValue' | 'value' | 'onChange' | 'disabled' | 'name'>,
     ComplexTypeInputProps<Coding> {
-  /** Passing this (`null` for none) makes the input controlled; see `AsyncAutocompleteProps.value`. */
+  /** Passing this (`null` for none) makes the input controlled. */
   readonly value?: Coding | null;
   readonly response?: QuestionnaireResponseItem;
 }

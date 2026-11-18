@@ -139,8 +139,7 @@ export interface MultiResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: (T | Reference<T>)[];
   /**
    * The selected values, each a full resource or a reference to resolve. Passing this (`[]` for none)
-   * makes the input controlled; see `AsyncAutocompleteProps.value`. A reference that cannot be read
-   * is left out of the selection.
+   * makes the input controlled. A reference that cannot be read is left out of the selection.
    */
   readonly value?: readonly (T | Reference<T>)[];
   readonly searchCriteria?: Record<string, string>;

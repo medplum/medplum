@@ -8,7 +8,7 @@ import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomple
 
 export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'value' | 'onChange'> {
   readonly defaultValue?: string;
-  /** Passing this (`null` for none) makes the input controlled; see `AsyncAutocompleteProps.value`. */
+  /** Passing this (`null` for none) makes the input controlled. */
   readonly value?: string | null;
   readonly onChange: ((value: string | undefined) => void) | undefined;
 }

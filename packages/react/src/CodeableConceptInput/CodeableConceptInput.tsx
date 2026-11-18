@@ -11,7 +11,7 @@ export interface CodeableConceptInputProps
   extends
     Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'value' | 'onChange' | 'disabled'>,
     ComplexTypeInputProps<CodeableConcept> {
-  /** Passing this (`null` for none) makes the input controlled; see `AsyncAutocompleteProps.value`. */
+  /** Passing this (`null` for none) makes the input controlled. */
   readonly value?: CodeableConcept | null;
   readonly onChange?: (value: CodeableConcept | undefined) => void;
 }

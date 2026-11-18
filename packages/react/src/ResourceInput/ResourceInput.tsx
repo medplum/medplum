@@ -10,10 +10,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
-  /**
-   * The selected value, as a resource or a reference to resolve. Passing this (`null` for none) makes
-   * the input controlled; see `AsyncAutocompleteProps.value`.
-   */
+  /** A resource or a reference to resolve. Passing this (`null` for none) makes the input controlled. */
   readonly value?: T | Reference<T> | null;
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
