@@ -682,7 +682,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const finishBlock = useCallback(
     (slots: WithId<Slot>[]): void | Promise<void> => {
       setBlockSeed((seed) => seed + 1);
-      setBlockHighlight(undefined);
+      closeBooking();
       const shown = new Set(schedules.map(getReferenceString));
       const opened = slots.find((slot) => shown.has(slot.schedule.reference ?? '')) ?? slots[0];
       setSelectedSlot(opened);
@@ -692,7 +692,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       }
       return onBlocked?.(slots);
     },
-    [onBlocked, schedules]
+    [closeBooking, onBlocked, schedules]
   );
 
   const showAppointment = useCallback(
@@ -707,13 +707,18 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [selectedAppointment?.id]
   );
 
+  // Details take the booking pane's place rather than cover it, so closing them leaves the calendar on
+  // its own. That clears the pane's forms, so one holding answers is asked about first.
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (isResourceWithId(appointment)) {
-        showAppointment(appointment);
+        guard(() => {
+          closeBooking();
+          showAppointment(appointment);
+        });
       }
     },
-    [showAppointment]
+    [guard, closeBooking, showAppointment]
   );
 
   // Opens what was booked, the first visit of a recurring series, and brings it on screen,
@@ -721,14 +726,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       const [first] = booking.appointments;
+      closeBooking();
       showAppointment(first);
       if (first.start) {
         calendarRef.current?.gotoDate(new Date(first.start));
       }
-      resetBookingForm();
       return onBooked?.(booking);
     },
-    [showAppointment, resetBookingForm, onBooked]
+    [closeBooking, showAppointment, onBooked]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -739,12 +744,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectSlot = useCallback(
     (slot: Slot): void => {
       if (isResourceWithId(slot)) {
-        closeAppointment();
-        setSelectedSlot(slot);
-        setNewBlockSlots(undefined);
+        guard(() => {
+          closeBooking();
+          closeAppointment();
+          setSelectedSlot(slot);
+          setNewBlockSlots(undefined);
+        });
       }
     },
-    [closeAppointment]
+    [guard, closeBooking, closeAppointment]
   );
 
   const closeSlot = useCallback((): void => {
@@ -766,11 +774,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
         return;
       }
-      // With details open the form and its shading are out of sight, so the click only brings them back.
-      if (selectedAppointment || selectedSlot) {
-        closeAppointment();
-        closeSlot();
-      } else if (paneTab === 'block') {
+      if (paneTab === 'block') {
         setBlockRange(interval);
         setBlockHighlight(interval);
       } else if (!interval.allDay) {
@@ -798,19 +802,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       }
     },
-    [
-      bookingOpen,
-      calendarsOpen,
-      openBooking,
-      closeAppointment,
-      closeSlot,
-      paneTab,
-      selectedAppointment,
-      selectedSlot,
-      formCandidates,
-      availabilityShading,
-      candidatesByActorType,
-    ]
+    [bookingOpen, calendarsOpen, openBooking, paneTab, formCandidates, availabilityShading, candidatesByActorType]
   );
 
   // Held apart from the calendar's, like the open appointment, so it closes on being deleted
@@ -1072,8 +1064,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <SlotDetails slot={openSlot} />
         </SidePane>
       )}
-      {/* Its forms are mounted while it is open, and only hidden while details are open, so their answers
-          are there to come back to. Closing it unmounts them, which is what clears those answers. */}
+      {/* Its forms are mounted while it is open. Closing it unmounts them, which is what clears their
+          answers. */}
       <section id={bookingPaneId} className={classes.paneDocked} aria-label="Book appointment" hidden={!showBooking}>
         {bookingOpen && (
           // Both panels stay mounted, so switching tabs loses nothing typed into either.
