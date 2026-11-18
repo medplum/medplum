@@ -6,7 +6,7 @@ After merge, open **Actions → Documentation assistant (manual pilot) → Run w
 gh workflow run docs-automation.yml --repo medplum/medplum -f pr_number=11443 -f mode=draft
 ```
 
-Sonnet 5.5 classifies and verifies. Opus 5.5 drafts. All three use high effort and have separate turn, time, and spending limits. The run summary links the decision to the source PR. Public artifacts keep the landed diff, evidence, review notes, and any patch for 14 days. [Configuration](config.json)
+Opus 5.5 classifies and drafts. Sonnet 5.5 verifies. Each stage uses high effort and has its own spending limit. The run summary links the decision to the source PR. Public artifacts keep the landed diff, evidence, review notes, and any patch for 14 days. [Configuration](config.json)
 
 `open-pr` assigns a buildable draft to the source author, flags outstanding findings in its title, and links it from the original PR. Questions without a patch and build failures get a source-PR comment. Reruns preserve reviewer edits. Set `fallbackAssignee` for bot-authored PRs.
 

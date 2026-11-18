@@ -1,5 +1,5 @@
 {
-  "models": { "classify": "claude-sonnet-5-5", "draft": "claude-opus-5-5", "verify": "claude-sonnet-5-5" },
+  "models": { "classify": "claude-opus-5-5", "draft": "claude-opus-5-5", "verify": "claude-sonnet-5-5" },
   "effort": "high",
   "maxTurns": 40,
   "budgetUsd": { "classify": 3, "draft": 5, "verify": 3 },
