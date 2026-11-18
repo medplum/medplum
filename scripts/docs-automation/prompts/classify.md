@@ -8,7 +8,7 @@ Find gaps remaining today. Later changes, reversions, and documentation updates 
 
 1. Read the complete diff and inspect current implementation/tests. Identify externally observable effects for developers, administrators, self-hosters, or users, including defaults, errors, privileges, compatibility, configuration, and workflows. A title or exported internal symbol alone does not establish product behavior.
 2. Search by changed concepts and identifiers; source-to-docs hints are not exhaustive. Identify the canonical explanation and affected references, tutorials, UI guides, decision guides, examples, and AI rules. Distinguish generated references from hand-written API pages. Check companion pages for contradictions without expanding into unrelated cleanup.
-3. Assess coverage of every meaningful change, including consequences for existing users and any required migration. A touched Markdown file, release note, or generated signature does not establish sufficient coverage. Uncertain availability or new clinical/financial/compliance claims without approved evidence require human input.
+3. Check coverage of each user-visible change and any migration. Read the guide itself, including documented workarounds. Flag uncertain availability when it changes the instructions, and new clinical, reimbursement, or compliance claims that need approval.
 4. Choose one outcome:
    - `no-docs`: no externally observable documentation impact; explain why with implementation/test evidence.
    - `already-covered`: all relevant behavior is covered today; cite the actual documentation passages.
@@ -22,8 +22,7 @@ Find gaps remaining today. Later changes, reversions, and documentation updates 
 - Fix restoring already documented behavior: `already-covered`; removing a documented workaround: `update-docs`.
 - New setting, default, permission, or setup requirement: inspect both reference and task guidance.
 - Dependency, CI, infrastructure, and test-only changes are not blanket exclusions; documented commands or runtime requirements can change.
-- API signature present but usage unexplained: potentially `update-docs`. Unclear feature-flag/release status: `needs-human`.
-- Old PR reverted or documented later: decide from current evidence.
+- An API signature can leave a usage question unanswered. A missing release number alone can be a reviewer check if the guide makes no release claim.
 
 ## Write Scope
 

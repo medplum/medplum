@@ -105,15 +105,10 @@ export function validateClassification(root: string, result: Classification): vo
   if (result.outcome === 'already-covered' && !result.evidence.some((item) => item.path.startsWith('packages/docs/'))) {
     throw new Error('Already-covered needs documentation evidence');
   }
-  if (result.outcome === 'needs-human' && !result.questions.length)
-    throw new Error('Needs-human must explain the question');
-  if (result.outcome !== 'needs-human' && result.questions.length)
-    throw new Error('Unresolved questions require needs-human');
-  if (result.outcome !== 'update-docs' && result.changes.length)
-    throw new Error('Only update-docs may include planned edits');
-  if (result.outcome === 'update-docs' && (!result.changes.length || result.questions.length)) {
-    throw new Error('A draftable decision needs a concrete plan and no unresolved questions');
-  }
+  if ((result.outcome === 'needs-human') !== result.questions.length > 0)
+    throw new Error('Only needs-human decisions must include questions');
+  if ((result.outcome === 'update-docs') !== result.changes.length > 0)
+    throw new Error('Only update-docs decisions must include a plan');
   if (result.changes.length > config.maxDraftFiles) throw new Error('Too many planned files');
   const paths = new Set<string>();
   for (const change of result.changes) {
@@ -136,7 +131,7 @@ export function checkDraftedFiles(root: string, classification: Classification, 
     .filter(Boolean)
     .map((entry) => entry.slice(3));
   const planned = new Set(classification.changes.map((change) => change.path));
-  // A draft with questions may cover part of the plan; questions already block publication.
+  // A draft with open questions may cover only part of the plan.
   if (!changed.length || (!draft.questions.length && changed.length !== planned.size)) {
     throw new Error('Drafted files do not match the plan');
   }
@@ -157,19 +152,6 @@ export function checkDraftedFiles(root: string, classification: Classification, 
   }
   return changed;
 }
-export function readyToPublish(classification: Classification, draft: Draft, verification: Verification): boolean {
-  validateSchema(verification, schemas.verify);
-  return (
-    classification.outcome === 'update-docs' &&
-    !classification.questions.length &&
-    !draft.questions.length &&
-    verification.verdict === 'ready' &&
-    !verification.findings.length &&
-    verification.evidence.length > 0 &&
-    verification.examples !== 'requires-execution'
-  );
-}
-
 // Only the draft stage gets Edit/Write, and only for the exact planned paths. Edit rules also cover Write.
 export function args(stage: keyof typeof schemas, editPaths: string[] = []): string {
   if (
@@ -181,7 +163,7 @@ export function args(stage: keyof typeof schemas, editPaths: string[] = []): str
   if (!Number.isInteger(config.maxTurns) || config.maxTurns < 1 || !Number.isFinite(config.budgetUsd[stage])) {
     throw new Error('Invalid agent limits');
   }
-  if (!editPaths.every(allowedDoc)) throw new Error('Invalid edit path');
+  if ((stage !== 'draft' && editPaths.length) || !editPaths.every(allowedDoc)) throw new Error('Invalid edit path');
   const tools = ['Read', 'Glob', 'Grep', ...(editPaths.length ? ['Edit', 'Write'] : [])];
   const allowed = ['Read', 'Glob', 'Grep', ...editPaths.map((path) => `Edit(repo/${path})`)];
   return (
@@ -367,16 +349,11 @@ function accept(stage: 'classify' | 'draft' | 'verify'): void {
   if (stage === 'classify') {
     const classification = result as Classification;
     validateClassification(repo, classification);
-    output('draft', String(classification.outcome === 'update-docs'));
-    output(
-      'draft_args',
-      args(
-        'draft',
-        classification.changes.map((change) => change.path)
-      )
-    );
+    if (classification.outcome === 'update-docs') {
+      const paths = classification.changes.map((change) => change.path);
+      output('draft_args', args('draft', paths));
+    }
   } else if (stage === 'draft') {
-    // Questions block publication; any supported edits are still kept for review and verification.
     if (!git(['status', '--porcelain']).trim() && (result as Draft).questions.length) {
       output('applied', 'false');
       return;
@@ -385,13 +362,11 @@ function accept(stage: 'classify' | 'draft' | 'verify'): void {
     output('applied', 'true');
   } else {
     validateEvidence(repo, (result as Verification).evidence);
-    const ready = readyToPublish(readJson('classification.json'), readJson('draft.json'), result as Verification);
-    output('ready', String(ready));
   }
 }
 
 function renderSummary(): void {
-  const blocks = ['# Documentation automation', '', 'Manual pilot. No automatic merge trigger is enabled.', ''];
+  const blocks = ['# Documentation automation', ''];
   for (const name of ['context', 'classification', 'draft', 'verification', 'validation', 'publication']) {
     if (!existsSync(artifact(`${name}.json`))) continue;
     const value = readJson<Record<string, unknown>>(`${name}.json`);
@@ -416,11 +391,6 @@ function renderSummary(): void {
       ''
     );
   }
-  blocks.push(
-    'Artifacts include the decision, evidence, proposed patch, and check results. No raw agent transcript is uploaded.',
-    'A successful site build does not execute Markdown examples. Human technical review is required.',
-    ''
-  );
   const summary = blocks.join('\n');
   writeFileSync(artifact('summary.md'), summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
@@ -434,26 +404,36 @@ export const safe = (text: string): string =>
     .map((part, index) => (index % 2 ? part : part.replace(/@(?=[\w-])/g, '@\u200b').replace(/</g, '&lt;')))
     .join('');
 
-// In open-pr mode, a built patch becomes a draft PR whether or not it is ready; other needs-human
-// results become a comment on the source PR. Nothing is posted in classify or draft mode.
-export function assess(mode: string, install: string, build: string) {
+export function reviewQuestions(classification: Classification, draft?: Draft, verification?: Verification): string[] {
+  const questions = [...classification.questions, ...(draft?.questions ?? [])];
+  if (verification) {
+    validateSchema(verification, schemas.verify);
+    questions.push(...verification.findings);
+    if (verification.examples === 'requires-execution') questions.push('Run the new inline examples before merging.');
+    if (!verification.evidence.length)
+      questions.push('Check the draft against the implementation. The verifier cited no source.');
+    if (verification.verdict === 'needs-human' && !questions.length)
+      questions.push('Review the draft. The verifier requested human input without giving a reason.');
+  }
+  return questions;
+}
+
+function assess(mode: string, install: string, build: string) {
   const classification = optional<Classification>('classification.json');
   const draft = optional<Draft>('draft.json');
   const verification = optional<Verification>('verification.json');
-  const ready = !!(classification && draft && verification && readyToPublish(classification, draft, verification));
   const patch = existsSync(artifact('docs.patch'));
-  const built = install === 'success' && build === 'success';
-  const questions = [
-    ...(classification?.questions ?? []),
-    ...(draft?.questions ?? []),
-    ...(verification?.findings ?? []),
-    ...(verification?.examples === 'requires-execution' ? ['Run the new inline examples before merging.'] : []),
-    ...(patch && !built ? ['The docs build did not pass; see the workflow run.'] : []),
-  ];
-  const outcome = questions.length || (verification && !ready) ? 'needs-human' : classification?.outcome;
+  const built = patch && install === 'success' && build === 'success';
+  const questions = classification ? reviewQuestions(classification, draft, verification) : [];
+  if (install === 'failure') questions.push('Dependency installation failed. See the workflow run.');
+  if (build === 'failure') questions.push('The docs build failed. See the workflow run.');
+  const outcome = questions.length ? 'needs-human' : classification?.outcome;
   let action: 'pr' | 'comment' | 'none' = 'none';
-  if (mode === 'open-pr') action = patch && built ? 'pr' : outcome === 'needs-human' ? 'comment' : 'none';
-  return { classification, draft, ready, outcome, action, questions };
+  if (mode === 'open-pr') {
+    if (built && classification?.outcome === 'update-docs' && draft && verification) action = 'pr';
+    else if (outcome === 'needs-human') action = 'comment';
+  }
+  return { classification, draft, outcome, action, questions };
 }
 
 function recordValidation(): void {
@@ -475,23 +455,23 @@ function upsertSourceComment(context: Context, lines: string[]): string {
   const marker = `<!-- docs-automation: ${context.repository}#${context.source.number} -->`;
   const issue = `repos/${context.repository}/issues/${context.source.number}`;
   const body = [marker, ...lines].join('\n');
-  const previous = api<{ id: number; body?: string; user: { login: string } }[]>(`${issue}/comments?per_page=100`).find(
-    (comment) => comment.user.login === 'github-actions[bot]' && comment.body?.startsWith(marker)
-  );
-  const comment = previous
-    ? api<{ html_url: string }>(`repos/${context.repository}/issues/comments/${previous.id}`, 'PATCH', { body })
-    : api<{ html_url: string }>(`${issue}/comments`, 'POST', { body });
-  return comment.html_url;
+  type Comment = { id: number; body: string; user: { login: string } };
+  for (let page = 1; ; page++) {
+    const comments = api<Comment[]>(`${issue}/comments?per_page=100&page=${page}`);
+    const previous = comments.find((c) => c.user.login === 'github-actions[bot]' && c.body.startsWith(marker));
+    if (previous) {
+      const endpoint = `repos/${context.repository}/issues/comments/${previous.id}`;
+      return api<{ html_url: string }>(endpoint, 'PATCH', { body }).html_url;
+    }
+    if (comments.length < 100) break;
+  }
+  return api<{ html_url: string }>(`${issue}/comments`, 'POST', { body }).html_url;
 }
 
 function publish(): void {
   const context = readJson<Context>('context.json');
   const validation = readJson<{ install: string; build: string }>('validation.json');
-  const { classification, draft, ready, action, questions } = assess(
-    context.mode,
-    validation.install,
-    validation.build
-  );
+  const { classification, draft, action, questions } = assess(context.mode, validation.install, validation.build);
   if (context.repository !== process.env.GITHUB_REPOSITORY || action === 'none' || !classification) {
     throw new Error('Publication preconditions failed');
   }
@@ -501,18 +481,16 @@ function publish(): void {
     const url = upsertSourceComment(context, [
       '**Documentation check: needs human input**',
       '',
-      'The documentation assistant compared this PR with the current docs and could not produce a publishable draft.',
-      '',
-      '### Open Questions',
       ...questionList,
       '',
-      `The decision, evidence, and any partial patch are in the [workflow run](${run}) artifacts for 14 days.`,
+      `[Workflow run and artifacts](${run})`,
     ]);
     save('publication.json', { url, status: 'Commented on the source PR with open questions' });
     return;
   }
   if (!draft) throw new Error('Publication preconditions failed');
-  const status = ready ? 'ready for review' : `needs human input (${questions.length} open questions)`;
+  const needsInput = questions.length > 0;
+  const status = needsInput ? 'needs human input' : 'ready for review';
   const branch = `docs/automated-pr-${sourceNumber(String(context.source.number))}`;
   const owner = context.repository.split('/')[0];
   const existing = api<{ html_url: string }[]>(
@@ -520,8 +498,8 @@ function publish(): void {
   );
   if (existing.length) {
     const url = existing[0].html_url;
-    upsertSourceComment(context, [`**Documentation follow-up:** ${url}, ${status}.`]);
-    save('publication.json', { url, status: 'Existing PR retained; reviewer edits were not overwritten.' });
+    upsertSourceComment(context, [`**Existing documentation PR:** ${url}. [Latest run](${run}).`]);
+    save('publication.json', { url, status: 'Existing PR retained' });
     return;
   }
   // Recreate the reviewed patch on a clean pinned checkout, then re-check it as the draft stage did.
@@ -550,9 +528,6 @@ function publish(): void {
     safe(classification.userImpact),
     ...(questions.length ? ['', '## Open Questions', ...questionList] : []),
     '',
-    '## Changes',
-    ...classification.changes.map((change) => `- ${change.path}: ${safe(change.purpose)}`),
-    '',
     '## Evidence',
     ...classification.evidence.map(
       (item) =>
@@ -562,18 +537,10 @@ function publish(): void {
     '## Reviewer Checks',
     safe(draft.notes),
     '',
-    '## Validation',
-    '- Whitespace check and Hugo docs build passed.',
-    '- Separate AI verification completed; human technical review is required.',
-    '- Inline examples were not executed by this workflow.',
-    '',
-    `Model: ${context.model}; effort: ${context.effort}.`,
-    `Run: ${run}`,
-    '',
-    'Review current behavior, release availability, examples, and rendered layout before publishing.',
+    `[Verification and Hugo build](${run}) · ${context.model}, ${context.effort} effort. Inline examples require manual testing.`,
   ].join('\n');
   const created = api<{ number: number; html_url: string }>(`repos/${context.repository}/pulls`, 'POST', {
-    title: `docs: follow up on #${context.source.number}${ready ? '' : ' (needs input)'}`,
+    title: `docs: follow up on #${context.source.number}${needsInput ? ' (needs input)' : ''}`,
     head: branch,
     base: context.baseBranch,
     body,

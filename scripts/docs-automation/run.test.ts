@@ -21,7 +21,7 @@ import {
   config,
   landedDiff,
   normalizePaths,
-  readyToPublish,
+  reviewQuestions,
   sourceNumber,
   structuredResult,
   validateClassification,
@@ -34,16 +34,14 @@ const page = 'packages/docs/content/docs/bots/example.md';
 const code = 'packages/core/src/example.ts';
 const original = '---\ntitle: Example\n---\n\nOriginal guidance.\n';
 const content = '---\ntitle: Example\n---\n\nUpdated guidance.\n';
-function workspace(): string {
+function tempDir(): string {
   const root = mkdtempSync(join(tmpdir(), 'docs-automation-'));
   temps.push(root);
-  for (const [path, value] of [
-    [page, original],
-    [code, 'export const example = true;\n'],
-  ]) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), value);
-  }
+  return root;
+}
+function workspace(root = tempDir()): string {
+  edit(root, page, original);
+  edit(root, code, 'export const example = true;\n');
   return root;
 }
 function classification(): Classification {
@@ -69,15 +67,8 @@ function verification(): Verification {
   };
 }
 function controller() {
-  const base = workspace();
-  const root = join(base, 'repo');
-  for (const [path, value] of [
-    [page, original],
-    [code, 'export const example = true;\n'],
-  ]) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), value);
-  }
+  const base = tempDir();
+  const root = workspace(join(base, 'repo'));
   const git = (...args: string[]): string => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' });
   git('init', '-qb', 'main');
   git('config', 'user.email', 'test@example.com');
@@ -312,6 +303,7 @@ test('only the draft stage can edit, and only its planned files', () => {
   assert.ok(draftArgs.includes(`--allowedTools 'Read,Glob,Grep,Edit(repo/${page})'`));
   assert.doesNotMatch(args('classify'), /Edit|Write/);
   assert.doesNotMatch(args('verify'), /Edit|Write/);
+  assert.throws(() => args('verify', [page]));
   assert.throws(() => args('draft', [code]));
 });
 test('drafted files must match the plan, stay in scope, and pass content checks', () => {
@@ -379,13 +371,17 @@ test('symlinked output directories cannot escape the docs tree', () => {
     validateClassification(root, { ...classification(), changes: [{ path, action: 'create', purpose: 'Escape' }] })
   );
 });
-test('uncertainty or unexecuted new examples prevent publication', () => {
-  assert.equal(readyToPublish(classification(), draft(), verification()), true);
-  assert.equal(readyToPublish(classification(), draft(), { ...verification(), examples: 'requires-execution' }), false);
-  assert.equal(readyToPublish(classification(), draft(), { ...verification(), verdict: 'needs-human' }), false);
-  assert.equal(readyToPublish(classification(), draft(), { ...verification(), findings: ['Wrong default'] }), false);
-  assert.equal(readyToPublish(classification(), { ...draft(), questions: ['Unknown version'] }, verification()), false);
-  assert.equal(readyToPublish(classification(), draft(), { ...verification(), evidence: [] }), false);
+test('needs-input drafts give the reviewer a reason', () => {
+  const questions = (changes: Partial<Verification>): string[] =>
+    reviewQuestions(classification(), draft(), { ...verification(), ...changes });
+  assert.deepEqual(questions({}), []);
+  assert.match(questions({ examples: 'requires-execution' })[0], /Run the new inline examples/);
+  assert.match(questions({ verdict: 'needs-human' })[0], /verifier requested human input/);
+  assert.match(questions({ evidence: [] })[0], /verifier cited no source/);
+  assert.deepEqual(questions({ findings: ['Wrong default'] }), ['Wrong default']);
+  assert.deepEqual(reviewQuestions(classification(), { ...draft(), questions: ['Unknown version'] }, verification()), [
+    'Unknown version',
+  ]);
 });
 test('draft questions keep supported edits and publish them as a needs-input draft PR', () => {
   const { root, run, git, command, write, output } = controller();
@@ -462,7 +458,10 @@ else if (method === 'POST' && endpoint === 'repos/org/repo/pulls') {
   response = state.created;
 } else if (method === 'POST' && endpoint === 'repos/org/repo/issues/456/assignees') {
   response = { assignees: body.assignees.map(login => ({ login })) };
-} else if (method === 'GET' && endpoint.startsWith('repos/org/repo/issues/123/comments?')) response = state.comments;
+} else if (method === 'GET' && endpoint.startsWith('repos/org/repo/issues/123/comments?')) {
+  const page = Number(new URLSearchParams(endpoint.split('?')[1]).get('page') || 1);
+  response = state.comments.slice(100 * (page - 1), 100 * page);
+}
 else if (method === 'POST' && endpoint === 'repos/org/repo/issues/123/comments') {
   response = comment(state.comments.length + 1, body.body);
   state.comments.push(response);
@@ -542,6 +541,8 @@ test('publisher creates and assigns one draft PR, links it from the source PR, a
   assert.match(readFileSync(join(root, page), 'utf8'), /Human correction/);
   assert.equal(state().calls.filter((item) => item.method === 'POST').length, 3);
   assert.equal(state().comments.length, 1);
+  assert.match(state().comments[0].body, /Existing documentation PR/);
+  assert.doesNotMatch(state().comments[0].body, /ready for review/);
   assert.ok(call('PATCH', 'repos/org/repo/issues/comments/1'));
   assert.match(JSON.parse(readFileSync(join(run, 'publication.json'), 'utf8')).status, /Existing PR retained/);
 });
@@ -563,7 +564,7 @@ test('a draft with open questions is published as a needs-input draft PR', () =>
   const created = call('POST', 'repos/org/repo/pulls')?.body ?? {};
   assert.equal(created.title, 'docs: follow up on #123 (needs input)');
   assert.match(String(created.body), /## Open Questions\n- Which release ships this\?\n- Confirm the policy name\./);
-  assert.match(state().comments[0].body, /needs human input \(2 open questions\)/);
+  assert.match(state().comments[0].body, /needs human input/);
 });
 
 test('needs-human without a buildable patch comments on the source PR once', () => {
@@ -578,14 +579,24 @@ test('needs-human without a buildable patch comments on the source PR once', () 
     },
     validation: { install: 'skipped', build: 'skipped' },
   });
+  const stored = join(base, 'api.json');
+  writeFileSync(
+    stored,
+    JSON.stringify({
+      calls: [],
+      comments: Array.from({ length: 100 }, (_, i) => ({
+        id: i + 1,
+        user: { login: 'human' },
+        body: 'Discussion',
+      })),
+    })
+  );
   publish();
   publish();
   assert.equal(call('POST', 'repos/org/repo/pulls'), undefined);
-  assert.equal(state().comments.length, 1);
-  assert.match(state().comments[0].body, /needs human input/);
-  assert.match(
-    state().comments[0].body,
-    /- Should @\u200bsomeone update &lt;the demo app> at `\/auth\/external\/<client-id>`\?/
-  );
+  assert.equal(state().comments.length, 101);
+  const comment = state().comments[100].body;
+  assert.match(comment, /needs human input/);
+  assert.match(comment, /- Should @\u200bsomeone update &lt;the demo app> at `\/auth\/external\/<client-id>`\?/);
   assert.match(JSON.parse(readFileSync(join(run, 'publication.json'), 'utf8')).status, /Commented on the source PR/);
 });

@@ -9,7 +9,7 @@ on:
         required: true
         type: string
       mode:
-        description: Classify only, generate a patch artifact, or explicitly publish a draft PR
+        description: Classify, save a draft, or publish the result to GitHub
         type: choice
         default: draft
         options: [classify, draft, open-pr]
@@ -80,7 +80,7 @@ jobs:
       - name: Draft proposed documentation
         id: draft
         timeout-minutes: 20
-        if: inputs.mode != 'classify' && steps.classification.outputs.draft == 'true'
+        if: inputs.mode != 'classify' && steps.classification.outputs.draft_args != ''
         uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -90,7 +90,7 @@ jobs:
           claude_args: ${{ steps.classification.outputs.draft_args }}
       - name: Check and capture drafted edits
         id: apply
-        if: inputs.mode != 'classify' && steps.classification.outputs.draft == 'true'
+        if: steps.draft.outcome == 'success'
         env:
           EXECUTION_FILE: ${{ steps.draft.outputs.execution_file }}
         run: node scripts/docs-automation/run.ts draft
@@ -134,7 +134,7 @@ jobs:
           npm run build:docs
       - name: Record validation results and publication decision
         id: validation
-        if: always() && steps.prepare.outcome == 'success'
+        if: ${{ !cancelled() && (success() || steps.install.outcome == 'failure' || steps.build.outcome == 'failure') }}
         env:
           INSTALL_RESULT: ${{ steps.install.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
@@ -152,7 +152,11 @@ jobs:
           retention-days: 14
 
   publish:
-    if: inputs.mode == 'open-pr' && contains(fromJSON('["pr", "comment"]'), needs.analyze.outputs.publication)
+    # A failed install/build can still leave a source-PR comment. Only a successful job can open a PR.
+    if: >-
+      ${{ !cancelled() && inputs.mode == 'open-pr' &&
+          (needs.analyze.outputs.publication == 'comment' ||
+           (needs.analyze.result == 'success' && needs.analyze.outputs.publication == 'pr')) }}
     needs: analyze
     runs-on: ubuntu-latest
     timeout-minutes: 10
