@@ -15,7 +15,8 @@ Ground edits in current implementation and tests. Keep useful partial edits. Put
 
 ## Style and Formatting
 
-- Use direct, active prose for someone building or operating a healthcare application. Start steps with verbs, use exact product terms, and explain the result. Omit marketing language, filler, rhetorical contrasts, invented labels, and em dashes.
+- Lead with what the reader should do or expect. Include implementation details when they help the reader make a choice, complete a step, or understand a result.
+- Use plain, active prose. Start steps with verbs. Keep exact product and FHIR terms and explain any the page's audience may not know. Omit generic introductions, repeated takeaways, marketing language, rhetorical contrasts, invented labels, and em dashes.
 - On new pages use title case for the front-matter title and all section headings. Lowercase articles and short conjunctions or prepositions except at the beginning or end. Preserve acronym, identifier, and UI casing. Begin body headings at `##`. On small edits preserve headings, IDs, aliases, anchors, and URLs.
 - Organize how-tos around prerequisites, steps, and results. Organize references around inputs, constraints, outputs, and errors. Use numbered lists for sequences, parallel bullets for alternatives, and tables for comparable attributes. Keep paragraphs and table cells short, with blank lines between blocks.
 - Use backticks for resource types, fields, operations, and code. Bold exact UI labels. Link the first useful mention to a descriptive `/docs/...` destination.
