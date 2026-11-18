@@ -87,13 +87,16 @@ export function groupAppointmentsByService(
  * matches only when no site is chosen.
  *
  * @param appointment - The appointment to check.
- * @param filters - The chosen site and service types, either absent for all of them.
- * @returns Whether the appointment is at the chosen site and for one of the chosen service types.
+ * @param filters - The chosen sites and service types, either absent for all of them.
+ * @returns Whether the appointment is at one of the chosen sites and for one of the chosen service types.
  */
 export function matchesCalendarFilters(appointment: Appointment, filters: CalendarFilterValues): boolean {
-  const { serviceFacility, services } = filters;
-  if (serviceFacility && getAppointmentSite(appointment)?.reference !== getReferenceString(serviceFacility)) {
-    return false;
+  const { serviceFacilities, services } = filters;
+  if (serviceFacilities?.length) {
+    const site = getAppointmentSite(appointment)?.reference;
+    if (!serviceFacilities.some((facility) => getReferenceString(facility) === site)) {
+      return false;
+    }
   }
   return !services?.length || services.some((s) => serviceTypeIncludesService(appointment.serviceType, s));
 }
