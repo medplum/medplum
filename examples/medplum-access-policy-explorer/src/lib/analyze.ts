@@ -97,7 +97,10 @@ export function matrixCell(
     return { status: 'denied', candidates: [], fieldRulesVary: false };
   }
   const status = matches.some((m) => !isConditional(m.entry, resourceType)) ? 'all' : 'conditional';
-  const signatures = new Set(matches.map((m) => fieldRuleSignature(m.entry)));
+  // Entries after the first one without criteria are never selected, so their field rules can't apply
+  const firstUnconditional = matches.findIndex((m) => !isConditional(m.entry, resourceType));
+  const reachable = firstUnconditional === -1 ? matches : matches.slice(0, firstUnconditional + 1);
+  const signatures = new Set(reachable.map((m) => fieldRuleSignature(m.entry)));
   return { status, candidates: matches, fieldRulesVary: signatures.size > 1 };
 }
 
@@ -133,6 +136,8 @@ export function explain(
   resource?: Resource
 ): ExplainRow[] {
   let decided = false;
+  // Earlier entries whose criteria couldn't be evaluated: on the server, any of them might match first
+  const unevaluated: MergedEntry[] = [];
   return entries.map((e): ExplainRow => {
     const { entry } = e;
     if (!typeMatches(entry, resourceType)) {
@@ -145,12 +150,24 @@ export function explain(
       return { entry: e, status: 'shadowed' };
     }
     if (resource) {
-      const result = evaluateFilters(entry, resource);
-      if (result === true) {
-        decided = true;
-        return { entry: e, status: 'winner' };
+      const { result, detail } = evaluateFilters(entry, resource);
+      if (result === 'unknown') {
+        unevaluated.push(e);
+        return { entry: e, status: 'criteria-error', detail };
       }
-      return { entry: e, status: result === false ? 'criteria-failed' : 'criteria-error', detail: result || undefined };
+      if (result === 'no-match') {
+        return { entry: e, status: 'criteria-failed', detail };
+      }
+      decided = true;
+      if (unevaluated.length > 0) {
+        const earlier = unevaluated.map((u) => `#${u.index + 1}`).join(', ');
+        return {
+          entry: e,
+          status: 'fallback',
+          detail: `Wins unless ${earlier} matches first (not evaluated here).`,
+        };
+      }
+      return { entry: e, status: 'winner' };
     }
     if (isConditional(entry, resourceType)) {
       return { entry: e, status: 'conditional-winner' };
@@ -167,38 +184,61 @@ function typeMatches(entry: AccessPolicyResource, resourceType: string): boolean
   return INTERACTIONS.some((i) => shallowMatchesResourcePolicy(entry, resourceType as ResourceType, i));
 }
 
-/**
- * Evaluates an entry's compartment and criteria against a resource, like the server's `matchesResourcePolicyFilters`.
- * @param entry - The entry.
- * @param resource - The resource.
- * @returns True or false, or an error message if the criteria could not be evaluated.
- */
-export function evaluateFilters(entry: AccessPolicyResource, resource: Resource): boolean | string {
-  if (resource.resourceType === 'Binary') {
-    return true;
-  }
-  if (entry.compartment && !resource.meta?.compartment?.some((c) => c.reference === entry.compartment?.reference)) {
-    return false;
-  }
-  if (entry.criteria) {
-    try {
-      const searchRequest = parseSearchRequest(normalizeCriteria(entry, resource.resourceType));
-      // matchesSearchRequest treats an unknown parameter as "no match", which would look like a real result.
-      const searchParams = globalSchema.types[searchRequest.resourceType]?.searchParams;
-      const unknown = searchRequest.filters?.find((f) => !searchParams?.[f.code]);
-      if (unknown) {
-        return `The browser can't evaluate "${unknown.code}" on ${searchRequest.resourceType} (chained, reverse-chained and unknown parameters aren't supported).`;
-      }
-      return matchesSearchRequest(resource, searchRequest);
-    } catch (err) {
-      return `Could not evaluate criteria in the browser: ${(err as Error).message}`;
-    }
-  }
-  return true;
+export interface FilterResult {
+  readonly result: 'match' | 'no-match' | 'unknown';
+  readonly detail?: string;
 }
 
 /**
- * Rewrites wildcard criteria (`*?...`) for a concrete resource type, as the server does.
+ * Evaluates an entry's compartment and criteria against a resource, like core's `matchesResourcePolicyFilters`,
+ * which the server uses to pick the entry (and its field rules) for a single resource.
+ * @param entry - The entry.
+ * @param resource - The resource.
+ * @returns Whether the resource matches, or `unknown` with the reason it couldn't be evaluated.
+ */
+export function evaluateFilters(entry: AccessPolicyResource, resource: Resource): FilterResult {
+  if (resource.resourceType === 'Binary') {
+    return { result: 'match' };
+  }
+  if (entry.compartment && !resource.meta?.compartment?.some((c) => c.reference === entry.compartment?.reference)) {
+    return { result: 'no-match', detail: `The resource is not in compartment ${entry.compartment.reference}.` };
+  }
+  if (!entry.criteria) {
+    return { result: 'match' };
+  }
+  try {
+    // Unlike search, core only rewrites wildcard criteria that start with `*?`
+    let criteria = entry.criteria;
+    if (entry.resourceType === '*' && criteria.startsWith('*?')) {
+      criteria = resource.resourceType + criteria.slice(1);
+    }
+    const searchRequest = parseSearchRequest(criteria);
+    const chained = searchRequest.filters?.find((f) => f.code.includes('.') || f.code.startsWith('_has:'));
+    if (chained) {
+      return {
+        result: 'unknown',
+        detail: `The browser can't evaluate the chained parameter "${chained.code}".`,
+      };
+    }
+    // Like core, a parameter the type doesn't define never matches (expected for wildcard entries).
+    // matchesSearchRequest returns false silently, so name the parameter.
+    const searchParams = globalSchema.types[searchRequest.resourceType]?.searchParams;
+    const unknown = searchRequest.filters?.find((f) => !searchParams?.[f.code]);
+    if (unknown) {
+      return {
+        result: 'no-match',
+        detail: `${searchRequest.resourceType} has no search parameter "${unknown.code}", so the criteria never match.`,
+      };
+    }
+    return { result: matchesSearchRequest(resource, searchRequest) ? 'match' : 'no-match' };
+  } catch (err) {
+    return { result: 'unknown', detail: `Could not evaluate criteria in the browser: ${(err as Error).message}` };
+  }
+}
+
+/**
+ * Rewrites wildcard criteria for a concrete resource type, as the server does in search: everything before the
+ * first `?` is replaced. Single-resource checks use a narrower rule; see `evaluateFilters`.
  * @param entry - The entry.
  * @param resourceType - The concrete resource type.
  * @returns The criteria to evaluate.
@@ -242,11 +282,13 @@ export function searchScope(entries: readonly MergedEntry[], resourceType: strin
   const seen = new Set<string>();
   let unrestrictedBy: MergedEntry | undefined;
 
+  // Binary can't be filtered, so the server skips access policy filters for it entirely
+  if (resourceType === 'Binary') {
+    return { denied: matches.length === 0, unrestrictedBy: matches[0], invalid, clauses };
+  }
   for (const m of matches) {
     const { entry } = m;
-    if (resourceType === 'Binary') {
-      unrestrictedBy ??= m;
-    } else if (entry.compartment?.reference) {
+    if (entry.compartment?.reference) {
       clauses.push({ entry: m, compartment: entry.compartment.reference });
     } else if (entry.criteria) {
       if (!entry.criteria.startsWith(entry.resourceType + '?')) {
@@ -259,7 +301,9 @@ export function searchScope(entries: readonly MergedEntry[], resourceType: strin
         clauses.push({ entry: m, criteria });
       }
     } else {
-      unrestrictedBy ??= m;
+      // The server returns here, so later entries (even invalid ones) have no effect
+      unrestrictedBy = m;
+      break;
     }
   }
   return { denied: matches.length === 0, unrestrictedBy, invalid, clauses };

@@ -60,6 +60,7 @@ export interface MergeResult {
 
 const DEFAULT_RESOURCE_TYPES = ['SearchParameter', 'StructureDefinition'];
 const UNRESOLVED_VARIABLE = /%[A-Za-z_][\w-]*(\.id)?/g;
+const PERCENT_ENCODED = /^%[0-9A-Fa-f]{2}$/;
 
 /**
  * Combines access policies the same way the Medplum server does at login.
@@ -178,7 +179,10 @@ function findUnresolvedVariables(policy: AccessPolicy): string[] {
   ];
   for (const value of strings) {
     for (const match of value?.matchAll(UNRESOLVED_VARIABLE) ?? []) {
-      found.add(match[0]);
+      // Skip percent-encoded bytes such as %C3 or %E2 in URL-encoded criteria values
+      if (!PERCENT_ENCODED.test(match[0])) {
+        found.add(match[0]);
+      }
     }
   }
   return [...found];
@@ -227,7 +231,7 @@ function applyProjectAdminRules(
       admin({
         resourceType: 'UserSecurityRequest',
         criteria: `UserSecurityRequest?_project=${project}`,
-        interaction: [...readInteractions],
+        readonly: true,
       }),
       admin({
         resourceType: 'User',
@@ -237,9 +241,9 @@ function applyProjectAdminRules(
         writeConstraint: ownProject,
       }),
       admin({ resourceType: 'Cron', criteria: `Cron?_project=${project}` }),
-      admin({ resourceType: 'Package', interaction: [...readInteractions] }),
-      admin({ resourceType: 'PackageRelease', interaction: [...readInteractions] }),
-      admin({ resourceType: 'PackageInstallation', interaction: [...readInteractions] }),
+      admin({ resourceType: 'Package', readonly: true }),
+      admin({ resourceType: 'PackageRelease', readonly: true }),
+      admin({ resourceType: 'PackageInstallation', readonly: true }),
     ];
   }
 

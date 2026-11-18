@@ -49,12 +49,14 @@ export interface ExplainViewProps {
   readonly resourceType: string;
   readonly interaction: AccessPolicyInteraction;
   readonly onChange: (resourceType: string, interaction: AccessPolicyInteraction) => void;
+  /** Kept by the parent so the sample survives switching tabs. */
+  readonly sampleJson: string;
+  readonly onSampleJsonChange: (json: string) => void;
 }
 
 export function ExplainView(props: ExplainViewProps): JSX.Element {
   const medplum = useMedplum();
-  const { entries, resourceType, interaction } = props;
-  const [sampleJson, setSampleJson] = useState('');
+  const { entries, resourceType, interaction, sampleJson, onSampleJsonChange: setSampleJson } = props;
   const [reference, setReference] = useState('');
   const [hideIrrelevant, setHideIrrelevant] = useState('relevant');
   const [error, setError] = useState<string>();

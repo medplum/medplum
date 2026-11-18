@@ -25,6 +25,7 @@ export function ExplorerPage(): JSX.Element {
     botSystemReadonly: true,
   }));
   const [extraTypes, setExtraTypes] = useState<string[]>([]);
+  const [sampleJson, setSampleJson] = useState('');
   const [tab, setTab] = useState<string | null>('merged');
   const [selection, setSelection] = useState<{ resourceType: string; interaction: AccessPolicyInteraction }>({
     resourceType: 'Patient',
@@ -79,6 +80,8 @@ export function ExplorerPage(): JSX.Element {
                 resourceType={selection.resourceType}
                 interaction={selection.interaction}
                 onChange={(resourceType, interaction) => setSelection({ resourceType, interaction })}
+                sampleJson={sampleJson}
+                onSampleJsonChange={setSampleJson}
               />
             </Tabs.Panel>
             <Tabs.Panel value="fields">

@@ -31,7 +31,13 @@ policy.
 
 The merge logic in `src/lib/merge.ts` mirrors `packages/server/src/fhir/accesspolicy.ts`. It does not model SMART
 scopes or super admin projects. Criteria are evaluated in the browser with `matchesSearchRequest` from `@medplum/core`,
-which does not support every search parameter.
+which does not support chained or `_has` parameters; entries using them are marked "cannot evaluate".
+
+Two deliberate differences from the server:
+
+- With no profile set, the explorer leaves `%profile` and `%patient` unfilled and warns about them. The server would
+  substitute the string `undefined`.
+- Percent-encoded bytes such as `%C3` in criteria values are not reported as unfilled variables.
 
 ### Getting Started
 

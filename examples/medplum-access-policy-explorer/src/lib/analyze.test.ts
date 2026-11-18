@@ -67,10 +67,30 @@ describe('mergeAccessPolicies', () => {
     expect(memberships).toHaveLength(1);
     expect(memberships[0].source.kind).toBe('admin');
     expect(memberships[0].entry.criteria).toBe('ProjectMembership?_project=proj');
+    // Same shape as the server's rules, so the merged JSON can be compared directly
+    expect(entries.find((e) => e.entry.resourceType === 'Package')?.entry).toEqual({
+      resourceType: 'Package',
+      readonly: true,
+    });
+  });
+
+  test('percent-encoded bytes are not reported as unfilled variables', () => {
+    const { warnings } = mergeAccessPolicies(
+      [row('Encoded', [{ resourceType: 'Patient', criteria: 'Patient?name=Jos%C3%A9' }])],
+      {
+        botSystemReadonly: false,
+      }
+    );
+    expect(warnings).toEqual([]);
   });
 });
 
 describe('analysis', () => {
+  const observation = (status: Observation['status']): Observation => ({
+    resourceType: 'Observation',
+    status,
+    code: {},
+  });
   const merged = mergeAccessPolicies(
     [
       row('Broad', [
@@ -86,7 +106,9 @@ describe('analysis', () => {
   ).entries;
 
   test('matrix flags conditional access and differing field rules', () => {
-    expect(matrixCell(merged, 'Patient', 'read')).toMatchObject({ status: 'all', fieldRulesVary: true });
+    // Strict's Patient rules never apply after Broad's unconditional entry; Observation depends on the criteria
+    expect(matrixCell(merged, 'Patient', 'read')).toMatchObject({ status: 'all', fieldRulesVary: false });
+    expect(matrixCell(merged, 'Observation', 'read')).toMatchObject({ status: 'all', fieldRulesVary: true });
     expect(matrixCell(merged, 'Encounter', 'read').status).toBe('denied');
     expect(matrixCell(merged, 'Login', 'read').status).toBe('protected');
     expect(matrixCell(merged, OTHER_TYPE, 'read').status).toBe('denied');
@@ -100,14 +122,12 @@ describe('analysis', () => {
     const obs = explain(merged, 'Observation', 'read');
     expect(obs[1].status).toBe('conditional-winner');
     expect(obs[3].status).toBe('fallback');
-    const observation = (status: Observation['status']): Observation => ({
-      resourceType: 'Observation',
-      status,
-      code: {},
-    });
 
-    // Without the search parameter definition, the result is unknown rather than a silent "no match"
-    expect(explain(merged, 'Observation', 'read', observation('final'))[1].status).toBe('criteria-error');
+    // Like core, a parameter the type doesn't define never matches; the detail names it
+    expect(explain(merged, 'Observation', 'read', observation('final'))[1]).toMatchObject({
+      status: 'criteria-failed',
+      detail: expect.stringContaining('no search parameter "status"'),
+    });
 
     indexSearchParameter({
       resourceType: 'SearchParameter',
@@ -122,6 +142,30 @@ describe('analysis', () => {
     const failing = explain(merged, 'Observation', 'read', observation('preliminary'));
     expect(failing[1].status).toBe('criteria-failed');
     expect(failing[3].status).toBe('winner');
+
+    // Wildcard parameters apply to each type; a type without the parameter never matches, as in core
+    const wildcard = mergeAccessPolicies([row('W', [{ resourceType: '*', criteria: '*?status=final' }])], {
+      botSystemReadonly: false,
+    }).entries;
+    expect(explain(wildcard, 'Observation', 'read', observation('final'))[0].status).toBe('winner');
+    const patient = explain(wildcard, 'Patient', 'read', { resourceType: 'Patient' })[0];
+    expect(patient.status).toBe('criteria-failed');
+    expect(patient.detail).toContain('no search parameter "status"');
+  });
+
+  test('explain does not name a sure winner after an entry it could not evaluate', () => {
+    const chained = mergeAccessPolicies(
+      [
+        row('A', [
+          { resourceType: 'Observation', criteria: 'Observation?subject.name=x', hiddenFields: ['note'] },
+          { resourceType: 'Observation' },
+        ]),
+      ],
+      { botSystemReadonly: false }
+    ).entries;
+    const rows = explain(chained, 'Observation', 'read', observation('final'));
+    expect(rows[0].status).toBe('criteria-error');
+    expect(rows[1]).toMatchObject({ status: 'fallback', detail: expect.stringContaining('unless #1 matches') });
   });
 
   test('field issues report bypassed and maybe-bypassed restrictions', () => {
@@ -158,5 +202,12 @@ describe('analysis', () => {
     expect(scope.unrestrictedBy).toBeUndefined();
     expect(scope.clauses.map((c) => c.criteria)).toEqual(['Observation?_compartment=Patient/1']);
     expect(scope.invalid.map((e) => e.index)).toEqual([1]);
+
+    // The server stops at the first unrestricted entry, so invalid criteria after it never cause a 403
+    const lifted = mergeAccessPolicies(
+      [row('B', [{ resourceType: 'Observation' }, { resourceType: 'Observation', criteria: 'Patient?name=x' }])],
+      { botSystemReadonly: false }
+    ).entries;
+    expect(searchScope(lifted, 'Observation')).toMatchObject({ unrestrictedBy: { index: 0 }, invalid: [] });
   });
 });

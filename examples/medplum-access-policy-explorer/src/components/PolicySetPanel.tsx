@@ -74,7 +74,8 @@ export function PolicySetPanel({ rows, onRowsChange, options, onOptionsChange }:
       if (parsed.resourceType !== 'AccessPolicy') {
         throw new Error('JSON must be an AccessPolicy resource');
       }
-      onRowsChange([...rows, makeRow(parsed)]);
+      // A pasted policy may carry an id, but it's still a draft rather than the stored resource
+      onRowsChange([...rows, { ...makeRow(parsed), reference: undefined }]);
       setPasted('');
       setError(undefined);
     } catch (err) {

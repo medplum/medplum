@@ -125,6 +125,15 @@ describe('ExplorerPage', () => {
     expect(screen.getByText('wins')).toBeInTheDocument();
     expect(screen.getByText('shadowed')).toBeInTheDocument();
 
+    // The sample is kept when switching tabs
+    await act(async () => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Matrix' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Which entry wins' }));
+    });
+    expect(await screen.findByText('Clear sample')).toBeInTheDocument();
+
     await act(async () => {
       fireEvent.click(screen.getByRole('tab', { name: /Field surprises/ }));
     });

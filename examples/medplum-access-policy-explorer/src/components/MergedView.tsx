@@ -38,8 +38,9 @@ export function MergedView({
           Effective compartment for new resources: <code>{merged.compartment.reference}</code>
         </Text>
       )}
-      {merged.warnings.map((w) => (
-        <Alert key={w.message} color="orange">
+      {merged.warnings.map((w, i) => (
+        // Messages repeat when the same policy is added twice
+        <Alert key={i} color="orange">
           {w.message}
         </Alert>
       ))}
