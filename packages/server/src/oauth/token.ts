@@ -42,6 +42,7 @@ import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { getLogger } from '../logger';
+import { LogThrottle } from '../util/logthrottle';
 import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
@@ -60,8 +61,18 @@ import {
   verifyMultipleMatchingException,
 } from './utils';
 
-type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
+type TokenEndpointAuthMethod =
+  'private_key_jwt' | 'client_secret_basic' | 'tls_client_auth' | 'client_secret_post' | 'none';
+type ClientIdAndSecret = {
+  error?: string;
+  clientId?: string;
+  clientSecret?: string;
+  authMethod?: TokenEndpointAuthMethod;
+};
+
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
+
+const pkceOptionalLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 /**
  * How long after a rotation the previous refresh token is still accepted from the same IP address,
@@ -210,7 +221,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
  * @param res - The HTTP response.
  */
 async function handleAuthorizationCode(req: Request, res: Response): Promise<void> {
-  const { clientId, clientSecret, error } = await getClientIdAndSecret(req);
+  const { clientId, clientSecret, authMethod, error } = await getClientIdAndSecret(req);
   if (error) {
     sendTokenError(res, 'invalid_request', error);
     return;
@@ -300,6 +311,10 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
       return;
     }
+  }
+
+  if (client?.pkceOptional) {
+    logPkceOptionalCodeRedemption(req, client, login, authMethod);
   }
 
   await sendTokenResponse(req, res, login, client);
@@ -823,26 +838,76 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
  */
 async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
   if (req.body.client_assertion_type) {
-    return parseClientAssertion(req, req.body.client_assertion_type, req.body.client_assertion);
+    return {
+      ...(await parseClientAssertion(req, req.body.client_assertion_type, req.body.client_assertion)),
+      authMethod: 'private_key_jwt',
+    };
   }
 
   const authHeader = req.headers.authorization;
   if (authHeader) {
-    return parseAuthorizationHeader(authHeader);
+    return { ...(await parseAuthorizationHeader(authHeader)), authMethod: 'client_secret_basic' };
   }
 
   const mtlsHeaderName = getConfig().mtlsCertHeader;
   if (mtlsHeaderName) {
     const mtlsHeader = req.headers[mtlsHeaderName];
     if (mtlsHeader) {
-      return parseMtlsClientCertificate(req, mtlsHeader);
+      return { ...(await parseMtlsClientCertificate(req, mtlsHeader)), authMethod: 'tls_client_auth' };
     }
   }
 
   return {
     clientId: req.body.client_id,
     clientSecret: req.body.client_secret,
+    authMethod: req.body.client_secret ? 'client_secret_post' : 'none',
   };
+}
+
+/**
+ * Diagnostic logging for an authorization code redeemed by a `pkceOptional` client in a way that would be
+ * rejected if PKCE or client authentication were required: no valid `code_verifier` and no client authentication,
+ * or a `code_verifier` that does not match the code challenge. Behavior is otherwise unchanged.
+ * @param req - The token request.
+ * @param client - The `pkceOptional` client application.
+ * @param login - The login being redeemed.
+ * @param authMethod - How the client authenticated to the token endpoint.
+ */
+function logPkceOptionalCodeRedemption(
+  req: Request,
+  client: ClientApplication,
+  login: WithId<Login>,
+  authMethod: TokenEndpointAuthMethod | undefined
+): void {
+  const codeVerifier = req.body.code_verifier as string | undefined;
+  const verifierValid =
+    !!login.codeChallenge &&
+    !!codeVerifier &&
+    verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier);
+
+  let reason: string;
+  if (codeVerifier && !verifierValid) {
+    reason = 'invalid-code-verifier';
+  } else if (!verifierValid && (!authMethod || authMethod === 'none')) {
+    reason = 'no-pkce-no-client-auth';
+  } else {
+    return;
+  }
+
+  pkceOptionalLogThrottle.maybeLog([client.id, reason].join('|'), (suppressed) => {
+    getLogger().warn('Authorization code redeemed by pkceOptional client without verification', {
+      reason,
+      clientId: client.id,
+      projectId: client.meta?.project,
+      loginId: login.id,
+      authMethod,
+      hasCodeChallenge: !!login.codeChallenge,
+      codeChallengeMethod: login.codeChallengeMethod,
+      hasCodeVerifier: !!codeVerifier,
+      userAgent: req.get('User-Agent'),
+      suppressed,
+    });
+  });
 }
 
 /**

@@ -790,6 +790,67 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeUndefined();
   });
 
+  test('Logs pkceOptional code redemption without PKCE or client authentication', async () => {
+    // Use a dedicated client so earlier redemptions do not throttle the log
+    const loggedClient = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: generateSecret(32),
+      pkceOptional: true,
+    });
+    const codeVerifier = randomUUID();
+
+    const redeem = async (
+      login: Record<string, string>,
+      token: Record<string, string>
+    ): Promise<Record<string, unknown> | undefined> => {
+      const res = await request(app)
+        .post('/auth/login')
+        .type('json')
+        .send({ clientId: loggedClient.id, email, password, ...login });
+      expect(res).toHaveStatus(200);
+
+      const warnSpy = vi.spyOn(MedplumCore.Logger.prototype, 'warn');
+      const res2 = await request(app)
+        .post('/oauth2/token')
+        .type('form')
+        .send({ grant_type: 'authorization_code', code: res.body.code, ...token });
+      expect(res2).toHaveStatus(200);
+      const call = warnSpy.mock.calls.find(
+        ([msg]) => msg === 'Authorization code redeemed by pkceOptional client without verification'
+      );
+      warnSpy.mockRestore();
+      return call?.[1] as Record<string, unknown> | undefined;
+    };
+
+    const challenge = { codeChallenge: hashCode(codeVerifier), codeChallengeMethod: 'S256' };
+
+    // Client secret: not logged
+    expect(
+      await redeem({}, { client_id: loggedClient.id, client_secret: loggedClient.secret as string })
+    ).toBeUndefined();
+
+    // Valid code verifier: not logged
+    expect(await redeem(challenge, { code_verifier: codeVerifier })).toBeUndefined();
+
+    // Code challenge without verifier or client authentication: logged
+    expect(await redeem(challenge, {})).toMatchObject({
+      reason: 'no-pkce-no-client-auth',
+      clientId: loggedClient.id,
+      authMethod: 'none',
+      hasCodeChallenge: true,
+      hasCodeVerifier: false,
+    });
+
+    // Wrong code verifier, even with a client secret: logged
+    expect(
+      await redeem(challenge, {
+        client_id: loggedClient.id,
+        client_secret: loggedClient.secret as string,
+        code_verifier: 'wrong',
+      })
+    ).toMatchObject({ reason: 'invalid-code-verifier', authMethod: 'client_secret_post', hasCodeVerifier: true });
+  });
+
   test('Authorization code token with wrong client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: pkceOptionalClient.id,
