@@ -72,6 +72,8 @@ import {
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
+  ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM,
+  ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
   CLINICAL_CONDITION_CODE_SYSTEM,
@@ -82,8 +84,10 @@ import {
   ENCOUNTER_STATUS_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
+  isNamedAllergen,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   mapCcdaCodeToCodeableConcept,
+  mapCcdaNoKnownAllergyCode,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
@@ -124,6 +128,7 @@ import type {
   CcdaTelecom,
   CcdaTemplateId,
   CcdaText,
+  CcdaValue,
 } from './types';
 import { convertToCompactXml } from './xml';
 
@@ -489,13 +494,18 @@ class CcdaToFhirConverter {
     allergy.extension = this.mapTextReference(observation.text);
 
     const allergenCode = observation.participant?.[0]?.participantRole?.playingEntity?.code;
-    if (allergenCode) {
-      allergy.code = this.mapCode(allergenCode);
+    const allergen = this.mapCode(allergenCode);
 
-      // Add allergen reference
-      if (allergy.code && allergenCode.originalText?.reference?.['@_value']) {
-        allergy.code.extension = this.mapTextReference(allergenCode.originalText);
-      }
+    // Add allergen reference
+    if (allergen && allergenCode?.originalText?.reference?.['@_value']) {
+      allergen.extension = this.mapTextReference(allergenCode.originalText);
+    }
+
+    if (observation['@_negationInd'] === 'true') {
+      // Only a code names a substance; text alone may be a "no known allergies" note
+      this.mapNegatedAllergen(allergy, observation.value, isNamedAllergen(allergen) ? allergen : undefined);
+    } else {
+      allergy.code = allergen;
     }
 
     const reactionObservations = observation.entryRelationship?.find(
@@ -929,15 +939,51 @@ class CcdaToFhirConverter {
     };
   }
 
-  private createVerificationStatus(): CodeableConcept {
+  private createVerificationStatus(code = 'confirmed'): CodeableConcept {
     return {
       coding: [
         {
           system: ALLERGY_VERIFICATION_CODE_SYSTEM,
-          code: 'confirmed',
+          code,
         },
       ],
     };
+  }
+
+  // See https://hl7.org/fhir/us/ccda/CF-allergies.html
+  private mapNegatedAllergen(
+    allergy: AllergyIntolerance,
+    value: CcdaValue | undefined,
+    allergen: CodeableConcept | undefined
+  ): void {
+    if (allergen) {
+      // No negated concept exists for an arbitrary substance, so use the extension, which prohibits code
+      allergy.extension = append(allergy.extension, {
+        url: ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
+        extension: [
+          { url: 'substance', valueCodeableConcept: allergen },
+          {
+            url: 'exposureRisk',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM,
+                  code: 'no-known-reaction-risk',
+                  display: 'No Known Reaction Risk',
+                },
+              ],
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    allergy.code = mapCcdaNoKnownAllergyCode(value);
+    if (!allergy.code) {
+      // No "no known" concept for this value: refute rather than confirm an allergy to nothing
+      allergy.verificationStatus = this.createVerificationStatus('refuted');
+    }
   }
 
   private mapAuthorToReference(author: CcdaAuthor | undefined): Reference<Practitioner> | undefined {

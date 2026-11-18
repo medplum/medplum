@@ -186,6 +186,7 @@ export const CONDITION_CATEGORY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeS
 export const CONDITION_VER_STATUS_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/condition-ver-status`;
 export const ALLERGY_CLINICAL_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/allergyintolerance-clinical`;
 export const ALLERGY_VERIFICATION_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/allergyintolerance-verification`;
+export const ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/allerg-intol-substance-exp-risk`;
 export const ACT_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ActCode`;
 export const PARTICIPATION_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ParticipationType`;
 export const DIAGNOSIS_ROLE_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/diagnosis-role`;
@@ -209,6 +210,7 @@ export const MEDICATION_REQUEST_STATUS_VALUE_SET = `${HTTP_HL7_ORG}/fhir/ValueSe
 
 export const LANGUAGE_MODE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/language-mode`;
 export const LANGUAGE_PROFICIENCY_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/language-proficiency`;
+export const ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk`;
 
 /*
  * US-Core
@@ -624,6 +626,40 @@ export const ALLERGY_SEVERITY_MAPPER = new EnumMapper<'mild' | 'moderate' | 'sev
     { ccdaValue: '24484000', fhirValue: 'severe', displayName: 'Severe' },
   ]
 );
+
+// C-CDA on FHIR ConceptMap CF-NoKnownAllergies: https://hl7.org/fhir/us/ccda/ConceptMap-CF-NoKnownAllergies.html
+// The other codes in the Allergy and Intolerance Type value set have no "no known" equivalent.
+const NO_KNOWN_ALLERGY_CODES: Record<string, Coding> = {
+  '414285001': { system: SNOMED, code: '429625007', display: 'No known food allergy' }, // Allergy to food
+  '416098002': { system: SNOMED, code: '409137002', display: 'No known drug allergy' }, // Allergy to drug
+  '419199007': { system: SNOMED, code: '716186003', display: 'No known allergy' }, // Allergy to substance
+};
+
+/**
+ * Maps the value of a negated C-CDA Allergy - Intolerance Observation that names no substance to a "no known allergy" code.
+ * @param value - The observation value, a code from the Allergy and Intolerance Type value set.
+ * @returns The "no known" concept for the value, or undefined when the value has none.
+ */
+export function mapCcdaNoKnownAllergyCode(value: CcdaValue | undefined): CodeableConcept | undefined {
+  const code = value as CcdaCode | undefined;
+  if (code?.['@_codeSystem'] !== OID_SNOMED_CT_CODE_SYSTEM || !code['@_code']) {
+    return undefined;
+  }
+  const coding = NO_KNOWN_ALLERGY_CODES[code['@_code']];
+  return coding ? { coding: [{ ...coding }] } : undefined;
+}
+
+/**
+ * Returns true when an allergen carries a code other than SNOMED CT 105590001 "Substance",
+ * which the ONC (b)(1) samples suggest for a "no known allergies" entry.
+ * @param allergen - The allergen mapped from playingEntity/code.
+ * @returns True when the allergen names a particular substance.
+ */
+export function isNamedAllergen(allergen: CodeableConcept | undefined): boolean {
+  return !!allergen?.coding?.some(
+    (coding) => coding.code && !(coding.system === SNOMED && coding.code === '105590001')
+  );
+}
 
 export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
   {
