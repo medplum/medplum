@@ -32,9 +32,19 @@ function ScheduleActors(props: { readonly detail: AvailabilityShadeDetail }): JS
   );
 }
 
-function ShadeDetails(props: AvailabilityShadeEventProps): JSX.Element {
-  const { shade } = props;
+interface ShadeDetailsProps extends AvailabilityShadeEventProps {
+  /** The time under the pointer, in milliseconds. */
+  readonly at?: number;
+}
+
+function ShadeDetails(props: ShadeDetailsProps): JSX.Element {
+  const { shade, at } = props;
   const [first] = shade.details;
+  // Only what holds at the time under the pointer, as a block can run through hours its lines do not
+  // all cover. Every line when the time is not known, or none of them covers it.
+  const covering =
+    at === undefined ? [] : shade.details.filter((detail) => detail.start.getTime() <= at && at < detail.end.getTime());
+  const details = covering.length > 0 ? covering : shade.details;
   const byService = shade.kind === 'service';
   let heading: JSX.Element | string = <ScheduleActors detail={first} />;
   if (byService) {
@@ -48,7 +58,7 @@ function ShadeDetails(props: AvailabilityShadeEventProps): JSX.Element {
       <Text size="xs" fw={600}>
         {heading}
       </Text>
-      {shade.details.map((detail, index) => (
+      {details.map((detail, index) => (
         <Text key={index} size="xs">
           {byService ? <ScheduleActors detail={detail} /> : detail.service.name}
           {' · '}
@@ -64,14 +74,16 @@ function ShadeDetails(props: AvailabilityShadeEventProps): JSX.Element {
 
 /**
  * A block of availability, drawn behind a day's events in its visit type's color, across the share of the
- * day's column the shade names. Hovering says what the block is made of; the calendar reports the hover,
- * as the block sits behind the layer that would hear it (see `useAvailabilityShadeHover`).
+ * day's column the shade names. Hovering says what the block is made of at the time under the pointer; the
+ * calendar reports the hover, as the block sits behind the layer that would hear it (see
+ * `useAvailabilityShadeHover`).
  * @param props - The React props.
  * @returns The block's content.
  */
 export function AvailabilityShadeEvent(props: AvailabilityShadeEventProps): JSX.Element {
   const { shade } = props;
-  const hovered = useContext(AvailabilityShadeHoverContext) === shade.id;
+  const target = useContext(AvailabilityShadeHoverContext);
+  const hovered = target?.id === shade.id;
   const style = {
     '--shade-left': shade.left,
     '--shade-width': shade.width,
@@ -79,7 +91,12 @@ export function AvailabilityShadeEvent(props: AvailabilityShadeEventProps): JSX.
   } as CSSProperties;
 
   return (
-    <Tooltip label={<ShadeDetails shade={shade} />} position="right-start" opened={hovered} multiline>
+    <Tooltip
+      label={<ShadeDetails shade={shade} at={hovered ? target.at : undefined} />}
+      position="right-start"
+      opened={hovered}
+      multiline
+    >
       <div
         className={classes.shade}
         data-kind={shade.kind}

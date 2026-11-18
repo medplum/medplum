@@ -1,10 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MouseEvent } from 'react';
-import { createContext, useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-/** The id of the availability block the pointer is over, for the block to open its tooltip by. */
-export const AvailabilityShadeHoverContext = createContext<string | undefined>(undefined);
+/** The availability block the pointer is over, and the minute of it the pointer is at. */
+export interface AvailabilityShadeHoverTarget {
+  readonly id: string;
+  /** In milliseconds, to the minute, so that moving within a minute changes nothing. */
+  readonly at?: number;
+}
+
+/** What the pointer is over, for the block to open its tooltip by and say what holds at that time. */
+export const AvailabilityShadeHoverContext = createContext<AvailabilityShadeHoverTarget | undefined>(undefined);
+
+const MINUTE_MS = 60 * 1000;
 
 // The attributes `AvailabilityShadeEvent` names its block by, and says when it starts and ends in.
 const SHADE_ID_ATTRIBUTE = 'data-shade-id';
@@ -28,8 +37,8 @@ function instantAt(block: Element, clientY: number): Date | undefined {
 const FOREGROUND_EVENT_SELECTOR = '.appointment, .slot';
 
 export interface AvailabilityShadeHover {
-  /** The id of the block under the pointer, with no event in front of it there. */
-  readonly hoveredId: string | undefined;
+  /** The block under the pointer, with no event in front of it there. */
+  readonly hovered: AvailabilityShadeHoverTarget | undefined;
   /** Spread onto the element wrapping the calendar. Empty while there are no blocks to track. */
   readonly hoverProps: {
     readonly onMouseMove?: (event: MouseEvent) => void;
@@ -46,13 +55,14 @@ export interface AvailabilityShadeHover {
  * @param enabled - Whether there are blocks to track.
  * @param onHoverInstant - Called on each move with the instant under the pointer, to the pixel rather
  * than to the grid's rows, and with undefined once the pointer is off the blocks.
- * @returns The hovered block's id, and the handlers that keep it current.
+ * @returns The hovered block, and the handlers that keep it current.
  */
 export function useAvailabilityShadeHover(
   enabled: boolean,
   onHoverInstant?: (instant: Date | undefined) => void
 ): AvailabilityShadeHover {
   const [hoveredId, setHoveredId] = useState<string>();
+  const [hoveredMinute, setHoveredMinute] = useState<number>();
   const latestOnHoverInstant = useRef(onHoverInstant);
   useEffect(() => {
     latestOnHoverInstant.current = onHoverInstant;
@@ -75,13 +85,19 @@ export function useAvailabilityShadeHover(
       }
     }
     setHoveredId(id);
+    setHoveredMinute(instant && Math.floor(instant.getTime() / MINUTE_MS) * MINUTE_MS);
     latestOnHoverInstant.current?.(instant);
   }, []);
 
   const onMouseLeave = useCallback((): void => {
     setHoveredId(undefined);
+    setHoveredMinute(undefined);
     latestOnHoverInstant.current?.(undefined);
   }, []);
 
-  return { hoveredId: enabled ? hoveredId : undefined, hoverProps: enabled ? { onMouseMove, onMouseLeave } : {} };
+  const hovered = useMemo(
+    () => (enabled && hoveredId ? { id: hoveredId, at: hoveredMinute } : undefined),
+    [enabled, hoveredId, hoveredMinute]
+  );
+  return { hovered, hoverProps: enabled ? { onMouseMove, onMouseLeave } : {} };
 }
