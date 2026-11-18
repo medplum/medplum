@@ -115,6 +115,16 @@ describe('SchedulingWorkspace', () => {
     expect(providerRow).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('paints the workspace in the backgroundColor it is given', async () => {
+    const medplum = await setupClient();
+    renderWithMedplum(<SchedulingWorkspace backgroundColor="gray.0" />, medplum);
+
+    await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+    const root = document.querySelector<HTMLElement>('[style*="--scheduling-workspace-background"]');
+    expect(root).toContainElement(screen.getByText('Dr. Maya Rivera'));
+    expect(root?.style.getPropertyValue('--scheduling-workspace-background')).toBe('var(--mantine-color-gray-0)');
+  });
+
   test('deselecting a device marks its row inactive', async () => {
     const medplum = await setupClient();
     renderWithMedplum(<SchedulingWorkspace />, medplum);
