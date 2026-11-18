@@ -22,7 +22,7 @@ import { randomUUID } from 'node:crypto';
 import { ceilingFromAllowEventDetails, readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
-import { EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
+import { DEFAULT_EVENT_DETAIL_LEVEL, EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
 import { needsReconnect, readCredential } from './credentials';
 import type { UpsertOutcome } from './google-calendar';
 import { GoogleApiError, GoogleCalendarClient } from './google-calendar';
@@ -256,7 +256,10 @@ export class SyncSession {
     await this.lease.mutate((basic) => {
       const state = readState(basic);
       state.outboundError = error;
-      if (complete) {
+      if (complete && error && state.privacyPending) {
+        // An event may still show the old detail level: keep the request open and retry before the hourly sweep.
+        state.outboundRetryAt = new Date(Date.now() + 15 * 60_000).toISOString();
+      } else if (complete) {
         // The range was walked even when some sources failed: the request is done and the error
         // reported, so the minute sweep does not re-run discovery.
         state.outboundCompleted = this.outboundRequestAtStart;
@@ -619,7 +622,8 @@ export class SyncSession {
     const level = resolveDetailLevel(
       resolveDetailLevel(
         readState(connection.basic).projectDetailLevel ?? this.detailCeiling,
-        connection.eventDetailLevel
+        // Raising the project ceiling never raises a practitioner who has not chosen a level.
+        connection.eventDetailLevel ?? DEFAULT_EVENT_DETAIL_LEVEL
       ),
       previousLevel
     );
@@ -701,7 +705,7 @@ export class SyncSession {
  * @param resource - Candidate outbound source.
  * @returns True when the Slot carries the import namespace.
  */
-export function isImportedSlot(resource: Appointment | Slot): boolean {
+function isImportedSlot(resource: Appointment | Slot): boolean {
   return (
     resource.resourceType === 'Slot' &&
     Boolean(resource.identifier?.some((id) => id.system === IMPORT_IDENTIFIER_SYSTEM))

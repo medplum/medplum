@@ -5,7 +5,7 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { requireOperationBot } from '../common/authorization';
 import { readProjectCeiling } from '../common/configuration';
-import { findConnection, saveConnection } from '../common/connection';
+import { accountInUse, findConnection, saveConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
 import { credentialRevision } from '../common/credentials';
@@ -35,6 +35,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     const tokens = await exchangeCode(getOAuthClient(event.secrets), { code, codeVerifier, redirectUri });
     let exchangedAccount: string | undefined;
     let storedBefore: string | undefined;
+    let shared = false;
     try {
       // This Bot writes the token but never reads it, so it recognises its own save by the changed revision.
       const existing = await findConnection(medplum, practitionerRef);
@@ -55,6 +56,10 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       }
       const account = readIdToken(tokens.id_token);
 
+      shared = await accountInUse(medplum, account.sub, practitionerRef);
+      if (shared) {
+        throw new Error('This Google account is already connected to another practitioner');
+      }
       // Account switching requires a separate, explicit disconnect.
       if (existing && existing.accountSub !== account.sub) {
         throw new Error('Disconnect the existing Google account before switching accounts');
@@ -91,7 +96,8 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
           { cause: err }
         );
       }
-      if (!persisted && (tokens.refresh_token || tokens.access_token)) {
+      // Revoking would also end the other practitioner's grant from the same account.
+      if (!persisted && !shared && (tokens.refresh_token || tokens.access_token)) {
         try {
           await revokeToken(tokens.refresh_token ?? tokens.access_token);
         } catch {

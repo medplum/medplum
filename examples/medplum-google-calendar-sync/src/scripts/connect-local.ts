@@ -12,10 +12,11 @@ import { assertDeploymentProject, cliAccessToken, loadPackageEnv } from './deplo
  * Connects the signed-in practitioner's Google Calendar from a developer machine, standing in
  * for the customer app's callback page. Runs the consent flow on a loopback port, then calls
  * `Practitioner/$google-calendar-connect` with the code, so the Bot does the exchange and
- * stores the connection. Needs a Desktop-type OAuth client (loopback redirects) and a Medplum
- * session: `MEDPLUM_ACCESS_TOKEN`, or the selected `medplum login` profile. PROJECT_ID must match the authenticated project.
+ * stores the connection. The project's Google client must be a Desktop-type OAuth client
+ * (loopback redirects). Needs a practitioner session: `MEDPLUM_ACCESS_TOKEN`, or the selected
+ * `medplum login` profile. PROJECT_ID must match the authenticated project.
  *
- *   PROJECT_ID=… GOOGLE_CALENDAR_CLIENT_ID=… npx tsx src/scripts/connect-local.ts [eventDetailLevel]
+ *   PROJECT_ID=… npx tsx src/scripts/connect-local.ts [eventDetailLevel]
  */
 
 loadPackageEnv();
@@ -76,7 +77,6 @@ async function authorize(clientId: string): Promise<{ code: string; codeVerifier
 }
 
 async function main(): Promise<void> {
-  const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID ?? requireEnv('GOOGLE_CLIENT_ID');
   const eventDetailLevel = process.argv[2];
   const medplum = new MedplumClient({
     baseUrl: BASE_URL,
@@ -89,6 +89,14 @@ async function main(): Promise<void> {
   }
   console.log(`Connecting ${profile?.resourceType}/${profile?.id} on ${BASE_URL}`);
 
+  // The Bot exchanges the code with the installed client, so the consent screen must use the same one.
+  const installed: Parameters = await medplum.post(medplum.fhirUrl('Practitioner', '$google-calendar-status'), {
+    resourceType: 'Parameters',
+  });
+  const clientId = installed.parameter?.find((p) => p.name === 'clientId')?.valueString;
+  if (!clientId) {
+    throw new Error('The project has no Google client ID; run the installer first');
+  }
   const { code, codeVerifier } = await authorize(clientId);
   const parameters: Parameters = {
     resourceType: 'Parameters',

@@ -2,13 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type {
-  OperationDefinition,
-  OperationDefinitionParameter,
-  Parameters,
-  ParametersParameter,
-} from '@medplum/fhirtypes';
-import { BOT_IDENTIFIER_VALUE, EVENT_DETAIL_LEVELS, SECRET } from './constants';
+import type { OperationDefinition, OperationDefinitionParameter, Parameters } from '@medplum/fhirtypes';
+import { BOT_IDENTIFIER_VALUE } from './constants';
 
 const param = (name: string, type: string, min = 0, max = '1'): OperationDefinitionParameter => ({
   name,
@@ -37,12 +32,7 @@ const entries = [
   [
     'install',
     BOT_IDENTIFIER_VALUE.install,
-    [
-      param(SECRET.clientId, 'string'),
-      param(SECRET.clientSecret, 'string'),
-      param(SECRET.appointmentUrl, 'string'),
-      param(SECRET.allowEventDetails, 'string'),
-    ],
+    [],
     [param('installed', 'boolean', 1), param('outcome', 'OperationOutcome', 1)],
   ],
   [
@@ -94,93 +84,42 @@ export const CONTRACTS: Record<string, { definition: OperationDefinition; botIde
   ])
 );
 
-function validateParts(actual: ParametersParameter[], definitions: OperationDefinitionParameter[]): void {
-  for (const p of actual) {
+/**
+ * Checks a request body against the operation's input parameters. Each handler validates values.
+ * @param name - The operation.
+ * @param value - The request body; an absent body is an empty `Parameters`.
+ * @returns The validated body.
+ */
+export function validateInput(name: string, value: unknown): Parameters {
+  const input = (value ?? { resourceType: 'Parameters' }) as Parameters;
+  if (input.resourceType !== 'Parameters' || (input.parameter !== undefined && !Array.isArray(input.parameter))) {
+    throw new Error('Operation requires a FHIR Parameters resource');
+  }
+  const definitions = CONTRACTS[name].definition.parameter?.filter((p) => p.use === 'in') ?? [];
+  for (const p of input.parameter ?? []) {
     const d = definitions.find((d) => d.name === p.name);
     if (!d) {
       throw new Error(`Unknown parameter: ${p.name}`);
     }
-    const keys = Object.keys(p).filter((k) => k.startsWith('value') || k === 'resource' || k === 'part');
-    let key = `value${d.type?.[0].toUpperCase()}${d.type?.slice(1)}`;
-    if (d.part) {
-      key = 'part';
-    } else if (d.type && /^[A-Z]/.test(d.type) && d.type !== 'Reference') {
-      key = 'resource';
-    }
-    if (keys.length !== 1 || keys[0] !== key) {
-      throw new Error(`Invalid type for parameter: ${p.name}`);
-    }
-    const value = (p as unknown as Record<string, unknown>)[key];
-    if (d.part) {
-      if (!Array.isArray(p.part)) {
-        throw new Error('Invalid parameter parts');
-      }
-      validateParts(p.part, d.part);
-    } else if (key === 'resource') {
-      if (p.resource?.resourceType !== d.type) {
-        throw new Error(`Invalid resource: ${p.name}`);
-      }
-    } else if (d.type === 'Reference') {
-      if (typeof p.valueReference?.reference !== 'string') {
-        throw new Error(`Invalid reference: ${p.name}`);
-      }
-    } else if (d.type === 'boolean') {
-      if (typeof value !== 'boolean') {
-        throw new Error(`Invalid boolean: ${p.name}`);
-      }
-    } else if (d.type === 'integer') {
-      if (!Number.isInteger(value) || Number(value) < 0) {
-        throw new Error(`Invalid integer: ${p.name}`);
-      }
-    } else if (typeof value !== 'string' || !value.trim()) {
+    const valid = d.type === 'boolean' ? typeof p.valueBoolean === 'boolean' : Boolean(p.valueString?.trim());
+    if (!valid) {
       throw new Error(`Empty or invalid parameter: ${p.name}`);
-    }
-    if (
-      ['eventDetailLevel', 'effectiveDetailLevel'].includes(p.name) &&
-      !EVENT_DETAIL_LEVELS.includes(value as (typeof EVENT_DETAIL_LEVELS)[number])
-    ) {
-      throw new Error(`eventDetailLevel must be one of ${EVENT_DETAIL_LEVELS.join(', ')}`);
-    }
-    if (p.name === SECRET.allowEventDetails && !['true', 'false'].includes(String(value).trim().toLowerCase())) {
-      throw new Error(`${SECRET.allowEventDetails} must be true or false`);
-    }
-    if (['instant', 'dateTime'].includes(d.type ?? '') && !Number.isFinite(Date.parse(String(value)))) {
-      throw new Error(`Invalid date: ${p.name}`);
     }
   }
   for (const d of definitions) {
-    const n = actual.filter((p) => p.name === d.name).length;
-    if (n < d.min || (d.max !== '*' && n > Number(d.max))) {
+    const n = input.parameter?.filter((p) => p.name === d.name).length ?? 0;
+    if (n < d.min || n > Number(d.max)) {
       throw new Error(`Required parameters missing or repeated: ${d.name}`);
     }
   }
+  return input;
 }
-export function validateContract(name: string, direction: 'in' | 'out', value: unknown): void {
-  if (value === undefined && direction === 'in') {
-    value = { resourceType: 'Parameters' };
-  }
-  const resource = value as Parameters | undefined;
-  if (
-    resource?.resourceType !== 'Parameters' ||
-    (resource.parameter !== undefined && !Array.isArray(resource.parameter))
-  ) {
-    throw new Error('Operation requires a FHIR Parameters resource');
-  }
-  validateParts(
-    resource.parameter ?? [],
-    CONTRACTS[name].definition.parameter?.filter((p) => p.use === direction) ?? []
-  );
-}
+
 export function operationHandler(
   name: string,
   execute: (medplum: MedplumClient, event: BotEvent<Parameters>) => Promise<Parameters>
 ): (medplum: MedplumClient, event: BotEvent<Parameters | undefined>) => Promise<Parameters> {
-  return async (medplum, event) => {
-    validateContract(name, 'in', event.input);
-    const result = await execute(medplum, { ...event, input: event.input ?? { resourceType: 'Parameters' } });
-    validateContract(name, 'out', result);
-    return result;
-  };
+  return async (medplum, event) => execute(medplum, { ...event, input: validateInput(name, event.input) });
 }
 
 function operationDescription(name: string): string {

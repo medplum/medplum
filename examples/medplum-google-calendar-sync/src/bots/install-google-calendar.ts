@@ -1,57 +1,45 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { allOk } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { writeProjectCeiling, ceilingFromAllowEventDetails } from '../common/configuration';
 import { CONNECTION_SEARCH, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, SECRET } from '../common/constants';
 import { operationHandler } from '../common/contracts';
-import {
-  ensureBotMembership,
-  ensureReconcileCron,
-  INSTALL_SECRETS,
-  requireSharedBot,
-  writeProjectSecrets,
-} from '../common/install';
-import { getParam } from '../common/operations';
+import { ensureBotMembership, ensureReconcileCron, requireSharedBot, writeProjectSecrets } from '../common/install';
 import { ensurePolicy, PRACTITIONER_POLICY_SNIPPET } from '../common/policies';
 import { currentProjectId, projectQuery } from '../common/project';
 import { requestSync } from '../common/state';
 import { ensureSyncSubscription, ensureWorkSubscription } from '../common/subscriptions';
 
 /*
- * `Project/$google-calendar-install`, run once by a customer project admin. Stores the
- * Google OAuth client and settings, then creates restricted Bot memberships, policies,
- * scheduling and work-request Subscriptions, and hourly/minute Crons. Re-run installation
- * to rotate the client secret or repair configuration.
+ * `Project/$google-calendar-install`, run by a customer project admin. Reads the Google OAuth
+ * client and settings from project secrets, then creates restricted Bot memberships, policies,
+ * scheduling and work-request Subscriptions, and hourly/minute Crons. Re-run it after changing a
+ * secret or to repair configuration.
  */
 
-async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Promise<Parameters> {
+async function execute(medplum: MedplumClient): Promise<Parameters> {
   // The install runs as the calling admin, so their profile names the customer project.
   const projectId = await currentProjectId(medplum);
   const project = await medplum.readResource('Project', projectId);
-  if (!project.features?.includes('bots')) {
-    throw new Error('This project needs the "bots" feature; ask a Medplum super admin to enable it');
-  }
-
-  // The Google client normally comes from the project secrets the customer admin entered in
-  // the Medplum app (Admin, Project, Secrets); parameters override them, for example to rotate.
-  const secrets: Record<string, string> = {};
-  for (const { name, required } of INSTALL_SECRETS) {
-    const value = getParam(event.input, name);
-    if (value) {
-      secrets[name] = value;
-    } else if (required && !project.secret?.some((s) => s.name === name && s.valueString?.trim())) {
-      throw new Error(
-        `${name} is not a project secret; add it under Admin, Project, Secrets, or pass it as a parameter`
-      );
+  for (const feature of ['bots', 'cron'] as const) {
+    if (!project.features?.includes(feature)) {
+      throw new Error(`This project needs the "${feature}" feature; ask a Medplum super admin to enable it`);
     }
   }
-  const allowEventDetails =
-    secrets[SECRET.allowEventDetails] ?? project.secret?.find((s) => s.name === SECRET.allowEventDetails)?.valueString;
-  const ceiling = ceilingFromAllowEventDetails(allowEventDetails) ?? 'busy-only';
+
+  // A customer admin enters the Google client in the Medplum app (Admin, Project, Secrets).
+  const secret = (name: string): string | undefined =>
+    project.secret?.find((s) => s.name === name)?.valueString?.trim() || undefined;
+  for (const name of [SECRET.clientId, SECRET.clientSecret]) {
+    if (!secret(name)) {
+      throw new Error(`${name} is not a project secret; add it under Admin, Project, Secrets`);
+    }
+  }
+  const ceiling = ceilingFromAllowEventDetails(secret(SECRET.allowEventDetails)) ?? 'busy-only';
 
   const syncBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.sync);
   const reconcileBot = await requireSharedBot(medplum, BOT_IDENTIFIER_VALUE.reconcile);
@@ -73,8 +61,9 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     webhookBot,
     await ensurePolicy(medplum, 'webhook')
   );
-  secrets[SECRET.webhookUrl] = new URL(`webhook/${webhookMembership.id}`, medplum.getBaseUrl()).toString();
-  await writeProjectSecrets(medplum, project, secrets);
+  await writeProjectSecrets(medplum, project, {
+    [SECRET.webhookUrl]: new URL(`webhook/${webhookMembership.id}`, medplum.getBaseUrl()).toString(),
+  });
   await writeProjectCeiling(medplum, ceiling);
   for (const value of [BOT_IDENTIFIER_VALUE.connect, BOT_IDENTIFIER_VALUE.settings, BOT_IDENTIFIER_VALUE.disconnect]) {
     const bot = await requireSharedBot(medplum, value);
@@ -106,9 +95,6 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       }
     }
   }
-  const reconcileNote = project.features.includes('cron')
-    ? `Reconcile runs hourly (${cron.cronString}); unfinished work is retried each minute. `
-    : 'Reconcile is not scheduled until a Medplum super admin enables the "cron" feature on this project. ';
 
   const outcome: OperationOutcome = {
     ...allOk,
@@ -118,7 +104,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
         code: 'informational',
         details: {
           text:
-            `Bidirectional Google Calendar sync installed. ${reconcileNote}` +
+            `Bidirectional Google Calendar sync installed. Reconcile runs hourly (${cron.cronString}); unfinished work is retried each minute. ` +
             `Add these entries to your practitioner AccessPolicy so practitioners can manage their own connection: ` +
             JSON.stringify(PRACTITIONER_POLICY_SNIPPET),
         },

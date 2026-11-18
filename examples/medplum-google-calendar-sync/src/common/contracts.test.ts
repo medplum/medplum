@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { expect, test } from 'vitest';
-import { CONTRACTS, validateContract } from './contracts';
+import { CONTRACTS, validateInput } from './contracts';
 
 test('five type-level contracts distinguish reads and mutations', () => {
   expect(Object.keys(CONTRACTS)).toHaveLength(5);
@@ -14,10 +14,6 @@ test('five type-level contracts distinguish reads and mutations', () => {
 test.each([
   ['connect', undefined],
   ['settings', { resourceType: 'Parameters', parameter: [{ name: 'eventDetailLevel', valueBoolean: true }] }],
-  [
-    'settings',
-    { resourceType: 'Parameters', parameter: [{ name: 'eventDetailLevel', valueString: 'full-with-invite' }] },
-  ],
   [
     'settings',
     {
@@ -37,22 +33,5 @@ test.each([
   ],
   ['disconnect', { resourceType: 'Parameters', parameter: [{ name: 'forgetRevoked', valueString: 'true' }] }],
 ])('rejects invalid %s inputs', (name, input) => {
-  expect(() => validateContract(name, 'in', input)).toThrow();
-});
-test('validates output parts and cardinalities rather than returning unchecked Parameters', () => {
-  expect(() =>
-    validateContract('status', 'out', {
-      resourceType: 'Parameters',
-      parameter: [{ name: 'connected', valueString: 'true' }],
-    })
-  ).toThrow();
-  expect(() =>
-    validateContract('status', 'out', {
-      resourceType: 'Parameters',
-      parameter: [
-        { name: 'connected', valueBoolean: true },
-        { name: 'conflict', part: [{ name: 'key', valueString: 'x' }] },
-      ],
-    })
-  ).toThrow('Unknown parameter: conflict');
+  expect(() => validateInput(name, input)).toThrow();
 });

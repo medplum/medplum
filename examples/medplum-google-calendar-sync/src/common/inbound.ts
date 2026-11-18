@@ -132,7 +132,7 @@ export async function runInbound(medplum: MedplumClient, event: BotEvent, id: st
   });
 }
 
-export async function cleanupConnection(
+async function cleanupConnection(
   lease: ConnectionLease,
   secrets: BotEvent['secrets'],
   connection: CalendarConnection

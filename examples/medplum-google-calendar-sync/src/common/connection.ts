@@ -11,13 +11,13 @@ import { writeCredential } from './credentials';
 import type { ConnectionLease } from './lease';
 import { withConnectionLease } from './lease';
 import { projectQuery } from './project';
-import { readState, withState } from './state';
+import { mutateConnectionState, readState, withState } from './state';
 
 /* Connection state is worker-only. Practitioners read an allowlisted public summary.
  * Credentials are stored separately; this parser never returns a refresh token. */
 
 /** `Basic.code` for a Calendar Connection. */
-export const CALENDAR_CONNECTION_CODE = 'calendar-connection';
+const CALENDAR_CONNECTION_CODE = 'calendar-connection';
 /** The search that selects Calendar Connections, for AccessPolicy criteria. */
 export const CONNECTION_SEARCH = `code=${GOOGLE_CALENDAR_NAMESPACE}|${CALENDAR_CONNECTION_CODE}`;
 
@@ -99,6 +99,27 @@ export async function findConnection(
     await projectQuery(medplum, `${CONNECTION_SEARCH}&subject=${practitionerRef}`)
   );
   return basic ? readConnection(basic) : undefined;
+}
+
+/**
+ * One Google account backs one practitioner: revoking or disconnecting it affects every grant
+ * the account gave this OAuth client.
+ * @param medplum - The client.
+ * @param accountSub - The Google account subject.
+ * @param practitionerRef - The practitioner connecting.
+ * @returns True when another practitioner in this project already uses the account.
+ */
+export async function accountInUse(
+  medplum: MedplumClient,
+  accountSub: string,
+  practitionerRef: string
+): Promise<boolean> {
+  const matches = await medplum.searchResources(
+    'Basic',
+    await projectQuery(medplum, `${CONNECTION_SEARCH}&identifier=${ACCOUNT_IDENTIFIER_SYSTEM}|${accountSub}`),
+    { cache: 'no-cache' }
+  );
+  return matches.some((basic) => basic.subject?.reference !== practitionerRef);
 }
 
 /**
@@ -224,35 +245,30 @@ export async function updateConnection(
   changes: { status?: ConnectionStatus; eventDetailLevel?: EventDetailLevel },
   lease?: ConnectionLease
 ): Promise<CalendarConnection> {
-  const apply = async (held: ConnectionLease): Promise<void> => {
-    await held.mutate((basic) => {
-      const values: Extension[] = [];
-      if (changes.status && readConnection(basic)?.status !== 'disconnecting') {
-        values.push({ url: EXTENSION.status, valueCode: changes.status });
-      }
-      if (changes.eventDetailLevel) {
-        values.push({ url: EXTENSION.eventDetailLevel, valueCode: changes.eventDetailLevel });
-      }
-      const urls = new Set(values.map((e) => e.url));
-      const state = readState(basic);
-      if (changes.eventDetailLevel) {
-        state.privacyPending = true;
-        state.outboundRequest = randomUUID();
-      }
-      if (changes.status === 'reauth-required') {
-        state.staleReason = 'reauth-required';
-      }
-      return withState(
-        { ...basic, extension: [...(basic.extension ?? []).filter((e) => !urls.has(e.url)), ...values] },
-        state
-      );
-    });
+  const change = (basic: WithId<Basic>): Basic => {
+    const values: Extension[] = [];
+    if (changes.status && readConnection(basic)?.status !== 'disconnecting') {
+      values.push({ url: EXTENSION.status, valueCode: changes.status });
+    }
+    if (changes.eventDetailLevel) {
+      values.push({ url: EXTENSION.eventDetailLevel, valueCode: changes.eventDetailLevel });
+    }
+    const urls = new Set(values.map((e) => e.url));
+    const state = readState(basic);
+    if (changes.eventDetailLevel) {
+      state.privacyPending = true;
+      state.outboundRequest = randomUUID();
+    }
+    if (changes.status === 'reauth-required') {
+      state.staleReason = 'reauth-required';
+    }
+    return withState(
+      { ...basic, extension: [...(basic.extension ?? []).filter((e) => !urls.has(e.url)), ...values] },
+      state
+    );
   };
-  if (lease) {
-    await apply(lease);
-  } else {
-    await withConnectionLease(medplum, connection.basic.id, apply);
-  }
+  // Without a lease the change is queued behind any running work: workers rebase on the latest version.
+  await (lease ? lease.mutate(change) : mutateConnectionState(medplum, connection.basic.id, change));
   const updated = readConnection(await medplum.readResource('Basic', connection.basic.id, { cache: 'no-cache' }));
   if (!updated) {
     throw new Error('Updated connection is unreadable');

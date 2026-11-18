@@ -191,7 +191,7 @@ describe('SyncSession', () => {
     expect(riveraDeletes[0]).toBe(cancelled.id?.replaceAll('-', ''));
   });
 
-  test('uses the stricter of the project ceiling and the practitioner override', async () => {
+  test('uses the stricter of the project ceiling and the practitioner choice, and Busy without a choice', async () => {
     await connect(rivera, 'rt-rivera', 'initials');
     await connect(chen, 'rt-chen');
     const appt = await appointment({ serviceType: [{ text: 'Follow-up' }] });
@@ -199,7 +199,7 @@ describe('SyncSession', () => {
       GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: { name: 'l', valueString: 'true' },
     }).syncSource({ resource: appt, deleted: false });
     expect(calendars.get('access-for-rt-rivera')?.upserts[0]?.summary).toBe('Appointment · J.S.');
-    expect(calendars.get('access-for-rt-chen')?.upserts[0]?.summary).toBe('Jane Smith · Follow-up');
+    expect(calendars.get('access-for-rt-chen')?.upserts[0]?.summary).toBe('Appointment');
   });
 
   test('mirrors blocked time to the schedule actor, but not buffers', async () => {

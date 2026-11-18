@@ -363,7 +363,7 @@ export interface RemoteCalendarEvent {
   extendedProperties?: { private?: Record<string, string> };
 }
 
-export function assertEventOwnership(event: GoogleCalendarEvent | undefined, owner: Record<string, string>): void {
+function assertEventOwnership(event: GoogleCalendarEvent | undefined, owner: Record<string, string>): void {
   const props = event?.extendedProperties?.private;
   if (
     !props ||

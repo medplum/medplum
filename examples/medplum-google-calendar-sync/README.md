@@ -31,13 +31,13 @@ The first five implement the [custom FHIR operations](#custom-fhir-operations). 
 
 1. Node.js 22.22+ or 24.2+, and npm
 2. The [Medplum CLI](https://www.medplum.com/docs/cli)
-3. A Medplum project with the `bots` and `cron` features, and a project admin login
-4. A Google Cloud project with the Google Calendar API enabled
-5. A Google OAuth client with these scopes: `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned` and `https://www.googleapis.com/auth/calendar.calendars.readonly`
+3. Two Medplum projects: a Bots project that holds the Bots, and the customer project that uses them. The customer project needs the `bots` and `cron` features. To try the example in one project, use the same project for both and skip step 4.
+4. A Google Cloud project used only for this integration, with the Google Calendar API enabled
+5. A Google OAuth client with these scopes: `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned` and `https://www.googleapis.com/auth/calendar.calendars.readonly`. Register your application's exact callback URL on it.
 
 ## Setup
 
-Run every command from the root of the Medplum repository.
+Run every command from the root of the Medplum repository. The steps use two CLI profiles: `gcal-bots` is a project admin of the Bots project, and `gcal-customer` is a project admin of the customer project.
 
 1. Install dependencies and build:
 
@@ -46,20 +46,22 @@ Run every command from the root of the Medplum repository.
    npx turbo run build --filter=medplum-google-calendar-sync
    ```
 
-2. Create the `.env` file and set `PROJECT_ID` in it:
+2. Create the `.env` file and set `PROJECT_ID` in it to the Bots project:
 
    ```bash
    cp examples/medplum-google-calendar-sync/.env.example examples/medplum-google-calendar-sync/.env
    ```
 
-3. Log in with the CLI profile named in `.env`, then deploy the Bots and OperationDefinitions. Deploy stops if the login's project is not `PROJECT_ID`.
+3. Deploy the Bots and OperationDefinitions to the Bots project. Deploy stops if the login's project is not `PROJECT_ID`.
 
    ```bash
-   medplum --profile gcal-sandbox login
+   medplum --profile gcal-bots login
    npm run deploy --workspace=medplum-google-calendar-sync -- --cli
    ```
 
-4. In the [Medplum App](https://app.medplum.com), open the Project admin page and the Secrets tab. Add these secrets:
+4. Ask a super admin to [link the projects](https://www.medplum.com/docs/access/projects#setting-up-a-shared-project): set `exportedResourceType` to `["Bot", "OperationDefinition"]` on the Bots project, and add the Bots project to the customer project's `link`. On hosted Medplum, ask Medplum support.
+
+5. In the [Medplum App](https://app.medplum.com), open the customer project's admin page and the Secrets tab. Add these secrets:
 
    | Secret Name                           | Description                                                 | Required |
    | ------------------------------------- | ----------------------------------------------------------- | -------- |
@@ -68,25 +70,28 @@ Run every command from the root of the Medplum repository.
    | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` | `true` lets practitioners choose `initials` or `full`       | No       |
    | `GOOGLE_CALENDAR_APPOINTMENT_URL`     | Link added to each event; `{id}` becomes the Appointment ID | No       |
 
-   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement.
+   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level.
 
-5. Run the installer as a project admin. Run it again each time you change a secret.
+6. Run the installer in the customer project as a project admin. Run it again each time you change a secret.
 
    ```bash
-   medplum --profile gcal-sandbox post 'Project/$google-calendar-install' '{"resourceType":"Parameters"}'
+   medplum --profile gcal-customer login
+   medplum --profile gcal-customer post 'Project/$google-calendar-install' '{"resourceType":"Parameters"}'
    ```
 
-6. Add the AccessPolicy entries listed in the response's `outcome` to your practitioner policy. They let a practitioner read their own connection status and call the operations.
+7. Add the AccessPolicy entries listed in the response's `outcome` to your practitioner policy. They let a practitioner read their own connection status and call the operations.
 
-7. Connect a practitioner. See [Connecting a Practitioner](#connecting-a-practitioner).
+8. Connect a practitioner. See [Connecting a Practitioner](#connecting-a-practitioner).
 
 ## Connecting a Practitioner
+
+Each practitioner connects their own Google account. Two practitioners cannot share one.
 
 Your application does the following as the logged-in practitioner:
 
 1. Reads `clientId` from `$google-calendar-status`.
-2. Sends the practitioner to Google's consent screen with that client ID, the four scopes, PKCE and `access_type=offline`.
-3. Posts the authorization code to `$google-calendar-connect`:
+2. Sends the practitioner to Google's consent screen with that client ID, the four scopes, PKCE, a random `state`, `access_type=offline` and `prompt=consent`. Google returns a refresh token only when consent is shown.
+3. On the callback, checks that `state` matches, then posts the authorization code to `$google-calendar-connect`. `redirectUri` must be the callback URL registered on the OAuth client:
 
    ```json
    {
@@ -99,7 +104,7 @@ Your application does the following as the logged-in practitioner:
    }
    ```
 
-To connect without an application, install a Desktop app OAuth client, set `GOOGLE_CALENDAR_CLIENT_ID` in `.env`, log in to the CLI as the practitioner, and run:
+To connect without an application, use a Desktop app OAuth client as the project's `GOOGLE_CALENDAR_CLIENT_ID` and `GOOGLE_CALENDAR_CLIENT_SECRET`. Set `PROJECT_ID` and `MEDPLUM_PROFILE` in `.env` to the customer project and a practitioner's CLI profile, then run:
 
 ```bash
 npm run connect-local --workspace=medplum-google-calendar-sync
@@ -109,13 +114,13 @@ npm run connect-local --workspace=medplum-google-calendar-sync
 
 Every operation takes a FHIR `Parameters` resource. The practitioner is always the authenticated user.
 
-| Operation                                        | Inputs                                                             | Result                                                                                                                                                       |
-| ------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `POST /Project/$google-calendar-install`         | None                                                               | AccessPolicy entries to add                                                                                                                                  |
-| `POST /Practitioner/$google-calendar-connect`    | `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel` | Connection summary. Queues the first sync.                                                                                                                   |
-| `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status and Google client ID                                                                                                                       |
-| `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events.                                                                                                          |
-| `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential. If Google access was revoked, cleanup waits until `forgetRevoked` is `true`, and the Google events stay. |
+| Operation                                        | Inputs                                                             | Result                                                                                                                                                                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /Project/$google-calendar-install`         | None                                                               | AccessPolicy entries to add                                                                                                                                                                                            |
+| `POST /Practitioner/$google-calendar-connect`    | `code`, `codeVerifier`, `redirectUri`; optional `eventDetailLevel` | Connection summary. Queues the first sync.                                                                                                                                                                             |
+| `POST /Practitioner/$google-calendar-status`     | None                                                               | Connection status and Google client ID                                                                                                                                                                                 |
+| `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events.                                                                                                                                                                    |
+| `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential, and revokes the account's grant to this OAuth client. If Google access was revoked, cleanup waits until `forgetRevoked` is `true`, and the Google events may stay. |
 
 `$google-calendar-status` returns these parameters, among others:
 
@@ -140,9 +145,11 @@ npm test --workspace=medplum-google-calendar-sync
 Then check a real calendar by hand, in a test project with a test Google account:
 
 1. Connect a practitioner who has an active Schedule, and wait for `$google-calendar-status` to report `lastSuccessfulInbound`.
-2. Book an Appointment for the practitioner. An event titled "Appointment" appears in Google. Cancel it; the event disappears.
+2. Book an Appointment for the practitioner. An event titled "Appointment" appears in Google. Move it to another time; the event moves. Cancel it; the event disappears.
 3. Create a timed Busy event in Google. A `busy-unavailable` Slot appears on the Schedule. Delete the event; the Slot disappears.
-4. Call `$google-calendar-disconnect`. The imported Slots and the mirrored events are removed.
+4. With event details allowed, set the level to `full` and then back to `busy-only` with `$google-calendar-settings`. Wait for `privacyCleanupPending` to be false; the event title is "Appointment" again.
+5. Call `$google-calendar-disconnect`, then poll `$google-calendar-status` until `connected` is false. The imported Slots and the mirrored events are removed.
+6. In the customer project, check that the hourly Cron has run: the reconcile Bot has an AuditEvent on the hour.
 
 ## Limitations
 

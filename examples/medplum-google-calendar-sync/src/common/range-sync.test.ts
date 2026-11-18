@@ -170,9 +170,10 @@ describe('range-sync', () => {
 
     expect(counts).toMatchObject({ candidates: 2, inserted: 1, errors: 1 });
     expect(upserts.map((e) => e.id)).toEqual([toGoogleEventId(good.id)]);
-    // The request is complete with a reported error; the minute sweep must not rerun discovery.
+    // A new connection still owes its privacy pass, so the request stays open and backs off.
     const state = readState(await medplum.readResource('Basic', connection.basic.id));
-    expect(state.outboundCompleted).toBe(state.outboundRequest);
+    expect(state.outboundCompleted).not.toBe(state.outboundRequest);
+    expect(Date.parse(state.outboundRetryAt ?? '')).toBeGreaterThan(Date.now());
     expect(state.outboundError).toBe('outbound-incomplete');
     expect(state.lastOutbound).toBeUndefined();
   });

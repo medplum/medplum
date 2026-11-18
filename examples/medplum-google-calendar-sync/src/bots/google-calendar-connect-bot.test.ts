@@ -205,6 +205,18 @@ describe('google-calendar-connect-bot', () => {
     expect(String(fetch.mock.calls[1][0])).toContain('/revoke');
   });
 
+  test('refuses a Google account another practitioner uses, without revoking it', async () => {
+    await saveConnection(medplum, { practitionerRef: 'Practitioner/other', accountSub: 'sub', refreshToken: 'theirs' });
+    const fetch = mockGoogle({
+      access_token: 'at',
+      refresh_token: 'rt',
+      scope: SCOPE,
+      id_token: idToken({ sub: 'sub' }),
+    });
+    await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('another practitioner');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   test('requires the code parameters and a Practitioner requester', async () => {
     await expect(handler(medplum, event(params({ code: 'c' })))).rejects.toThrow('Required parameters missing');
     await expect(handler(medplum, { ...event(CODE_PARAMS), requester: { reference: 'Patient/x' } })).rejects.toThrow(

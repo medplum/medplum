@@ -5,7 +5,7 @@ import type { BotEvent } from '@medplum/core';
 import type { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import type { CalendarConnection } from './connection';
 import type { EventDetailLevel } from './constants';
-import { EVENT_DETAIL_LEVELS } from './constants';
+import { DEFAULT_EVENT_DETAIL_LEVEL, EVENT_DETAIL_LEVELS } from './constants';
 import { resolveDetailLevel } from './mapping';
 import { readState } from './state';
 
@@ -83,7 +83,10 @@ export function connectionStatusParameters(connection: CalendarConnection | unde
       { name: 'status', valueCode: connection.status },
       {
         name: 'effectiveDetailLevel',
-        valueCode: resolveDetailLevel(ceiling ?? state.projectDetailLevel, connection.eventDetailLevel),
+        valueCode: resolveDetailLevel(
+          ceiling ?? state.projectDetailLevel,
+          connection.eventDetailLevel ?? DEFAULT_EVENT_DETAIL_LEVEL
+        ),
       },
       { name: 'privacyCleanupPending', valueBoolean: state.privacyPending === true },
       {

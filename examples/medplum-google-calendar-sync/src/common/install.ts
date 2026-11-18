@@ -5,7 +5,7 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
 import type { AccessPolicy, Bot, Cron, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
-import { BOT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM, SECRET } from './constants';
+import { BOT_IDENTIFIER_SYSTEM, INSTALL_SYSTEM } from './constants';
 import { projectQuery } from './project';
 import { ifMatch } from './versioning';
 
@@ -14,14 +14,6 @@ import { ifMatch } from './versioning';
  * idempotent and keyed by an identifier or tag so re-running install repairs rather than
  * duplicates.
  */
-
-/** Secrets install accepts; required ones may already be project secrets instead of parameters. */
-export const INSTALL_SECRETS: { name: string; required: boolean }[] = [
-  { name: SECRET.clientId, required: true },
-  { name: SECRET.clientSecret, required: true },
-  { name: SECRET.appointmentUrl, required: false },
-  { name: SECRET.allowEventDetails, required: false },
-];
 
 /**
  * Finds a shared Bot by identifier; the shared project must be linked for this to succeed.
@@ -112,7 +104,7 @@ export async function ensureBotMembership(
  * @param projectId - The customer project ID.
  * @returns A cron string.
  */
-export function hourlyCronString(projectId: string): string {
+function hourlyCronString(projectId: string): string {
   const minute = createHash('sha256').update(projectId).digest().readUInt32BE(0) % 60;
   return `${minute} * * * *`;
 }

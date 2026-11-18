@@ -12,13 +12,6 @@ import { LEASE_URL } from '../common/lease';
 import { readState } from '../common/state';
 import { handler } from './install-google-calendar';
 
-function params(values: Record<string, string>): Parameters {
-  return {
-    resourceType: 'Parameters',
-    parameter: Object.entries(values).map(([name, valueString]) => ({ name, valueString })),
-  };
-}
-
 function outcome(result: Parameters): OperationOutcome {
   return result.parameter?.find((p) => p.name === 'outcome')?.resource as OperationOutcome;
 }
@@ -33,6 +26,18 @@ describe('install-google-calendar', () => {
   let importBot: Bot;
   let webhookBot: Bot;
   let event: (input: Parameters) => BotEvent<Parameters>;
+
+  async function install(values: Record<string, string>): Promise<Parameters> {
+    const current = await medplum.readResource('Project', project.id as string);
+    await medplum.updateResource({
+      ...current,
+      secret: [
+        ...(current.secret ?? []).filter((s) => !Object.hasOwn(values, s.name)),
+        ...Object.entries(values).map(([name, valueString]) => ({ name, valueString })),
+      ],
+    });
+    return handler(medplum, event({ resourceType: 'Parameters' }));
+  }
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
@@ -110,20 +115,20 @@ describe('install-google-calendar', () => {
       ],
     };
     await medplum.updateResource({ ...connection.basic, extension: [...(connection.basic.extension ?? []), held] });
-    await handler(medplum, event(params(REQUIRED)));
+    await install(REQUIRED);
     const saved = await medplum.readResource('Basic', connection.basic.id);
     expect(saved.extension?.find((e) => e.url === LEASE_URL)).toEqual(held);
     expect(readState(saved).privacyPending).toBe(true);
     expect(readState(saved).outboundRequest).toBeTruthy();
   });
 
-  test('requires the client credentials as parameters or project secrets, and a true/false detail switch', async () => {
-    await expect(handler(medplum, event(params({ GOOGLE_CALENDAR_CLIENT_ID: 'cid' })))).rejects.toThrow(
+  test('requires the client credentials as project secrets, and a true/false detail switch', async () => {
+    await expect(install({ GOOGLE_CALENDAR_CLIENT_ID: 'cid' })).rejects.toThrow(
       'GOOGLE_CALENDAR_CLIENT_SECRET is not a project secret'
     );
-    await expect(
-      handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'initials' })))
-    ).rejects.toThrow('must be true or false');
+    await expect(install({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'initials' })).rejects.toThrow(
+      'must be true or false'
+    );
   });
 
   test('installs from the Google client a customer admin entered as project secrets', async () => {
@@ -149,16 +154,16 @@ describe('install-google-calendar', () => {
 
   test('requires the bots feature and the shared Bots', async () => {
     await medplum.updateResource({ ...project, features: [] });
-    await expect(handler(medplum, event(params(REQUIRED)))).rejects.toThrow('"bots" feature');
+    await expect(install(REQUIRED)).rejects.toThrow('"bots" feature');
     await medplum.updateResource({ ...project, features: ['bots', 'cron'] });
     await medplum.deleteResource('Bot', reconcileBot.id as string);
-    await expect(handler(medplum, event(params(REQUIRED)))).rejects.toThrow('google-calendar-reconcile-bot not found');
+    await expect(install(REQUIRED)).rejects.toThrow('google-calendar-reconcile-bot not found');
     await medplum.deleteResource('Bot', syncBot.id as string);
-    await expect(handler(medplum, event(params(REQUIRED)))).rejects.toThrow('google-calendar-sync-bot not found');
+    await expect(install(REQUIRED)).rejects.toThrow('google-calendar-sync-bot not found');
   });
 
   test('wires the project up, and re-running repairs rather than duplicates', async () => {
-    const first = await handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'true' })));
+    const first = await install({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'true' });
     expect(isOk(outcome(first))).toBe(true);
     expect(outcome(first).issue[0].details?.text).toContain('subject=%profile');
     expect(outcome(first).issue[0].details?.text).not.toContain('DetectedIssue');
@@ -208,7 +213,7 @@ describe('install-google-calendar', () => {
     );
 
     // Rotate the client secret: replaced in place, nothing else duplicated.
-    await handler(medplum, event(params({ ...REQUIRED, GOOGLE_CALENDAR_CLIENT_SECRET: 'secret-2' })));
+    await install({ ...REQUIRED, GOOGLE_CALENDAR_CLIENT_SECRET: 'secret-2' });
     const rotated = await medplum.readResource('Project', project.id as string);
     expect(rotated.secret?.find((s) => s.name === 'GOOGLE_CALENDAR_CLIENT_SECRET')?.valueString).toBe('secret-2');
     expect(rotated.secret).toHaveLength(4);
@@ -233,23 +238,22 @@ describe('install-google-calendar', () => {
       targetReference: { reference: `Bot/${retired.id}` },
       onBehalfOf: { reference: `ProjectMembership/${member.id}` },
     });
-    await handler(medplum, event(params(REQUIRED)));
+    await install(REQUIRED);
     const current = await medplum.readResource('Cron', stale.id);
     expect(current).toMatchObject({ active: true, targetReference: { reference: `Bot/${reconcileBot.id}` } });
     const versions = (await medplum.readHistory('Cron', stale.id)).entry?.map((e) => e.resource) ?? [];
     expect(versions.some((v) => v?.active === false)).toBe(true);
 
     // A second install changes nothing, so it does not bounce the schedule.
-    await handler(medplum, event(params(REQUIRED)));
+    await install(REQUIRED);
     const again = (await medplum.readHistory('Cron', stale.id)).entry?.length ?? 0;
     expect(again).toBe(versions.length + 1);
   });
 
-  test('without the cron feature the Cron is still created and the result says so', async () => {
+  test('refuses to install without the cron feature', async () => {
     await medplum.updateResource({ ...project, features: ['bots'] });
-    const result = await handler(medplum, event(params(REQUIRED)));
-    expect(outcome(result).issue[0].details?.text).toContain('not scheduled until');
-    expect(await ours('Cron')).toHaveLength(2);
+    await expect(install(REQUIRED)).rejects.toThrow('"cron" feature');
+    expect(await ours('Cron')).toHaveLength(0);
   });
   test('adopts the home-project Bot membership instead of creating a second identity', async () => {
     const membership = await medplum.createResource({
@@ -258,7 +262,7 @@ describe('install-google-calendar', () => {
       user: { reference: `Bot/${syncBot.id}` },
       profile: { reference: `Bot/${syncBot.id}` },
     });
-    await handler(medplum, event(params(REQUIRED)));
+    await install(REQUIRED);
     const matches = await medplum.searchResources('ProjectMembership', { profile: `Bot/${syncBot.id}` });
     expect(matches).toHaveLength(1);
     expect(matches[0].id).toBe(membership.id);

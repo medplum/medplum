@@ -50,7 +50,8 @@ export function sameGoogleEvent(existing: GoogleCalendarEvent, desired: GoogleCa
     (existing.location ?? '') === (desired.location ?? '') &&
     instant(existing.start?.dateTime) === instant(desired.start.dateTime) &&
     instant(existing.end?.dateTime) === instant(desired.end.dateTime) &&
-    existing.transparency === desired.transparency &&
+    // Google omits transparency when it is the default.
+    (existing.transparency ?? 'opaque') === desired.transparency &&
     existing.visibility === desired.visibility &&
     (existing.attendees?.length ?? 0) === 0 &&
     desired.attendees.length === 0 &&
