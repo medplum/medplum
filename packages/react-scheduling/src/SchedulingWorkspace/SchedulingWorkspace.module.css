@@ -23,11 +23,6 @@
   overflow-y: auto;
 }
 
-/* Greyed out while the booking form's actors, not the panel, decide the calendars on show. */
-.sidebarOverridden {
-  opacity: 0.5;
-}
-
 .calendarsToggle[aria-expanded='true'] {
   border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
 }
@@ -129,8 +124,8 @@
 }
 
 /*
- * Prototype: the booking pane, always open and wide enough for the form and the times beside it. It
- * takes its own room, so the calendar narrows rather than being covered.
+ * Prototype: the booking pane, wide enough for the form and the times beside it. It takes its own room,
+ * so the calendar narrows rather than being covered.
  */
 .paneDocked {
   flex: 0 0 auto;
@@ -143,6 +138,14 @@
 
 .paneDocked[hidden] {
   display: none;
+}
+
+/* Where open time was clicked while browsing, for the offer to start booking to point at. */
+.bookPromptAnchor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
 }
 
 /* The booking pane's tabs pass the pane's height down to the form, so the form and the

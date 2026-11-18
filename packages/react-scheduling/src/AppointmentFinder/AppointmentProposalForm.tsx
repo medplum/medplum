@@ -270,6 +270,11 @@ export interface AppointmentProposalFormProps {
   readonly actionsRef?: Ref<AppointmentProposalFormActions>;
   /** Prototype. An offered time to mark among the times, such as the one under the pointer on a host's calendar. */
   readonly highlightedTime?: Appointment;
+  /**
+   * Prototype. Leaves the site out of what `onDirtyChange` counts, for a host that keeps the site when
+   * the form's other answers are discarded.
+   */
+  readonly keepsServiceFacility?: boolean;
 }
 
 /** What `onBook` is told about the proposal it was handed. */
@@ -325,6 +330,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     onChangeSelections,
     actionsRef,
     highlightedTime,
+    keepsServiceFacility = false,
   } = props;
 
   const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
@@ -524,7 +530,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const finderButtonRef = useRef<HTMLButtonElement>(null);
 
   const dirty =
-    serviceFacility !== initial.serviceFacility ||
+    (!keepsServiceFacility && serviceFacility !== initial.serviceFacility) ||
     service !== initial.service ||
     !deepEquals(selections, initial.selections) ||
     patient !== initial.patient ||

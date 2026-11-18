@@ -237,7 +237,7 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
 export const BypassSchedulingRules = (): JSX.Element => <Workspace canBypassSchedulingRules />;
 BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
 
-// The site the Find and Book story's form is on, for its `$find` stub: the prototype's availability
+// The site the Find and Book story's workspace is on, for its `$find` stub: the prototype's availability
 // windows are scoped to a site, which a real `$find` request does not carry.
 let findAndBookSite: string | undefined = getReferenceString(riverside);
 
@@ -245,9 +245,13 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * A prototype of booking from the form rather than from the grid, on the made-up clinic the availability
  * shading stories use, in the week `MockDateWrapper` pins "today" to (Mon May 4 2020, just after noon).
  *
- * The booking form is open beside the calendar from the start, on Riverside Clinic, with the time search
- * beside it saying what it still needs. The Calendars panel is tucked away behind the toolbar's filter
- * button.
+ * The workspace has two panes, at most one open, and the open one drives the calendar. The booking pane,
+ * on the right, is for finding a time and booking it. It is open from the start, on Riverside Clinic,
+ * with the time search beside it saying what it still needs. The filters pane, on the left, is for
+ * browsing what is booked, as on main. Each has a toggle at its end of the toolbar. Opening one closes
+ * the other, and closing the booking pane clears its answers, asking first if there are any. The site is
+ * the one answer the panes share. With both closed, the filters pane's answers hold, and clicking open
+ * time offers to open the booking pane.
  *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
  * one provider at Riverside is free to take one. Hover a block to see who. Name Dr. Alvarez and the
