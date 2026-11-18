@@ -56,7 +56,9 @@ vi.mock('node:process', async (importOriginal) => {
   const mockProcess = new MockProcess();
   // Keep the mock's own EventEmitter methods: the real ones act on the worker process, which
   // Vitest 5's forks pool shuts down when tests emit 'disconnect' on it.
-  const eventEmitterKeys = new Set(Object.getOwnPropertyNames(EventEmitter.prototype));
+  const eventEmitterKeys = new Set(
+    Object.getOwnPropertyNames(EventEmitter.prototype).filter((key) => key !== 'constructor')
+  );
   const processMock = Object.assign(
     mockProcess,
     Object.fromEntries(Object.entries(actual).filter(([key]) => !eventEmitterKeys.has(key)))
