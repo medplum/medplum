@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { NavigateFunction } from 'react-router';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TasksPage } from './TasksPage';
 
 describe('TasksPage', () => {
@@ -27,14 +27,12 @@ describe('TasksPage', () => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/Task" element={<TasksPage />} />
-              <Route path="/Task/new" element={<TasksPage />} />
-              <Route path="/Task/:taskId" element={<TasksPage />} />
-              <Route path="/Task/:taskId/new" element={<TasksPage />} />
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/Task" element={<TasksPage />} />
+            <Route path="/Task/new" element={<TasksPage />} />
+            <Route path="/Task/:taskId" element={<TasksPage />} />
+            <Route path="/Task/:taskId/new" element={<TasksPage />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

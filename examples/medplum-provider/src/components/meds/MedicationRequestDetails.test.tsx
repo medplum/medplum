@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { MedicationOrderExtensions } from '@medplum/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { MedicationRequest } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import type { NavigateFunction } from 'react-router';
 import * as reactRouter from 'react-router';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { MedicationRequestDetails } from './MedicationRequestDetails';
 
 const extensions: MedicationOrderExtensions = {
@@ -44,13 +44,11 @@ describe('MedicationRequestDetails', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <MedicationRequestDetails
-              medicationRequest={medicationRequest}
-              medicationOrderExtensions={extensions}
-              onOpenInScriptSure={onOpenInScriptSure}
-            />
-          </MantineProvider>
+          <MedicationRequestDetails
+            medicationRequest={medicationRequest}
+            medicationOrderExtensions={extensions}
+            onOpenInScriptSure={onOpenInScriptSure}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );

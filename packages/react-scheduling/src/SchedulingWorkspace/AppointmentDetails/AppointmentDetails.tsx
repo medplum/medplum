@@ -27,6 +27,7 @@ import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
+import { AppointmentPatientName } from '../../CalendarBase/AppointmentPatientName';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { getMedicalRecordNumber } from '../../patients';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
@@ -220,7 +221,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const [confirmError, setConfirmError] = useState<unknown>();
 
   const patientLine = (
-    <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
+    <Detail label="Patient" value={patient && <AppointmentPatientName appointment={appointment} />} />
   );
   const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
 

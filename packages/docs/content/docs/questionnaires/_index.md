@@ -17,6 +17,7 @@ Creating, updating and embedding FHIR Questionnaires for both patients and pract
 - [Upload and Use Questionnaires](/docs/questionnaires/basic-tutorial): try a form in the Medplum App.
 - [Modeling Questionnaires and Responses](/docs/questionnaires/questionnaires-and-responses): define questions, initial values, and basic conditions.
 - [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring): add pages, calculations, and expression-based conditions; check supported SDC features.
+- [Modular and Composite Questionnaires](/docs/questionnaires/modular-questionnaires): reuse sections across forms and compose a complete definition before publishing.
 - [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming): embed a form, save drafts, reopen responses, and submit them for processing.
 - [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire-responses): extract resources or process answers with a Bot.
 

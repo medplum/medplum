@@ -1,12 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import type { AccessPolicy, Bundle, Communication, Observation, SearchParameter } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  Bundle,
+  Communication,
+  Observation,
+  Organization,
+  Resource,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import {
   AccessPolicyInteraction,
   canReadResourceType,
   canWriteResource,
   canWriteResourceType,
+  satisfiedAccessPolicies,
   satisfiedAccessPolicy,
 } from './access';
 import { indexSearchParameterBundle } from './types';
@@ -151,6 +160,72 @@ describe('Access', () => {
     ).toBeUndefined();
   });
 
+  test('satisfiedAccessPolicies', () => {
+    const { READ, SEARCH, UPDATE, DELETE } = AccessPolicyInteraction;
+    const interactions = [READ, SEARCH, UPDATE, DELETE];
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        { resourceType: 'Communication', interaction: ['read'], criteria: 'Communication?status=completed' },
+        { resourceType: 'Communication', interaction: ['read', 'search'] },
+        { resourceType: 'Communication', readonly: true },
+        { resourceType: 'Communication', interaction: ['update'] },
+      ],
+    };
+    const [criteriaRead, readSearch, , update] = accessPolicy.resource ?? [];
+
+    const completed: Communication = { resourceType: 'Communication', status: 'completed' };
+    const inProgress: Communication = { resourceType: 'Communication', status: 'in-progress' };
+    expect(satisfiedAccessPolicies(completed, interactions, accessPolicy)).toStrictEqual([
+      criteriaRead,
+      readSearch,
+      update,
+      undefined,
+    ]);
+    expect(satisfiedAccessPolicies(inProgress, interactions, accessPolicy)).toStrictEqual([
+      readSearch,
+      readSearch,
+      update,
+      undefined,
+    ]);
+    expect(satisfiedAccessPolicies(completed, [READ], nullPolicy)).toStrictEqual([undefined]);
+  });
+
+  test('satisfiedAccessPolicies() filter and interaction fallthrough', () => {
+    const { READ, SEARCH, UPDATE } = AccessPolicyInteraction;
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        // Shallow-matches READ and SEARCH, but fails filters for in-progress resources
+        { resourceType: 'Communication', interaction: ['read', 'search'], criteria: 'Communication?status=completed' },
+        { resourceType: 'Communication', interaction: ['search', 'update'] },
+        { resourceType: 'Binary', interaction: ['read'], criteria: 'Binary?_id=never-matches' },
+      ],
+    };
+    const [completedPolicy, fallbackPolicy, binaryPolicy] = accessPolicy.resource ?? [];
+    const inProgress: Communication = { resourceType: 'Communication', status: 'in-progress' };
+    const completed: Communication = { resourceType: 'Communication', status: 'completed' };
+    const interactions = [READ, SEARCH, UPDATE];
+
+    // A failed filter must not block later policies for any interaction it shallow-matched
+    expect(satisfiedAccessPolicies(inProgress, interactions, accessPolicy)).toStrictEqual([
+      undefined,
+      fallbackPolicy,
+      fallbackPolicy,
+    ]);
+    expect(satisfiedAccessPolicies(completed, interactions, accessPolicy)).toStrictEqual([
+      completedPolicy,
+      completedPolicy,
+      fallbackPolicy,
+    ]);
+
+    // Binary has no search parameters, so criteria are ignored
+    const binary = { resourceType: 'Binary', contentType: 'text/plain' } as const;
+    expect(satisfiedAccessPolicies(binary, [READ, UPDATE], accessPolicy)).toStrictEqual([binaryPolicy, undefined]);
+
+    expect(satisfiedAccessPolicies(completed, [], accessPolicy)).toStrictEqual([]);
+  });
+
   test('Legacy compartment case', () => {
     // Once upon a time, the recommended way to restrict access to a resource was AccessPolicy.compartment
     // That is now obsolete, becaues you can always use criteria with "_compartment=x"
@@ -178,5 +253,92 @@ describe('Access', () => {
         ap
       )
     ).toBeUndefined();
+  });
+
+  describe('Wildcard criteria', () => {
+    function wildcard(criteria: string): AccessPolicy {
+      return { resourceType: 'AccessPolicy', resource: [{ resourceType: '*', criteria }] };
+    }
+
+    const observationA: Observation = {
+      resourceType: 'Observation',
+      id: '1b4d3a2e-7c55-4c1f-9e7e-1f2d3c4b5a69',
+      status: 'final',
+      code: { text: 'test' },
+      meta: {
+        project: 'project-1',
+        compartment: [{ reference: 'Patient/A' }],
+        lastUpdated: '2025-06-01T00:00:00.000Z',
+        tag: [{ system: 'http://example.com/tag', code: 'shared' }],
+        security: [{ system: 'http://example.com/security', code: 'restricted' }],
+        profile: ['http://example.com/profile'],
+        source: 'http://example.com/source',
+      },
+    };
+    const observationB: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      meta: { compartment: [{ reference: 'Patient/B' }], lastUpdated: '2023-06-01T00:00:00.000Z' },
+    };
+    const organizationA: Organization = {
+      resourceType: 'Organization',
+      meta: {
+        project: 'project-1',
+        compartment: [{ reference: 'Patient/A' }],
+        lastUpdated: '2025-06-01T00:00:00.000Z',
+      },
+    };
+
+    test.each([
+      '*?_compartment=Patient/A',
+      `*?_id=${observationA.id}`,
+      '*?_lastUpdated=gt2024-01-01',
+      '*?_tag=http://example.com/tag|shared',
+      '*?_security=http://example.com/security|restricted',
+      '*?_profile=http://example.com/profile',
+      '*?_source=http://example.com/source',
+      '*?_project=project-1',
+    ])('Matches each resource type with %s', (criteria) => {
+      const policy = wildcard(criteria);
+      for (const interaction of [
+        AccessPolicyInteraction.READ,
+        AccessPolicyInteraction.CREATE,
+        AccessPolicyInteraction.UPDATE,
+        AccessPolicyInteraction.DELETE,
+      ]) {
+        expect(satisfiedAccessPolicy(observationA, interaction, policy)?.criteria).toStrictEqual(criteria);
+        expect(satisfiedAccessPolicy(observationB, interaction, policy)).toBeUndefined();
+      }
+      expect(canWriteResource(policy, observationA)).toBe(true);
+      expect(canWriteResource(policy, observationB)).toBe(false);
+    });
+
+    test('Compartment criteria', () => {
+      const policy = wildcard('*?_compartment=Patient/A');
+      expect(canWriteResource(policy, organizationA)).toBe(true);
+      expect(canWriteResource(policy, { resourceType: 'Organization' })).toBe(false);
+      // Project admin resource types are never covered by a wildcard
+      expect(
+        canWriteResource(policy, {
+          resourceType: 'ProjectMembership',
+          meta: { compartment: [{ reference: 'Patient/A' }] },
+        } as Resource)
+      ).toBe(false);
+    });
+
+    test('Parameters the resource type does not define', () => {
+      const policy = wildcard('*?status=final');
+      expect(canWriteResource(policy, observationA)).toBe(true);
+      expect(canWriteResource(policy, organizationA)).toBe(false);
+
+      expect(canWriteResource(wildcard('*?not-a-param=x'), observationA)).toBe(false);
+      expect(canWriteResource(wildcard('*?_compartment=Patient/A&not-a-param=x'), observationA)).toBe(false);
+    });
+
+    test('Criteria not starting with *? are not rewritten', () => {
+      expect(canWriteResource(wildcard('*'), observationA)).toBe(false);
+      expect(canWriteResource(wildcard('Organization?_compartment=Patient/A'), observationA)).toBe(false);
+    });
   });
 });

@@ -168,6 +168,8 @@ The CLI saves the source in `Bot.sourceCode` and sends the built file to `Bot/{i
 
 ### Promote to production {#deploying-to-staging-vs-production}
 
+If your Bots depend on Questionnaires, profiles, terminology, policies, or Subscriptions, use [Deploying Resource Definitions from Source Control](/docs/deploying-resources-from-source-control) to coordinate those resources with your Bot deployment.
+
 After staging validation, select the production deployment credentials and promote the same artifact:
 
 ```bash

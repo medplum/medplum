@@ -9,6 +9,7 @@ import {
   forbidden,
   getDateProperty,
   getReferenceString,
+  getStatus,
   isJwt,
   isString,
   isUUID,
@@ -52,7 +53,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { getPartialPermissionScopes, parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
+import { parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -164,12 +165,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
       }
     }
     if (request.redirectUri && !getClientRedirectUri(client, request.redirectUri)) {
-      getLogger().warn('Login redirect URI is not registered for client', {
-        clientId: client.id,
-        authMethod: request.authMethod,
-        redirectUri: request.redirectUri,
-        partialMatch: !!getClientRedirectUri(client, request.redirectUri, true),
-      });
+      throw new OperationOutcomeError(badRequest('Invalid redirect URI'));
     }
   }
 
@@ -592,7 +588,16 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource(updatedLogin);
+  try {
+    // `ifMatch` makes this a compare-and-swap: all of the checks above were made on `login`,
+    // so of several concurrent requests for the same login, exactly one gets to set the membership
+    return await globalSystemRepo.updateResource(updatedLogin, { ifMatch: login.meta?.versionId });
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Login profile already set'));
+    }
+    throw err;
+  }
 }
 
 /**
@@ -775,23 +780,6 @@ export async function getAuthTokens(
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
-  }
-
-  const partialPermissionScopes = getPartialPermissionScopes(login.scope);
-  if (partialPermissionScopes.length > 0) {
-    let projectId = resolveId(login.project);
-    if (!projectId) {
-      // A logging lookup must not prevent token issuance.
-      const membership = await getGlobalSystemRepo()
-        .readReference(login.membership)
-        .catch(() => undefined);
-      projectId = resolveId(membership?.project);
-    }
-    getLogger().warn('SMART scopes with partial permissions', {
-      clientId,
-      projectId,
-      scopes: partialPermissionScopes,
-    });
   }
 
   if (!login.granted) {
@@ -1200,11 +1188,14 @@ export async function verifyMultipleMatchingException(
  * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
+ * @param options - Optional verification options.
+ * @param options.audience - The expected audience, for tokens issued to a specific endpoint. Defaults to the (project-scoped) issuer.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(
   req: Request | undefined,
-  accessToken: string
+  accessToken: string,
+  options?: { audience?: string }
 ): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
@@ -1228,7 +1219,8 @@ export async function getLoginForAccessToken(
   // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
   // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
   const config = getConfig();
-  const expectedAudience = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+  const expectedAudience =
+    options?.audience ?? (req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer);
   if (claims.aud !== expectedAudience || claims.refresh_secret !== undefined) {
     return undefined;
   }

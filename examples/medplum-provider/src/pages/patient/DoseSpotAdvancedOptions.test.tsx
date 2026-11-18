@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { DoseSpotAdvancedOptions } from './DoseSpotAdvancedOptions';
 
 describe('DoseSpotAdvancedOptions', () => {
@@ -20,10 +20,8 @@ describe('DoseSpotAdvancedOptions', () => {
   const setup = (patientId: string): ReturnType<typeof render> => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <Notifications />
-          <DoseSpotAdvancedOptions patientId={patientId} />
-        </MantineProvider>
+        <Notifications />
+        <DoseSpotAdvancedOptions patientId={patientId} />
       </MedplumProvider>
     );
   };

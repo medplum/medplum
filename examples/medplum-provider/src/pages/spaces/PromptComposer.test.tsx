@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import type * as MedplumReact from '@medplum/react';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import type { ReasoningEffort, SpaceModelOption } from '../../utils/spaceModels';
 import { PromptComposer } from './PromptComposer';
 
@@ -125,15 +125,13 @@ describe('PromptComposer', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Harness
-              onSend={onSend}
-              onKeyDown={onKeyDown}
-              onModelChange={onModelChange}
-              onReasoningEffortChange={onReasoningEffortChange}
-              {...props}
-            />
-          </MantineProvider>
+          <Harness
+            onSend={onSend}
+            onKeyDown={onKeyDown}
+            onModelChange={onModelChange}
+            onReasoningEffortChange={onReasoningEffortChange}
+            {...props}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -326,22 +324,20 @@ describe('PromptComposer', () => {
       render(
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <PromptComposer
-                input=""
-                onInputChange={vi.fn()}
-                onKeyDown={vi.fn()}
-                onSend={vi.fn()}
-                loading={false}
-                models={MODELS}
-                selectedModel="some-custom-model"
-                onModelChange={vi.fn()}
-                selectedReasoningEffort="medium"
-                onReasoningEffortChange={vi.fn()}
-                selectedPatients={[]}
-                setSelectedPatients={vi.fn()}
-              />
-            </MantineProvider>
+            <PromptComposer
+              input=""
+              onInputChange={vi.fn()}
+              onKeyDown={vi.fn()}
+              onSend={vi.fn()}
+              loading={false}
+              models={MODELS}
+              selectedModel="some-custom-model"
+              onModelChange={vi.fn()}
+              selectedReasoningEffort="medium"
+              onReasoningEffortChange={vi.fn()}
+              selectedPatients={[]}
+              setSelectedPatients={vi.fn()}
+            />
           </MedplumProvider>
         </MemoryRouter>
       );

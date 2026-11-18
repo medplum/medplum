@@ -19,13 +19,13 @@ POST [base]/User/[id]/$update-email
 
 {{< warning title="Privileged Operation" >}}
 
-This operation requires **Project Admin** privileges
+Project administrators can update Users scoped to their project. Updating a server-scoped User requires super-admin authority. The optional profile update is supported only for project-scoped Users.
 
 {{< /warning >}}
 
 {{< warning title="User vs Profile Email" >}}
 
-In Medplum, the `User.email` field controls authentication and login, while the profile resource's `telecom` field displays contact information. If you update only the profile resource email, users will not be able to log in with the new email address. Use this operation to update both atomically.
+In Medplum, `User.email` controls authentication and login, while the profile's `telecom` field holds contact information. Updating contact information alone leaves the login email unchanged. For a project-scoped User with one membership, this operation can update both atomically. For multiple memberships, update the intended profiles explicitly as described below.
 
 Use this operation rather than editing `User.email` directly, so that the related account changes described under [Output](#output) are applied.
 
@@ -38,7 +38,7 @@ The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource c
 | Parameter               | Type      | Required | Description                                                                                                                                                                                                                                                                                                |
 | ----------------------- | --------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `email`                 | `string`  | Yes      | The new email address to set on the User                                                                                                                                                                                                                                                                   |
-| `updateProfileTelecom`  | `boolean` | No       | If `true`, also updates the email in the profile resource's `telecom` field (recommended). Default: `false`                                                                                                                                                                                                |
+| `updateProfileTelecom`  | `boolean` | No       | If `true`, also updates one associated profile's `telecom` email. Supported only for project-scoped Users; use `false` when you need to select among multiple profiles. Default: `false` |
 | `skipEmailVerification` | `boolean` | No       | If `true`, skips email verification entirely: no `UserSecurityRequest` is created and no email is sent. Default: `false`                                                                                                                                                                                   |
 | `sendEmail`             | `boolean` | No       | If `false`, creates the `verify-email` `UserSecurityRequest` but does not send the built-in verification email. Use this to send your own branded email from a [Bot](/docs/bots) subscribed to `UserSecurityRequest`, the same pattern as `sendEmail: false` on invite and password reset. Default: `true` |
 
@@ -56,7 +56,11 @@ If `updateProfileTelecom` is `true`:
 - Adds the new email to the profile's `telecom` array with `use: 'work'`
 - Marks the old email in `telecom` with `use: 'old'`
 
+For a User with multiple memberships in the project, this option looks up one membership; it cannot target a specific profile or synchronize every profile. Set `updateProfileTelecom: false` and update the intended profile resources explicitly. See [Patient login and memberships](/docs/access/tenant-selector#patient-login-and-memberships) for tenant-specific Patient records sharing one login identity.
+
 ## Examples
+
+These examples assume a project-scoped User with one membership whose profile contact email should also change.
 
 **Request**:
 
@@ -103,21 +107,21 @@ curl -X POST 'https://api.medplum.com/fhir/R4/User/example-user-id/$update-email
 
 ## Finding User ID from ProjectMembership
 
-To update a patient's email when you only have their Patient ID:
+Use the intended membership ID saved during provisioning to identify the User. If you locate memberships by Patient profile instead, verify which User should be updated; do not assume the first match is the intended identity. Changing a shared User's email affects sign-in for all of its memberships.
 
 ```typescript
-// Find the user via ProjectMembership
-const memberships = await medplum.searchResources('ProjectMembership', {
-  profile: profileReference,
-});
-const userId = memberships[0].user?.reference?.split('/')[1];
+const membership = await medplum.readResource('ProjectMembership', membershipId);
+const userReference = membership.user?.reference;
+if (!userReference) {
+  throw new Error('Membership has no User reference');
+}
 
-// Update the email
-await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
+// Update the login email. Update any intended Patient contact fields separately.
+await medplum.post(`fhir/R4/${userReference}/$update-email`, {
   resourceType: 'Parameters',
   parameter: [
     { name: 'email', valueString: 'newemail@example.com' },
-    { name: 'updateProfileTelecom', valueBoolean: true },
+    { name: 'updateProfileTelecom', valueBoolean: false },
   ],
 });
 ```
