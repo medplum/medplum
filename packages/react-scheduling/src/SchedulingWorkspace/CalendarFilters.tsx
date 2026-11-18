@@ -5,10 +5,12 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { AppointmentServiceSelect } from '../AppointmentFinder/AppointmentServiceSelect';
+import { AppointmentServiceMultiSelect } from '../AppointmentFinder/AppointmentServiceSelect';
 import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { ServiceFacilityInput } from '../ServiceFacilityInput';
+
+const NONE: readonly WithId<HealthcareService>[] = [];
 
 /**
  * The chosen filter values, used to constrain visible Schedules and Appointments.
@@ -19,8 +21,8 @@ export interface CalendarFilterValues {
    * filters started on and the user has not changed it.
    */
   readonly serviceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
-  /** The chosen visit type, or absent for every visit type. */
-  readonly service?: WithId<HealthcareService>;
+  /** The chosen visit types, any of which will do. Absent or empty for every visit type. */
+  readonly services?: readonly WithId<HealthcareService>[];
 }
 
 export interface CalendarFiltersProps {
@@ -40,8 +42,10 @@ export interface CalendarFiltersProps {
  * types. The same pickers the booking form uses, so a visit type is searched
  * for the same way wherever it is chosen.
  *
+ * Several visit types can be chosen, and any one of them will do.
+ *
  * The filters are not peers. A site decides which visit types are available
- * there, so choosing a site drops a chosen visit type the new site does not
+ * there, so choosing a site drops each chosen visit type the new site does not
  * hold — the same rule `AppointmentProposalForm` applies when its site
  * changes. A visit type never changes the sites on offer.
  *
@@ -53,7 +57,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const [serviceFacility, setServiceFacility] = useState<CalendarFilterValues['serviceFacility']>(
     defaultValue?.serviceFacility
   );
-  const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultValue?.service);
+  const [services, setServices] = useState<readonly WithId<HealthcareService>[]>(defaultValue?.services ?? NONE);
 
   // Key to remount field relying on `defaultValue` on change
   // see: https://github.com/medplum/medplum/issues/10288
@@ -62,21 +66,21 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const selectServiceFacility = useCallback(
     (next: WithId<Location> | undefined): void => {
       setServiceFacility(next);
-      // Clear a service selection if it is not available at the newly selected service facility
-      const kept = service && isServiceKeptAtLocation(service, next) ? service : undefined;
-      if (kept !== service) {
-        setService(undefined);
+      // Drop the chosen visit types that are not available at the newly selected service facility
+      const kept = services.filter((service) => isServiceKeptAtLocation(service, next));
+      if (kept.length !== services.length) {
+        setServices(kept);
         setServiceFieldKey((key) => key + 1);
       }
-      onChange({ serviceFacility: next, service: kept });
+      onChange({ serviceFacility: next, services: kept });
     },
-    [onChange, service]
+    [onChange, services]
   );
 
-  const selectService = useCallback(
-    (next: WithId<HealthcareService> | undefined): void => {
-      setService(next);
-      onChange({ serviceFacility, service: next });
+  const selectServices = useCallback(
+    (next: WithId<HealthcareService>[]): void => {
+      setServices(next);
+      onChange({ serviceFacility, services: next });
     },
     [serviceFacility, onChange]
   );
@@ -90,14 +94,13 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
         defaultValue={serviceFacility}
         onChange={selectServiceFacility}
       />
-      <AppointmentServiceSelect
+      <AppointmentServiceMultiSelect
         key={serviceFieldKey}
         label="Visit Type"
-        placeholder="All visit types"
-        required={false}
+        placeholder={services.length > 0 ? 'Add a visit type' : 'All visit types'}
         serviceFacility={serviceFacility}
-        defaultValue={service}
-        onChange={selectService}
+        defaultValue={services}
+        onChange={selectServices}
       />
     </Stack>
   );

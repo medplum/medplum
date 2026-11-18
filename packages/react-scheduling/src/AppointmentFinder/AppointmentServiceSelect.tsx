@@ -64,6 +64,63 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     error,
     disabled,
   } = props;
+  const loadOptions = useServiceOptions(serviceFacility);
+  const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);
+
+  return (
+    <AsyncAutocomplete<WithId<HealthcareService>>
+      name="service"
+      label={label}
+      placeholder={placeholder}
+      required={required}
+      maxValues={1}
+      error={error}
+      disabled={disabled}
+      defaultValue={defaultValue}
+      toOption={toOption}
+      loadOptions={loadOptions}
+      itemComponent={ServiceItem}
+      onChange={handleChange}
+    />
+  );
+}
+
+export interface AppointmentServiceMultiSelectProps {
+  readonly defaultValue?: readonly WithId<HealthcareService>[];
+  readonly onChange: (services: WithId<HealthcareService>[]) => void;
+  /** A chosen site, which narrows the services on offer to the ones held there. */
+  readonly serviceFacility?: WithId<Location> | Reference<Location>;
+  readonly label?: string;
+  readonly placeholder?: string;
+}
+
+/**
+ * Prototype. Chooses any number of visit types, for a field that filters rather than books. Offers
+ * what {@link AppointmentServiceSelect} offers.
+ *
+ * @param props - The React props.
+ * @returns The field.
+ */
+export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSelectProps): JSX.Element {
+  const { serviceFacility, defaultValue, onChange, label = 'Visit types', placeholder } = props;
+  const loadOptions = useServiceOptions(serviceFacility);
+  return (
+    <AsyncAutocomplete<WithId<HealthcareService>>
+      name="services"
+      label={label}
+      placeholder={placeholder}
+      defaultValue={defaultValue && [...defaultValue]}
+      toOption={toOption}
+      loadOptions={loadOptions}
+      itemComponent={ServiceItem}
+      onChange={onChange}
+    />
+  );
+}
+
+type LoadServiceOptions = (input: string, signal: AbortSignal) => Promise<WithId<HealthcareService>[]>;
+
+function useServiceOptions(serviceFacility: WithId<Location> | Reference<Location> | undefined): LoadServiceOptions {
   const medplum = useMedplum();
 
   const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
@@ -85,7 +142,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     return () => controller.abort();
   }, [medplum, serviceFacilityReference]);
 
-  const loadOptions = useCallback(
+  return useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
       // A site change while this waits replaces the reader, and makes this answer the old site's.
       const readCatalog = readCatalogRef.current;
@@ -109,25 +166,6 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       return readCatalogRef.current === readCatalog ? services.slice(0, SERVICE_PAGE_SIZE) : [];
     },
     [medplum, serviceFacilityReference]
-  );
-
-  const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);
-
-  return (
-    <AsyncAutocomplete<WithId<HealthcareService>>
-      name="service"
-      label={label}
-      placeholder={placeholder}
-      required={required}
-      maxValues={1}
-      error={error}
-      disabled={disabled}
-      defaultValue={defaultValue}
-      toOption={toOption}
-      loadOptions={loadOptions}
-      itemComponent={ServiceItem}
-      onChange={handleChange}
-    />
   );
 }
 

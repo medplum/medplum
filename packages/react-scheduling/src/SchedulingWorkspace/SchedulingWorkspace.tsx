@@ -276,7 +276,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Where open time was clicked while browsing, which is where the offer to start booking is drawn.
   const [bookPrompt, setBookPrompt] = useState<{ left: number; top: number }>();
   const lastPointer = useRef<{ left: number; top: number }>(undefined);
-  const calendarService = bookingOpen ? formService : filters.service;
+  const calendarService = bookingOpen ? formService : filters.services;
   // A visit type in the booking form hides no appointments, so only the site is left of the filters.
   const calendarFilters = useMemo(
     (): CalendarFilterValues => (bookingOpen ? { serviceFacility: filters.serviceFacility } : filters),
@@ -415,7 +415,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Under a filter, the Slots of an appointment it hides go with it. Blocked time stays: the
     // calendars listed are already the ones the filters keep.
     const shownSlots =
-      calendarFilters.service || calendarFilters.serviceFacility
+      calendarFilters.services?.length || calendarFilters.serviceFacility
         ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], visibleAppointments)
         : (slots ?? []);
     const openSlots = filterBookedSlots(
@@ -555,7 +555,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       setHoveredTime(undefined);
       setFilters({
         serviceFacility: next,
-        service: filters.service && isServiceKeptAtLocation(filters.service, next) ? filters.service : undefined,
+        services: filters.services?.filter((service) => isServiceKeptAtLocation(service, next)),
       });
       setFiltersKey((key) => key + 1);
     },
