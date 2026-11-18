@@ -15,10 +15,12 @@ export interface SectionHeaderProps {
   readonly count?: number;
   /** Controls placed at the end of the header, such as a button that adds an item. */
   readonly actions?: ReactNode;
+  /** Draws a lighter header, for a group inside a section that has a heading of its own. */
+  readonly nested?: boolean;
 }
 
 export function SectionHeader(props: SectionHeaderProps): JSX.Element {
-  const { title, children, loading, count, actions } = props;
+  const { title, children, loading, count, actions, nested = false } = props;
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -32,11 +34,16 @@ export function SectionHeader(props: SectionHeaderProps): JSX.Element {
           aria-label={collapsed ? `Show ${title.toLowerCase()}` : `Hide ${title.toLowerCase()}`}
           className={classes.chevron}
           data-collapsed={collapsed || undefined}
-          size="md"
+          size={nested ? 'sm' : 'md'}
         >
-          <IconChevronDown size={20} />
+          <IconChevronDown size={nested ? 16 : 20} />
         </ActionIcon>
-        <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)} className={classes.title}>
+        <Text
+          fz={nested ? 'sm' : 'md'}
+          fw={nested ? 600 : 800}
+          onClick={() => setCollapsed((c) => !c)}
+          className={classes.title}
+        >
           {title}
         </Text>
         {count !== undefined && !loading && (

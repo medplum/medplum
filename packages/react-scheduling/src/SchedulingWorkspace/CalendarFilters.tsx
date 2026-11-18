@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Checkbox, Stack, Text } from '@mantine/core';
+import { Checkbox, Divider, Stack } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -10,6 +10,7 @@ import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServ
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { ServiceFacilitiesInput } from '../ServiceFacilityInput';
 import { keepServicesAtSites } from './CalendarFilters.utils';
+import { PanelSection } from './CalendarsPanel/PanelSection';
 
 const NONE: readonly WithId<HealthcareService>[] = [];
 const NO_SITES: NonNullable<CalendarFilterValues['serviceFacilities']> = [];
@@ -138,32 +139,33 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
 
   return (
     <Stack gap="md">
-      <Stack gap="xs">
-        <SectionHeading>Filter</SectionHeading>
-        <ServiceFacilitiesInput
-          label="Service Facility"
-          placeholder={serviceFacilities.length > 0 ? 'Add a service facility' : 'All service facilities'}
-          searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
-          defaultValue={serviceFacilities}
-          onChange={selectServiceFacilities}
-        />
-        <AppointmentServiceMultiSelect
-          key={serviceFieldKey}
-          label="Visit Type"
-          placeholder={getServicesPlaceholder(allServices, services.length)}
-          serviceFacilities={serviceFacilities}
-          defaultValue={services}
-          onChange={selectServices}
-        />
-        <Checkbox
-          size="xs"
-          label="All visit types"
-          checked={allServices}
-          onChange={(event) => toggleAllServices(event.currentTarget.checked)}
-        />
-      </Stack>
-      <Stack gap="xs">
-        <SectionHeading>Availability</SectionHeading>
+      <PanelSection title="Filters" description="Narrow which calendars and appointments are shown.">
+        <Stack gap="xs">
+          <ServiceFacilitiesInput
+            label="Service Facility"
+            placeholder={serviceFacilities.length > 0 ? 'Add a service facility' : 'All service facilities'}
+            searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
+            defaultValue={serviceFacilities}
+            onChange={selectServiceFacilities}
+          />
+          <AppointmentServiceMultiSelect
+            key={serviceFieldKey}
+            label="Visit Type"
+            placeholder={getServicesPlaceholder(allServices, services.length)}
+            serviceFacilities={serviceFacilities}
+            defaultValue={services}
+            onChange={selectServices}
+          />
+          <Checkbox
+            size="xs"
+            label="All visit types"
+            checked={allServices}
+            onChange={(event) => toggleAllServices(event.currentTarget.checked)}
+          />
+        </Stack>
+      </PanelSection>
+      <Divider />
+      <PanelSection title="Availability" description="Shade the times a visit type could be booked.">
         <AppointmentServiceMultiSelect
           key={availabilityFieldKey}
           label="Show availability for"
@@ -175,7 +177,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
           defaultValue={availabilityServices}
           onChange={selectAvailabilityServices}
         />
-      </Stack>
+      </PanelSection>
     </Stack>
   );
 }
@@ -185,12 +187,4 @@ function getServicesPlaceholder(all: boolean, chosen: number): string {
     return 'All visit types';
   }
   return chosen > 0 ? 'Add a visit type' : 'No appointments shown';
-}
-
-function SectionHeading(props: { readonly children: string }): JSX.Element {
-  return (
-    <Text size="xs" fw={600} c="dimmed" tt="uppercase">
-      {props.children}
-    </Text>
-  );
 }
