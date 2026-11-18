@@ -52,7 +52,7 @@ After assembly, validation reports duplicate `targetConstraint` keys and final F
 
 The result keeps the root's canonical `url` and business `version`, removes its storage ID and revision metadata, adjusts `assemble-expectation`, and declares `executable` capability. `assembledFrom` records resolved descendant canonicals and their available business versions. Existing valid capability codes are retained. The modular input profile is removed; other profile declarations are retained and should be validated before publication.
 
-Store source and assembled forms under separate IDs. Use one reviewed assembly per root URL/version, pin dependencies, and change the root version when releasing different content. Publishing several builds of one root version requires SDC `package-source` metadata and is outside this workflow. Automatic [`$extract`](/docs/api/fhir/operations/extract) lookup rejects multiple matching Questionnaires, including source and assembled forms with the same URL/version; supply the loaded assembled definition explicitly.
+Store source and assembled forms under separate IDs. Use one reviewed assembly per root URL/version, pin dependencies, and change the root version when releasing different content. Publishing several builds of one root version requires SDC `package-source` metadata and is outside this workflow. Automatic [`$extract`](/docs/api/fhir/operations/extract) lookup cannot distinguish source and assembled forms with the same URL/version and uses the first match; supply the loaded assembled definition explicitly.
 
 ## Supported assembly rules
 

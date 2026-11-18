@@ -39,9 +39,15 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 
 ## Selecting the Questionnaire
 
-Without an explicit `questionnaire` input, Medplum searches by the response's canonical URL and, when supplied as `url|version`, its exact business version. A unique accessible match succeeds; no match returns the existing missing-Questionnaire error. Multiple matches now return an error asking for explicit input instead of selecting the first result.
+Without an explicit `questionnaire` input, Medplum searches by the response's canonical URL and, when supplied as `url|version`, its exact business version. No match returns the missing-Questionnaire error. When multiple accessible Questionnaires match, Medplum uses the first result and logs a server warning.
 
-This applies when an authored source and its [`$assemble`](/docs/api/fhir/operations/assemble) output share a URL and version. Pinning a business version alone does not distinguish them. Load the assigned assembled Questionnaire by ID and pass it explicitly. Use the same approach for responses whose `questionnaire` is `Questionnaire/{id}`; automatic lookup searches canonical URLs.
+{{< warning title="Deprecated" >}}
+
+Selecting the first of multiple matches is deprecated. A future major version may reject ambiguous matches. Pass the `questionnaire` parameter explicitly to avoid depending on this behavior.
+
+{{< /warning >}}
+
+Ambiguity occurs when an authored source and its [`$assemble`](/docs/api/fhir/operations/assemble) output share a URL and version. Pinning a business version alone does not distinguish them, and the first match may be the source rather than the assembled form. Load the assigned assembled Questionnaire by ID and pass it explicitly. Use the same approach for responses whose `questionnaire` is `Questionnaire/{id}`; automatic lookup searches canonical URLs.
 
 ## Output
 

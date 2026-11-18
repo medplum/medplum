@@ -34,6 +34,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import type { Repository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 import { parseQuestionnaireCanonical } from './utils/questionnaire';
@@ -164,12 +165,10 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
       ];
     }
     if (results.length > 1) {
-      return [
-        badRequest(
-          'Multiple Questionnaires match the response; supply the questionnaire parameter explicitly',
-          'QuestionnaireResponse.questionnaire'
-        ),
-      ];
+      // Preserves legacy first-match behavior; a future major version may reject ambiguous matches
+      getLogger().warn('Multiple Questionnaires match QuestionnaireResponse.questionnaire; using the first match', {
+        questionnaire: response.questionnaire,
+      });
     }
     questionnaire = results[0];
   } else {

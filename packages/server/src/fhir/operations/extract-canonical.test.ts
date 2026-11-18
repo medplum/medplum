@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Logger } from '@medplum/core';
 import type { Parameters, Questionnaire } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -44,9 +45,6 @@ describe('Extraction canonical resolution', () => {
     const missing = await extract(`${url}|3`);
     expect(missing.status).toBe(400);
     expect(missing.body.issue[0].details.text).toContain('not found');
-    const ambiguous = await extract(url);
-    expect(ambiguous.status).toBe(400);
-    expect(ambiguous.body.issue[0].details.text).toContain('Multiple Questionnaires');
   });
 
   test('treats commas in business versions as literal characters', async () => {
@@ -57,16 +55,16 @@ describe('Extraction canonical resolution', () => {
     expect((await extract(`${url}|1,2`)).status).toBe(200);
   });
 
-  test.each([false, true])('rejects source/assembled ambiguity even with a pinned canonical: %s', async (versioned) => {
+  test.each([false, true])('keeps first-match behavior and warns on ambiguous canonicals: %s', async (versioned) => {
+    const warn = vi.spyOn(Logger.prototype, 'warn');
     const url = `https://example.org/${randomUUID()}`;
     const questionnaire: Questionnaire = { resourceType: 'Questionnaire', status: 'active', url, version: '1' };
     await repo.createResource(questionnaire);
     await repo.createResource(questionnaire);
     const canonical = url + (versioned ? '|1' : '');
-    const res = await extract(canonical);
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toContain('supply the questionnaire parameter explicitly');
-    expect((await extract(canonical, questionnaire)).status).toBe(200);
+    expect((await extract(canonical)).status).toBe(200);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Multiple Questionnaires'), { questionnaire: canonical });
+    warn.mockRestore();
   });
 
   test('counts only accessible matches, with unchanged missing-resource behavior', async () => {

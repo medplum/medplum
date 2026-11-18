@@ -98,7 +98,7 @@ After validating completion and saving the response as `completed`, pass its mat
 
 {{< code-example file="packages/examples/src/questionnaires/assembled-questionnaires.ts" language="ts" blocks="extract" >}}
 
-`$extract` returns a Bundle for a separate review and persistence step. Automatic canonical lookup cannot choose between the source and assembly when they share a URL/version, and returns an ambiguity error. Passing the assigned definition also keeps older responses aligned with their original extraction rules.
+`$extract` returns a Bundle for a separate review and persistence step. Automatic canonical lookup cannot choose between the source and assembly when they share a URL/version, and may use the source. Passing the assigned definition also keeps older responses aligned with their original extraction rules.
 
 ## Build a visit-preparation form in application code
 
