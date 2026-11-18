@@ -314,7 +314,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   if (client?.pkceOptional) {
-    logPkceOptionalCodeRedemption(req, client, login, authMethod);
+    logPkceOptionalCodeRedemption(req, client, login, authMethod, clientSecret);
   }
 
   await sendTokenResponse(req, res, login, client);
@@ -871,43 +871,55 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * @param req - The token request.
  * @param client - The `pkceOptional` client application.
  * @param login - The login being redeemed.
- * @param authMethod - How the client authenticated to the token endpoint.
+ * @param authMethod - How the client presented credentials to the token endpoint.
+ * @param clientSecret - The client secret, if one was presented and validated.
  */
 function logPkceOptionalCodeRedemption(
   req: Request,
   client: ClientApplication,
   login: WithId<Login>,
-  authMethod: TokenEndpointAuthMethod | undefined
+  authMethod: TokenEndpointAuthMethod | undefined,
+  clientSecret: string | undefined
 ): void {
-  const codeVerifier = req.body.code_verifier as string | undefined;
-  const verifierValid =
-    !!login.codeChallenge &&
-    !!codeVerifier &&
-    verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier);
+  // Log-only: must never affect the response
+  try {
+    const verifierPresented = !!req.body.code_verifier;
+    const codeVerifier = typeof req.body.code_verifier === 'string' ? req.body.code_verifier : undefined;
+    const verifierValid =
+      !!login.codeChallenge &&
+      !!codeVerifier &&
+      verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier);
 
-  let reason: string;
-  if (codeVerifier && !verifierValid) {
-    reason = 'invalid-code-verifier';
-  } else if (!verifierValid && (!authMethod || authMethod === 'none')) {
-    reason = 'no-pkce-no-client-auth';
-  } else {
-    return;
-  }
+    // authMethod is how credentials were presented, not whether they were verified.
+    // JWT and mTLS are verified in getClientIdAndSecret; secret-based methods only count if a secret was checked.
+    const clientAuthenticated = authMethod === 'private_key_jwt' || authMethod === 'tls_client_auth' || !!clientSecret;
 
-  pkceOptionalLogThrottle.maybeLog([client.id, reason].join('|'), (suppressed) => {
-    getLogger().warn('Authorization code redeemed by pkceOptional client without verification', {
-      reason,
-      clientId: client.id,
-      projectId: client.meta?.project,
-      loginId: login.id,
-      authMethod,
-      hasCodeChallenge: !!login.codeChallenge,
-      codeChallengeMethod: login.codeChallengeMethod,
-      hasCodeVerifier: !!codeVerifier,
-      userAgent: req.get('User-Agent'),
-      suppressed,
+    let reason: string;
+    if (verifierPresented && !verifierValid) {
+      reason = 'invalid-code-verifier';
+    } else if (!verifierValid && !clientAuthenticated) {
+      reason = 'no-pkce-no-client-auth';
+    } else {
+      return;
+    }
+
+    pkceOptionalLogThrottle.maybeLog([client.id, reason].join('|'), (suppressed) => {
+      getLogger().warn('Authorization code redeemed by pkceOptional client without verification', {
+        reason,
+        clientId: client.id,
+        projectId: client.meta?.project,
+        loginId: login.id,
+        authMethod,
+        hasCodeChallenge: !!login.codeChallenge,
+        codeChallengeMethod: login.codeChallengeMethod,
+        hasCodeVerifier: verifierPresented,
+        userAgent: req.get('User-Agent'),
+        suppressed,
+      });
     });
-  });
+  } catch (err) {
+    getLogger().debug('Failed to log pkceOptional code redemption', { err });
+  }
 }
 
 /**

@@ -791,29 +791,32 @@ describe('OAuth2 Token', () => {
   });
 
   test('Logs pkceOptional code redemption without PKCE or client authentication', async () => {
-    // Use a dedicated client so earlier redemptions do not throttle the log
-    const loggedClient = await systemRepo.createResource<ClientApplication>({
-      resourceType: 'ClientApplication',
-      secret: generateSecret(32),
-      pkceOptional: true,
-    });
     const codeVerifier = randomUUID();
+    const challenge = { codeChallenge: hashCode(codeVerifier), codeChallengeMethod: 'S256' };
 
+    // Each redemption uses a fresh client so the per-client log throttle does not suppress it
     const redeem = async (
       login: Record<string, string>,
-      token: Record<string, string>
+      token: (client: WithId<ClientApplication>) => Record<string, string | string[]>,
+      basicAuth?: (client: WithId<ClientApplication>) => string
     ): Promise<Record<string, unknown> | undefined> => {
+      const client = await systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        secret: generateSecret(32),
+        pkceOptional: true,
+      });
       const res = await request(app)
         .post('/auth/login')
         .type('json')
-        .send({ clientId: loggedClient.id, email, password, ...login });
+        .send({ clientId: client.id, email, password, ...login });
       expect(res).toHaveStatus(200);
 
       const warnSpy = vi.spyOn(MedplumCore.Logger.prototype, 'warn');
-      const res2 = await request(app)
-        .post('/oauth2/token')
-        .type('form')
-        .send({ grant_type: 'authorization_code', code: res.body.code, ...token });
+      let tokenReq = request(app).post('/oauth2/token').type('form');
+      if (basicAuth) {
+        tokenReq = tokenReq.set('Authorization', 'Basic ' + Buffer.from(basicAuth(client)).toString('base64'));
+      }
+      const res2 = await tokenReq.send({ grant_type: 'authorization_code', code: res.body.code, ...token(client) });
       expect(res2).toHaveStatus(200);
       const call = warnSpy.mock.calls.find(
         ([msg]) => msg === 'Authorization code redeemed by pkceOptional client without verification'
@@ -822,20 +825,15 @@ describe('OAuth2 Token', () => {
       return call?.[1] as Record<string, unknown> | undefined;
     };
 
-    const challenge = { codeChallenge: hashCode(codeVerifier), codeChallengeMethod: 'S256' };
-
     // Client secret: not logged
-    expect(
-      await redeem({}, { client_id: loggedClient.id, client_secret: loggedClient.secret as string })
-    ).toBeUndefined();
+    expect(await redeem({}, (c) => ({ client_id: c.id, client_secret: c.secret as string }))).toBeUndefined();
 
     // Valid code verifier: not logged
-    expect(await redeem(challenge, { code_verifier: codeVerifier })).toBeUndefined();
+    expect(await redeem(challenge, () => ({ code_verifier: codeVerifier }))).toBeUndefined();
 
     // Code challenge without verifier or client authentication: logged
-    expect(await redeem(challenge, {})).toMatchObject({
+    expect(await redeem(challenge, () => ({}))).toMatchObject({
       reason: 'no-pkce-no-client-auth',
-      clientId: loggedClient.id,
       authMethod: 'none',
       hasCodeChallenge: true,
       hasCodeVerifier: false,
@@ -843,12 +841,26 @@ describe('OAuth2 Token', () => {
 
     // Wrong code verifier, even with a client secret: logged
     expect(
-      await redeem(challenge, {
-        client_id: loggedClient.id,
-        client_secret: loggedClient.secret as string,
-        code_verifier: 'wrong',
-      })
+      await redeem(challenge, (c) => ({ client_id: c.id, client_secret: c.secret as string, code_verifier: 'wrong' }))
     ).toMatchObject({ reason: 'invalid-code-verifier', authMethod: 'client_secret_post', hasCodeVerifier: true });
+
+    // Non-string code verifier: logged, and does not break the request
+    expect(await redeem(challenge, () => ({ code_verifier: ['a', 'b'] }))).toMatchObject({
+      reason: 'invalid-code-verifier',
+      hasCodeVerifier: true,
+    });
+
+    // Basic auth header with a client ID but no secret is not client authentication: logged
+    expect(
+      await redeem(
+        {},
+        () => ({}),
+        (c) => c.id
+      )
+    ).toMatchObject({
+      reason: 'no-pkce-no-client-auth',
+      authMethod: 'client_secret_basic',
+    });
   });
 
   test('Authorization code token with wrong client secret', async () => {
