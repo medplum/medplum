@@ -37,12 +37,11 @@ function ask(stage: Stage, pages: string[] = []): unknown {
     '--max-budget-usd': String(config.budgetUsd[stage]),
     '--tools': tools.join(','),
     '--allowedTools': allowed.join(','),
-    '--disallowedTools': 'mcp__*',
     '--permission-mode': 'dontAsk',
     '--setting-sources': 'user',
     '--settings': join(import.meta.dirname, 'agent-settings.json'),
   };
-  const flags = ['--strict-mcp-config', '--disable-slash-commands', '--no-session-persistence'];
+  const flags = ['--strict-mcp-config', '--no-session-persistence'];
   const prompt = read(join(import.meta.dirname, 'prompts', stage + '.md'));
   const output = execFileSync('claude', ['-p', ...Object.entries(options).flat(), ...flags, '--', prompt], {
     encoding: 'utf8',
@@ -58,11 +57,12 @@ const relative = (ref: string): string => ref.replace(/^(?:\.\/)?repo\//, '');
 function evidence(citations: string[]): string[] {
   return citations.map(relative).filter((ref) => {
     if (ref.startsWith('.docs-run/')) return false;
-    const match = /^((?:packages|examples|scripts|charts|terraform|\.github)\/[^:]+):([1-9][0-9]*)$/.exec(ref);
-    assert(match, `Invalid evidence: ${ref}`);
+    const match =
+      /^((?:packages|examples|scripts|charts|terraform|\.github)\/[^:\s]+):([1-9]\d*)(?:-([1-9]\d*))?\b/.exec(ref);
+    if (!match) return false;
     const lines = read(checkedPath(match[1])).split(/\r\n|[\r\n]/);
     if (lines.at(-1) === '') lines.pop();
-    assert(Number(match[2]) <= lines.length, `Invalid evidence: ${ref}`);
+    assert(Number(match[3] ?? match[2]) <= lines.length, `Invalid evidence: ${ref}`);
     return true;
   });
 }

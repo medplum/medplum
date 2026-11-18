@@ -11,7 +11,7 @@ const page = 'packages/docs/content/docs/example.md';
 const plan = {
   outcome: 'update-docs',
   summary: 'Explain the default.',
-  evidence: [page + ':2'],
+  evidence: [page + ':1-3 sets the title', 'A search found no other mention.'],
   pages: [page, page.replace('example', 'other')],
   questions: [],
 };
@@ -45,6 +45,7 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
     return plan;
   });
   assert(!fs.existsSync(run + '/docs.patch'));
+  assert.deepEqual(load<typeof plan>('classification.json').evidence, [page + ':1-3 sets the title']);
   process.env.MODE = 'draft';
   review((stage, pages) => {
     if (stage === 'draft') {
@@ -71,6 +72,7 @@ test('edits must stay on planned, hand-written pages and citations must exist', 
   docPath('packages/docs/content/docs/api/fhir/resources/_index.md');
   assert.throws(() => capture([page], true), /plan/);
   assert.throws(() => review(() => ({ ...plan, evidence: [page + ':4'] })), /Invalid evidence/);
+  assert.throws(() => review(() => ({ ...plan, evidence: [page + ':2-4 note'] })), /Invalid evidence/);
   assert.throws(() => review(() => ({ ...plan, pages: 'unexpected' })));
 });
 

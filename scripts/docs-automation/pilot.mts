@@ -94,15 +94,7 @@ function source(number: number, repository: string): void {
   const base = git('rev-parse', 'HEAD').trim();
   const assignee = pr.user.type === 'User' ? pr.user.login : config.fallbackAssignee;
   mkdirSync(run);
-  save('context.json', {
-    number,
-    base,
-    assignee,
-    title: pr.title,
-    body: pr.body?.slice(0, 12000) ?? '',
-    models: config.models,
-    effort: config.effort,
-  });
+  save('context.json', { number, base, assignee, title: pr.title, body: pr.body?.slice(0, 12000) ?? '' });
   append('GITHUB_OUTPUT', `base=${base}`);
   append('GITHUB_STEP_SUMMARY', `### Source #${number} at \`${base}\`\n`);
 
@@ -173,11 +165,8 @@ export function publish(number: number, repository: string): void {
   const { outcome, pages } = load<Results['classify']>('classification.json');
   const { questions } = load<Results['draft']>('draft.json');
   const { findings } = load<Results['verify']>('verification.json');
-  assert(
-    outcome === 'update-docs' && Array.isArray(pages) && pages.length && pages.length <= config.maxDraftFiles,
-    'Invalid plan'
-  );
-  assert(Array.isArray(questions) && Array.isArray(findings), 'Missing review');
+  const plan = outcome === 'update-docs' && Array.isArray(pages) && pages.length <= config.maxDraftFiles;
+  assert(plan && Array.isArray(questions) && Array.isArray(findings), 'Invalid review artifacts');
   assert(!git('status', '--porcelain'), 'Publication needs a clean checkout');
   git('apply', '--index', resolve(run, 'docs.patch'));
   assert(capture(pages, questions.length > 0), 'Empty patch');
@@ -201,13 +190,13 @@ export function publish(number: number, repository: string): void {
   });
   append('GITHUB_STEP_SUMMARY', pr.html_url);
   comment('Documentation follow-up: ' + pr.html_url);
-  const assignee = context.assignee;
+  const { assignee } = context;
   assert(assignee && /^[\w-]+$/.test(assignee), `Assign a human reviewer to ${pr.html_url}`);
-  const updated = api<{ assignees: { login: string }[] }>(`${root}/issues/${pr.number}/assignees`, {
+  const { assignees } = api<{ assignees: { login: string }[] }>(`${root}/issues/${pr.number}/assignees`, {
     assignees: [assignee],
   });
   assert(
-    updated.assignees.some((a) => a.login === assignee),
+    assignees.some((a) => a.login === assignee),
     `Assign ${assignee} to ${pr.html_url}`
   );
 }
