@@ -487,6 +487,7 @@ describe('AppointmentDetails', () => {
     expect(cancelButton()).not.toBeInTheDocument();
     // The way back sits at the foot, after the details.
     const back = screen.getByRole('button', { name: 'Back to Appointment Details' });
+    expect(screen.getByRole('heading', { name: 'Cancel this appointment' })).toBeInTheDocument();
     expect(notes.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -683,7 +684,7 @@ describe('AppointmentDetails', () => {
     );
 
     await userEvent.click(rescheduleButton() as HTMLElement);
-    await userEvent.click(await screen.findByRole('button', { name: 'Back' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Back to Appointment Details' }));
 
     expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
   });
@@ -699,7 +700,7 @@ describe('AppointmentDetails', () => {
     expect(await screen.findByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
     expect(cancelButton()).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to Appointment Details' }));
 
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
     expect(cancelButton()).toBeInTheDocument();
@@ -1037,7 +1038,8 @@ describe('AppointmentDetails editing', () => {
     await screen.findByRole('searchbox', { name: /procedure code/i });
     await enterCode(/procedure code/i, ProcedureCodes[1]);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('heading', { name: 'Edit appointment' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Appointment Details' }));
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
 

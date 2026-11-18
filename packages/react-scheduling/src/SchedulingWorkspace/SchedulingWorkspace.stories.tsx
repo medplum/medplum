@@ -113,7 +113,7 @@ export default {
  * does; closing it with the ✕ does not.
  * "Cancel Appointment" turns the pane over to a page asking what the visit is being
  * called off for; a reason has to be searched for and picked before it can be confirmed,
- * and "Back" leaves without touching the visit. Confirming runs it through
+ * and "Back to Appointment Details" leaves without touching the visit. Confirming runs it through
  * `Appointment/:id/$cancel`: the pane lands back on the details, now describing a
  * cancelled appointment, showing the reason and with no button left on it, and the event
  * beside it is drawn as cancelled without a reload, because the cancellation announces

@@ -473,12 +473,14 @@ describe('AppointmentRescheduleForm', () => {
       };
       await medplum.createResource(unreadable);
 
-      await setup(medplum, { appointment: unreadable });
+      await setup(medplum, { appointment: unreadable, children: <button type="button">Back</button> });
 
       expect(screen.getByText(/could not be read, and so it cannot be rescheduled/i)).toBeInTheDocument();
       expect(screen.getByText(/not found/i)).toBeInTheDocument();
       expect(screen.queryByRole('textbox', { name: /visit type/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /reschedule appointment/i })).not.toBeInTheDocument();
+      // The host's way out is still offered, with no form to hold it.
+      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     });
   });
 

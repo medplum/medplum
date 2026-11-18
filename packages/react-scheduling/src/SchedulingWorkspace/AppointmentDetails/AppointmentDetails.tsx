@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   formatCodeableConcept,
@@ -18,13 +18,7 @@ import {
 import type { Appointment, Bundle, CodeableConcept, Parameters, Reference, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import {
-  IconArrowLeft,
-  IconCalendarCancel,
-  IconCalendarCheck,
-  IconCalendarEvent,
-  IconExternalLink,
-} from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
@@ -157,7 +151,6 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 
   return (
     <>
-      <Title order={5}>Cancel this appointment</Title>
       {cancelError !== undefined && (
         <Alert color="red" title="Could not cancel this appointment">
           {normalizeErrorString(cancelError)}
@@ -328,6 +321,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
+        <Title order={5}>Cancel this appointment</Title>
         <AppointmentCancelForm
           appointment={appointment}
           onCancelled={innerOnCancelled}
@@ -338,7 +332,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
         {codes}
         <Stack gap="sm" className={classes.actions}>
           <Divider />
-          <Button onClick={() => setCancelling(false)} variant="default">
+          <Button variant="default" onClick={() => setCancelling(false)}>
             Back to Appointment Details
           </Button>
         </Stack>
@@ -349,33 +343,25 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   if (rescheduling) {
     return (
       <Stack gap="sm" className={classes.details}>
-        <Group justify="space-between" wrap="nowrap">
-          {/* Its own heading: a host showing this in a panel titled for the details has
-              no way of knowing the view underneath it changed. */}
-          <Title order={5}>Reschedule appointment</Title>
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            leftSection={<IconArrowLeft size={14} stroke={1.8} />}
-            onClick={stopRescheduling}
-          >
-            Back
-          </Button>
-        </Group>
+        <Title order={5}>Reschedule appointment</Title>
         <AppointmentRescheduleForm
           appointment={appointment}
           onToggleTimeFinder={onToggleTimeFinder}
           onRescheduled={finishRescheduling}
           canBypassSchedulingRules={props.canBypassSchedulingRules}
-        />
+        >
+          <Button variant="default" onClick={stopRescheduling}>
+            Back to Appointment Details
+          </Button>
+        </AppointmentRescheduleForm>
       </Stack>
     );
   }
 
-  // Both pages fill the pane the same way, so what can be done to the visit sits at the
-  // foot of either.
+  // What can be done to the visit sits at the foot of the pane.
   return (
     <Stack gap="sm" className={classes.details}>
+      {editing && <Title order={5}>Edit appointment</Title>}
       {summary}
       {editing ? (
         <AppointmentDetailsForm
@@ -387,8 +373,11 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             setEditing(false);
             return onUpdated?.(updated);
           }}
-          onCancel={() => setEditing(false)}
-        />
+        >
+          <Button variant="default" onClick={() => setEditing(false)}>
+            Back to Appointment Details
+          </Button>
+        </AppointmentDetailsForm>
       ) : (
         codes
       )}

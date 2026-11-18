@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Loader } from '@mantine/core';
+import { Alert, Divider, Loader, Stack } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -13,6 +13,7 @@ import type { Appointment, Bundle, Parameters, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback } from 'react';
+import classes from './AppointmentFinder.module.css';
 import type { AppointmentWrite } from './AppointmentFinder.writes';
 import { readAppointmentWrite } from './AppointmentFinder.writes';
 import type { AppointmentProposalFormProps, BookOptions } from './AppointmentProposalForm';
@@ -73,6 +74,9 @@ export interface AppointmentRescheduleFormProps extends Omit<
  * then delete the old Slots.
  * Announces the appointment, the times it gave up and the times it took, so views reading
  * them refresh, then reports what was written through `onRescheduled`.
+ *
+ * Controls passed as `children` are offered even where the form cannot open, as the way
+ * out of it.
  *
  * Only the time, the actors and the service facility are asked for. Everything else on the
  * appointment — who it is for, its status, its visit type, whatever clinical detail it
@@ -154,27 +158,48 @@ export function AppointmentRescheduleForm(props: AppointmentRescheduleFormProps)
     [appointment, medplum, onRescheduled]
   );
 
+  // Where there is no form to hold them, the host's controls still offer the way out.
+  const controls = formProps.children !== undefined && (
+    <Stack gap="sm" className={classes.controls}>
+      <Divider />
+      {formProps.children}
+    </Stack>
+  );
+
   const serviceRefs = extractServiceTypeReferences(appointment.serviceType);
   if (serviceRefs.length === 0) {
-    return <Alert color="red">This appointment does not have a visit type, and so cannot be rescheduled.</Alert>;
+    return (
+      <>
+        <Alert color="red">This appointment does not have a visit type, and so cannot be rescheduled.</Alert>
+        {controls}
+      </>
+    );
   }
 
   if (defaults.loading) {
     // The form takes its defaults at mount and never again, so it is not mounted until
     // there are defaults to take.
-    return <Loader size="sm" />;
+    return (
+      <>
+        <Loader size="sm" />
+        {controls}
+      </>
+    );
   }
 
   if (defaults.error) {
     // If we failed to read the HealthcareService, or one of the Slots or Schedules currently
     // linked to the Appointment, the `$reschedule` operation will fail. Put up a blocking error.
     return (
-      <Alert
-        color="red"
-        title="Part of what this appointment is booked on could not be read, and so it cannot be rescheduled."
-      >
-        {normalizeErrorString(defaults.error)}
-      </Alert>
+      <>
+        <Alert
+          color="red"
+          title="Part of what this appointment is booked on could not be read, and so it cannot be rescheduled."
+        >
+          {normalizeErrorString(defaults.error)}
+        </Alert>
+        {controls}
+      </>
     );
   }
 
