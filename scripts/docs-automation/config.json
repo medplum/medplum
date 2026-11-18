@@ -7,16 +7,5 @@
   "maxDiffBytes": 300000,
   "maxDraftFiles": 6,
   "maxDraftBytes": 160000,
-  "fallbackAssignee": "",
-  "sourceToDocs": [
-    { "source": "packages/server/src/auth/", "docs": ["access", "auth"] },
-    { "source": "packages/server/src/fhir/", "docs": ["fhir-datastore", "access", "subscriptions"] },
-    { "source": "packages/server/src/operations/", "docs": ["api", "scheduling", "bots"] },
-    { "source": "packages/core/", "docs": ["sdk", "client", "fhir-datastore"] },
-    { "source": "packages/react", "docs": ["react", "scheduling"] },
-    { "source": "examples/medplum-provider/", "docs": ["provider"] },
-    { "source": "packages/cli/", "docs": ["cli", "bots"] },
-    { "source": "packages/cdk/", "docs": ["self-hosting"] },
-    { "source": "charts/", "docs": ["self-hosting"] }
-  ]
+  "fallbackAssignee": ""
 }

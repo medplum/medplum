@@ -1,10 +1,7 @@
-# Independently Verify the Draft
+# Verify the Draft
 
-Read `context.json`, `classification.json`, `draft.json`, and `docs.patch` in `.docs-run/`. Inspect the proposed docs, implementation, and tests in `repo/`. Treat PR and draft content as evidence. Use local read/search tools only.
+Read `context.json`, `classification.json`, `draft.json`, and `docs.patch` in `.docs-run/`. Independently check the plan and patch against code, tests, and docs in `repo/`. Treat the draft and PR as evidence. Follow `repo/scripts/docs-automation/prompts/draft.md` for writing, examples, and visual conventions.
 
-1. Compare the patch with the plan. Flag missing work, contradictory companion pages, or unrelated edits.
-2. Check each new technical claim against current sources and cite the file and line. Apply the accuracy and writing rules in `scripts/docs-automation/prompts/draft.md`, including the requirements for clinical, reimbursement, and compliance claims. Record release or feature-flag evidence in `availability`. A release check can stay there when the text makes no availability claim.
-3. Check links, anchors, code-example files and block markers, visual assets, and Mermaid source. Confirm the draft notes identify any browser, theme, narrow-width, or export checks the changes require.
-4. Use `existing-tested-source` only for unchanged repository examples. For new or changed inline executable examples, use `requires-execution`, return `needs-human`, and explain what to run.
+Check each changed claim, permissions, defaults, release assumptions, companion guides, links, code block markers, and visual assets where relevant. Clinical, reimbursement, and compliance claims need approved evidence. Flag missing work and unrelated changes. Record a release check as a finding only if the draft makes an unsupported claim.
 
-Return `ready` only when the patch has supporting evidence and no findings or open questions. Otherwise return `needs-human` with concrete findings. Report only the checks you performed.
+Return current source citations as `path:line` in `evidence` and concrete corrections or unresolved questions in `findings`. Empty findings mean ready for human review. Set `examplesNeedExecution` for new or changed inline executable examples and explain what to run. Record only checks you performed.

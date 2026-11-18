@@ -72,9 +72,7 @@ jobs:
       - name: Check Provider documentation labels
         run: node packages/docs/scripts/check-provider-labels.mjs
       - name: Test documentation automation controller
-        run: node --test scripts/docs-automation/run.test.ts
-      - name: Type-check documentation automation controller
-        run: npx tsc -p scripts/docs-automation/tsconfig.json
+        run: python3 -B -m unittest discover -s scripts/docs-automation
       - name: Build Project
         run: npm run build
         env:

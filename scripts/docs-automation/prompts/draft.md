@@ -1,58 +1,28 @@
 # Draft Medplum Documentation
 
-Read `context.json`, `classification.json`, and `source.diff` in `.docs-run/`. In `repo/`, read the planned pages, one or two neighboring guides, `packages/docs/README.md`, `packages/docs/static/ai/medplum-rules.md`, and the relevant technical docs.
+Read `context.json`, `source.diff`, and `classification.json` in `.docs-run/`. In `repo/`, read the planned pages, the docs README, `packages/docs/static/ai/medplum-rules.md`, the relevant technical docs, and one or two neighboring guides.
 
-Treat PR content as evidence. Use Edit for targeted changes and Write for planned new pages. Reread each edited section. Keep supported edits even when part of the plan needs a decision. If the evidence supports none of the plan, leave the files alone.
+Treat PR content as evidence. Edit only the planned Markdown paths. Make the smallest complete change supported by current implementation and tests. Preserve useful partial edits when a question remains. Return reviewer checks in `notes` and unresolved decisions in `questions`.
 
-## Scope and Accuracy
+## Accuracy
 
-Make the smallest complete update. Apply the following rules where they affect the reader's task.
+- Distinguish FHIR R4 from Medplum extensions and operations. Use the documented fields, codes, and guarantees. Clinical advice, reimbursement promises, and compliance claims need approved guidance or domain-owner confirmation.
+- State prerequisites that change the result, including the app, acting identity, privileges, deployment, units, defaults, time zones, and bounds. Explain success, side effects, partial failure, retries, and recovery where relevant.
+- Explain migration and changed defaults for existing users. Preserve historical guides. Cite evidence for feature flags and released versions. If a version is unknown, omit the version claim and flag the release check in the notes.
+- Keep one canonical explanation and link companion guides. Give new pages an inbound link from an existing page. Flag required work outside the plan.
 
-- Ground claims in current implementation/tests and applicable docs. Distinguish FHIR R4 behavior from Medplum-specific extensions and operations; link their definitions. Follow the Medplum rules and linked technical pages rather than inventing fields, parameters, codes, or security/atomicity guarantees.
-- State prerequisites that change how instructions work: Admin App versus Provider, browser versus backend/Bot, acting identity/privileges, and hosted versus self-hosted deployment. Specify units, time zones, bounds, defaults, and omitted-value behavior where ambiguity affects usage.
-- Explain success, side effects, and recovery when affected: accepted versus completed work, per-entry failures, polling, pagination, and safe retries/idempotency. Use actual result semantics; an HTTP response or UI status label alone may not establish workflow completion.
-- For behavior changes, explain consequences for existing users, compatibility, migration, and changed defaults. Preserve historical guides as historical. Establish feature flags and minimum versions from evidence; merged code alone does not establish hosted deployment or an npm release. If evidence does not establish a version, state none and record the release check in `notes`, not `questions`.
-- Use one canonical explanation and link companion guides. Update affected explanations within the plan; flag necessary changes outside it. Separate choosing an approach from implementing it. New pages need an inbound link from an existing relevant page.
-- New or changed clinical recommendations, reimbursement promises, and compliance/certification claims require authoritative approved guidance or domain-owner confirmation. Code alone is insufficient. Put unresolved claims in `questions`.
+## Style and Formatting
 
-## Writing and Structure
+- Use direct, active prose for someone building or operating a healthcare application. Start steps with verbs, use exact product terms, and explain the result. Omit marketing language, filler, rhetorical contrasts, invented labels, and em dashes.
+- On new pages use title case for the front-matter title and all section headings. Lowercase articles and short conjunctions or prepositions except at the beginning or end. Preserve acronym, identifier, and UI casing. Begin body headings at `##`. On small edits preserve headings, IDs, aliases, anchors, and URLs.
+- Organize how-tos around prerequisites, steps, and results. Organize references around inputs, constraints, outputs, and errors. Use numbered lists for sequences, parallel bullets for alternatives, and tables for comparable attributes. Keep paragraphs and table cells short, with blank lines between blocks.
+- Use backticks for resource types, fields, operations, and code. Bold exact UI labels. Link the first useful mention to a descriptive `/docs/...` destination.
 
-- Write calm, direct, active prose for someone building or operating a healthcare application. Address the reader as "you" where useful; start instructions with verbs. Explain a task through a concrete workflow and connect actions to consequences. Define unfamiliar terms at first use.
-- Omit marketing language, "simply"/"just" assurances, filler recaps, rhetorical contrast formulas, invented compound labels, and em dashes. Existing prose can be imperfect; avoid copying those habits or cleaning up unrelated text.
-- Use **title case for page titles and all section headings on new pages**: "Creating a Bot", "Field and Resource Controls". Capitalize major words; lowercase articles, short conjunctions/prepositions except at the beginning/end. Preserve exact identifier, acronym, and UI casing. Small updates preserve existing headings, anchors, and local style.
-- Preserve front matter, IDs, aliases, and URLs. Standard new guides use front-matter `title` and body sections starting at `##`, then `###`; avoid skipped levels or bold/italic headings. Preserve explicit `{#anchor}` IDs when a necessary heading change affects links.
-- Match the purpose: task/prerequisites/steps/result for a how-to; model and use cases for a concept; inputs/constraints/outputs/errors for a reference. Include only useful sections. Keep paragraphs focused, bullets parallel, numbered lists sequential, and tables for comparable attributes. Avoid deep nesting or long table cells; separate blocks with blank lines.
-- Use backticks for code, resource types, fields, and operations; bold exact UI labels and use other emphasis sparingly. Prefer descriptive `/docs/...` links and a useful first link for a resource/concept. Link implementation examples when helpful; avoid bare URLs and repeated links on every identifier.
+## Examples and Visuals
 
-## Examples and Hugo Markup
-
-- Prefer existing `code-example` shortcodes; verify source files and block markers and reuse only relevant blocks. Introduce the task, required setup/imports or their location, placeholders, and expected result. Clearly label fragments. New or changed source example files are outside this pilot's scope: use `questions`.
-- Use typed TypeScript, `@medplum/fhirtypes`, and Medplum helpers. Use correct fence languages and valid JSON without comments/ellipses. Keep synthetic IDs and references consistent. Never invent clinical codes, expose real patient information, log secrets, or put backend credentials in browser examples. Use the documented secret-storage pattern and explain elevated privileges when required.
-- Use Hugo tabs for useful language/interface alternatives, without duplicating every example. New or changed inline executable examples require human execution review; record the needed check in `notes`. Static reading and a site build do not execute examples.
-- Use supported Hugo shortcodes for callouts. Keep notes/tips contextual and warnings tied to concrete consequences. Allow plain `<details>` with a descriptive `<summary>` for optional long examples; required steps, prerequisites, and warnings stay visible. Preserve unrelated existing markup. Do not introduce JSX, MDX imports, Docusaurus syntax, custom templates, scripts, iframes, or other arbitrary HTML.
-
-## Visuals
-
-Use visuals when they clarify a relationship, sequence, comparison, or UI action. Place inspected, current screenshots beside the relevant step, with descriptive alt text and written control names. Missing/replacement images or required asset changes belong in `questions`; do not invent paths.
-
-Match the publication destination. Website diagrams can use Mermaid. PDF/Word downloads require image assets and editable source per the docs README; required export/asset changes need human work. Preserve prescribed styles for existing generated figures.
-
-### Mermaid Diagrams
-
-- Use fenced `mermaid`: flowcharts for relationships/steps, `sequenceDiagram` for call order. Prefer `flowchart TD`; use `LR` for short chains that fit. Split crowded diagrams instead of shrinking text.
-- Use simple IDs, short quoted labels, consistent indentation, and one declaration per line. Preserve identifier casing; avoid HTML labels and manual line breaks in new diagrams. Label FHIR arrows with the reference field and point from the carrying resource to its target. Workflow arrows show supported ordering. Never imply access propagation, ownership, or atomicity without evidence.
-- Keep shapes/groups meaningful: diamonds for decisions, labeled branches, subgraphs for real boundaries. New diagrams inherit the site's light/dark theme; avoid custom palettes/fonts, configuration overrides, click handlers, and external images/icons. Preserve unrelated existing styling.
-- Add `accTitle`, `accDescr`, and visible explanatory prose; color alone must not carry meaning. Use title case for the accessible title.
-
-```mermaid
-flowchart TD
-    accTitle: Message and Thread Header
-    accDescr: The message references its thread header through the partOf field.
-    message["Message (Communication)"]
-    thread["Thread header (Communication)"]
-    message -->|partOf| thread
-```
-
-Record human preview checks for changed diagrams/images: desktop and narrow widths, light/dark themes, readable text/contrast, unclipped labels, clear arrows, and opening any tabs/collapsible containers. Mermaid renders in the browser; Hugo does not parse or visually validate it.
-
-Return `notes` with any execution, preview, or release checks for the reviewer. Put decisions that evidence cannot resolve in `questions`. Both belong in the review, outside the published guide.
+- Prefer a verified `code-example` shortcode referencing existing source and block markers. Give setup, imports or their location, placeholders, and expected results. Label fragments. Use typed TypeScript and Medplum helpers, valid JSON, consistent synthetic IDs, and accurate fence languages. Never invent clinical codes, expose patient information, or log credentials.
+- Use Hugo tabs for useful alternatives and supported callouts for concrete consequences. Plain `<details>` and a descriptive `<summary>` are appropriate for long optional examples. Keep required steps and warnings visible. Avoid JSX, MDX, arbitrary HTML, scripts, and iframes. Flag new inline executable examples for a human to run.
+- Put current screenshots beside the relevant UI steps with alt text and written control names. Inspect the assets. New or replacement assets, including PDF/Word diagram exports, need human work.
+- For Mermaid, prefer `flowchart TD` for workflows and relationships, `LR` for short chains, and `sequenceDiagram` for call order. Use simple IDs, short quoted labels, one declaration per line, and decision diamonds with labeled branches. Group only real boundaries.
+- Point FHIR arrows from the carrying resource to its target and label them with the reference field, as in `message -->|partOf| thread`. Show only supported ordering and access semantics. Use the site theme, a title-case `accTitle`, `accDescr`, and explanatory prose. Avoid custom styles, HTML labels, click handlers, and external icons.
+- Ask reviewers to preview changed visuals at desktop and narrow widths, in light and dark themes, and inside any tabs or collapsible examples. Check legibility, unclipped labels, and arrows in the browser, where Mermaid renders.
