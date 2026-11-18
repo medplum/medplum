@@ -15,6 +15,8 @@ export interface AvailabilityShadeEventProps {
   readonly shade: AvailabilityShade;
 }
 
+const MAX_DETAIL_LINES = 8;
+
 function times(start: Date, end: Date): string {
   return `${formatZonedTime(start)} – ${formatZonedTime(end)}`;
 }
@@ -45,6 +47,8 @@ function ShadeDetails(props: ShadeDetailsProps): JSX.Element {
   const covering =
     at === undefined ? [] : shade.details.filter((detail) => detail.start.getTime() <= at && at < detail.end.getTime());
   const details = covering.length > 0 ? covering : shade.details;
+  // A block every provider on show is free in would otherwise list them all.
+  const listed = details.slice(0, MAX_DETAIL_LINES);
   const byService = shade.kind === 'service';
   let heading: JSX.Element | string = <ScheduleActors detail={first} />;
   if (byService) {
@@ -58,7 +62,7 @@ function ShadeDetails(props: ShadeDetailsProps): JSX.Element {
       <Text size="xs" fw={600}>
         {heading}
       </Text>
-      {details.map((detail, index) => (
+      {listed.map((detail, index) => (
         <Text key={index} size="xs">
           {byService ? <ScheduleActors detail={detail} /> : detail.service.name}
           {' · '}
@@ -68,6 +72,7 @@ function ShadeDetails(props: ShadeDetailsProps): JSX.Element {
           {detail.inherited && ' · default hours'}
         </Text>
       ))}
+      {details.length > listed.length && <Text size="xs">+{details.length - listed.length} more</Text>}
     </Stack>
   );
 }

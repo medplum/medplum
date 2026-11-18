@@ -179,6 +179,36 @@ describe('CalendarFilters', () => {
     });
   });
 
+  describe('Availability', () => {
+    function availabilityField(): HTMLElement {
+      return screen.getByPlaceholderText('None shown');
+    }
+
+    test('is reported apart from the Visit Type filter, which it leaves on every visit type', async () => {
+      const { latest } = setup();
+
+      await openAutocomplete(availabilityField());
+      await clickAutocompleteOption('Telehealth Consult');
+
+      expect(latest().availabilityServices?.map((s) => s.id)).toEqual(['telehealth-consult']);
+      expect(latest().services).toEqual([]);
+      expect(serviceField()).toBeInTheDocument();
+    });
+
+    test('changing site drops a visit type the new site does not hold', async () => {
+      const { latest } = setup();
+      await openAutocomplete(availabilityField());
+      await clickAutocompleteOption('Ultrasound Imaging');
+
+      await openAutocomplete(serviceFacilityField());
+      await clickAutocompleteOption('Uro Associates - Satellite');
+      await settleAutocomplete();
+
+      expect(latest().availabilityServices).toEqual([]);
+      expect(availabilityField()).toBeInTheDocument();
+    });
+  });
+
   describe('starting on a site', () => {
     test('shows the site without reporting it', async () => {
       const { reports } = setup({ serviceFacilities: [SatelliteClinic] });

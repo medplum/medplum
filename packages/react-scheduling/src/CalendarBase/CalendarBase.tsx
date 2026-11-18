@@ -225,7 +225,7 @@ export interface CalendarBaseProps extends Omit<
    * Prototype. Called as the pointer moves over the availability blocks with the instant under it, to the
    * pixel rather than to the grid's rows, and with undefined once it is off them or over an event.
    */
-  onHoverAvailability?: (instant: Date | undefined) => void;
+  onHoverAvailability?: (instant: Date | undefined, shadeId?: string) => void;
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;
