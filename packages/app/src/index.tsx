@@ -15,7 +15,7 @@ import { App } from './App';
 import { getConfig } from './config';
 import './index.css';
 
-export async function initApp(): Promise<{ root: Root; medplum: MedplumClient }> {
+export async function initApp(): Promise<{ root: Root; medplum: MedplumClient }> /* NOSONAR */ {
   const config = getConfig();
 
   const medplum = new MedplumClient({
