@@ -252,7 +252,7 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * the other, and closing the booking pane clears its answers, asking first if there are any. The site is
  * the one answer the panes share: the filters pane can hold several sites and several visit types, and
  * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold,
- * and clicking open time offers to open the booking pane.
+ * and clicking open time opens the booking pane. With the filters pane open, the click offers to instead.
  *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
  * one provider at Riverside is free to take one. Hover a block to see who. Click one with nobody named
