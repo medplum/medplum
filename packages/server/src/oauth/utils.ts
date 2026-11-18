@@ -1466,6 +1466,16 @@ async function tryExternalAuth(
     return undefined;
   }
 
+  // The token is only verified on a cache miss, so the cached login must not outlive the token.
+  // The cache key hashes the whole token, so on a cache hit this `exp` is the one that was verified.
+  let cacheSeconds = 3600;
+  if (typeof claims.exp === 'number') {
+    cacheSeconds = Math.min(cacheSeconds, Math.ceil(claims.exp - Date.now() / 1000));
+  }
+  if (cacheSeconds <= 0) {
+    return undefined;
+  }
+
   const redis = getCacheRedis();
   const redisKey = `medplum:ext-auth:${issuer}:${projectId ?? ''}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
@@ -1485,7 +1495,7 @@ async function tryExternalAuth(
       return undefined;
     }
     ({ login, project, membership } = externalAuthState);
-    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
+    await redis.set(redisKey, JSON.stringify(login), 'EX', cacheSeconds);
   }
 
   return { login, project, membership };

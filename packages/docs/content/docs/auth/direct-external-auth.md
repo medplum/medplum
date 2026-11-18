@@ -124,7 +124,7 @@ curl 'https://${baseUrl}/fhir/R4/Patient' \
 
 A successful response means that the authentication with the external IDP was successful.
 
-Medplum caches external auth results in Redis for 1 hour to minimize calls to the IDP's userinfo endpoint.
+Medplum caches external auth results in Redis for up to 1 hour to minimize calls to the IDP's userinfo endpoint. The cache never outlives the token: a token is rejected once its `exp` has passed, even if its result is cached.
 
 ## Comparison with Token Exchange
 
