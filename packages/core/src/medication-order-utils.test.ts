@@ -630,6 +630,90 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(parametersToMedicationCheckoutResponse(params).items).toEqual([]);
   });
 
+  test('medicationCheckoutRequestToParameters emits exclusive, including false', () => {
+    const encode = (exclusive: boolean): Parameters =>
+      medicationCheckoutRequestToParameters({ patientId: 'pat-1', medicationRequestIds: ['mr-1'], exclusive });
+    expect(encode(true).parameter).toContainEqual({ name: 'exclusive', valueBoolean: true });
+    expect(encode(false).parameter).toContainEqual({ name: 'exclusive', valueBoolean: false });
+  });
+
+  test('parametersToMedicationCheckoutResponse decodes an exclusive checkout and drops malformed lines', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        { name: 'exclusive', valueBoolean: false },
+        {
+          name: 'unstagedItems',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-lis' },
+            { name: 'vendorLineId', valueString: 'rx-lis' },
+            { name: 'status', valueCode: 'unstaged' },
+          ],
+        },
+        {
+          name: 'unstagedItems',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-met' },
+            { name: 'vendorLineId', valueString: 'rx-met' },
+            { name: 'status', valueCode: 'failed' },
+            { name: 'error', valueString: 'vendor 500' },
+          ],
+        },
+        { name: 'unstagedItems', part: [{ name: 'medicationRequestId', valueId: 'mr-no-line' }] },
+        {
+          name: 'retainedItems',
+          part: [
+            { name: 'vendorLineId', valueString: 'rx-portal' },
+            { name: 'drugName', valueString: 'amoxicillin' },
+            { name: 'createdBy', valueString: 'Dr Portal' },
+            { name: 'reason', valueCode: 'vendor-only' },
+          ],
+        },
+        {
+          name: 'retainedItems',
+          part: [
+            { name: 'vendorLineId', valueString: 'rx-x' },
+            { name: 'reason', valueCode: 'bogus' },
+          ],
+        },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toEqual({
+      approvalUrl: 'https://example.com/approve',
+      vendorPatientId: 7,
+      items: [],
+      exclusive: false,
+      unstagedItems: [
+        { medicationRequestId: 'mr-lis', vendorLineId: 'rx-lis', status: 'unstaged' },
+        { medicationRequestId: 'mr-met', vendorLineId: 'rx-met', status: 'failed', error: 'vendor 500' },
+      ],
+      retainedItems: [
+        { vendorLineId: 'rx-portal', drugName: 'amoxicillin', createdBy: 'Dr Portal', reason: 'vendor-only' },
+      ],
+    });
+  });
+
+  test('parametersToMedicationCheckoutResponse reports empty lists for an exclusive checkout with nothing to unstage', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        { name: 'exclusive', valueBoolean: true },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toStrictEqual({
+      approvalUrl: 'https://example.com/approve',
+      vendorPatientId: 7,
+      items: [],
+      exclusive: true,
+      unstagedItems: [],
+      retainedItems: [],
+    });
+  });
+
   test('parametersToMedicationCheckoutResponse rejects missing approvalUrl', () => {
     const params: Parameters = {
       resourceType: 'Parameters',

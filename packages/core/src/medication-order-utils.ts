@@ -723,6 +723,38 @@ export interface MedicationCheckoutRequest {
   readonly appId?: string;
   /** Selected practice location; omit for single-practice prescribers. */
   readonly organization?: Reference<Organization>;
+  /**
+   * Show only this request's lines in the approval widget. Other lines staged
+   * from drafts are taken out of the vendor cart first and their drafts are
+   * kept for a later checkout. Omit for the default whole-cart behavior.
+   */
+  readonly exclusive?: boolean;
+}
+
+/**
+ * One line an exclusive checkout took out of the vendor cart, keeping its
+ * draft. `failed` means the line is still in the cart (see `error`).
+ */
+export interface MedicationCheckoutUnstagedItem {
+  readonly medicationRequestId: string;
+  readonly vendorLineId: string;
+  readonly status: 'unstaged' | 'failed';
+  readonly error?: string;
+}
+
+/**
+ * One line an exclusive checkout left in the vendor cart, so the approval
+ * widget still shows it.
+ * - `vendor-only`: no draft of this patient staged the line.
+ * - `locked`: another user holds a cart lock (the widget may be open), so nothing was removed.
+ * - `concurrent`: someone else added the line while the checkout ran.
+ */
+export interface MedicationCheckoutRetainedItem {
+  readonly reason: 'vendor-only' | 'locked' | 'concurrent';
+  readonly vendorLineId?: string;
+  readonly medicationRequestId?: string;
+  readonly drugName?: string;
+  readonly createdBy?: string;
 }
 
 /**
@@ -734,6 +766,18 @@ export interface MedicationCheckoutResponse {
   /** Vendor-side patient id (numeric in ScriptSure today). */
   readonly vendorPatientId: number;
   readonly items: MedicationCheckoutItemResult[];
+  /**
+   * Set only for `exclusive` requests: true when the approval widget shows
+   * exactly this request's lines. When false, see `retainedItems` and failed
+   * `unstagedItems` for what else the prescriber will see. Absent when the
+   * deployed bot predates the option (it ignores the input), so treat absent as
+   * false.
+   */
+  readonly exclusive?: boolean;
+  /** Exclusive requests only. */
+  readonly unstagedItems?: MedicationCheckoutUnstagedItem[];
+  /** Exclusive requests only. */
+  readonly retainedItems?: MedicationCheckoutRetainedItem[];
 }
 
 /**
@@ -780,6 +824,9 @@ export function medicationCheckoutRequestToParameters(req: MedicationCheckoutReq
   if (organizationId !== undefined) {
     parameter.push(param('organizationId', 'valueString', organizationId));
   }
+  if (req.exclusive !== undefined) {
+    parameter.push(param('exclusive', 'valueBoolean', req.exclusive));
+  }
   return { resourceType: 'Parameters', parameter };
 }
 
@@ -816,6 +863,61 @@ function checkoutItemFromPart(part: ParametersParameter[] | undefined): Medicati
 }
 
 /**
+ * Parses one repeating `unstagedItems` out-parameter. Returns `undefined` when
+ * a required field is missing or malformed.
+ *
+ * @param part - The `part` array of one `unstagedItems` parameter entry.
+ * @returns The parsed unstaged line, or `undefined`.
+ */
+function unstagedItemFromPart(part: ParametersParameter[] | undefined): MedicationCheckoutUnstagedItem | undefined {
+  const map: Record<string, unknown> = {};
+  for (const p of part ?? []) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const status = map.status === 'unstaged' || map.status === 'failed' ? map.status : undefined;
+  if (typeof map.medicationRequestId !== 'string' || typeof map.vendorLineId !== 'string' || !status) {
+    return undefined;
+  }
+  return {
+    medicationRequestId: map.medicationRequestId,
+    vendorLineId: map.vendorLineId,
+    status,
+    error: typeof map.error === 'string' ? map.error : undefined,
+  };
+}
+
+/**
+ * Parses one repeating `retainedItems` out-parameter. Returns `undefined` when
+ * the `reason` is missing or unknown.
+ *
+ * @param part - The `part` array of one `retainedItems` parameter entry.
+ * @returns The parsed retained line, or `undefined`.
+ */
+function retainedItemFromPart(part: ParametersParameter[] | undefined): MedicationCheckoutRetainedItem | undefined {
+  const map: Record<string, unknown> = {};
+  for (const p of part ?? []) {
+    if (p.name) {
+      map[p.name] = readParameterValue(p);
+    }
+  }
+  const reason =
+    map.reason === 'vendor-only' || map.reason === 'locked' || map.reason === 'concurrent' ? map.reason : undefined;
+  if (!reason) {
+    return undefined;
+  }
+  const str = (key: string): string | undefined => (typeof map[key] === 'string' ? map[key] : undefined);
+  return {
+    reason,
+    vendorLineId: str('vendorLineId'),
+    medicationRequestId: str('medicationRequestId'),
+    drugName: str('drugName'),
+    createdBy: str('createdBy'),
+  };
+}
+
+/**
  * Decodes the `Parameters` response from the `$checkout-medications` custom
  * operation into a typed {@link MedicationCheckoutResponse}. Throws
  * `INVALID_MEDICATION_CHECKOUT_RESPONSE` when required top-level fields are
@@ -830,6 +932,8 @@ function checkoutItemFromPart(part: ParametersParameter[] | undefined): Medicati
  */
 export function parametersToMedicationCheckoutResponse(params: Parameters): MedicationCheckoutResponse {
   const items: MedicationCheckoutItemResult[] = [];
+  const unstagedItems: MedicationCheckoutUnstagedItem[] = [];
+  const retainedItems: MedicationCheckoutRetainedItem[] = [];
   const map: Record<string, unknown> = {};
   for (const p of params.parameter ?? []) {
     if (!p.name) {
@@ -840,6 +944,16 @@ export function parametersToMedicationCheckoutResponse(params: Parameters): Medi
       if (item) {
         items.push(item);
       }
+    } else if (p.name === 'unstagedItems') {
+      const item = unstagedItemFromPart(p.part);
+      if (item) {
+        unstagedItems.push(item);
+      }
+    } else if (p.name === 'retainedItems') {
+      const item = retainedItemFromPart(p.part);
+      if (item) {
+        retainedItems.push(item);
+      }
     } else {
       map[p.name] = readParameterValue(p);
     }
@@ -848,6 +962,9 @@ export function parametersToMedicationCheckoutResponse(params: Parameters): Medi
     approvalUrl: typeof map.approvalUrl === 'string' ? map.approvalUrl : '',
     vendorPatientId: typeof map.vendorPatientId === 'number' ? map.vendorPatientId : Number.NaN,
     items,
+    // Empty repeating parameters are omitted on the wire, so an exclusive
+    // response is recognized by its `exclusive` flag, not by the lists.
+    ...(typeof map.exclusive === 'boolean' ? { exclusive: map.exclusive, unstagedItems, retainedItems } : {}),
   };
   if (!isMedicationCheckoutResponse(candidate)) {
     throw new Error(INVALID_MEDICATION_CHECKOUT_RESPONSE);
