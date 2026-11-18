@@ -63,7 +63,7 @@ import { getRepoForLogin } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getShardSystemRepo, Repository } from './repo';
 import { repoAccess } from './repository/access-tracker';
-import { deleteResourceCacheEntry, getResourceCacheEntry } from './repository/resource-cache';
+import { buildResourceCacheDelete, getResourceCacheEntry, writeResourceCache } from './repository/resource-cache';
 import { ExpungedHistoryTag } from './repository/row-builder';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
@@ -336,7 +336,7 @@ describe('FHIR Repo', () => {
   test('Does not cache reads from the reader', () =>
     withTestContext(async () => {
       const patient = await testProjectRepo.createResource<Patient>({ resourceType: 'Patient' });
-      await deleteResourceCacheEntry('Patient', patient.id);
+      await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
 
       const repo = testProjectRepo.clone();
       repo.setMode(RepositoryMode.READER);
