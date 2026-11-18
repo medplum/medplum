@@ -480,15 +480,18 @@ describe('AppointmentDetails', () => {
 
     await openCancellation();
 
-    // The reason first, and the visit being called off described under it.
+    // The visit being called off is described first, and the reason asked under it, at
+    // the foot where Cancel Appointment was.
     const reason = screen.getByPlaceholderText('Search reasons');
     const notes = screen.getByText('Bring prior films');
-    expect(reason.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notes.compareDocumentPosition(reason) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(cancelButton()).not.toBeInTheDocument();
-    // The way back sits at the foot, after the details.
+    // The way back sits last, under the button that goes through with it.
     const back = screen.getByRole('button', { name: 'Back to Appointment Details' });
     expect(screen.getByRole('heading', { name: 'Cancel this appointment' })).toBeInTheDocument();
-    expect(notes.compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      (confirmButton() as HTMLElement).compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   test('offers no cancellation until a reason is chosen', async () => {

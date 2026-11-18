@@ -317,21 +317,21 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     </>
   );
 
-  // The whole visit stays in view under the cancellation, to check it is the one to call off.
+  // The whole visit stays in view above the cancellation, to check it is the one to call off.
+  // The cancellation takes the foot, where Cancel Appointment was pressed.
   if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
         <Title order={5}>Cancel this appointment</Title>
-        <AppointmentCancelForm
-          appointment={appointment}
-          onCancelled={innerOnCancelled}
-          cancellationReasonValueSet={props.cancellationReasonValueSet}
-        />
-        <Divider />
         {summary}
         {codes}
         <Stack gap="sm" className={classes.actions}>
           <Divider />
+          <AppointmentCancelForm
+            appointment={appointment}
+            onCancelled={innerOnCancelled}
+            cancellationReasonValueSet={props.cancellationReasonValueSet}
+          />
           <Button variant="default" onClick={() => setCancelling(false)}>
             Back to Appointment Details
           </Button>
