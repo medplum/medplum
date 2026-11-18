@@ -637,7 +637,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(encode(false).parameter).toContainEqual({ name: 'exclusive', valueBoolean: false });
   });
 
-  test('parametersToMedicationCheckoutResponse decodes an exclusive checkout and drops malformed lines', () => {
+  test('parametersToMedicationCheckoutResponse decodes an exclusive checkout, keeping partially described warnings', () => {
     const params: Parameters = {
       resourceType: 'Parameters',
       parameter: [
@@ -661,7 +661,14 @@ describe('Custom FHIR operation Parameters helpers', () => {
             { name: 'error', valueString: 'vendor 500' },
           ],
         },
-        { name: 'unstagedItems', part: [{ name: 'medicationRequestId', valueId: 'mr-no-line' }] },
+        { name: 'unstagedItems', part: [{ name: 'medicationRequestId', valueId: 'mr-no-status' }] },
+        {
+          name: 'unstagedItems',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-no-line' },
+            { name: 'status', valueCode: 'failed' },
+          ],
+        },
         {
           name: 'retainedItems',
           part: [
@@ -688,10 +695,52 @@ describe('Custom FHIR operation Parameters helpers', () => {
       unstagedItems: [
         { medicationRequestId: 'mr-lis', vendorLineId: 'rx-lis', status: 'unstaged' },
         { medicationRequestId: 'mr-met', vendorLineId: 'rx-met', status: 'failed', error: 'vendor 500' },
+        { medicationRequestId: 'mr-no-line', status: 'failed' },
       ],
       retainedItems: [
         { vendorLineId: 'rx-portal', drugName: 'amoxicillin', createdBy: 'Dr Portal', reason: 'vendor-only' },
+        { vendorLineId: 'rx-x', reason: 'other' },
       ],
+    });
+  });
+
+  test.each<{ label: string; extra: Parameters['parameter'] }>([
+    { label: 'a retained line', extra: [{ name: 'retainedItems', part: [{ name: 'reason', valueCode: 'locked' }] }] },
+    {
+      label: 'a failed unstage without a vendor line id',
+      extra: [{ name: 'unstagedItems', part: [{ name: 'status', valueCode: 'failed' }] }],
+    },
+    {
+      label: 'an unstaged line with an unknown status',
+      extra: [{ name: 'unstagedItems', part: [{ name: 'status', valueCode: 'pending' }] }],
+    },
+    { label: 'a second exclusive set to false', extra: [{ name: 'exclusive', valueBoolean: false }] },
+  ])('parametersToMedicationCheckoutResponse reports exclusive: false when true comes with $label', ({ extra }) => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        ...(extra ?? []),
+        { name: 'exclusive', valueBoolean: true },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params).exclusive).toBe(false);
+  });
+
+  test('parametersToMedicationCheckoutResponse ignores a non-boolean exclusive', () => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        { name: 'exclusive', valueString: 'true' },
+      ],
+    };
+    expect(parametersToMedicationCheckoutResponse(params)).toStrictEqual({
+      approvalUrl: 'https://example.com/approve',
+      vendorPatientId: 7,
+      items: [],
     });
   });
 
