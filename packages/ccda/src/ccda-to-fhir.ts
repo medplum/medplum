@@ -64,6 +64,7 @@ import {
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
+  OID_SNOMED_CT_CODE_SYSTEM,
 } from './oids';
 import { sanitizeNullFlavors } from './sanitize';
 import {
@@ -84,7 +85,6 @@ import {
   ENCOUNTER_STATUS_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
-  isNamedAllergen,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   mapCcdaCodeToCodeableConcept,
   mapCcdaNoKnownAllergyCode,
@@ -493,17 +493,18 @@ class CcdaToFhirConverter {
 
     allergy.extension = this.mapTextReference(observation.text);
 
+    const negated = observation['@_negationInd'] === 'true';
     const allergenCode = observation.participant?.[0]?.participantRole?.playingEntity?.code;
-    const allergen = this.mapCode(allergenCode);
+    // A denial keeps the scope of whatever names its substance; the generic "Substance" names none
+    const allergen = this.mapCode(negated ? withoutGenericSubstance(allergenCode) : allergenCode);
 
     // Add allergen reference
     if (allergen && allergenCode?.originalText?.reference?.['@_value']) {
       allergen.extension = this.mapTextReference(allergenCode.originalText);
     }
 
-    if (observation['@_negationInd'] === 'true') {
-      // Only a code names a substance; text alone may be a "no known allergies" note
-      this.mapNegatedAllergen(allergy, observation.value, isNamedAllergen(allergen) ? allergen : undefined);
+    if (negated) {
+      this.mapNegatedAllergen(allergy, observation.value, allergen);
     } else {
       allergy.code = allergen;
     }
@@ -956,7 +957,7 @@ class CcdaToFhirConverter {
     value: CcdaValue | undefined,
     allergen: CodeableConcept | undefined
   ): void {
-    if (allergen) {
+    if (isNamedAllergen(allergen)) {
       // No negated concept exists for an arbitrary substance, so use the extension, which prohibits code
       allergy.extension = append(allergy.extension, {
         url: ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
@@ -1552,6 +1553,23 @@ class CcdaToFhirConverter {
       },
     ];
   }
+}
+
+// SNOMED CT 105590001 "Substance", which the ONC (b)(1) samples suggest for "no known allergies", names no substance
+function isGenericSubstance(code: CcdaCode): boolean {
+  return code['@_codeSystem'] === OID_SNOMED_CT_CODE_SYSTEM && code['@_code'] === '105590001';
+}
+
+function withoutGenericSubstance(code: CcdaCode | undefined): CcdaCode | undefined {
+  if (!code) {
+    return undefined;
+  }
+  const translation = [code.translation ?? []].flat().filter((t) => !isGenericSubstance(t));
+  return isGenericSubstance(code) ? { originalText: code.originalText, translation } : { ...code, translation };
+}
+
+function isNamedAllergen(allergen: CodeableConcept | undefined): allergen is CodeableConcept {
+  return !!allergen?.text || !!allergen?.coding?.some((coding) => coding.code || coding.display);
 }
 
 function nodeToString(node: CcdaText | string | undefined): string | undefined {

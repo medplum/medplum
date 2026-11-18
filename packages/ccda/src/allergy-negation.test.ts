@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AllergyIntolerance } from '@medplum/fhirtypes';
+import type { AllergyIntolerance, CodeableConcept } from '@medplum/fhirtypes';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';
@@ -10,12 +10,20 @@ const SNOMED_CT = '2.16.840.1.113883.6.96';
 const RXNORM = '2.16.840.1.113883.6.88';
 const NULL_FLAVOR_SUBSTANCE = '<code nullFlavor="NA"/>';
 const ERYTHROMYCIN = `<code code="4053" codeSystem="${RXNORM}" displayName="Erythromycin"/>`;
+const PENICILLIN_TEXT = '<code nullFlavor="OTH"><originalText>Penicillin</originalText></code>';
+const SUBSTANCE_EXPOSURE_RISK_URL = 'http://hl7.org/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk';
 
 function allergies(xml: string): AllergyIntolerance[] {
   const bundle = convertCcdaToFhir(convertXmlToCcda(xml));
   return (bundle.entry ?? [])
     .map((e) => e.resource)
     .filter((r): r is AllergyIntolerance => r?.resourceType === 'AllergyIntolerance');
+}
+
+function substanceOf(allergy: AllergyIntolerance): CodeableConcept | undefined {
+  return allergy.extension
+    ?.find((e) => e.url === SUBSTANCE_EXPOSURE_RISK_URL)
+    ?.extension?.find((e) => e.url === 'substance')?.valueCodeableConcept;
 }
 
 function convertAllergy(
@@ -89,14 +97,10 @@ describe('C-CDA to FHIR negated AllergyIntolerance', () => {
     expect(allergy.verificationStatus?.coding?.[0]?.code).toBe('confirmed');
   });
 
-  // A substance code with no code in it (only a nullFlavor, text or a code system) names no substance,
+  // A substance code with neither a code nor text names no substance,
   // and neither does the generic SNOMED CT 105590001 "Substance".
   test.each([
-    [
-      'a nullFlavor with an originalText reference',
-      '<code nullFlavor="NA"><originalText><reference value="#a1"/></originalText></code>',
-    ],
-    ['a nullFlavor with originalText', '<code nullFlavor="UNK"><originalText>No Known Allergies</originalText></code>'],
+    ['a nullFlavor', '<code nullFlavor="NA"/>'],
     ['a nullFlavor with a codeSystem', `<code nullFlavor="NA" codeSystem="${RXNORM}"/>`],
     ['SNOMED CT "Substance"', `<code code="105590001" codeSystem="${SNOMED_CT}" displayName="Substance"/>`],
     [
@@ -118,9 +122,7 @@ describe('C-CDA to FHIR negated AllergyIntolerance', () => {
       `<code nullFlavor="OTH" codeSystem="2.16.840.1.113883.6.69"><originalText>Penicillin</originalText><translation code="70618" codeSystem="${RXNORM}" displayName="Penicillin"/></code>`,
       'true'
     );
-    const substance = allergy.extension
-      ?.find((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk')
-      ?.extension?.find((e) => e.url === 'substance')?.valueCodeableConcept;
+    const substance = substanceOf(allergy);
 
     expect(allergy.code).toBeUndefined();
     expect(substance?.coding).toContainEqual({
@@ -129,6 +131,50 @@ describe('C-CDA to FHIR negated AllergyIntolerance', () => {
       display: 'Penicillin',
     });
   });
+
+  // Text names a substance as a code does: "not allergic to penicillin" must not widen to "no known drug allergy"
+  test.each([
+    ['Penicillin', PENICILLIN_TEXT, { text: 'Penicillin' }],
+    [
+      'Penicillin as a displayName',
+      '<code nullFlavor="OTH" displayName="Penicillin"/>',
+      { coding: [{ display: 'Penicillin' }], text: 'Penicillin' },
+    ],
+    [
+      'Penicillin beside SNOMED CT "Substance"',
+      `<code code="105590001" codeSystem="${SNOMED_CT}" displayName="Substance"><originalText>Penicillin</originalText></code>`,
+      { text: 'Penicillin' },
+    ],
+    [
+      'Penicillin beside a SNOMED CT "Substance" translation',
+      `<code nullFlavor="OTH"><originalText>Penicillin</originalText><translation code="105590001" codeSystem="${SNOMED_CT}"/></code>`,
+      { text: 'Penicillin' },
+    ],
+    [
+      'No Known Allergies',
+      '<code nullFlavor="UNK"><originalText>No Known Allergies</originalText></code>',
+      { text: 'No Known Allergies' },
+    ],
+    [
+      'a narrative reference',
+      '<code nullFlavor="NA"><originalText><reference value="#a1"/></originalText></code>',
+      {
+        text: '#a1',
+        extension: [
+          { url: 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference', valueString: '#a1' },
+        ],
+      },
+    ],
+  ])(
+    'negated substance without a specific code (%s) keeps its scope as no known reaction risk',
+    (_, substance, expected) => {
+      const allergy = convertAllergy('416098002', substance, 'true');
+
+      expect(allergy.code).toBeUndefined();
+      expect(allergy.verificationStatus?.coding?.[0]?.code).toBe('confirmed');
+      expect(substanceOf(allergy)).toEqual(expected);
+    }
+  );
 
   test.each([
     ['420134006', SNOMED_CT],
@@ -145,7 +191,7 @@ describe('C-CDA to FHIR negated AllergyIntolerance', () => {
 
     expect(allergy.code).toBeUndefined();
     expect(allergy.extension).toContainEqual({
-      url: 'http://hl7.org/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk',
+      url: SUBSTANCE_EXPOSURE_RISK_URL,
       extension: [
         {
           url: 'substance',
@@ -176,19 +222,23 @@ describe('C-CDA to FHIR negated AllergyIntolerance', () => {
       `<code code="4053" codeSystem="${RXNORM}" displayName="Erythromycin"><originalText><reference value="#allergen1"/></originalText></code>`,
       'true'
     );
-    const substance = allergy.extension
-      ?.find((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/allergyintolerance-substanceExposureRisk')
-      ?.extension?.find((e) => e.url === 'substance')?.valueCodeableConcept;
+    const substance = substanceOf(allergy);
 
     expect(substance?.extension).toEqual([
       { url: 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference', valueString: '#allergen1' },
     ]);
   });
 
-  test.each([undefined, 'false'])('observation with negationInd %s keeps the substance as the code', (negationInd) => {
-    const allergy = convertAllergy('416098002', ERYTHROMYCIN, negationInd);
+  test.each([
+    [undefined, 'Erythromycin', ERYTHROMYCIN, '4053'],
+    ['false', 'Erythromycin', ERYTHROMYCIN, '4053'],
+    [undefined, 'Penicillin', PENICILLIN_TEXT, undefined],
+    ['false', 'Penicillin', PENICILLIN_TEXT, undefined],
+  ])('observation with negationInd %s keeps %s as the code', (negationInd, name, substance, code) => {
+    const allergy = convertAllergy('416098002', substance, negationInd);
 
-    expect(allergy.code?.coding?.[0]?.code).toBe('4053');
+    expect(allergy.code?.coding?.[0]?.code).toBe(code);
+    expect(allergy.code?.text).toBe(name);
     expect(allergy.verificationStatus?.coding?.[0]?.code).toBe('confirmed');
     expect(allergy.extension).toBeUndefined();
   });

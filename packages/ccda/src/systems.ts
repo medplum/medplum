@@ -649,18 +649,6 @@ export function mapCcdaNoKnownAllergyCode(value: CcdaValue | undefined): Codeabl
   return coding ? { coding: [{ ...coding }] } : undefined;
 }
 
-/**
- * Returns true when an allergen carries a code other than SNOMED CT 105590001 "Substance",
- * which the ONC (b)(1) samples suggest for a "no known allergies" entry.
- * @param allergen - The allergen mapped from playingEntity/code.
- * @returns True when the allergen names a particular substance.
- */
-export function isNamedAllergen(allergen: CodeableConcept | undefined): boolean {
-  return !!allergen?.coding?.some(
-    (coding) => coding.code && !(coding.system === SNOMED && coding.code === '105590001')
-  );
-}
-
 export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
   {
     fhirSystemUrl: CONDITION_VER_STATUS_CODE_SYSTEM,
