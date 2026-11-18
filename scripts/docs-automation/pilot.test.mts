@@ -15,6 +15,7 @@ const plan = {
   pages: [page, page.replace('example', 'other')],
   questions: [],
 };
+const git = (...args: string[]): string => execFileSync('git', args, { cwd: 'repo', encoding: 'utf8' });
 const cwd = process.cwd();
 const env = process.env;
 let work: string;
@@ -25,12 +26,11 @@ beforeEach(() => {
   process.env = { ...env, MODE: 'draft', GITHUB_OUTPUT: 'outputs', GITHUB_STEP_SUMMARY: 'summary' };
   fs.mkdirSync(dirname(docPath(page)), { recursive: true });
   fs.writeFileSync(docPath(page), '---\ntitle: Example\n---\n');
-  const git = (...args: string[]) => execFileSync('git', args, { cwd: 'repo' });
   git('init', '-q');
   git('add', '.');
   git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'base');
   fs.mkdirSync(run);
-  save('context.json', { number: 42, assignee: 'source-author', base: git('rev-parse', 'HEAD').toString().trim() });
+  save('context.json', { number: 42, assignee: 'source-author', base: git('rev-parse', 'HEAD').trim() });
 });
 afterEach(() => {
   process.env = env;
@@ -59,8 +59,8 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
   assert.match(read(run + '/docs.patch'), /\+New behavior\./);
   assert.equal(load<{ findings: string[] }>('verification.json').findings.length, 2);
   assert.match(read('outputs'), /tree=[0-9a-f]{40}\nneeds_input=true\n$/);
-  const tree = execFileSync('git', ['write-tree'], { cwd: 'repo', encoding: 'utf8' }).trim();
-  execFileSync('git', ['read-tree', 'HEAD'], { cwd: 'repo' });
+  const tree = git('write-tree').trim();
+  git('read-tree', 'HEAD');
   fs.writeFileSync(run + '/docs.patch', read(run + '/docs.patch').replace('+New behavior.', '+Different content.'));
   Object.assign(process.env, { MODE: 'open-pr', BUILD: 'success', DOCS_TREE: tree });
   assert.throws(() => publish(42, 'org/repo', () => '[]'), /Patch differs from the reviewed docs tree/);

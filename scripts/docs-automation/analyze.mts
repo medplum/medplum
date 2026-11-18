@@ -19,9 +19,7 @@ const schemas = {
   draft: z.strictObject({ notes: text, questions: list }),
   verify: z.strictObject({ findings: list, evidence: list }),
 };
-type Stage = keyof typeof schemas;
-
-function ask(stage: Stage, pages: string[] = []): unknown {
+function ask(stage: keyof typeof schemas, pages: string[] = []): unknown {
   const tools = ['Read', 'Glob', 'Grep'];
   const allowed = [...tools, ...pages.map((page) => `Edit(/${docPath(page)})`)];
   if (pages.length) tools.push('Edit', 'Write');
@@ -75,10 +73,8 @@ function classify(value: unknown): z.infer<typeof schemas.classify> {
   assert(plan.outcome === 'needs-human' || plan.evidence.length, 'A conclusive decision needs evidence');
   const citesDocs = plan.evidence.some((ref) => ref.startsWith('packages/docs/'));
   assert(plan.outcome !== 'already-covered' || citesDocs, 'Cite the existing docs');
-  assert(
-    (plan.outcome === 'update-docs') === !!plan.pages.length && new Set(plan.pages).size === plan.pages.length,
-    'Invalid page plan'
-  );
+  assert((plan.outcome === 'update-docs') === !!plan.pages.length, 'Invalid page plan');
+  assert(new Set(plan.pages).size === plan.pages.length, 'Duplicate planned page');
   plan.pages.forEach(docPath);
   save('classification.json', plan);
   return plan;
@@ -108,9 +104,7 @@ export function review(agent = ask): void {
     }
   }
   const lines = [`**${questions.length ? 'needs-human' : plan.outcome}**`];
-  if (questions.length) {
-    lines.push('### Open Questions', questions.map((q) => '- ' + q).join('\n'));
-  }
+  if (questions.length) lines.push('### Open Questions', questions.map((q) => '- ' + q).join('\n'));
   const report = [...lines, ...new Set(details)].join('\n\n').replaceAll('@', '@\u200b').replaceAll('<', '&lt;') + '\n';
   writeFileSync(run + '/review.md', report);
   append('GITHUB_STEP_SUMMARY', '\n' + report);

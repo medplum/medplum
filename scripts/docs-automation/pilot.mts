@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { appendFileSync, lstatSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import config from './config.json' with { type: 'json' };
@@ -115,14 +115,9 @@ function source(number: number, repository: string): void {
     }
   }
   if (!files.size || files.size > config.maxSourceFiles) return stop('needs-human', 'Review the landed file set.');
-  const args = ['diff', '--no-ext-diff', '--no-textconv', parent, sha];
-  const diff = spawnSync('git', args, { cwd: 'repo', maxBuffer: config.maxDiffBytes });
-  if ((diff.error as NodeJS.ErrnoException)?.code === 'ENOBUFS') {
-    return stop('needs-human', 'The landed diff exceeds the pilot size limit.');
-  }
-  if (diff.error) throw diff.error;
-  assert(diff.status === 0, diff.stderr.toString());
-  writeFileSync(`${run}/source.diff`, diff.stdout);
+  const diff = git('diff', '--no-ext-diff', '--no-textconv', parent, sha);
+  if (Buffer.byteLength(diff) > config.maxDiffBytes) return stop('needs-human', 'Landed diff exceeds the size limit.');
+  writeFileSync(`${run}/source.diff`, diff);
 }
 
 export function publish(number: number, repository: string, github = gh): void {
