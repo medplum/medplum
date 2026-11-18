@@ -31,6 +31,7 @@ import type {
   ProjectMembership,
   Quantity,
   Questionnaire,
+  RelatedPerson,
   ServiceRequest,
   SmartAppLaunch,
   StructureDefinition,
@@ -50,6 +51,7 @@ import { tryLogin } from '../oauth/utils';
 import type { TestProjectOptions } from '../test.setup';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
+import { DEFAULT_ACCESS_POLICIES } from './default-access-policies';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
@@ -2045,6 +2047,80 @@ describe('AccessPolicy', () => {
       await expect(repo2.readResource<Patient>('Patient', p2.id)).resolves.toBeDefined();
       await expect(repo2.readResource<Patient>('Patient', p3.id)).rejects.toThrow('Not found');
     }));
+
+  describe('Default Patient and RelatedPerson policies', () => {
+    async function setup(profileType: 'Patient' | 'RelatedPerson'): Promise<{
+      repo: Repository;
+      patient: WithId<Patient>;
+      self: WithId<RelatedPerson>;
+      other: WithId<RelatedPerson>;
+    }> {
+      const meta = { project: testProject.id };
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient', meta });
+      const relatedPerson: RelatedPerson = { resourceType: 'RelatedPerson', meta, patient: createReference(patient) };
+      const self = await systemRepo.createResource(relatedPerson);
+      const other = await systemRepo.createResource(relatedPerson);
+      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta,
+        ...DEFAULT_ACCESS_POLICIES[profileType](),
+      });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        meta,
+        user: { reference: 'User/' + randomUUID() },
+        project: createReference(testProject),
+        profile: createReference(profileType === 'Patient' ? patient : self),
+        access: [
+          {
+            policy: createReference(accessPolicy),
+            parameter: [{ name: 'patient', valueReference: createReference(patient) }],
+          },
+        ],
+      });
+      const repo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+        userConfig: {} as UserConfiguration,
+      });
+      return { repo, patient, self, other };
+    }
+
+    test('Patient cannot write RelatedPerson', () =>
+      withTestContext(async () => {
+        const { repo, patient, other } = await setup('Patient');
+
+        await expect(repo.readResource('RelatedPerson', other.id)).resolves.toMatchObject({ id: other.id });
+        await expect(repo.updateResource({ ...other, active: false })).rejects.toThrow('Forbidden');
+        await expect(
+          repo.createResource<RelatedPerson>({ resourceType: 'RelatedPerson', patient: createReference(patient) })
+        ).rejects.toThrow('Forbidden');
+        await expect(repo.deleteResource('RelatedPerson', other.id)).rejects.toThrow('Forbidden');
+      }));
+
+    test('RelatedPerson can only update their own profile', () =>
+      withTestContext(async () => {
+        const { repo, patient, self, other } = await setup('RelatedPerson');
+        const otherPatient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { project: testProject.id },
+        });
+
+        const updated = await repo.updateResource({ ...self, active: false });
+        expect(updated.active).toBe(false);
+        await expect(repo.updateResource({ ...updated, patient: createReference(otherPatient) })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(repo.deleteResource('RelatedPerson', self.id)).rejects.toThrow('Forbidden');
+
+        await expect(repo.readResource('RelatedPerson', other.id)).resolves.toMatchObject({ id: other.id });
+        await expect(repo.updateResource({ ...other, active: false })).rejects.toThrow('Forbidden');
+        await expect(
+          repo.createResource<RelatedPerson>({ resourceType: 'RelatedPerson', patient: createReference(patient) })
+        ).rejects.toThrow('Forbidden');
+      }));
+  });
 
   test('String parameters', () =>
     withTestContext(async () => {
