@@ -275,8 +275,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Remounts the form, starting it over on the site the workspace is on.
   const [formKey, setFormKey] = useState(0);
   // Where open time was clicked while browsing, which is where the offer to start booking is drawn.
-  const [bookPrompt, setBookPrompt] = useState<{ left: number; top: number }>();
-  const lastPointer = useRef<{ left: number; top: number }>(undefined);
+  const [bookPrompt, setBookPrompt] = useState<PointerPosition>();
+  // Where shading several providers are free in was clicked with nobody named, which is where the
+  // reminder to name one is drawn.
+  const [providerPrompt, setProviderPrompt] = useState<PointerPosition>();
+  const lastPointer = useRef<PointerPosition>(undefined);
   const calendarService = bookingOpen ? formService : filters.services;
   // A visit type in the booking form hides no appointments, so only its site is left of the filters.
   const calendarFilters = useMemo(
@@ -577,11 +580,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const changeFormService = useCallback((service: WithId<HealthcareService> | undefined): void => {
     setHoveredTime(undefined);
+    setProviderPrompt(undefined);
     setFormService(service);
   }, []);
 
   const changeFormSelections = useCallback((selections: ActorSelections): void => {
     setHoveredTime(undefined);
+    setProviderPrompt(undefined);
     setFormSelections(selections);
   }, []);
 
@@ -764,10 +769,41 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         setBlockRange(interval);
         setBlockHighlight(interval);
       } else if (!interval.allDay) {
-        formActionsRef.current?.pickAt(shadingHoverInstant.current ?? interval.start);
+        const instant = shadingHoverInstant.current ?? interval.start;
+        if (formActionsRef.current?.pickAt(instant) || formCandidates.length > 0) {
+          return;
+        }
+        // With nobody named no time is offered yet, and the shading is every provider's open time. Where
+        // only one of them is free the click can only mean that one, so the form names them and picks the
+        // time. Where several are, the viewer is told what is missing.
+        const shade = availabilityShading?.find((block) => block.start <= instant && instant < block.end);
+        if (!shade) {
+          return;
+        }
+        const free = new Set(
+          shade.details
+            .filter((detail) => detail.start <= instant && instant < detail.end)
+            .map((detail) => detail.schedule.id)
+        );
+        const providers = candidatesByActorType.Practitioner.filter((candidate) => free.has(candidate.schedule.id));
+        if (providers.length === 1) {
+          formActionsRef.current?.pickWith('Practitioner', providers[0], instant);
+        } else {
+          setProviderPrompt(lastPointer.current);
+        }
       }
     },
-    [bookingOpen, closeAppointment, closeSlot, paneTab, selectedAppointment, selectedSlot]
+    [
+      bookingOpen,
+      closeAppointment,
+      closeSlot,
+      paneTab,
+      selectedAppointment,
+      selectedSlot,
+      formCandidates,
+      availabilityShading,
+      candidatesByActorType,
+    ]
   );
 
   // Held apart from the calendar's, like the open appointment, so it closes on being deleted
@@ -953,26 +989,32 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
         </div>
         {bookPrompt && !bookingOpen && (
-          <Popover
+          <PointerPrompt
             key={`${bookPrompt.left},${bookPrompt.top}`}
-            opened
-            onChange={(opened) => !opened && setBookPrompt(undefined)}
+            at={bookPrompt}
             position="right-start"
-            withArrow
-            shadow="md"
+            onClose={() => setBookPrompt(undefined)}
           >
-            <Popover.Target>
-              <Box className={classes.bookPromptAnchor} left={bookPrompt.left} top={bookPrompt.top} />
-            </Popover.Target>
-            <Popover.Dropdown>
-              <Stack gap="xs">
-                <Text size="sm">Book an appointment?</Text>
-                <Button size="xs" onClick={openBooking}>
-                  Open Find + Book
-                </Button>
-              </Stack>
-            </Popover.Dropdown>
-          </Popover>
+            <Stack gap="xs">
+              <Text size="sm">Book an appointment?</Text>
+              <Button size="xs" onClick={openBooking}>
+                Open Find + Book
+              </Button>
+            </Stack>
+          </PointerPrompt>
+        )}
+        {/* Above the pointer, clear of the shading's own tooltip beside it. */}
+        {providerPrompt && showBooking && (
+          <PointerPrompt
+            key={`${providerPrompt.left},${providerPrompt.top}`}
+            at={providerPrompt}
+            position="top"
+            onClose={() => setProviderPrompt(undefined)}
+          >
+            <Text size="sm" maw={220}>
+              More than one provider is free at this time. Choose a provider to pick it.
+            </Text>
+          </PointerPrompt>
         )}
       </div>
       {openAppointment && (
@@ -1086,6 +1128,36 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         Closing the booking pane clears what you entered. The service facility is kept.
       </DiscardChangesModal>
     </div>
+  );
+}
+
+/** A point on the calendar, from the top left of the box around it. */
+interface PointerPosition {
+  readonly left: number;
+  readonly top: number;
+}
+
+interface PointerPromptProps {
+  readonly at: PointerPosition;
+  readonly position: 'right-start' | 'top';
+  readonly onClose: () => void;
+  readonly children: ReactNode;
+}
+
+/**
+ * Prototype. A note drawn beside where the calendar was clicked, closed by a click anywhere else.
+ * @param props - The React props.
+ * @returns The note.
+ */
+function PointerPrompt(props: PointerPromptProps): JSX.Element {
+  const { at, position, onClose, children } = props;
+  return (
+    <Popover opened onChange={(opened) => !opened && onClose()} position={position} withArrow shadow="md">
+      <Popover.Target>
+        <Box className={classes.promptAnchor} left={at.left} top={at.top} />
+      </Popover.Target>
+      <Popover.Dropdown>{children}</Popover.Dropdown>
+    </Popover>
   );
 }
 

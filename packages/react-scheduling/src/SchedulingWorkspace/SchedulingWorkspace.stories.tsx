@@ -251,7 +251,9 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * and clicking open time offers to open the booking pane.
  *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
- * one provider at Riverside is free to take one. Hover a block to see who. Name Dr. Alvarez and the
+ * one provider at Riverside is free to take one. Hover a block to see who. Click one with nobody named
+ * yet: where a single provider is free the form names them and picks the time, as on Wednesday morning
+ * for "Procedures", and where several are a note says to choose one. Name Dr. Alvarez and the
  * shading narrows to their open time, the calendar to their appointments, and time cards appear. Add
  * Dr. Bennett to the same row for either of them; "Add another provider" asks for both at once, and
  * shades only the time they share.

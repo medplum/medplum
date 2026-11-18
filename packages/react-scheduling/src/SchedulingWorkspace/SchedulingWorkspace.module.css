@@ -140,8 +140,8 @@
   display: none;
 }
 
-/* Where open time was clicked while browsing, for the offer to start booking to point at. */
-.bookPromptAnchor {
+/* Where the calendar was clicked, for a note about the click to point at. */
+.promptAnchor {
   position: absolute;
   width: 1px;
   height: 1px;
