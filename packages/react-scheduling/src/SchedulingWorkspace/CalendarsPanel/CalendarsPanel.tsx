@@ -3,9 +3,9 @@
 import { Box, Divider, Stack, Text } from '@mantine/core';
 import { IconCalculatorFilled, IconMapPinFilled } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { Fragment } from 'react';
 import type { BookableActorType } from '../../actors';
 import { CalendarRow } from './CalendarRow';
+import { PanelSection } from './PanelSection';
 import { SectionHeader } from './SectionHeader';
 
 export interface CalendarsPanelItem {
@@ -52,8 +52,11 @@ const SECTIONS: readonly CalendarsPanelSection[] = [
 ];
 
 /**
- * A sidebar panel for selecting calendars, grouped under collapsible sections, above
+ * A sidebar panel for selecting calendars, grouped by what they are held on, above
  * which a host may place the fields narrowing which calendars are worth listing at all.
+ *
+ * The calendars are one section, headed as the host's own sections are expected to be (see
+ * `PanelSection`), with the groups inside it headed more lightly.
  *
  * This is a presentational component that renders whatever is passed in. It does not
  * fetch or group FHIR resources, which is why the filters arrive as a node rather than
@@ -67,26 +70,21 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   const { items, candidatesLoading, filters, onToggle, className } = props;
 
   return (
-    <Stack gap="xs" className={className}>
-      <Text fz="lg" fw={800} py="xs">
-        Calendars
-      </Text>
-      <Divider />
-
+    <Stack gap="md" className={className}>
       {filters && (
         <>
-          <Box mb="xs" role="group" aria-label="Filter calendars">
+          <Box role="group" aria-label="Filter calendars">
             {filters}
           </Box>
           <Divider />
         </>
       )}
 
-      {SECTIONS.map((section) => {
-        const sectionItems = items[section.actorType];
-        return (
-          <Fragment key={section.actorType}>
-            <SectionHeader title={section.title} loading={candidatesLoading}>
+      <PanelSection title="Calendars" description="Show or hide individual calendars.">
+        {SECTIONS.map((section) => {
+          const sectionItems = items[section.actorType];
+          return (
+            <SectionHeader key={section.actorType} title={section.title} loading={candidatesLoading} nested>
               {sectionItems.length === 0 && !candidatesLoading ? (
                 <Text fz="sm" c="dimmed" p="xs">
                   No {section.emptyLabel} found
@@ -104,10 +102,9 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
                 </Stack>
               )}
             </SectionHeader>
-            <Divider />
-          </Fragment>
-        );
-      })}
+          );
+        })}
+      </PanelSection>
     </Stack>
   );
 }
