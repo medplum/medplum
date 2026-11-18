@@ -13,6 +13,7 @@ function jsonResponse(body: unknown): Response {
 }
 
 describe('App Index', () => {
+  let container: HTMLDivElement | undefined;
   let root: Root | undefined;
 
   beforeAll(() => {
@@ -64,12 +65,13 @@ describe('App Index', () => {
   afterAll(() => {
     // Unmount so React and Mantine timers don't fire after the jsdom environment is torn down
     act(() => root?.unmount());
+    container?.remove();
     window.localStorage.clear();
     vi.unstubAllGlobals();
   });
 
   test('Renders', async () => {
-    const container = document.createElement('div');
+    container = document.createElement('div');
     container.id = 'root';
     document.body.appendChild(container);
     root = initApp();
