@@ -4,7 +4,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod/v4';
 import config from './config.json' with { type: 'json' };
-import { append, capture, checkedPath, docPath, load, read, run, save } from './pilot.mts';
+import { append, capturePatch, checkedPath, docPath, load, read, run, save } from './pilot.mts';
 
 const text = z.string().min(1).max(1600);
 const list = z.array(text).max(8);
@@ -17,10 +17,9 @@ const schemas = {
     questions: list,
   }),
   draft: z.strictObject({ notes: text, questions: list }),
-  verify: z.strictObject({ findings: list, evidence: list, examplesNeedExecution: z.boolean() }),
+  verify: z.strictObject({ findings: list, evidence: list }),
 };
 type Stage = keyof typeof schemas;
-export type Results = { [K in Stage]: z.infer<(typeof schemas)[K]> };
 
 function ask(stage: Stage, pages: string[] = []): unknown {
   const tools = ['Read', 'Glob', 'Grep'];
@@ -56,18 +55,19 @@ function ask(stage: Stage, pages: string[] = []): unknown {
 const relative = (ref: string): string => ref.replace(/^(?:\.\/)?repo\//, '');
 function evidence(citations: string[]): string[] {
   return citations.map(relative).filter((ref) => {
-    if (ref.startsWith('.docs-run/')) return false;
     const match =
       /^((?:packages|examples|scripts|charts|terraform|\.github)\/[^:\s]+):([1-9]\d*)(?:-([1-9]\d*))?\b/.exec(ref);
     if (!match) return false;
     const lines = read(checkedPath(match[1])).split(/\r\n|[\r\n]/);
     if (lines.at(-1) === '') lines.pop();
-    assert(Number(match[3] ?? match[2]) <= lines.length, `Invalid evidence: ${ref}`);
+    const start = Number(match[2]);
+    const end = Number(match[3] ?? match[2]);
+    assert(start <= end && end <= lines.length, `Invalid evidence: ${ref}`);
     return true;
   });
 }
 
-function classify(value: unknown): Results['classify'] {
+function classify(value: unknown): z.infer<typeof schemas.classify> {
   const plan = schemas.classify.parse(value);
   plan.evidence = evidence(plan.evidence);
   plan.pages = plan.pages.map(relative);
@@ -90,35 +90,31 @@ export function review(agent = ask): void {
     : classify(agent('classify'));
   const questions = [...plan.questions];
   const details = [plan.summary, ...plan.evidence, ...plan.pages];
-  let next = 'none';
+  let tree = '';
   if (process.env.MODE !== 'classify' && plan.outcome === 'update-docs') {
     const draft = schemas.draft.parse(agent('draft', plan.pages));
     save('draft.json', draft);
     details.push(draft.notes);
     questions.push(...draft.questions);
-    const patch = capture(plan.pages, draft.questions.length > 0);
-    if (patch) {
-      writeFileSync(run + '/docs.patch', patch);
+    tree = capturePatch(plan.pages, draft.questions.length > 0);
+    if (tree) {
       const check = schemas.verify.parse(agent('verify'));
       check.evidence = evidence(check.evidence);
       if (!check.evidence.length)
         check.findings.push('Check the draft against the implementation. The verifier cited no source.');
-      if (check.examplesNeedExecution) check.findings.push('Run the new inline examples before merging.');
       save('verification.json', check);
       questions.push(...check.findings);
       details.push(...check.evidence);
-      next = 'pr';
     }
   }
   const lines = [`**${questions.length ? 'needs-human' : plan.outcome}**`];
   if (questions.length) {
     lines.push('### Open Questions', questions.map((q) => '- ' + q).join('\n'));
-    if (next !== 'pr') next = 'comment';
   }
   const report = [...lines, ...new Set(details)].join('\n\n').replaceAll('@', '@\u200b').replaceAll('<', '&lt;') + '\n';
   writeFileSync(run + '/review.md', report);
   append('GITHUB_STEP_SUMMARY', '\n' + report);
-  append('GITHUB_OUTPUT', 'next=' + next);
+  append('GITHUB_OUTPUT', `tree=${tree}\nneeds_input=${questions.length > 0}`);
 }
 
 if (import.meta.main) review();

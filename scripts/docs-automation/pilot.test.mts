@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
 import { review } from './analyze.mts';
-import { capture, docPath, load, publish, read, run, save } from './pilot.mts';
+import { capturePatch, docPath, load, publish, read, run, save } from './pilot.mts';
 
 const page = 'packages/docs/content/docs/example.md';
 const plan = {
@@ -30,7 +30,7 @@ beforeEach(() => {
   git('add', '.');
   git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'base');
   fs.mkdirSync(run);
-  save('context.json', { number: 42, base: git('rev-parse', 'HEAD').toString().trim() });
+  save('context.json', { number: 42, assignee: 'source-author', base: git('rev-parse', 'HEAD').toString().trim() });
 });
 afterEach(() => {
   process.env = env;
@@ -54,14 +54,19 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
       return { notes: 'Check rollout.', questions: ['Which release?'] };
     }
     assert.equal(stage, 'verify');
-    return { evidence: [page + ':2'], findings: ['Check the default.'], examplesNeedExecution: true };
+    return { evidence: [page + ':2'], findings: ['Check the default.', 'Run the inline example.'] };
   });
   assert.match(read(run + '/docs.patch'), /\+New behavior\./);
   assert.equal(load<{ findings: string[] }>('verification.json').findings.length, 2);
-  assert(read('outputs').endsWith('next=pr\n'));
+  assert.match(read('outputs'), /tree=[0-9a-f]{40}\nneeds_input=true\n$/);
+  const tree = execFileSync('git', ['write-tree'], { cwd: 'repo', encoding: 'utf8' }).trim();
+  execFileSync('git', ['read-tree', 'HEAD'], { cwd: 'repo' });
+  fs.writeFileSync(run + '/docs.patch', read(run + '/docs.patch').replace('+New behavior.', '+Different content.'));
+  Object.assign(process.env, { MODE: 'open-pr', BUILD: 'success', DOCS_TREE: tree });
+  assert.throws(() => publish(42, 'org/repo', () => '[]'), /Patch differs from the reviewed docs tree/);
   save('classification.json', { ...plan, outcome: 'needs-human', pages: [], questions: ['Which default?'] });
   review(() => assert.fail('Unexpected model call'));
-  assert(read('outputs').endsWith('next=comment\n'));
+  assert(read('outputs').endsWith('tree=\nneeds_input=true\n'));
 });
 
 test('edits must stay on planned, hand-written pages and citations must exist', () => {
@@ -70,36 +75,28 @@ test('edits must stay on planned, hand-written pages and citations must exist', 
     assert.throws(() => docPath('packages/docs/content/docs/' + name));
   }
   docPath('packages/docs/content/docs/api/fhir/resources/_index.md');
-  assert.throws(() => capture([page], true), /plan/);
-  assert.throws(() => review(() => ({ ...plan, evidence: [page + ':4'] })), /Invalid evidence/);
-  assert.throws(() => review(() => ({ ...plan, evidence: [page + ':2-4 note'] })), /Invalid evidence/);
+  assert.throws(() => capturePatch([page], true), /plan/);
+  for (const line of [':4', ':2-4 note', ':99-2']) {
+    assert.throws(() => review(() => ({ ...plan, evidence: [page + line] })), /Invalid evidence/);
+  }
   assert.throws(() => review(() => ({ ...plan, pages: 'unexpected' })));
 });
 
-test('a failed build or existing PR updates only the source comment', () => {
+test('a failed build updates the comment and a retry recovers an unassigned PR', () => {
   fs.writeFileSync(run + '/review.md', 'Check the option.');
-  fs.mkdirSync('bin');
-  fs.writeFileSync(
-    'bin/gh',
-    `#!/bin/sh
-case "$2" in
-  --paginate) echo 17 ;;
-  --silent) echo "$@" >> ../comments ;;
-  *pulls?state=all*) echo '[{"html_url":"existing-pr"}]' ;;
-  *) exit 1 ;;
-esac\n`,
-    { mode: 0o755 }
-  );
-  Object.assign(process.env, {
-    PATH: join(work, 'bin') + ':' + env.PATH,
-    MODE: 'open-pr',
-    NEXT: 'pr',
-    BUILD: 'failure',
-    GITHUB_RUN_ID: '1',
-  });
-  publish(42, 'org/repo');
-  assert.match(read('comments'), /PATCH[\s\S]+build failed/);
+  const calls: string[][] = [];
+  function github(args: string[]): string {
+    calls.push(args);
+    if (args[1] === '--paginate') return '17';
+    if (args[1].includes('/pulls?')) return JSON.stringify([{ html_url: 'existing-pr', state: 'open', assignees: [] }]);
+    if (args[1] === '--silent' || args[1] === 'edit') return '';
+    return assert.fail('Unexpected GitHub command: ' + args.join(' '));
+  }
+  Object.assign(process.env, { MODE: 'open-pr', DOCS_TREE: 'a'.repeat(40), BUILD: 'failure', GITHUB_RUN_ID: '1' });
+  publish(42, 'org/repo', github);
+  assert.match(calls.at(-1)!.join(' '), /PATCH[\s\S]+build failed/);
   process.env.BUILD = 'success';
-  publish(42, 'org/repo');
-  assert.match(read('comments'), /Existing documentation PR: existing-pr/);
+  publish(42, 'org/repo', github);
+  assert.match(calls.at(-2)!.join(' '), /Existing documentation PR: existing-pr/);
+  assert.deepEqual(calls.at(-1), ['pr', 'edit', 'existing-pr', '--add-assignee', 'source-author']);
 });

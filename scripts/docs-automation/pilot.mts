@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync, lstatSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { Results } from './analyze.mts';
 import config from './config.json' with { type: 'json' };
 
 export const run = '.docs-run';
@@ -36,16 +35,12 @@ export function docPath(name: string): string {
   return path;
 }
 
-export function capture(pages: string[], partial: boolean): string {
+export function capturePatch(pages: string[], partial: boolean): string {
   const status = git('status', '--porcelain', '--no-renames', '--untracked-files=all', '-z');
-  const changed = status
-    .split('\0')
-    .filter(Boolean)
-    .map((entry) => entry.slice(3));
-  assert(
-    changed.every((name) => pages.includes(name)) && (partial || changed.length === pages.length),
-    'Edits do not match the plan'
-  );
+  const entries = status.split('\0').filter(Boolean);
+  const changed = entries.map((entry) => entry.slice(3));
+  const planned = changed.every((name) => pages.includes(name));
+  assert(planned && (partial || changed.length === pages.length), 'Edits do not match the plan');
   let bytes = 0;
   for (const name of changed) {
     const path = docPath(name);
@@ -58,19 +53,18 @@ export function capture(pages: string[], partial: boolean): string {
     assert(!/\0|<\s*(script|iframe)\b/i.test(content), `Unsupported content: ${name}`);
     if (name.startsWith('packages/docs/content/')) {
       const header = content.split(/^---$/m, 3);
-      assert(
-        header.length === 3 && header[0] === '' && /^title:[ \t]*\S/m.test(header[1]),
-        `Missing front matter: ${name}`
-      );
+      const hasTitle = header.length === 3 && header[0] === '' && /^title:[ \t]*\S/m.test(header[1]);
+      assert(hasTitle, `Missing front matter: ${name}`);
     }
   }
   if (!changed.length) return '';
   git('add', '--', ...changed);
   git('diff', '--cached', '--check');
-  return git('diff', '--cached', '--no-ext-diff', '--no-textconv');
+  writeFileSync(run + '/docs.patch', git('diff', '--cached', '--no-ext-diff', '--no-textconv'));
+  return git('write-tree').trim();
 }
 
-type Pull = { number: number; html_url: string };
+type Pull = { html_url: string; state: string; assignees: { login: string }[] };
 type SourcePR = {
   merged: boolean;
   base: { ref: string };
@@ -83,8 +77,8 @@ type SourcePR = {
 };
 const gh = (args: string[], input?: string): string =>
   execFileSync('gh', args, { cwd: 'repo', encoding: 'utf8', input, maxBuffer: 32 * 1024 * 1024 });
-function api<T>(endpoint: string, body?: object): T {
-  return JSON.parse(gh(['api', endpoint, ...(body ? ['-X', 'POST', '--input', '-'] : [])], JSON.stringify(body)));
+function api<T>(endpoint: string, query = '.'): T {
+  return JSON.parse(gh(['api', endpoint, '--jq', query]));
 }
 
 function source(number: number, repository: string): void {
@@ -113,35 +107,26 @@ function source(number: number, repository: string): void {
   }
   const files = new Set(git('diff', '--name-only', '--no-renames', '-z', parent, sha).split('\0').filter(Boolean));
   if (!otherParents.length) {
-    const listed = api<{ filename: string; previous_filename?: string }[]>(endpoint + '/files?per_page=100');
-    const expected = new Set(
-      listed.flatMap((f) => (f.previous_filename ? [f.filename, f.previous_filename] : [f.filename]))
-    );
-    const prior = api<Pull[]>(`repos/${repository}/commits/${parent}/pulls?per_page=100`);
-    if (
-      listed.length !== pr.changed_files ||
-      files.symmetricDifference(expected).size > 0 ||
-      prior.length === 100 ||
-      prior.some((p) => p.number === number)
-    ) {
+    const listed = api<string[][]>(endpoint + '/files?per_page=100', 'map([.filename, (.previous_filename // empty)])');
+    const prior = api<number[]>(`repos/${repository}/commits/${parent}/pulls?per_page=100`, 'map(.number)');
+    const complete = listed.length === pr.changed_files && files.symmetricDifference(new Set(listed.flat())).size === 0;
+    if (!complete || prior.length === 100 || prior.includes(number)) {
       return stop('needs-human', 'The landed commit could not be isolated as the complete PR.');
     }
   }
   if (!files.size || files.size > config.maxSourceFiles) return stop('needs-human', 'Review the landed file set.');
-  try {
-    const diff = execFileSync('git', ['diff', '--no-ext-diff', '--no-textconv', parent, sha], {
-      cwd: 'repo',
-      maxBuffer: config.maxDiffBytes,
-    });
-    writeFileSync(`${run}/source.diff`, diff);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'ENOBUFS') throw err;
-    stop('needs-human', 'The landed diff exceeds the pilot size limit.');
+  const args = ['diff', '--no-ext-diff', '--no-textconv', parent, sha];
+  const diff = spawnSync('git', args, { cwd: 'repo', maxBuffer: config.maxDiffBytes });
+  if ((diff.error as NodeJS.ErrnoException)?.code === 'ENOBUFS') {
+    return stop('needs-human', 'The landed diff exceeds the pilot size limit.');
   }
+  if (diff.error) throw diff.error;
+  assert(diff.status === 0, diff.stderr.toString());
+  writeFileSync(`${run}/source.diff`, diff.stdout);
 }
 
-export function publish(number: number, repository: string): void {
-  const { MODE, BASE_BRANCH, BUILD, NEXT, GITHUB_RUN_ID } = process.env;
+export function publish(number: number, repository: string, github = gh): void {
+  const { MODE, BASE_BRANCH, BUILD, DOCS_TREE, NEEDS_INPUT, GITHUB_RUN_ID } = process.env;
   const context = load<{ number: number; base: string; assignee: string }>('context.json');
   assert(MODE === 'open-pr' && context.number === number, 'Invalid publication request');
   assert.equal(git('rev-parse', 'HEAD').trim(), context.base, 'Wrong docs revision');
@@ -151,54 +136,49 @@ export function publish(number: number, repository: string): void {
     const issue = `${root}/issues/${number}/comments`;
     const marker = `<!-- docs-automation: ${repository}#${number} -->`;
     const query = `.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("${marker}"))) | .id`;
-    const ids = gh(['api', '--paginate', issue + '?per_page=100', '--jq', query]);
+    const ids = github(['api', '--paginate', issue + '?per_page=100', '--jq', query]);
     const [id] = ids.trim().split('\n');
     const endpoint = id ? `${root}/issues/comments/${id}` : issue;
-    gh(['api', '--silent', '-X', id ? 'PATCH' : 'POST', endpoint, '-f', `body=${marker}\n${text}`]);
+    github(['api', '--silent', '-X', id ? 'PATCH' : 'POST', endpoint, '-f', `body=${marker}\n${text}`]);
   }
   if (BUILD === 'failure') return comment('Dependency installation or the docs build failed.\n\n' + report);
-  if (NEXT === 'comment') return comment(report);
-  assert(NEXT === 'pr' && BUILD === 'success', 'A docs PR requires a successful review and build');
+  if (!DOCS_TREE && NEEDS_INPUT === 'true') return comment(report);
+  assert(BUILD === 'success' && DOCS_TREE && /^[0-9a-f]{40}$/.test(DOCS_TREE), 'Expected a built docs tree');
   const branch = `docs/automated-pr-${number}`;
-  const existing = api<Pull[]>(`${root}/pulls?state=all&head=${repository.split('/')[0]}:${branch}`);
-  if (existing.length) return comment('Existing documentation PR: ' + existing[0].html_url);
-  const { outcome, pages } = load<Results['classify']>('classification.json');
-  const { questions } = load<Results['draft']>('draft.json');
-  const { findings } = load<Results['verify']>('verification.json');
-  const plan = outcome === 'update-docs' && Array.isArray(pages) && pages.length <= config.maxDraftFiles;
-  assert(plan && Array.isArray(questions) && Array.isArray(findings), 'Invalid review artifacts');
-  assert(!git('status', '--porcelain'), 'Publication needs a clean checkout');
-  git('apply', '--index', resolve(run, 'docs.patch'));
-  assert(capture(pages, questions.length > 0), 'Empty patch');
+  const endpoint = `${root}/pulls?state=all&head=${repository.split('/')[0]}:${branch}`;
+  const [existing]: Pull[] = JSON.parse(github(['api', endpoint]));
+  const { assignee } = context;
+  assert(!assignee || /^[\w-]+$/.test(assignee), 'Invalid assignee');
+  if (existing) {
+    comment('Existing documentation PR: ' + existing.html_url);
+    if (existing.state === 'open' && !existing.assignees.length) {
+      assert(assignee, 'Assign a human reviewer to ' + existing.html_url);
+      github(['pr', 'edit', existing.html_url, '--add-assignee', assignee]);
+    }
+    return;
+  }
+  // Apply only to the index. The job output pins every path, mode, and blob approved by the review job.
+  git('apply', '--cached', resolve(run, 'docs.patch'));
+  assert.equal(git('write-tree').trim(), DOCS_TREE, 'Patch differs from the reviewed docs tree');
   const ref = 'refs/heads/' + branch;
   const title = `docs: follow up on #${number}`;
   if (git('ls-remote', '--heads', 'origin', ref)) {
     git('fetch', 'origin', ref);
-    assert.equal(git('write-tree'), git('rev-parse', 'FETCH_HEAD^{tree}'), 'Existing branch has different edits');
+    assert.equal(git('rev-parse', 'FETCH_HEAD^{tree}').trim(), DOCS_TREE, 'Existing branch has different edits');
   } else {
     const bot = 'github-actions[bot]';
     const identity = ['-c', 'user.name=' + bot, '-c', `user.email=41898282+${bot}@users.noreply.github.com`];
     git(...identity, 'commit', '--signoff', '-m', title);
     git('push', 'origin', `HEAD:${ref}`);
   }
-  const pr = api<Pull>(root + '/pulls', {
-    head: branch,
-    base: BASE_BRANCH,
-    draft: true,
-    title: title + (questions.length || findings.length ? ' (needs input)' : ''),
-    body: `Documentation follow-up for #${number}.\n\n${report}`,
-  });
-  append('GITHUB_STEP_SUMMARY', pr.html_url);
-  comment('Documentation follow-up: ' + pr.html_url);
-  const { assignee } = context;
-  assert(assignee && /^[\w-]+$/.test(assignee), `Assign a human reviewer to ${pr.html_url}`);
-  const { assignees } = api<{ assignees: { login: string }[] }>(`${root}/issues/${pr.number}/assignees`, {
-    assignees: [assignee],
-  });
-  assert(
-    assignees.some((a) => a.login === assignee),
-    `Assign ${assignee} to ${pr.html_url}`
-  );
+  const prTitle = title + (NEEDS_INPUT === 'true' ? ' (needs input)' : '');
+  const target = ['--head', branch, '--base', BASE_BRANCH!];
+  if (assignee) target.push('--assignee', assignee);
+  const body = `Documentation follow-up for #${number}.\n\n${report}`;
+  const url = github(['pr', 'create', '--draft', ...target, '--title', prTitle, '--body-file', '-'], body).trim();
+  append('GITHUB_STEP_SUMMARY', url);
+  comment('Documentation follow-up: ' + url);
+  assert(assignee, 'Assign a human reviewer to ' + url);
 }
 
 if (import.meta.main) {

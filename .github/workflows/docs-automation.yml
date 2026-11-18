@@ -32,7 +32,8 @@ jobs:
     timeout-minutes: 120
     outputs:
       base: ${{ steps.source.outputs.base }}
-      next: ${{ steps.review.outputs.next }}
+      tree: ${{ steps.review.outputs.tree }}
+      needs_input: ${{ steps.review.outputs.needs_input }}
       build: ${{ steps.build.outcome }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,7 +63,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Build drafted documentation
         id: build
-        if: steps.review.outputs.next == 'pr'
+        if: steps.review.outputs.tree != ''
         working-directory: repo
         timeout-minutes: 40
         env:
@@ -84,8 +85,8 @@ jobs:
     needs: analyze
     if: >-
       ${{ !cancelled() && inputs.mode == 'open-pr' &&
-          ((needs.analyze.result == 'success' && contains(fromJSON('["pr","comment"]'), needs.analyze.outputs.next)) ||
-           (needs.analyze.outputs.next == 'pr' && needs.analyze.outputs.build == 'failure')) }}
+          ((needs.analyze.result == 'success' && (needs.analyze.outputs.tree != '' || needs.analyze.outputs.needs_input == 'true')) ||
+           needs.analyze.outputs.build == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -105,7 +106,8 @@ jobs:
       - name: Publish draft or source PR comment
         env:
           GH_TOKEN: ${{ github.token }}
-          NEXT: ${{ needs.analyze.outputs.next }}
+          DOCS_TREE: ${{ needs.analyze.outputs.tree }}
+          NEEDS_INPUT: ${{ needs.analyze.outputs.needs_input }}
           BUILD: ${{ needs.analyze.outputs.build }}
         run: |
           gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "docs-review-$PR_NUMBER" --dir .docs-run
