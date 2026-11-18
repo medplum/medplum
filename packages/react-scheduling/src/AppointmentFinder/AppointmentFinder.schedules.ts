@@ -104,9 +104,9 @@ export interface SearchScheduleCandidatesOptions {
   /**
    * The site being booked at. Actors sited elsewhere are left out: a room or a
    * device anywhere inside it counts, a provider only if one of their
-   * PractitionerRoles names it.
+   * PractitionerRoles names it. Given several sites, an actor at any one of them is kept.
    */
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly location?: Reference<Location> | WithId<Location> | readonly (Reference<Location> | WithId<Location>)[];
   readonly signal?: AbortSignal;
   /** Maximum schedules to consider. Defaults to 25. */
   readonly count?: number;
@@ -206,8 +206,15 @@ export async function searchScheduleCandidates(
     .map((schedule) => toScheduleCandidate(schedule, undefined, actorsByReference))
     .filter(isDefined);
 
-  // Filter by location
-  const kept = await filterCandidatesByLocation(medplum, found, options.location, { signal: options.signal });
+  // Filter by location. Each site is asked on its own, and reads the same roles and Locations as the
+  // others, which the client's request cache answers once.
+  const locations = [options.location].flat().filter(isDefined);
+  const keptBySite = await Promise.all(
+    (locations.length > 0 ? locations : [undefined]).map((location) =>
+      filterCandidatesByLocation(medplum, found, location, { signal: options.signal })
+    )
+  );
+  const kept = found.filter((candidate) => keptBySite.some((atSite) => atSite.includes(candidate)));
   return kept.sort((left, right) => getCandidateDisplay(left).localeCompare(getCandidateDisplay(right)));
 }
 

@@ -54,7 +54,7 @@ import { formatZonedTime, getAppointmentKey } from '../AppointmentFinder/Appoint
 import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentProposalFormActions } from '../AppointmentFinder/AppointmentProposalForm';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
-import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
+import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import type { AvailabilityShadingCalendar } from '../availabilityShading';
 import { computeBookingShading } from '../availabilityShading';
 import { resolveBookingGeometry } from '../bookingGeometry';
@@ -261,13 +261,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // type and actors decide the availability shaded, and its actors, once any is named, the calendars on
   // show.
   //
-  // The site is the one answer the panes share: `filters.serviceFacility`, whichever pane set it.
+  // The site is the one answer the panes share. The filters pane can hold several, and the booking form,
+  // which books at one, starts on the first of them and makes its own site their first.
   const [filters, setFilters] = useState<CalendarFilterValues>(
-    defaultServiceFacility ? { serviceFacility: defaultServiceFacility } : NO_FILTERS
+    defaultServiceFacility ? { serviceFacilities: [defaultServiceFacility] } : NO_FILTERS
   );
   // Remounts the filter fields on the site the booking form moved to.
   const [filtersKey, setFiltersKey] = useState(0);
-  const { serviceFacility: selectedServiceFacility } = filters;
+  // The site the booking form is on. The filters' first, except while the form's is cleared and the
+  // filters hold several, which the form leaves alone.
+  const [formServiceFacility, setFormServiceFacility] = useState(defaultServiceFacility);
   const [bookingOpen, setBookingOpen] = useState(true);
   const [formService, setFormService] = useState<WithId<HealthcareService>>();
   const [formSelections, setFormSelections] = useState<ActorSelections>(NO_SELECTIONS);
@@ -277,11 +280,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [bookPrompt, setBookPrompt] = useState<{ left: number; top: number }>();
   const lastPointer = useRef<{ left: number; top: number }>(undefined);
   const calendarService = bookingOpen ? formService : filters.services;
-  // A visit type in the booking form hides no appointments, so only the site is left of the filters.
+  // A visit type in the booking form hides no appointments, so only its site is left of the filters.
   const calendarFilters = useMemo(
-    (): CalendarFilterValues => (bookingOpen ? { serviceFacility: filters.serviceFacility } : filters),
-    [bookingOpen, filters]
+    (): CalendarFilterValues =>
+      bookingOpen ? { serviceFacilities: formServiceFacility ? [formServiceFacility] : undefined } : filters,
+    [bookingOpen, filters, formServiceFacility]
   );
+  const calendarFacilities = calendarFilters.serviceFacilities;
   // The offered time under the pointer, in the time search or on the calendar's shading, drawn on the
   // calendar as a fainter draft.
   const [hoveredTime, setHoveredTime] = useState<Appointment>();
@@ -328,7 +333,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         const candidates = await searchScheduleCandidates(medplum, calendarService, {
           actorType,
           query: '',
-          location: selectedServiceFacility,
+          location: calendarFacilities,
           signal: controller.signal,
           count: 250,
         });
@@ -352,7 +357,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       });
     return () => controller.abort();
-  }, [medplum, calendarService, selectedServiceFacility]);
+  }, [medplum, calendarService, calendarFacilities]);
 
   // While booking, the actors the form names are the calendars on show, and until it names any, every
   // calendar found. While browsing, the Calendars panel decides.
@@ -415,7 +420,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Under a filter, the Slots of an appointment it hides go with it. Blocked time stays: the
     // calendars listed are already the ones the filters keep.
     const shownSlots =
-      calendarFilters.services?.length || calendarFilters.serviceFacility
+      calendarFilters.services?.length || calendarFilters.serviceFacilities?.length
         ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], visibleAppointments)
         : (slots ?? []);
     const openSlots = filterBookedSlots(
@@ -516,7 +521,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     return computeBookingShading({
       rows,
       service: formService,
-      serviceFacility: selectedServiceFacility,
+      serviceFacility: formServiceFacility,
       range,
       color: resolveThemeColor(
         theme,
@@ -526,40 +531,51 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       minMinutes: resolveBookingGeometry(formService).duration,
       from: new Date(),
     });
-  }, [formService, formSelections, selectedServiceFacility, range, appointments, slots, candidatesByActorType, theme]);
+  }, [formService, formSelections, formServiceFacility, range, appointments, slots, candidatesByActorType, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
   const changeFilters = useCallback(
     (values: CalendarFilterValues): void => {
       setFilters(values);
-      onChangeServiceFacility?.(values.serviceFacility);
+      onChangeServiceFacility?.(values.serviceFacilities?.[0]);
     },
     [onChangeServiceFacility]
   );
 
-  // The form reports its site on mount too, so only a site the filters are not on is taken up. The
-  // filter fields hold their own state, so they are remounted on it, dropping a visit type the new
-  // site does not hold, as they do when their own site changes.
+  // The form's site becomes the filters' first: moved up if it is already among them, and otherwise in
+  // place of the first one. The form's field has to be cleared before another site can be chosen, so a
+  // cleared site leaves several filter sites alone, and clears a lone one, as it did when there was only
+  // ever one. The form reports its site on mount too, which changes nothing.
+  //
+  // The filter fields hold their own state, so they are remounted on the result, dropping the visit types
+  // none of its sites hold, as they do when their own sites change.
   const changeFormServiceFacility = useCallback(
     (serviceFacility: Reference<Location> | WithId<Location> | undefined): void => {
       onChangeServiceFacility?.(serviceFacility);
       const next =
         serviceFacility && (isResourceWithId(serviceFacility) || serviceFacility.reference)
-          ? (serviceFacility as CalendarFilterValues['serviceFacility'])
+          ? (serviceFacility as NonNullable<CalendarFilterValues['serviceFacilities']>[number])
           : undefined;
-      const previous = filters.serviceFacility;
-      if ((next && getReferenceString(next)) === (previous && getReferenceString(previous))) {
+      const nextReference = next && getReferenceString(next);
+      if (nextReference !== (formServiceFacility && getReferenceString(formServiceFacility))) {
+        setFormServiceFacility(next);
+        setHoveredTime(undefined);
+      }
+      const sites = filters.serviceFacilities ?? [];
+      if (nextReference === (sites[0] && getReferenceString(sites[0])) || (!next && sites.length > 1)) {
         return;
       }
-      setHoveredTime(undefined);
+      const others = sites.filter((site) => getReferenceString(site) !== nextReference);
+      const alreadyChosen = others.length < sites.length;
+      const serviceFacilities = next ? [next, ...(alreadyChosen ? others : others.slice(1))] : [];
       setFilters({
-        serviceFacility: next,
-        services: filters.services?.filter((service) => isServiceKeptAtLocation(service, next)),
+        serviceFacilities,
+        services: filters.services?.filter((service) => isServiceKeptAtAnyLocation(service, serviceFacilities)),
       });
       setFiltersKey((key) => key + 1);
     },
-    [filters, onChangeServiceFacility]
+    [filters, formServiceFacility, onChangeServiceFacility]
   );
 
   const changeFormService = useCallback((service: WithId<HealthcareService> | undefined): void => {
@@ -572,14 +588,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setFormSelections(selections);
   }, []);
 
-  // Starts the booking form over on the site the workspace is on.
+  // Starts the booking form over on the filters' first site.
   const resetBookingForm = useCallback((): void => {
     setFormKey((key) => key + 1);
+    setFormServiceFacility(filters.serviceFacilities?.[0]);
     setFormService(undefined);
     setFormSelections(NO_SELECTIONS);
     setProposal(undefined);
     setHoveredTime(undefined);
-  }, []);
+  }, [filters]);
 
   const discard = useBookingPaneGuard();
   const { guard, reset: resetDirty } = discard;
@@ -603,8 +620,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setSelectedSlot(undefined);
     setNewBlockSlots(undefined);
     setRescheduleFinderOpen(false);
+    setFormServiceFacility(filters.serviceFacilities?.[0]);
     setBookingOpen(true);
-  }, []);
+  }, [filters]);
 
   const toggleBooking = useCallback((): void => {
     if (bookingOpen) {
@@ -1068,7 +1086,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 onDirtyChange={discard.onBookingDirtyChange}
                 actionsRef={formActionsRef}
                 onBooked={finishBooking}
-                defaultServiceFacility={selectedServiceFacility}
+                defaultServiceFacility={filters.serviceFacilities?.[0]}
               />
             </Tabs.Panel>
             <Tabs.Panel value="block">

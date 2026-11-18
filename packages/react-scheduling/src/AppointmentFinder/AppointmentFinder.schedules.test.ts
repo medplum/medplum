@@ -419,6 +419,18 @@ describe('narrowing to a location', () => {
     expect(roomsOf(kept)).toStrictEqual(['Satellite Exam Room']);
   });
 
+  test('Keeps the rooms at any one of several sites', async () => {
+    const medplum = await setupClient();
+
+    const kept = await searchScheduleCandidates(medplum, UltrasoundImagingService, {
+      actorType: 'Location',
+      query: '',
+      location: [SatelliteClinic, MainClinic],
+    });
+
+    expect(roomsOf(kept)).toStrictEqual(['Exam Room A', 'Exam Room B', 'Satellite Exam Room']);
+  });
+
   test('Keeps every room when no clinic was chosen', async () => {
     const medplum = await setupClient();
 

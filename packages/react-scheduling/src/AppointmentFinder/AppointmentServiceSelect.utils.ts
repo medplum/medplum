@@ -36,6 +36,19 @@ export function getServiceDurationMinutes(service: HealthcareService): number | 
  * @param location - The site being booked at, or undefined for no site at all.
  * @returns Whether the service still stands at that site.
  */
+/**
+ * Reports whether a chosen service still stands once the sites change, for a field holding several.
+ * @param service - The service being checked.
+ * @param locations - The sites chosen, or none for no site at all.
+ * @returns Whether the service stands at one of the sites, or no site is chosen.
+ */
+export function isServiceKeptAtAnyLocation(
+  service: HealthcareService,
+  locations: readonly (Reference<Location> | WithId<Location>)[]
+): boolean {
+  return locations.length === 0 || locations.some((location) => isServiceKeptAtLocation(service, location));
+}
+
 export function isServiceKeptAtLocation(
   service: HealthcareService,
   location: Reference<Location> | WithId<Location> | undefined

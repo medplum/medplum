@@ -250,8 +250,9 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * with the time search beside it saying what it still needs. The filters pane, on the left, is for
  * browsing what is booked, as on main. Each has a toggle at its end of the toolbar. Opening one closes
  * the other, and closing the booking pane clears its answers, asking first if there are any. The site is
- * the one answer the panes share. With both closed, the filters pane's answers hold, and clicking open
- * time offers to open the booking pane.
+ * the one answer the panes share: the filters pane can hold several sites and several visit types, and
+ * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold,
+ * and clicking open time offers to open the booking pane.
  *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
  * one provider at Riverside is free to take one. Hover a block to see who. Name Dr. Alvarez and the

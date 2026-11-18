@@ -6,21 +6,22 @@ import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes'
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AppointmentServiceMultiSelect } from '../AppointmentFinder/AppointmentServiceSelect';
-import { isServiceKeptAtLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
+import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
-import { ServiceFacilityInput } from '../ServiceFacilityInput';
+import { ServiceFacilitiesInput } from '../ServiceFacilityInput';
 
 const NONE: readonly WithId<HealthcareService>[] = [];
+const NO_SITES: NonNullable<CalendarFilterValues['serviceFacilities']> = [];
 
 /**
  * The chosen filter values, used to constrain visible Schedules and Appointments.
  */
 export interface CalendarFilterValues {
   /**
-   * The chosen site, or absent for every site. A reference only when it is the site the
-   * filters started on and the user has not changed it.
+   * The chosen sites, any of which will do. Absent or empty for every site. A reference only when
+   * it is a site the filters started on.
    */
-  readonly serviceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
+  readonly serviceFacilities?: readonly (WithId<Location> | (Reference<Location> & { reference: string }))[];
   /** The chosen visit types, any of which will do. Absent or empty for every visit type. */
   readonly services?: readonly WithId<HealthcareService>[];
 }
@@ -42,11 +43,10 @@ export interface CalendarFiltersProps {
  * types. The same pickers the booking form uses, so a visit type is searched
  * for the same way wherever it is chosen.
  *
- * Several visit types can be chosen, and any one of them will do.
+ * Several sites and several visit types can be chosen, and any one of each will do.
  *
- * The filters are not peers. A site decides which visit types are available
- * there, so choosing a site drops each chosen visit type the new site does not
- * hold — the same rule `AppointmentProposalForm` applies when its site
+ * The filters are not peers. The sites decide which visit types are available,
+ * so a change of sites drops each chosen visit type none of them holds — the same rule `AppointmentProposalForm` applies when its site
  * changes. A visit type never changes the sites on offer.
  *
  * @param props - Component props
@@ -54,8 +54,8 @@ export interface CalendarFiltersProps {
  */
 export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const { defaultValue, onChange } = props;
-  const [serviceFacility, setServiceFacility] = useState<CalendarFilterValues['serviceFacility']>(
-    defaultValue?.serviceFacility
+  const [serviceFacilities, setServiceFacilities] = useState<NonNullable<CalendarFilterValues['serviceFacilities']>>(
+    defaultValue?.serviceFacilities ?? NO_SITES
   );
   const [services, setServices] = useState<readonly WithId<HealthcareService>[]>(defaultValue?.services ?? NONE);
 
@@ -63,16 +63,16 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   // see: https://github.com/medplum/medplum/issues/10288
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
 
-  const selectServiceFacility = useCallback(
-    (next: WithId<Location> | undefined): void => {
-      setServiceFacility(next);
-      // Drop the chosen visit types that are not available at the newly selected service facility
-      const kept = services.filter((service) => isServiceKeptAtLocation(service, next));
+  const selectServiceFacilities = useCallback(
+    (next: WithId<Location>[]): void => {
+      setServiceFacilities(next);
+      // Drop the chosen visit types that are not available at any of the service facilities now chosen
+      const kept = services.filter((service) => isServiceKeptAtAnyLocation(service, next));
       if (kept.length !== services.length) {
         setServices(kept);
         setServiceFieldKey((key) => key + 1);
       }
-      onChange({ serviceFacility: next, services: kept });
+      onChange({ serviceFacilities: next, services: kept });
     },
     [onChange, services]
   );
@@ -80,25 +80,25 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const selectServices = useCallback(
     (next: WithId<HealthcareService>[]): void => {
       setServices(next);
-      onChange({ serviceFacility, services: next });
+      onChange({ serviceFacilities, services: next });
     },
-    [serviceFacility, onChange]
+    [serviceFacilities, onChange]
   );
 
   return (
     <Stack gap="xs">
-      <ServiceFacilityInput
+      <ServiceFacilitiesInput
         label="Service Facility"
-        placeholder="All service facilities"
+        placeholder={serviceFacilities.length > 0 ? 'Add a service facility' : 'All service facilities'}
         searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
-        defaultValue={serviceFacility}
-        onChange={selectServiceFacility}
+        defaultValue={serviceFacilities}
+        onChange={selectServiceFacilities}
       />
       <AppointmentServiceMultiSelect
         key={serviceFieldKey}
         label="Visit Type"
         placeholder={services.length > 0 ? 'Add a visit type' : 'All visit types'}
-        serviceFacility={serviceFacility}
+        serviceFacilities={serviceFacilities}
         defaultValue={services}
         onChange={selectServices}
       />

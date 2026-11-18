@@ -64,7 +64,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     error,
     disabled,
   } = props;
-  const loadOptions = useServiceOptions(serviceFacility);
+  const loadOptions = useServiceOptions(serviceFacility && getReferenceString(serviceFacility));
   const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);
 
   return (
@@ -88,8 +88,8 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
 export interface AppointmentServiceMultiSelectProps {
   readonly defaultValue?: readonly WithId<HealthcareService>[];
   readonly onChange: (services: WithId<HealthcareService>[]) => void;
-  /** A chosen site, which narrows the services on offer to the ones held there. */
-  readonly serviceFacility?: WithId<Location> | Reference<Location>;
+  /** The chosen sites, which narrow the services on offer to the ones held at any of them. */
+  readonly serviceFacilities?: readonly (WithId<Location> | Reference<Location>)[];
   readonly label?: string;
   readonly placeholder?: string;
 }
@@ -102,8 +102,9 @@ export interface AppointmentServiceMultiSelectProps {
  * @returns The field.
  */
 export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSelectProps): JSX.Element {
-  const { serviceFacility, defaultValue, onChange, label = 'Visit types', placeholder } = props;
-  const loadOptions = useServiceOptions(serviceFacility);
+  const { serviceFacilities, defaultValue, onChange, label = 'Visit types', placeholder } = props;
+  // ORed, as a search's comma-separated values are.
+  const loadOptions = useServiceOptions(serviceFacilities?.map(getReferenceString).join(',') || undefined);
   return (
     <AsyncAutocomplete<WithId<HealthcareService>>
       name="services"
@@ -120,10 +121,8 @@ export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSele
 
 type LoadServiceOptions = (input: string, signal: AbortSignal) => Promise<WithId<HealthcareService>[]>;
 
-function useServiceOptions(serviceFacility: WithId<Location> | Reference<Location> | undefined): LoadServiceOptions {
+function useServiceOptions(serviceFacilityReference: string | undefined): LoadServiceOptions {
   const medplum = useMedplum();
-
-  const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
 
   // Resolves to undefined when the read failed, leaving search to the server.
   const readCatalogRef = useRef<() => Promise<ServiceSearchResult | undefined>>(undefined);

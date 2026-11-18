@@ -170,7 +170,12 @@ function useAvailabilityShadingDemo(initial: DemoProps): {
       SHADING_SLOTS.filter((slot) => slot.schedule.reference === getReferenceString(provider.schedule));
 
     // As the workspace draws them: blocked time on its calendar, appointments by visit type color.
-    const drawn = shown.flatMap(heldBy).filter((appointment) => matchesCalendarFilters(appointment, filters));
+    const drawn = shown.flatMap(heldBy).filter((appointment) =>
+      matchesCalendarFilters(appointment, {
+        serviceFacilities: facility ? [facility] : [],
+        services: service ? [service] : [],
+      })
+    );
     const sources: MultiCalendarSource[] = [
       ...shown.map((provider) => ({ schedule: provider.schedule, slots: blockedOn(provider), appointments: [] })),
       ...Array.from(groupAppointmentsByService(drawn), ([reference, appointments]) => ({
