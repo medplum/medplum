@@ -164,7 +164,7 @@ Configure the operation type using the `system`, `type`, and `instance` properti
 - **Instance-level requests**: The server reads the target resource and passes it as `event.input`, rather than the request body or query parameters
 - Access to full request context via `event.headers`, etc.
 
-Custom operations wait for Bot execution and do not implement the `Prefer: respond-async` behavior of [Bot `$execute`](/docs/api/fhir/operations/bot-execute#asynchronous-execution). To accept work for later processing, persist that work in the handler and use a separate worker; see [Implementing Event Processing](/docs/bots/event-processing#accept-work-for-background-processing).
+Custom operations wait for Bot execution and do not implement the `Prefer: respond-async` behavior of [Bot `$execute`](/docs/api/fhir/operations/bot-execute#asynchronous-execution). To accept work for later processing, persist that work in the handler, use a separate worker, and [monitor unfinished work](/docs/bots/monitoring-bots#monitor-the-queue-of-unfinished-work).
 
 ### Output Processing
 
@@ -182,6 +182,8 @@ Custom operations inherit the security model of both Bots and FHIR operations:
 - Bot execution follows the Bot's `runAsUser` configuration
 - Standard FHIR access controls apply to the operation endpoint
 - Operations can be system-level, type-level, or instance-level with appropriate permissions
+
+If the operation enforces a business rule, validate before writing and restrict access so callers cannot bypass it with ordinary FHIR writes. For validation applied during resource writes, see [FHIR profiles](/docs/fhir-datastore/profiles) and [AccessPolicy write constraints](/docs/access/access-policies#write-constraints).
 
 ## Error Handling
 

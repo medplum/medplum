@@ -252,7 +252,7 @@ To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/
 The default number of attempts is 4.
 
 {{< warning title="Note" >}}
-For `Bot/<id>` endpoints, a failed Bot execution can be recorded in its AuditEvent without triggering a Subscription retry. Delivery or execution setup errors can still cause retries, so handlers must tolerate repeated execution. Do not use `subscription-max-attempts` as a recovery mechanism for Bot business logic; use [persisted work and reconciliation](/docs/bots/event-processing#recover-failed-or-missed-work).
+For `Bot/<id>` endpoints, a failed Bot execution can be recorded in its AuditEvent without triggering a Subscription retry. Delivery or execution setup errors can still cause retries, so handlers must tolerate repeated execution. Do not use `subscription-max-attempts` as a recovery mechanism for Bot business logic; see [Monitor failures and recover](/docs/subscriptions/fhir-event-notifications#monitor-failures-and-recover).
 {{< /warning >}}
 
 ```json

@@ -29,12 +29,12 @@ Scope your authorization model – user types and organizational structure, mult
 - **[Decision Guide →](/docs/decision-guides/access-control)**
 - **Docs:** [Authorization and Access Control](/docs/access)
 
-### Event Processing and Automation
+### Running Backend Logic
 
-Choose where each processing flow runs, what triggers it, and whether the caller waits. Understand the resulting requirements for work state, retries, duplicate prevention, permissions, and monitoring.
+Choose how to invoke each Bot: a FHIR resource change, application request, incoming webhook, or schedule. For Subscriptions, start with Bots as the destination and select the resource changes that should send notifications.
 
-- **[Decision Guide →](/docs/decision-guides/event-processing-and-automation)**
-- **Docs:** [Implementing Event Processing](/docs/bots/event-processing)
+- **[Decision Guide →](/docs/decision-guides/running-backend-logic)**
+- **Docs:** [Bot Basics](/docs/bots/bot-basics), [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications)
 
 ## Clinical and Operational Workflows
 

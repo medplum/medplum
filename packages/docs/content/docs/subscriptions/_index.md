@@ -5,9 +5,9 @@ docs_tags:
   - subscription
 ---
 
-{{< tip title="Planning event processing" >}}
+{{< tip title="Choose a notification destination" >}}
 
-Use the [Event Processing and Automation Decision Guide](/docs/decision-guides/event-processing-and-automation) to decide when resource changes should trigger processing and what that requires for completion, repeat handling, and recovery.
+Start with a Medplum Bot to handle FHIR event notifications. Use [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic#decision-2-where-should-this-subscription-send-notifications) to choose the destination and matching resource changes for each Subscription, then follow [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications) for setup.
 
 {{< /tip >}}
 

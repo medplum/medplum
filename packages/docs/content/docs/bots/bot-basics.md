@@ -5,7 +5,7 @@ weight: 20
 toc_max_heading_level: 2
 ---
 
-Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](../sdk) , which itself can invoke FHIR operations.
+A **Medplum Bot** runs your custom JavaScript or TypeScript code in Medplum. A Bot can run in response to a FHIR resource change, an application request, an incoming webhook, or a recurring schedule. Its handler receives a [Medplum client](/docs/sdk) that can read and write FHIR resources and invoke FHIR operations.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
@@ -165,11 +165,16 @@ Then, you can [deploy your bot from command line](/docs/bots/bots-in-production#
 ## Executing a Bot
 
 Once your bot has been [saved](#editing-a-bot) and [deployed](#deploying-a-bot), it is time to execute the bot.
-There are a few different ways a bot can be executed:
+Choose the trigger for each Bot according to what should start its work:
 
-1. Clicking the "Execute" button in the **Bot Code Editor**
-1. Sending a POST request to the [`$execute` endpoint](/docs/api/fhir/operations/bot-execute)
-1. Setting up a [Subscription](/docs/fhir-basics#listening-for-changes-subscriptions) to execute the Bot automatically based on changes (see next section).
+- **FHIR resource change:** Configure a [Subscription](#executing-automatically-using-a-subscription) to invoke the Bot after a matching resource changes.
+- **Application request:** Call the [`$execute` endpoint](/docs/api/fhir/operations/bot-execute), or expose the Bot as a [custom FHIR operation](/docs/bots/custom-fhir-operations).
+- **Recurring time:** Configure a [Cron schedule](/docs/bots/bot-cron-job).
+- **External service event:** Configure an [incoming webhook](/docs/bots/consuming-webhooks).
+
+A Bot can support multiple triggers when its handler accepts their input formats and its permissions are appropriate for each entry point. See [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic) for examples, tradeoffs, and selection guidance.
+
+You can also execute the deployed Bot manually from the **Bot Code Editor** using the steps below.
 
 ### _Executing from the Code Editor_
 
@@ -223,51 +228,13 @@ Read more in the [Bot `$execute`](/docs/api/fhir/operations/bot-execute) documen
 
 ### _Executing automatically using a [`Subscription`](/docs/fhir-basics#listening-for-changes-subscriptions)_ {#executing-automatically-using-a-subscription}
 
-While using the `$execute` endpoint allows developers to trigger Bots from 3rd party applications, the most common way to execute a bot is to use a [FHIR subscription](/docs/fhir-basics#listening-for-changes-subscriptions) to trigger the Bot whenever a resource has been updated.
+A Subscription can invoke this Bot automatically when a Patient is created. The Bot receives that Patient as `event.input` and prints the name, just as it did during manual execution.
 
-Let's connect our bot to [`Patient`](/docs/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](/docs/api/fhir/resources/patient).
+1. In a test project, create the [Patient creation Subscription](/docs/subscriptions/fhir-event-notifications#select-the-resource-change). Replace `<bot-id>` with this Bot's ID and keep `status` set to `off` during setup.
+2. Keep the `create` interaction extension so updates and deletions are excluded. The sample handler above expects a Patient; deletion notifications have a different input shape.
+3. Confirm the Bot is deployed, then set the Subscription's `status` to `active`.
 
-{{< note >}}
-Bots can be run as a cron job. [Click Here](/docs/bots/bot-cron-job) to learn more.
-{{< /note >}}
-
-First, go to the [Subscription](https://app.medplum.com/Subscription) resources page.
-
-Then click on the "New..."
-
-![New Subscription](/img/app/bots/new_subscription.png)
-
-To ensure the Subscription is running, change "Status" to `Active`
-
-![Activate Subscription](/img/app/bots/subscription_active.png)
-
-Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](../search/basic-search) for a primer.
-
-For this example, we will trigger the Subscription after a change to _any_ `Patient` resource.
-
-Change "Criteria" field to `Patient`
-
-![Subscription Criteria](/img/app/bots/subscription_criteria.png)
-
-{{< warning title="Subscriptions on `AuditEvents`" >}}
-
-The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir/resources/auditevent) resource. When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
-
-{{< /warning >}}
-
-Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
-
-Because Bots are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
-
-![Subscription Channel](/img/app/bots/subscription_channel.png)
-
-Change "Payload" to `application/fhir+json`. This is similar to the [CONTENT_TYPE](#content_type) field used by the `$execute` endpoint.
-
-![Subscription Payload](/img/app/bots/subscription_payload.png)
-
-Finally, scroll down and click "OK".
-
-**Congratulations!** Now you have an active Subscription. ([View all Subscriptions](https://app.medplum.com/Subscription))
+For other matching criteria, deletion payloads, and recovery, see [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications).
 
 We can test our new subscription by creating a new `Patient`. First, go to the [Patient resources](https://app.medplum.com/Patient) using the top-left menu and clicking "Patient"
 
@@ -280,7 +247,7 @@ Enter a sample name such as given "Jane" family "Doe". Then Scroll down and clic
 
 ![Create new Patient](/img/app/bots/NewPatient.gif)
 
-Now, let's go back to our [`Subscription`](https://app.medplum.com/Subscription). On the Timeline, you should see an `AuditEvent` with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello Jane Doe" logged as part of the `AuditEvent`.
+Return to the Bot and open its **Event** tab. With the default logging settings, its execution AuditEvent should contain "Hello Jane Doe!". See [Monitoring and Recovering Bots](/docs/bots/monitoring-bots#find-an-invocation) if the event is missing or reports a failure.
 
 <img src='/img/app/bots/auditevent.png' alt='Audit Event' style=""/>
 

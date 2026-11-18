@@ -194,7 +194,7 @@ For authenticated Bot `$execute` requests, specify `Prefer: respond-async` to re
 
 {{< note title="Execution tracking and recovery" >}}
 
-The server records an `AsyncJob`, but this execution path does not persist the request body as a resumable queue or automatically retry Bot failures. An interruption can leave a job unfinished. Retain the inputs and operation identity separately when recovery needs them, and reconcile an uncertain outcome before resubmitting. See [background processing and recovery](/docs/bots/event-processing#accept-work-for-background-processing).
+The server records an `AsyncJob`, but this execution path does not persist the request body as a resumable queue or automatically retry Bot failures. An interruption can leave a job unfinished. Retain the inputs and operation identity separately when recovery needs them, and reconcile an uncertain outcome before resubmitting. See [Recover an item safely](/docs/bots/monitoring-bots#recover-an-item-safely).
 
 {{< /note >}}
 

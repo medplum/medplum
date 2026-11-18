@@ -4,9 +4,9 @@ title: Bots
 weight: 10
 ---
 
-{{< tip title="Planning event processing" >}}
+{{< tip title="Running backend logic" >}}
 
-Use the [Event Processing and Automation Decision Guide](/docs/decision-guides/event-processing-and-automation) to choose between Bots and external services, select triggers, and define completion and recovery requirements.
+Use [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic) to choose each Bot's trigger and each Subscription's destination. Bots are the recommended starting point for handling FHIR event notifications.
 
 {{< /tip >}}
 
@@ -42,10 +42,10 @@ Configure how and when your bots execute, from scheduled tasks to real-time even
 - [Consuming Webhooks](/docs/bots/consuming-webhooks)
 - [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response)
 - [Custom FHIR Operations](/docs/bots/custom-fhir-operations)
+- [FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications)
 
 ## Common Use Cases & Patterns
 Implement frequently-needed functionality like file handling, document generation, and data transformation.
-- [Implementing Event Processing](/docs/bots/event-processing)
 - [Uploading Files](/docs/bots/file-uploads)
 - [Create a PDF](/docs/bots/creating-a-pdf)
 - [HL7 to FHIR](/docs/bots/hl7-into-fhir)

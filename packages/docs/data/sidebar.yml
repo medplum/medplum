@@ -37,7 +37,7 @@ items:
             id: "docs/decision-guides/access-control"
             label: "Access Control and Tenancy"
           - type: "doc"
-            id: "docs/decision-guides/event-processing-and-automation"
+            id: "docs/decision-guides/running-backend-logic"
       - type: "category"
         label: "Clinical and Operational Workflows"
         items:
@@ -421,8 +421,6 @@ items:
         id: "docs/bots/custom-fhir-operations"
       - type: "header"
         value: "Common Use Cases & Patterns"
-      - type: "doc"
-        id: "docs/bots/event-processing"
       - type: "doc"
         id: "docs/bots/file-uploads"
       - type: "doc"

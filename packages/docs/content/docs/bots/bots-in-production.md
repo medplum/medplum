@@ -8,8 +8,8 @@ toc_max_heading_level: 2
 
 A production Bot needs a repeatable build, an explicit execution identity, a controlled trigger, and a way to diagnose and recover failed work. This guide takes a Bot from source control through staging, deployment, and ongoing operation.
 
-{{< tip title="Choose your processing approach" >}}
-Use the [Event Processing and Automation Decision Guide](/docs/decision-guides/event-processing-and-automation) to choose an execution environment, trigger, and completion model for each flow.
+{{< tip title="Choose how to invoke your Bot" >}}
+Use [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic) to choose the trigger for each Bot. This page covers building, deploying, and operating the Bot with that trigger.
 {{< /tip >}}
 
 If you are writing your first handler, start with [Bot Basics](/docs/bots/bot-basics). For a local runtime, see [Running Bots Locally](/docs/bots/running-bots-locally).
@@ -192,14 +192,14 @@ Record the release, Bot IDs, environment, and deployment result before expanding
 
 ## Configure the trigger
 
-Choose the trigger that matches the source of work:
+Choose the trigger separately for each Bot, according to the source of work. See [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic#decision-1-what-should-start-the-work) for examples and tradeoffs.
 
 | Work starts when                               | Use                                                                                                                  |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| A matching FHIR resource changes               | A [Subscription](/docs/subscriptions/fhir-event-notifications) with narrow criteria and appropriate interaction or transition filters         |
 | An application makes an explicit request       | [Execute the Bot](/docs/api/fhir/operations/bot-execute) or expose a [custom FHIR operation](/docs/bots/custom-fhir-operations)      |
-| A matching FHIR resource is created or updated | A [Subscription](/docs/subscriptions) with narrow criteria and appropriate interaction or transition filters         |
-| An external service sends an event             | A [webhook handler](/docs/bots/consuming-webhooks), including the service's authentication or signature verification |
 | A scheduled time arrives                       | A [Cron schedule](/docs/bots/bot-cron-job)                                                                           |
+| An external service sends an event             | A [webhook handler](/docs/bots/consuming-webhooks), including the service's authentication or signature verification |
 
 Manage trigger configuration with the release. Verify its target Bot, execution identity, and environment-specific settings. Enable it after deployment and configuration checks. Repeated delivery, manual replay, and a timeout after an external service accepted a request all need a defined recovery behavior; do not assume that every invocation happens exactly once.
 
