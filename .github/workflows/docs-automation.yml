@@ -32,7 +32,7 @@ jobs:
       pull-requests: read
       issues: read
     outputs:
-      publishable: ${{ steps.validation.outputs.publishable }}
+      publication: ${{ steps.validation.outputs.publication }}
       base_sha: ${{ steps.prepare.outputs.base_sha }}
     steps:
       - name: Check out reviewed automation
@@ -86,9 +86,9 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ github.token }}
           settings: scripts/docs-automation/agent-settings.json
-          prompt: Read scripts/docs-automation/prompts/draft.md and follow its instructions. Return proposed file contents as structured output without editing files.
-          claude_args: ${{ steps.prepare.outputs.draft_args }}
-      - name: Validate and apply allowed edits
+          prompt: Read scripts/docs-automation/prompts/draft.md and follow its instructions. Edit only the planned files, then return the requested structured result.
+          claude_args: ${{ steps.classification.outputs.draft_args }}
+      - name: Check and capture drafted edits
         id: apply
         if: inputs.mode != 'classify' && steps.classification.outputs.draft == 'true'
         env:
@@ -100,14 +100,10 @@ jobs:
         if: steps.apply.outputs.applied == 'true'
         working-directory: repo
         run: npm ci
-      - name: Format and capture the final patch
-        id: format
-        if: steps.apply.outputs.applied == 'true'
-        run: node scripts/docs-automation/run.ts format
       - name: Independently verify the proposed documentation
         id: verify
         timeout-minutes: 20
-        if: steps.format.outcome == 'success'
+        if: steps.apply.outputs.applied == 'true'
         uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -141,7 +137,6 @@ jobs:
         if: always() && steps.prepare.outcome == 'success'
         env:
           INSTALL_RESULT: ${{ steps.install.outcome }}
-          FORMAT_RESULT: ${{ steps.format.outcome }}
           BUILD_RESULT: ${{ steps.build.outcome }}
         run: node scripts/docs-automation/run.ts validation
       - name: Summarize decisions, evidence, and checks
@@ -157,7 +152,7 @@ jobs:
           retention-days: 14
 
   publish:
-    if: inputs.mode == 'open-pr' && needs.analyze.outputs.publishable == 'true'
+    if: inputs.mode == 'open-pr' && contains(fromJSON('["pr", "comment"]'), needs.analyze.outputs.publication)
     needs: analyze
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -183,7 +178,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ARTIFACT_NAME: docs-review-${{ inputs.pr_number }}
         run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir .docs-run
-      - name: Publish with deterministic checks and assign the original author
+      - name: Open the draft PR or comment on the source PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/docs-automation/run.ts publish

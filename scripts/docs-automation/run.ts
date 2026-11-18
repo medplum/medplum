@@ -126,27 +126,36 @@ export function validateClassification(root: string, result: Classification): vo
     }
   }
 }
-export function validateDraft(root: string, classification: Classification, draft: Draft): void {
+// The drafter edits planned files directly; permission rules limit it to those paths. Re-check what
+// actually changed on disk against the plan before anything is verified, built, or published.
+export function checkDraftedFiles(root: string, classification: Classification, draft: Draft): string[] {
   validateSchema(draft, schemas.draft);
-  if (draft.questions.length) throw new Error('Draft has unresolved questions; review the draft artifact');
-  if (classification.outcome !== 'update-docs' || !draft.edits.length) throw new Error('No draftable change');
+  if (classification.outcome !== 'update-docs') throw new Error('No draftable change');
+  const changed = git(['status', '--porcelain', '-z', '--untracked-files=all'], root)
+    .split('\0')
+    .filter(Boolean)
+    .map((entry) => entry.slice(3));
   const planned = new Set(classification.changes.map((change) => change.path));
-  if (draft.edits.length !== planned.size || draft.edits.length > config.maxDraftFiles)
-    throw new Error('Draft does not match plan');
+  // A draft with questions may cover part of the plan; questions already block publication.
+  if (!changed.length || (!draft.questions.length && changed.length !== planned.size)) {
+    throw new Error('Drafted files do not match the plan');
+  }
   let bytes = 0;
-  for (const edit of draft.edits) {
-    if (!allowedDoc(edit.path) || !planned.delete(edit.path)) throw new Error(`Unplanned/duplicate path: ${edit.path}`);
-    noSymlinks(root, edit.path);
-    bytes += Buffer.byteLength(edit.content);
-    if (bytes > config.maxDraftBytes || edit.content.includes('\0')) throw new Error('Draft exceeds content limits');
-    if (/<\s*(script|iframe)\b/i.test(edit.content)) throw new Error('Executable HTML is outside draft scope');
+  for (const path of changed) {
+    if (!allowedDoc(path) || !planned.has(path)) throw new Error(`Unplanned change: ${path}`);
+    noSymlinks(root, path);
+    const content = readFileSync(join(root, path), 'utf8');
+    bytes += Buffer.byteLength(content);
+    if (bytes > config.maxDraftBytes || content.includes('\0')) throw new Error('Draft exceeds content limits');
+    if (/<\s*(script|iframe)\b/i.test(content)) throw new Error('Executable HTML is outside draft scope');
     if (
-      edit.path.startsWith('packages/docs/content/') &&
-      !/^---\r?\n[\s\S]*?\btitle:\s*\S[\s\S]*?\r?\n---(?:\r?\n|$)/.test(edit.content)
+      path.startsWith('packages/docs/content/') &&
+      !/^---\r?\n[\s\S]*?\btitle:\s*\S[\s\S]*?\r?\n---(?:\r?\n|$)/.test(content)
     ) {
-      throw new Error(`Missing YAML front matter/title: ${edit.path}`);
+      throw new Error(`Missing YAML front matter/title: ${path}`);
     }
   }
+  return changed;
 }
 export function readyToPublish(classification: Classification, draft: Draft, verification: Verification): boolean {
   validateSchema(verification, schemas.verify);
@@ -161,7 +170,8 @@ export function readyToPublish(classification: Classification, draft: Draft, ver
   );
 }
 
-export function args(stage: keyof typeof schemas): string {
+// Only the draft stage gets Edit/Write, and only for the exact planned paths. Edit rules also cover Write.
+export function args(stage: keyof typeof schemas, editPaths: string[] = []): string {
   if (
     !/^claude-[a-z0-9.-]+$/.test(config.model) ||
     !['low', 'medium', 'high', 'xhigh', 'max'].includes(config.effort)
@@ -171,9 +181,12 @@ export function args(stage: keyof typeof schemas): string {
   if (!Number.isInteger(config.maxTurns) || config.maxTurns < 1 || !Number.isFinite(config.budgetUsd[stage])) {
     throw new Error('Invalid agent limits');
   }
+  if (!editPaths.every(allowedDoc)) throw new Error('Invalid edit path');
+  const tools = ['Read', 'Glob', 'Grep', ...(editPaths.length ? ['Edit', 'Write'] : [])];
+  const allowed = ['Read', 'Glob', 'Grep', ...editPaths.map((path) => `Edit(repo/${path})`)];
   return (
     `--model ${config.model} --effort ${config.effort} --max-turns ${config.maxTurns} ` +
-    `--max-budget-usd ${config.budgetUsd[stage]} --tools Read,Glob,Grep --allowedTools Read,Glob,Grep ` +
+    `--max-budget-usd ${config.budgetUsd[stage]} --tools ${tools.join(',')} --allowedTools '${allowed.join(',')}' ` +
     `--disallowedTools 'mcp__*' --setting-sources user --permission-mode dontAsk ` +
     `--json-schema '${JSON.stringify(schemas[stage])}'`
   );
@@ -230,7 +243,7 @@ function prepare(): void {
   };
   save('context.json', context);
   output('base_sha', context.baseSha);
-  for (const stage of ['classify', 'draft', 'verify'] as const) output(`${stage}_args`, args(stage));
+  for (const stage of ['classify', 'verify'] as const) output(`${stage}_args`, args(stage));
   output('analyze', 'false');
   const stop = (outcome: Classification['outcome'], rationale: string): void => {
     save('classification.json', {
@@ -303,25 +316,17 @@ function prepare(): void {
   output('analyze', 'true');
 }
 
-function applyDraft(): void {
+// The plan was validated before drafting (classify stage, or publish before applying the patch).
+function captureDraft(): void {
   const classification = readJson<Classification>('classification.json');
-  const draft = readJson<Draft>('draft.json');
-  validateClassification(repo, classification);
-  validateDraft(repo, classification, draft);
-  const context = readJson<Context>('context.json');
-  if (git(['rev-parse', 'HEAD']).trim() !== context.baseSha || git(['status', '--porcelain']).trim()) {
-    throw new Error('Draft must be applied to the clean, pinned base revision');
+  if (git(['rev-parse', 'HEAD']).trim() !== readJson<Context>('context.json').baseSha) {
+    throw new Error('Draft must be on the pinned base revision');
   }
-  for (const edit of draft.edits) {
-    mkdirSync(dirname(join(repo, edit.path)), { recursive: true });
-    writeFileSync(join(repo, edit.path), edit.content);
-  }
-  // Add only validated files, including new pages, so the artifact includes the complete patch.
-  git(['add', '--', ...draft.edits.map((edit) => edit.path)]);
+  const paths = checkDraftedFiles(repo, classification, readJson<Draft>('draft.json'));
+  // Stage only checked files, including new pages, so the artifact includes the complete patch.
+  git(['add', '--', ...paths]);
   git(['diff', '--cached', '--check']);
-  const patch = git(['diff', '--cached', '--no-ext-diff', '--no-textconv']);
-  if (!patch.trim()) throw new Error('Agent produced no effective documentation changes');
-  writeFileSync(artifact('docs.patch'), patch);
+  writeFileSync(artifact('docs.patch'), git(['diff', '--cached', '--no-ext-diff', '--no-textconv']));
 }
 
 export function structuredResult(messages: unknown): unknown {
@@ -333,46 +338,56 @@ export function structuredResult(messages: unknown): unknown {
   return result.structured_output;
 }
 
+// Agents sometimes prefix paths with the workspace's `repo/` folder or cite run artifacts.
+// Normalize the prefix and drop artifact citations rather than failing the run.
+export function normalizePaths<T extends Classification | Draft | Verification>(result: T): T {
+  const strip = (path: string): string => path.replace(/^(?:\.\/)?repo\//, '');
+  const value = structuredClone(result) as Partial<Classification & Draft & Verification>;
+  if (value.evidence) {
+    value.evidence = value.evidence
+      .map((item) => ({ ...item, path: strip(item.path) }))
+      .filter((item) => {
+        if (!item.path.startsWith('.docs-run/')) return true;
+        console.warn(`Ignoring run artifact cited as evidence: ${item.path}:${item.line}`);
+        return false;
+      });
+  }
+  if (value.changes) value.changes = value.changes.map((change) => ({ ...change, path: strip(change.path) }));
+  return value as T;
+}
+
 function accept(stage: 'classify' | 'draft' | 'verify'): void {
   // Read the action's result file to avoid Linux's per-environment-variable size limit.
   // Only the structured result is saved; the execution transcript stays out of artifacts.
-  const result = structuredResult(JSON.parse(readFileSync(process.env.EXECUTION_FILE ?? '', 'utf8')));
-  validateSchema(result, schemas[stage]);
+  const raw = structuredResult(JSON.parse(readFileSync(process.env.EXECUTION_FILE ?? '', 'utf8')));
+  validateSchema(raw, schemas[stage]);
+  const result = normalizePaths(raw as Classification | Draft | Verification);
   const name = stage === 'classify' ? 'classification' : stage === 'verify' ? 'verification' : 'draft';
   save(`${name}.json`, result);
   if (stage === 'classify') {
-    validateClassification(repo, result as Classification);
-    output('draft', String((result as Classification).outcome === 'update-docs'));
+    const classification = result as Classification;
+    validateClassification(repo, classification);
+    output('draft', String(classification.outcome === 'update-docs'));
+    output(
+      'draft_args',
+      args(
+        'draft',
+        classification.changes.map((change) => change.path)
+      )
+    );
   } else if (stage === 'draft') {
-    const draft = result as Draft;
-    if (draft.questions.length) {
-      if (draft.edits.length) throw new Error('An uncertain draft must return questions without edits');
+    // Questions block publication; any supported edits are still kept for review and verification.
+    if (!git(['status', '--porcelain']).trim() && (result as Draft).questions.length) {
       output('applied', 'false');
       return;
     }
-    applyDraft();
+    captureDraft();
     output('applied', 'true');
   } else {
     validateEvidence(repo, (result as Verification).evidence);
     const ready = readyToPublish(readJson('classification.json'), readJson('draft.json'), result as Verification);
     output('ready', String(ready));
   }
-}
-
-function formatDraft(): void {
-  const draft = readJson<Draft>('draft.json');
-  const classification = readJson<Classification>('classification.json');
-  validateDraft(repo, classification, draft);
-  execFileSync('npm', ['exec', '--no', '--', 'prettier', '--write', ...draft.edits.map((edit) => edit.path)], {
-    cwd: repo,
-    stdio: 'inherit',
-  });
-  for (const edit of draft.edits) edit.content = readFileSync(join(repo, edit.path), 'utf8');
-  validateDraft(repo, classification, draft);
-  save('draft.json', draft);
-  git(['add', '--', ...draft.edits.map((edit) => edit.path)]);
-  git(['diff', '--cached', '--check']);
-  writeFileSync(artifact('docs.patch'), git(['diff', '--cached', '--no-ext-diff', '--no-textconv']));
 }
 
 function renderSummary(): void {
@@ -390,10 +405,6 @@ function renderSummary(): void {
         ''
       );
       continue;
-    }
-    if (name === 'draft') {
-      const draft = value as unknown as Draft;
-      value.edits = draft.edits.map((edit) => ({ path: edit.path, bytes: Buffer.byteLength(edit.content) }));
     }
     // Escape HTML and fence delimiters from model-generated text in the Actions summary.
     blocks.push(
@@ -415,62 +426,109 @@ function renderSummary(): void {
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 }
 
-function recordValidation(): void {
-  const classification = existsSync(artifact('classification.json'))
-    ? readJson<Classification>('classification.json')
-    : undefined;
-  const draft = existsSync(artifact('draft.json')) ? readJson<Draft>('draft.json') : undefined;
-  const verification = existsSync(artifact('verification.json'))
-    ? readJson<Verification>('verification.json')
-    : undefined;
+const optional = <T>(name: string): T | undefined => (existsSync(artifact(name)) ? readJson<T>(name) : undefined);
+// Model text goes into public GitHub bodies: neutralize @mentions and raw HTML outside code spans.
+export const safe = (text: string): string =>
+  text
+    .split(/(`[^`]*`)/)
+    .map((part, index) => (index % 2 ? part : part.replace(/@(?=[\w-])/g, '@\u200b').replace(/</g, '&lt;')))
+    .join('');
+
+// In open-pr mode, a built patch becomes a draft PR whether or not it is ready; other needs-human
+// results become a comment on the source PR. Nothing is posted in classify or draft mode.
+export function assess(mode: string, install: string, build: string) {
+  const classification = optional<Classification>('classification.json');
+  const draft = optional<Draft>('draft.json');
+  const verification = optional<Verification>('verification.json');
   const ready = !!(classification && draft && verification && readyToPublish(classification, draft, verification));
-  const validation = {
-    outcome: draft?.questions.length || (verification && !ready) ? 'needs-human' : classification?.outcome,
-    install: process.env.INSTALL_RESULT ?? 'skipped',
-    format: process.env.FORMAT_RESULT ?? 'skipped',
-    build: process.env.BUILD_RESULT ?? 'skipped',
+  const patch = existsSync(artifact('docs.patch'));
+  const built = install === 'success' && build === 'success';
+  const questions = [
+    ...(classification?.questions ?? []),
+    ...(draft?.questions ?? []),
+    ...(verification?.findings ?? []),
+    ...(verification?.examples === 'requires-execution' ? ['Run the new inline examples before merging.'] : []),
+    ...(patch && !built ? ['The docs build did not pass; see the workflow run.'] : []),
+  ];
+  const outcome = questions.length || (verification && !ready) ? 'needs-human' : classification?.outcome;
+  let action: 'pr' | 'comment' | 'none' = 'none';
+  if (mode === 'open-pr') action = patch && built ? 'pr' : outcome === 'needs-human' ? 'comment' : 'none';
+  return { classification, draft, ready, outcome, action, questions };
+}
+
+function recordValidation(): void {
+  const install = process.env.INSTALL_RESULT ?? 'skipped';
+  const build = process.env.BUILD_RESULT ?? 'skipped';
+  const { outcome, action } = assess(readJson<Context>('context.json').mode, install, build);
+  save('validation.json', {
+    outcome,
+    publication: action,
+    install,
+    build,
     examples: 'Inline snippets were not executed. Existing source example references are reviewed by the verifier.',
-  };
-  save('validation.json', validation);
-  const context = readJson<Context>('context.json');
-  output(
-    'publishable',
-    String(
-      context.mode === 'open-pr' &&
-        ready &&
-        validation.install === 'success' &&
-        validation.format === 'success' &&
-        validation.build === 'success'
-    )
+  });
+  output('publication', action);
+}
+
+// One comment per source PR, updated on reruns, so the original author sees the result where they work.
+function upsertSourceComment(context: Context, lines: string[]): string {
+  const marker = `<!-- docs-automation: ${context.repository}#${context.source.number} -->`;
+  const issue = `repos/${context.repository}/issues/${context.source.number}`;
+  const body = [marker, ...lines].join('\n');
+  const previous = api<{ id: number; body?: string; user: { login: string } }[]>(`${issue}/comments?per_page=100`).find(
+    (comment) => comment.user.login === 'github-actions[bot]' && comment.body?.startsWith(marker)
   );
+  const comment = previous
+    ? api<{ html_url: string }>(`repos/${context.repository}/issues/comments/${previous.id}`, 'PATCH', { body })
+    : api<{ html_url: string }>(`${issue}/comments`, 'POST', { body });
+  return comment.html_url;
 }
 
 function publish(): void {
   const context = readJson<Context>('context.json');
-  const validation = readJson<{ install: string; format: string; build: string }>('validation.json');
-  if (
-    context.repository !== process.env.GITHUB_REPOSITORY ||
-    context.mode !== 'open-pr' ||
-    !readyToPublish(readJson('classification.json'), readJson('draft.json'), readJson('verification.json')) ||
-    ![validation.install, validation.format, validation.build].every((result) => result === 'success')
-  ) {
+  const validation = readJson<{ install: string; build: string }>('validation.json');
+  const { classification, draft, ready, action, questions } = assess(
+    context.mode,
+    validation.install,
+    validation.build
+  );
+  if (context.repository !== process.env.GITHUB_REPOSITORY || action === 'none' || !classification) {
     throw new Error('Publication preconditions failed');
   }
+  const run = `https://github.com/${context.repository}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+  const questionList = questions.map((question) => `- ${safe(question)}`);
+  if (action === 'comment') {
+    const url = upsertSourceComment(context, [
+      '**Documentation check: needs human input**',
+      '',
+      'The documentation assistant compared this PR with the current docs and could not produce a publishable draft.',
+      '',
+      '### Open Questions',
+      ...questionList,
+      '',
+      `The decision, evidence, and any partial patch are in the [workflow run](${run}) artifacts for 14 days.`,
+    ]);
+    save('publication.json', { url, status: 'Commented on the source PR with open questions' });
+    return;
+  }
+  if (!draft) throw new Error('Publication preconditions failed');
+  const status = ready ? 'ready for review' : `needs human input (${questions.length} open questions)`;
   const branch = `docs/automated-pr-${sourceNumber(String(context.source.number))}`;
   const owner = context.repository.split('/')[0];
   const existing = api<{ html_url: string }[]>(
     `repos/${context.repository}/pulls?state=all&head=${encodeURIComponent(`${owner}:${branch}`)}`
   );
   if (existing.length) {
-    save('publication.json', {
-      url: existing[0].html_url,
-      status: 'Existing PR retained; reviewer edits were not overwritten.',
-    });
+    const url = existing[0].html_url;
+    upsertSourceComment(context, [`**Documentation follow-up:** ${url}, ${status}.`]);
+    save('publication.json', { url, status: 'Existing PR retained; reviewer edits were not overwritten.' });
     return;
   }
-  applyDraft();
-  const expected = readFileSync(artifact('docs.patch'), 'utf8');
-  if (!expected.trim()) throw new Error('Empty patch');
+  // Recreate the reviewed patch on a clean pinned checkout, then re-check it as the draft stage did.
+  if (git(['status', '--porcelain']).trim()) throw new Error('Publication needs a clean checkout');
+  validateClassification(repo, classification);
+  git(['apply', '--index', artifact('docs.patch')]);
+  captureDraft();
   git(['config', 'user.name', 'github-actions[bot]']);
   git(['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
   git(['checkout', '-b', branch]);
@@ -485,41 +543,45 @@ function publish(): void {
   } else {
     git(['push', 'origin', `HEAD:refs/heads/${branch}`]);
   }
-  const classification = readJson<Classification>('classification.json');
   const body = [
     `<!-- docs-automation: ${context.repository}#${context.source.number} -->`,
-    `Documentation follow-up for #${context.source.number}.`,
+    `Documentation follow-up for #${context.source.number}. Status: **${status}**.`,
     '',
-    classification.userImpact,
+    safe(classification.userImpact),
+    ...(questions.length ? ['', '## Open Questions', ...questionList] : []),
     '',
     '## Changes',
-    ...classification.changes.map((change) => `- ${change.path}: ${change.purpose}`),
+    ...classification.changes.map((change) => `- ${change.path}: ${safe(change.purpose)}`),
     '',
     '## Evidence',
     ...classification.evidence.map(
       (item) =>
-        `- [${item.path}:${item.line}](https://github.com/${context.repository}/blob/${context.baseSha}/${item.path}#L${item.line}): ${item.reason}`
+        `- [${item.path}:${item.line}](https://github.com/${context.repository}/blob/${context.baseSha}/${item.path}#L${item.line}): ${safe(item.reason)}`
     ),
     '',
+    '## Reviewer Checks',
+    safe(draft.notes),
+    '',
     '## Validation',
-    '- Formatting and Hugo docs build passed.',
+    '- Whitespace check and Hugo docs build passed.',
     '- Separate AI verification completed; human technical review is required.',
     '- Inline examples were not executed by this workflow.',
     '',
     `Model: ${context.model}; effort: ${context.effort}.`,
-    `Run: https://github.com/${context.repository}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+    `Run: ${run}`,
     '',
     'Review current behavior, release availability, examples, and rendered layout before publishing.',
   ].join('\n');
   const created = api<{ number: number; html_url: string }>(`repos/${context.repository}/pulls`, 'POST', {
-    title: `docs: follow up on #${context.source.number}`,
+    title: `docs: follow up on #${context.source.number}${ready ? '' : ' (needs input)'}`,
     head: branch,
     base: context.baseBranch,
     body,
     draft: true,
   });
-  // Save the PR before assigning so a failed assignment remains recoverable and visible.
+  // Save and link the PR before assigning so a failed assignment remains recoverable and visible.
   save('publication.json', { url: created.html_url, status: 'Created draft PR; assignment pending' });
+  upsertSourceComment(context, [`**Documentation follow-up:** ${created.html_url}, ${status}.`]);
   const assignee = context.source.user.type === 'User' ? context.source.user.login : config.fallbackAssignee;
   if (!assignee || !/^[a-zA-Z0-9-]+$/.test(assignee)) {
     save('publication.json', {
@@ -548,7 +610,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (command === 'prepare') prepare();
   else if (command === 'classify' || command === 'draft' || command === 'verify') accept(command);
   else if (command === 'validation') recordValidation();
-  else if (command === 'format') formatDraft();
   else if (command === 'publish') publish();
   else if (command === 'summary') {
     mkdirSync(runDir, { recursive: true });

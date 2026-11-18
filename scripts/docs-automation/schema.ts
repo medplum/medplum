@@ -14,7 +14,6 @@ export interface Classification {
 }
 
 export interface Draft {
-  edits: { path: string; content: string }[];
   notes: string;
   questions: string[];
 }
@@ -58,7 +57,6 @@ export const schemas = {
     questions: list(string),
   }),
   draft: object({
-    edits: list(object({ path: string, content: { type: 'string', minLength: 1, maxLength: 160000 } }), 6),
     notes: string,
     questions: list(string),
   }),
