@@ -3,7 +3,7 @@
 
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { saveConnection } from './connection';
+import { connect } from '../test-auth';
 import { GoogleCalendarClient } from './google-calendar';
 import { withConnectionLease } from './lease';
 import type { GoogleCalendarEvent } from './mapping';
@@ -26,6 +26,10 @@ const event: GoogleCalendarEvent = {
   },
 };
 const response = (status: number, body: unknown): Response => new Response(JSON.stringify(body), { status });
+const bound = (medplumConnection: string): GoogleCalendarEvent => ({
+  ...event,
+  extendedProperties: { private: { ...event.extendedProperties.private, medplumConnection } },
+});
 let medplum: MockClient;
 beforeEach(() => {
   medplum = new MockClient({ project: { resourceType: 'Project', id: 'p', name: 'p' } });
@@ -74,15 +78,8 @@ test('an ownership receipt cannot override conflicting private properties', asyn
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 test('receipts are account/source/connection bound and retry without duplicates', async () => {
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'account',
-    refreshToken: 'token',
-  });
-  const boundEvent = {
-    ...event,
-    extendedProperties: { private: { ...event.extendedProperties.private, medplumConnection: connection.basic.id } },
-  };
+  const connection = await connect(medplum, 'Practitioner/p', 'account');
+  const boundEvent = bound(connection.basic.id);
   await withConnectionLease(medplum, connection.basic.id, async (lease) => {
     const store = ownershipStore(lease, connection);
     expect(await store.has(boundEvent)).toBe(false);
@@ -100,27 +97,12 @@ test('receipts are account/source/connection bound and retry without duplicates'
   expect(await medplum.searchResources('Basic', MIRROR_SEARCH)).toHaveLength(1);
 });
 test('same account can reclaim a predecessor mirror, but another account or practitioner cannot', async () => {
-  const old = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'account',
-    refreshToken: 'token',
-  });
-  const previous = {
-    ...event,
-    etag: 'previous',
-    extendedProperties: { private: { ...event.extendedProperties.private, medplumConnection: old.basic.id } },
-  };
+  const old = await connect(medplum, 'Practitioner/p', 'account');
+  const previous = { ...bound(old.basic.id), etag: 'previous' };
   await withConnectionLease(medplum, old.basic.id, async (lease) => ownershipStore(lease, old).remember(previous));
   await medplum.deleteResource('Basic', old.basic.id);
-  const next = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'account',
-    refreshToken: 'new',
-  });
-  const desired = {
-    ...event,
-    extendedProperties: { private: { ...event.extendedProperties.private, medplumConnection: next.basic.id } },
-  };
+  const next = await connect(medplum, 'Practitioner/p', 'account', 'new');
+  const desired = bound(next.basic.id);
   await withConnectionLease(medplum, next.basic.id, async (lease) => {
     const store = ownershipStore(lease, next);
     expect(await store.ownsPrevious?.(desired, old.basic.id)).toBe(true);
@@ -163,15 +145,8 @@ test('a duplicate unowned event never gains an ownership receipt from an attempt
 });
 
 test('verified receipt persistence can finish after the work deadline but before lease expiry', async () => {
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'account',
-    refreshToken: 'token',
-  });
-  const boundEvent = {
-    ...event,
-    extendedProperties: { private: { ...event.extendedProperties.private, medplumConnection: connection.basic.id } },
-  };
+  const connection = await connect(medplum, 'Practitioner/p', 'account');
+  const boundEvent = bound(connection.basic.id);
   let now = Date.now();
   await withConnectionLease(
     medplum,

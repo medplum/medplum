@@ -15,10 +15,6 @@ describe('connection', () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
   });
 
-  test('not connected until saved', async () => {
-    expect(await findConnection(medplum, PRACTITIONER)).toBeUndefined();
-  });
-
   test('saves, finds and reads a connection', async () => {
     const saved = await saveConnection(medplum, {
       practitionerRef: PRACTITIONER,

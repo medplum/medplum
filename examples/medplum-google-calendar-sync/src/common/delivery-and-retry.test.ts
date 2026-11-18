@@ -3,7 +3,7 @@
 
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
-import { saveConnection } from './connection';
+import { connect } from '../test-auth';
 import { runInbound } from './inbound';
 import { LEASE_URL, withConnectionLease } from './lease';
 import { readState, withState } from './state';
@@ -29,11 +29,7 @@ test('a failed public summary never holds the lease or fails completed credentia
     }
     return create(resource, query, options);
   });
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'token',
-  });
+  const connection = await connect(medplum);
   const current = await medplum.readResource('Basic', connection.basic.id);
   expect(current.extension?.some((e) => e.url === LEASE_URL)).toBe(false);
   expect(readState(current).statusPublishPending).toBe(true);
@@ -43,11 +39,7 @@ test('a failed public summary never holds the lease or fails completed credentia
 });
 
 test('summary-only retries publish without any Google request', async () => {
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'token',
-  });
+  const connection = await connect(medplum);
   const state = readState(connection.basic);
   await medplum.updateResource(
     withState(connection.basic, { ...state, inboundCompleted: state.inboundRequest, statusPublishPending: true })

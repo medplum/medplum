@@ -1,29 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { BotEvent } from '@medplum/core';
-import type { Parameters, Practitioner } from '@medplum/fhirtypes';
+import type { BotEvent, WithId } from '@medplum/core';
+import type { Parameters, Practitioner, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
-import { findConnection, saveConnection, updateConnection } from '../common/connection';
+import { findConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from '../common/constants';
 import { importIdentifier } from '../common/import';
 import { runInbound } from '../common/inbound';
 import { LEASE_URL, withConnectionLease } from '../common/lease';
 import { readState, withState } from '../common/state';
-import { operationIdentity } from '../test-auth';
+import { connect, json, operationIdentity, secrets } from '../test-auth';
 import { handler } from './google-calendar-disconnect-bot';
 
 const PROJECT_ID = 'proj-1';
-const secrets: BotEvent['secrets'] = {
-  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
-  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
-};
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-}
 
 describe('google-calendar-disconnect-bot', () => {
   let medplum: MockClient;
@@ -33,10 +25,7 @@ describe('google-calendar-disconnect-bot', () => {
 
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
-    const practitioner = await medplum.createResource<Practitioner>({
-      resourceType: 'Practitioner',
-      meta: { project: PROJECT_ID },
-    });
+    const practitioner = await medplum.createResource<Practitioner>({ resourceType: 'Practitioner' });
     practitionerRef = `Practitioner/${practitioner.id}`;
     event = {
       bot: { reference: 'Bot/disconnect' },
@@ -52,15 +41,27 @@ describe('google-calendar-disconnect-bot', () => {
     globalThis.fetch = originalFetch;
   });
 
-  // The server stamps meta.project on the Basic; MockClient doesn't, so the test does.
-  async function connected(): Promise<CalendarConnection> {
-    const saved = await saveConnection(medplum, {
-      practitionerRef,
-      accountSub: 'sub',
-      refreshToken: 'rt',
+  const connected = (): Promise<CalendarConnection> => connect(medplum, practitionerRef);
+
+  function importedSlot(connection: CalendarConnection, eventId: string): Promise<WithId<Slot>> {
+    return medplum.createResource<Slot>({
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: { reference: 'Schedule/synthetic' },
+      start: '2026-11-01T10:00:00.000Z',
+      end: '2026-11-01T11:00:00.000Z',
+      identifier: [
+        {
+          system: IMPORT_IDENTIFIER_SYSTEM,
+          value: importIdentifier({
+            connectionId: connection.basic.id,
+            calendarId: 'synthetic',
+            eventId,
+            scheduleRef: 'Schedule/synthetic',
+          }),
+        },
+      ],
     });
-    const basic = await medplum.updateResource({ ...saved.basic, meta: { ...saved.basic.meta, project: PROJECT_ID } });
-    return { ...saved, basic };
   }
 
   test('queues disconnect during a worker lease without losing it to a late reauth update', async () => {
@@ -118,24 +119,7 @@ describe('google-calendar-disconnect-bot', () => {
     'uncertain mirrors keep the first repair reason while freeing owned Slots (legacy first=%s)',
     async (legacyFirst) => {
       const connection = await connected();
-      const slot = await medplum.createResource({
-        resourceType: 'Slot',
-        status: 'busy-unavailable',
-        schedule: { reference: 'Schedule/synthetic' },
-        start: '2026-11-01T10:00:00.000Z',
-        end: '2026-11-01T11:00:00.000Z',
-        identifier: [
-          {
-            system: IMPORT_IDENTIFIER_SYSTEM,
-            value: importIdentifier({
-              connectionId: connection.basic.id,
-              calendarId: 'synthetic',
-              eventId: 'event',
-              scheduleRef: 'Schedule/synthetic',
-            }),
-          },
-        ],
-      });
+      const slot = await importedSlot(connection, 'event');
       const fetch = vi
         .fn()
         .mockResolvedValueOnce(json(200, { access_token: 'at' }))
@@ -222,24 +206,7 @@ describe('google-calendar-disconnect-bot', () => {
 
   test('revocation during disconnect pauses remote work until explicitly acknowledged', async () => {
     const connection = await connected();
-    const slot = await medplum.createResource({
-      resourceType: 'Slot',
-      status: 'busy-unavailable',
-      schedule: { reference: 'Schedule/synthetic' },
-      start: '2026-12-01T10:00:00.000Z',
-      end: '2026-12-01T11:00:00.000Z',
-      identifier: [
-        {
-          system: IMPORT_IDENTIFIER_SYSTEM,
-          value: importIdentifier({
-            connectionId: connection.basic.id,
-            calendarId: 'synthetic',
-            eventId: 'busy-event',
-            scheduleRef: 'Schedule/synthetic',
-          }),
-        },
-      ],
-    });
+    const slot = await importedSlot(connection, 'busy-event');
     const fetch = vi.fn().mockImplementation(async () => json(400, { error: 'invalid_grant' }));
     globalThis.fetch = fetch;
     await handler(medplum, event);

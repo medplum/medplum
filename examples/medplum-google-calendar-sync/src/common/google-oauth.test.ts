@@ -10,17 +10,9 @@ import {
   refreshAccessToken,
   revokeToken,
 } from './google-oauth';
+import { idToken, json } from '../test-auth';
 
 const client = { clientId: 'cid', clientSecret: 'secret' };
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-}
-
-function idToken(claims: Record<string, unknown>): string {
-  const b64 = (value: unknown): string => Buffer.from(JSON.stringify(value)).toString('base64url');
-  return `${b64({ alg: 'RS256' })}.${b64(claims)}.sig`;
-}
 
 describe('google-oauth', () => {
   test('exchangeCode posts the code grant with PKCE and the redirect URI', async () => {

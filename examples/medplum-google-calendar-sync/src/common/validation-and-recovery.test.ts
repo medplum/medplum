@@ -5,7 +5,7 @@ import { isFhirCriteriaMet, OperationOutcomeError, preconditionFailed } from '@m
 import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test, vi } from 'vitest';
-import { saveConnection } from './connection';
+import { connect } from '../test-auth';
 import { IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import { busyInterval } from './import';
 import { ConnectionBusyError, LEASE_URL, withConnectionLease } from './lease';
@@ -14,11 +14,7 @@ import { ensureSyncSubscription } from './subscriptions';
 
 test('a compare-and-swap acquisition race is a retryable busy connection', async () => {
   const medplum = new MockClient();
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
+  const connection = await connect(medplum);
   vi.spyOn(medplum, 'updateResource').mockRejectedValueOnce(new OperationOutcomeError(preconditionFailed));
   const work = vi.fn();
   await expect(withConnectionLease(medplum, connection.basic.id, work)).rejects.toBeInstanceOf(ConnectionBusyError);
@@ -58,11 +54,7 @@ test('Slot delivery excludes imported writes and deletes but retains native bloc
 
 test('queued state mutations rebase on a worker write and preserve its lease and checkpoints', async () => {
   const medplum = new MockClient();
-  const connection = await saveConnection(medplum, {
-    practitionerRef: 'Practitioner/p',
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
+  const connection = await connect(medplum);
   await withConnectionLease(medplum, connection.basic.id, async (lease) => {
     const update = medplum.updateResource.bind(medplum);
     const before = await lease.read();

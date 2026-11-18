@@ -5,6 +5,8 @@ import type { BotEvent } from '@medplum/core';
 import type { Parameters, Resource } from '@medplum/fhirtypes';
 import type { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
+import type { CalendarConnection } from './common/connection';
+import { saveConnection } from './common/connection';
 import { BOT_IDENTIFIER_SYSTEM } from './common/constants';
 
 export async function operationIdentity(medplum: MockClient, event: BotEvent, identifier: string): Promise<void> {
@@ -39,3 +41,26 @@ export async function operationIdentity(medplum: MockClient, event: BotEvent, id
   }
 }
 export const empty: Parameters = { resourceType: 'Parameters' };
+
+export const secrets: BotEvent['secrets'] = {
+  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
+  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
+};
+
+export function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+}
+
+export function idToken(claims: Record<string, unknown>): string {
+  const b64 = (value: unknown): string => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${b64({ alg: 'RS256' })}.${b64(claims)}.sig`;
+}
+
+export function connect(
+  medplum: MockClient,
+  practitionerRef = 'Practitioner/p',
+  accountSub = 'sub',
+  refreshToken = 'rt'
+): Promise<CalendarConnection> {
+  return saveConnection(medplum, { practitionerRef, accountSub, refreshToken });
+}

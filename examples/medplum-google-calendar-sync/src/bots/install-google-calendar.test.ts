@@ -6,10 +6,10 @@ import { isOk } from '@medplum/core';
 import type { Bot, ExtractResource, OperationOutcome, Parameters, Project } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { saveConnection } from '../common/connection';
 import { INSTALL_SYSTEM } from '../common/constants';
 import { LEASE_URL } from '../common/lease';
 import { readState } from '../common/state';
+import { connect } from '../test-auth';
 import { handler } from './install-google-calendar';
 
 function outcome(result: Parameters): OperationOutcome {
@@ -96,11 +96,7 @@ describe('install-google-calendar', () => {
   }
 
   test('reinstall queues privacy work without taking a busy worker lease', async () => {
-    const connection = await saveConnection(medplum, {
-      practitionerRef: 'Practitioner/p',
-      accountSub: 'sub',
-      refreshToken: 'synthetic',
-    });
+    const connection = await connect(medplum, 'Practitioner/p', 'sub', 'synthetic');
     const held = {
       url: LEASE_URL,
       extension: [
@@ -158,7 +154,6 @@ describe('install-google-calendar', () => {
     const first = await install({ ...REQUIRED, GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: 'true' });
     expect(isOk(outcome(first))).toBe(true);
     expect(outcome(first).issue[0].details?.text).toContain('subject=%profile');
-    expect(outcome(first).issue[0].details?.text).not.toContain('DetectedIssue');
     expect(outcome(first).issue[0].details?.text).toMatch(/Reconcile runs hourly \(\d+ \* \* \* \*\)/);
 
     const stored = await medplum.readResource('Project', project.id as string);

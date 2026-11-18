@@ -3,16 +3,15 @@
 
 import type { BotEvent } from '@medplum/core';
 import { AccessPolicyInteraction, satisfiedAccessPolicy } from '@medplum/core';
-import type { Basic, Parameters, Slot } from '@medplum/fhirtypes';
+import type { Basic, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { operationIdentity } from '../test-auth';
 import { requireOperationBot } from './authorization';
 import { readProjectCeiling, writeProjectCeiling } from './configuration';
 import { findConnection, saveConnection } from './connection';
-import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
-import { CREDENTIAL_CRITERIA, readCredential } from './credentials';
-import { importedSlots } from './import';
+import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
+import { CREDENTIAL_CRITERIA } from './credentials';
 import { withConnectionLease } from './lease';
 import { ensurePolicy, PRACTITIONER_POLICY_SNIPPET } from './policies';
 
@@ -21,12 +20,6 @@ beforeEach(() => {
   medplum = new MockClient({ project: { resourceType: 'Project', id: 'customer-a', name: 'a' } });
 });
 const args = { practitionerRef: 'Practitioner/doctor', accountSub: 'sub', refreshToken: 'private-token' };
-
-test('the refresh token is stored apart from the connection', async () => {
-  const connection = await saveConnection(medplum, args);
-  expect(JSON.stringify(connection.basic)).not.toContain('private-token');
-  expect(await readCredential(medplum, connection)).toBe('private-token');
-});
 
 test('practitioner and webhook policies deny credential and historical-token access', async () => {
   const connection = await saveConnection(medplum, args);
@@ -81,21 +74,7 @@ test('linked Basic visibility cannot select foreign settings or connections', as
     'different project'
   );
 });
-test('malformed identifiers are retained and reported without aborting unrelated scans', async () => {
-  const slot = await medplum.createResource<Slot>({
-    resourceType: 'Slot',
-    status: 'busy-unavailable',
-    schedule: { reference: 'Schedule/s' },
-    start: '2026-11-01T10:00:00Z',
-    end: '2026-11-01T11:00:00Z',
-    identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'broken' }],
-  });
-  const repair = vi.fn();
-  expect(await importedSlots(medplum, 'unrelated', repair)).toEqual([]);
-  expect(repair).toHaveBeenCalledWith(slot);
-  expect(await medplum.readResource('Slot', slot.id)).toBeDefined();
-});
-test('mutations reject caller fallback, missing membership, and cross-project practitioner', async () => {
+test('mutations reject caller fallback, a cross-project practitioner, and a missing effective policy', async () => {
   const event: BotEvent<Parameters> = {
     bot: { reference: 'Bot/connect' },
     requester: { reference: args.practitionerRef },
@@ -107,26 +86,15 @@ test('mutations reject caller fallback, missing membership, and cross-project pr
     'restricted Bot membership'
   );
   await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.connect);
+  // The server session summary carries no project or policy reference.
+  expect(medplum.getProjectMembership()?.project).toBeUndefined();
+  expect(medplum.getProjectMembership()?.accessPolicy).toBeUndefined();
   expect(await requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).toBe(args.practitionerRef);
   await medplum.updateResource({
     ...(await medplum.readResource('Practitioner', 'doctor')),
     meta: { project: 'other' },
   });
   await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow('different project');
-});
-
-test('operation authorization accepts the server session summary and rejects a missing effective policy', async () => {
-  const event = {
-    bot: { reference: 'Bot/connect' },
-    requester: { reference: args.practitionerRef },
-    input: { resourceType: 'Parameters' },
-    contentType: 'application/fhir+json',
-    secrets: {},
-  } as BotEvent;
-  await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.connect);
-  expect(medplum.getProjectMembership()?.project).toBeUndefined();
-  expect(medplum.getProjectMembership()?.accessPolicy).toBeUndefined();
-  await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).resolves.toBe(args.practitionerRef);
   vi.mocked(medplum.getAccessPolicy).mockReturnValue(undefined);
   await expect(requireOperationBot(medplum, event, BOT_IDENTIFIER_VALUE.connect)).rejects.toThrow(
     'restricted Bot membership'

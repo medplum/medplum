@@ -6,30 +6,26 @@ import type { Parameters, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from '../common/connection';
-import { findConnection, saveConnection, updateConnection } from '../common/connection';
+import { findConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { readCredential } from '../common/credentials';
 import { withConnectionLease } from '../common/lease';
 import { readState, withState } from '../common/state';
-import { empty, operationIdentity } from '../test-auth';
+import { connect, empty, idToken, json, operationIdentity, secrets } from '../test-auth';
 import { handler } from './google-calendar-connect-bot';
 
-const PROJECT_ID = 'proj-1';
 const SCOPE =
   'openid email https://www.googleapis.com/auth/calendar.events.owned https://www.googleapis.com/auth/calendar.calendars.readonly';
 
-const secrets: BotEvent['secrets'] = {
-  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
-  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
-};
-
-function idToken(claims: Record<string, unknown>): string {
-  const b64 = (value: unknown): string => Buffer.from(JSON.stringify(value)).toString('base64url');
-  return `${b64({ alg: 'RS256' })}.${b64(claims)}.sig`;
-}
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+function grant(claims: Record<string, unknown>, refreshToken = 'rt'): Record<string, unknown> {
+  return {
+    access_token: 'at',
+    refresh_token: refreshToken,
+    expires_in: 3599,
+    scope: SCOPE,
+    token_type: 'Bearer',
+    id_token: idToken(claims),
+  };
 }
 
 function params(values: Record<string, string>): Parameters {
@@ -60,7 +56,6 @@ describe('google-calendar-connect-bot', () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
     practitioner = await medplum.createResource<Practitioner>({
       resourceType: 'Practitioner',
-      meta: { project: PROJECT_ID },
       name: [{ family: 'Rivera' }],
     });
     event = (input) => ({
@@ -96,11 +91,7 @@ describe('google-calendar-connect-bot', () => {
   }
 
   test('a busy reconnect reports a retry message without exchanging or revoking the grant', async () => {
-    const connection = await saveConnection(medplum, {
-      practitionerRef: `Practitioner/${practitioner.id}`,
-      accountSub: 'sub',
-      refreshToken: 'stored',
-    });
+    const connection = await connect(medplum, `Practitioner/${practitioner.id}`, 'sub', 'stored');
     globalThis.fetch = vi.fn();
     await withConnectionLease(medplum, connection.basic.id, async () => {
       await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('try reconnecting again in a few minutes');
@@ -110,14 +101,7 @@ describe('google-calendar-connect-bot', () => {
   });
 
   test('stores the connection and starts the backfill', async () => {
-    mockGoogle({
-      access_token: 'at',
-      refresh_token: 'rt-1',
-      expires_in: 3599,
-      scope: SCOPE,
-      token_type: 'Bearer',
-      id_token: idToken({ sub: 'sub-1', email: 'dr@clinic.example', hd: 'clinic.example' }),
-    });
+    mockGoogle(grant({ sub: 'sub-1', email: 'dr@clinic.example', hd: 'clinic.example' }, 'rt-1'));
 
     const result = await handler(medplum, event(params({ ...CODE_VALUES, eventDetailLevel: 'initials' })));
 
@@ -141,18 +125,11 @@ describe('google-calendar-connect-bot', () => {
 
   test('reconnect during paused cleanup keeps disconnecting and clears the revoked-credential pause', async () => {
     const practitionerRef = `Practitioner/${practitioner.id}`;
-    const saved = await saveConnection(medplum, { practitionerRef, accountSub: 'sub-1', refreshToken: 'rt-old' });
+    const saved = await connect(medplum, practitionerRef, 'sub-1', 'rt-old');
     await updateConnection(medplum, saved, { status: 'disconnecting' });
     const basic = await medplum.readResource('Basic', saved.basic.id);
     await medplum.updateResource(withState(basic, { ...readState(basic), inboundError: 'reauth-required' }));
-    mockGoogle({
-      access_token: 'at',
-      refresh_token: 'rt-new',
-      expires_in: 3599,
-      scope: SCOPE,
-      token_type: 'Bearer',
-      id_token: idToken({ sub: 'sub-1' }),
-    });
+    mockGoogle(grant({ sub: 'sub-1' }, 'rt-new'));
     await handler(medplum, event(CODE_PARAMS));
     const current = await requireConnection(medplum, practitionerRef);
     expect(current.status).toBe('disconnecting');
@@ -160,18 +137,11 @@ describe('google-calendar-connect-bot', () => {
     expect(readState(current.basic).credentialRevoked).toBe(false);
   });
 
-  test('reconnecting restores active status without creating workflow resources', async () => {
+  test('reconnecting restores active status', async () => {
     const practitionerRef = `Practitioner/${practitioner.id}`;
-    const saved = await saveConnection(medplum, { practitionerRef, accountSub: 'sub-1', refreshToken: 'rt-old' });
+    const saved = await connect(medplum, practitionerRef, 'sub-1', 'rt-old');
     await updateConnection(medplum, saved, { status: 'reauth-required' });
-    mockGoogle({
-      access_token: 'at',
-      refresh_token: 'rt-1',
-      expires_in: 3599,
-      scope: SCOPE,
-      token_type: 'Bearer',
-      id_token: idToken({ sub: 'sub-1', email: 'dr@clinic.example' }),
-    });
+    mockGoogle(grant({ sub: 'sub-1', email: 'dr@clinic.example' }, 'rt-1'));
 
     await handler(medplum, event(CODE_PARAMS));
 
@@ -194,26 +164,16 @@ describe('google-calendar-connect-bot', () => {
       }
       return update(resource, options);
     });
-    const fetch = mockGoogle({
-      access_token: 'at',
-      refresh_token: 'unused',
-      scope: SCOPE,
-      id_token: idToken({ sub: 'sub' }),
-    });
+    const fetch = mockGoogle(grant({ sub: 'sub' }, 'unused'));
     await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('credential write failed');
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(String(fetch.mock.calls[1][0])).toContain('/revoke');
   });
 
   test('refuses a Google account another practitioner uses, without revoking it', async () => {
-    await saveConnection(medplum, { practitionerRef: 'Practitioner/other', accountSub: 'sub', refreshToken: 'theirs' });
-    const fetch = mockGoogle({
-      access_token: 'at',
-      refresh_token: 'rt',
-      // An incomplete grant fails validation, which must not revoke the shared account either.
-      scope: 'openid email',
-      id_token: idToken({ sub: 'sub' }),
-    });
+    await connect(medplum, 'Practitioner/other', 'sub', 'theirs');
+    // An incomplete grant fails validation, which must not revoke the shared account either.
+    const fetch = mockGoogle({ ...grant({ sub: 'sub' }), scope: 'openid email' });
     await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('another practitioner');
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -227,13 +187,8 @@ describe('google-calendar-connect-bot', () => {
 
   test('requires explicit disconnect before switching Google accounts', async () => {
     const practitionerRef = `Practitioner/${practitioner.id}`;
-    await saveConnection(medplum, { practitionerRef, accountSub: 'old-sub', refreshToken: 'rt-old' });
-    const fetchMock = mockGoogle({
-      access_token: 'at',
-      refresh_token: 'rt-new',
-      scope: SCOPE,
-      id_token: idToken({ sub: 'new-sub', email: 'new@clinic.example' }),
-    });
+    await connect(medplum, practitionerRef, 'old-sub', 'rt-old');
+    const fetchMock = mockGoogle(grant({ sub: 'new-sub', email: 'new@clinic.example' }, 'rt-new'));
     await expect(handler(medplum, event(CODE_PARAMS))).rejects.toThrow('Disconnect the existing Google account');
     expect((await requireConnection(medplum, practitionerRef)).accountSub).toBe('old-sub');
     expect(fetchMock).toHaveBeenCalledTimes(2);

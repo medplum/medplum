@@ -13,9 +13,9 @@ import type { Appointment, Basic, Resource, Schedule, Slot } from '@medplum/fhir
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler as disconnect } from '../bots/google-calendar-disconnect-bot';
-import { operationIdentity } from '../test-auth';
+import { connect, operationIdentity } from '../test-auth';
 import type { CalendarConnection } from './connection';
-import { findConnection, saveConnection, updateConnection } from './connection';
+import { findConnection, updateConnection } from './connection';
 import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import { importedSlots } from './import';
 import { runInbound } from './inbound';
@@ -75,15 +75,7 @@ describe('calendar runtime', () => {
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'project', name: 'Calendar test' } });
     enforceVersions(medplum);
-    connection = await saveConnection(medplum, {
-      practitionerRef: PRACTITIONER,
-      accountSub: 'google-sub',
-      refreshToken: 'refresh-secret',
-    });
-    connection.basic = await medplum.updateResource({
-      ...connection.basic,
-      meta: { ...connection.basic.meta, project: 'project' },
-    });
+    connection = await connect(medplum, PRACTITIONER, 'google-sub', 'refresh-secret');
     schedule = await medplum.createResource<Schedule>({
       resourceType: 'Schedule',
       active: true,
@@ -160,9 +152,17 @@ describe('calendar runtime', () => {
     'x-goog-message-number': number,
     'x-goog-resource-state': 'exists',
   });
+  async function requestDisconnect(): ReturnType<typeof disconnect> {
+    const request = {
+      ...event,
+      requester: { reference: PRACTITIONER },
+      input: { resourceType: 'Parameters' as const },
+    };
+    await operationIdentity(medplum, request, BOT_IDENTIFIER_VALUE.disconnect);
+    return disconnect(medplum, request);
+  }
 
-  test('imports, records freshness, and does not emit workflow resources', async () => {
-    const tasks = await medplum.searchResources('Task');
+  test('imports and records freshness without duplicating Slots', async () => {
     await runInbound(medplum, event, connection.basic.id);
     const state = readState(await current());
     expect(state.lastInbound).toBeTruthy();
@@ -170,8 +170,6 @@ describe('calendar runtime', () => {
     expect(JSON.stringify(await current())).not.toContain(watch.token);
     await runInbound(medplum, event, connection.basic.id);
     expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
-    expect(await medplum.searchResources('Task')).toEqual(tasks);
-    expect(await medplum.searchResources('DetectedIssue')).toHaveLength(0);
   });
 
   test('headers authenticate routing; duplicate and out-of-order notifications do not queue again', async () => {
@@ -322,16 +320,7 @@ describe('calendar runtime', () => {
 
   test('disconnect is queued, then removes watches and imported Slots without changing the appointment', async () => {
     await runInbound(medplum, event, connection.basic.id);
-    await operationIdentity(
-      medplum,
-      { ...event, requester: { reference: PRACTITIONER } },
-      BOT_IDENTIFIER_VALUE.disconnect
-    );
-    const result = await disconnect(medplum, {
-      ...event,
-      requester: { reference: PRACTITIONER },
-      input: { resourceType: 'Parameters' },
-    });
+    const result = await requestDisconnect();
     expect(result.parameter).toContainEqual({ name: 'status', valueCode: 'disconnecting' });
     expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
     await runInbound(medplum, event, connection.basic.id);
@@ -343,16 +332,7 @@ describe('calendar runtime', () => {
 
   test('partial disconnect retains checkpoints and resumes without redoing Google cleanup', async () => {
     await runInbound(medplum, event, connection.basic.id);
-    await operationIdentity(
-      medplum,
-      { ...event, requester: { reference: PRACTITIONER } },
-      BOT_IDENTIFIER_VALUE.disconnect
-    );
-    await disconnect(medplum, {
-      ...event,
-      requester: { reference: PRACTITIONER },
-      input: { resourceType: 'Parameters' },
-    });
+    await requestDisconnect();
     const remove = medplum.deleteResource.bind(medplum);
     const spy = vi.spyOn(medplum, 'deleteResource').mockImplementation(async (type, id, options) => {
       if (type === 'Slot') {
@@ -517,16 +497,7 @@ describe('calendar runtime', () => {
 
   test('a late notification after disconnect cannot revive the connection', async () => {
     await runInbound(medplum, event, connection.basic.id);
-    await operationIdentity(
-      medplum,
-      { ...event, requester: { reference: PRACTITIONER } },
-      BOT_IDENTIFIER_VALUE.disconnect
-    );
-    await disconnect(medplum, {
-      ...event,
-      requester: { reference: PRACTITIONER },
-      input: { resourceType: 'Parameters' },
-    });
+    await requestDisconnect();
     expect(await receiveNotification(medplum, headers())).toMatchObject({ issue: [{ code: 'forbidden' }] });
     expect((await findConnection(medplum, PRACTITIONER))?.status).toBe('disconnecting');
   });

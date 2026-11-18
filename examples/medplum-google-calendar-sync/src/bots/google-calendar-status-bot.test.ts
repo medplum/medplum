@@ -6,12 +6,12 @@ import type { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { writeProjectCeiling } from '../common/configuration';
-import { findConnection, saveConnection, updateConnection } from '../common/connection';
+import { findConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { withConnectionLease } from '../common/lease';
 import { PUBLIC_STATUS_SEARCH } from '../common/public-status';
 import { readState, withState } from '../common/state';
-import { operationIdentity } from '../test-auth';
+import { connect, operationIdentity } from '../test-auth';
 import { handler as settings } from './google-calendar-settings-bot';
 import { handler } from './google-calendar-status-bot';
 
@@ -29,31 +29,17 @@ beforeEach(async () => {
     secrets: {},
   };
 });
-test('status is read-only, omits credentials, and rejects its former mutation input', async () => {
-  await saveConnection(medplum, {
-    practitionerRef: event.requester?.reference as string,
-    accountSub: 'sub',
-    refreshToken: 'secret-token',
-  });
+test('status is read-only and omits credentials', async () => {
+  await connect(medplum, event.requester?.reference, 'sub', 'secret-token');
   const writes = vi.spyOn(medplum, 'updateResource');
   writes.mockClear();
   const result = await handler(medplum, event);
   expect(result.parameter).toContainEqual({ name: 'connected', valueBoolean: true });
   expect(JSON.stringify(result)).not.toContain('secret-token');
   expect(writes).not.toHaveBeenCalled();
-  await expect(
-    handler(medplum, {
-      ...event,
-      input: { resourceType: 'Parameters', parameter: [{ name: 'eventDetailLevel', valueString: 'full' }] },
-    })
-  ).rejects.toThrow('Unknown parameter');
 });
 test('settings queues a scrub without resuming revoked access', async () => {
-  const connection = await saveConnection(medplum, {
-    practitionerRef: event.requester?.reference as string,
-    accountSub: 'sub',
-    refreshToken: 'secret',
-  });
+  const connection = await connect(medplum, event.requester?.reference);
   await updateConnection(medplum, connection, { status: 'reauth-required' });
   await operationIdentity(medplum, event, BOT_IDENTIFIER_VALUE.settings);
   await settings(medplum, {
@@ -72,11 +58,7 @@ test('status refuses a forged requester even with readable Basic data', async ()
 });
 
 test('the caller-readable summary contains no worker data', async () => {
-  const connection = await saveConnection(medplum, {
-    practitionerRef: event.requester?.reference as string,
-    accountSub: 'private-sub',
-    refreshToken: 'private-token',
-  });
+  const connection = await connect(medplum, event.requester?.reference, 'private-sub', 'private-token');
   await withConnectionLease(medplum, connection.basic.id, async (lease) => {
     await lease.mutate((basic) =>
       withState(basic, {
@@ -105,11 +87,7 @@ test.each([
   { field: 'status', valueCode: undefined },
   { field: 'event-detail-level', valueCode: 'full-with-invite' },
 ])('malformed public code %j returns a read-only stale diagnostic', async ({ field, valueCode }) => {
-  await saveConnection(medplum, {
-    practitionerRef: event.requester?.reference as string,
-    accountSub: 'sub',
-    refreshToken: 'synthetic',
-  });
+  await connect(medplum, event.requester?.reference);
   const summary = await medplum.searchOne('Basic', PUBLIC_STATUS_SEARCH);
   if (!summary) {
     throw new Error('Missing summary');

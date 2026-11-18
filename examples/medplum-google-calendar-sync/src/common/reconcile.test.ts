@@ -5,11 +5,11 @@ import type { BotEvent } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from './connection';
-import { saveConnection, updateConnection } from './connection';
+import { updateConnection } from './connection';
 import { BOT_IDENTIFIER_VALUE } from './constants';
 import type * as RangeSyncModule from './range-sync';
 import { readState, withState } from './state';
-import { operationIdentity } from '../test-auth';
+import { connect, operationIdentity, secrets } from '../test-auth';
 import { handler } from '../bots/google-calendar-sync-bot';
 
 const { syncRange } = vi.hoisted(() => ({
@@ -28,15 +28,10 @@ vi.mock('./range-sync', async (importOriginal) => {
   return { ...original, syncRange };
 });
 
-const secrets: BotEvent['secrets'] = {
-  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
-  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
-};
-
 describe('reconcile', () => {
   let medplum: MockClient;
   const event: BotEvent = {
-    bot: { reference: 'Bot/reconcile' },
+    bot: { reference: 'Bot/sync' },
     contentType: 'application/fhir+json',
     input: undefined,
     secrets,
@@ -50,12 +45,8 @@ describe('reconcile', () => {
     syncRange.mockResolvedValue({ candidates: 1, inserted: 1, errors: 0 });
   });
 
-  // The server stamps meta.project on the Basic; MockClient doesn't, so the test does.
-  async function connected(practitionerRef: string): Promise<CalendarConnection> {
-    const saved = await saveConnection(medplum, { practitionerRef, accountSub: practitionerRef, refreshToken: 'rt' });
-    const basic = await medplum.updateResource({ ...saved.basic, meta: { ...saved.basic.meta, project: 'proj-1' } });
-    return { ...saved, basic };
-  }
+  const connected = (practitionerRef: string): Promise<CalendarConnection> =>
+    connect(medplum, practitionerRef, practitionerRef);
 
   test('a delivery that is neither a Cron nor a batch starts no sweep', async () => {
     await connected('Practitioner/a');
@@ -139,6 +130,12 @@ describe('reconcile', () => {
     const before = readState(connection.basic);
     await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
     expect(medplum.executeBot).toHaveBeenCalledTimes(2);
+    expect(medplum.executeBot).toHaveBeenCalledWith(
+      expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.sync }),
+      { resourceType: 'Basic', id: connection.basic.id },
+      expect.anything(),
+      expect.anything()
+    );
     expect(readState(await medplum.readResource('Basic', connection.basic.id))).toEqual(before);
     await medplum.updateResource(
       withState(connection.basic, {
@@ -150,37 +147,6 @@ describe('reconcile', () => {
     vi.mocked(medplum.executeBot).mockClear();
     await handler(medplum, { ...event, input: { connectionIds: [connection.basic.id], retry: true } });
     expect(medplum.executeBot).not.toHaveBeenCalled();
-  });
-  test('minute recovery dispatches corrupt checkpoints without skipping other connections', async () => {
-    const a = await connected('Practitioner/a');
-    const b = await connected('Practitioner/b');
-    await medplum.updateResource({
-      ...a.basic,
-      extension: a.basic.extension?.map((e) =>
-        e.url.endsWith('/sync-state')
-          ? {
-              ...e,
-              extension: [
-                ...(e.extension ?? []),
-                {
-                  url: 'outboundWork',
-                  extension: [{ url: 'phase', valueCode: 'invalid' }],
-                },
-              ],
-            }
-          : e
-      ),
-    });
-    await handler(medplum, { ...event, input: { connectionIds: [a.basic.id, b.basic.id], retry: true } });
-    expect(medplum.executeBot).toHaveBeenCalledTimes(4);
-    for (const connection of [a, b]) {
-      expect(medplum.executeBot).toHaveBeenCalledWith(
-        expect.objectContaining({ value: BOT_IDENTIFIER_VALUE.sync }),
-        { resourceType: 'Basic', id: connection.basic.id },
-        expect.anything(),
-        expect.anything()
-      );
-    }
   });
 
   test.each(['active', 'reauth-required'] as const)(

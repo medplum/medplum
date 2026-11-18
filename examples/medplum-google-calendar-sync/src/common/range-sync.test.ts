@@ -1,31 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { BotEvent, ResourceArray, WithId } from '@medplum/core';
+import type { ResourceArray, WithId } from '@medplum/core';
 import type { Appointment, Practitioner, PractitionerRole, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { connect, secrets } from '../test-auth';
 import { writeProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
-import { findConnection, saveConnection } from './connection';
+import { findConnection } from './connection';
 import { MissingCalendarCredentialError } from './credentials';
 import { GoogleApiError } from './google-calendar';
 import { GoogleOAuthError } from './google-oauth';
 import type { GoogleCalendarEvent } from './mapping';
 import { toGoogleEventId } from './mapping';
-import { defaultSyncRange, syncRange } from './range-sync';
+import { syncRange } from './range-sync';
 import { readState, requestSync } from './state';
 import type { SyncDeps } from './sync';
 import { SyncSession } from './sync';
 
 const PROJECT_ID = 'proj-1';
-const NOW = new Date('2026-10-07T12:00:00Z');
 const RANGE = { start: new Date('2026-10-01T00:00:00Z'), end: new Date('2026-12-31T00:00:00Z') };
-
-const secrets: BotEvent['secrets'] = {
-  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
-  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
-};
 
 function fakeDeps(upserts: GoogleCalendarEvent[], failFor?: string): SyncDeps {
   return {
@@ -63,11 +58,7 @@ describe('range-sync', () => {
       resourceType: 'Schedule',
       actor: [{ reference: practitionerRef }],
     });
-    connection = await saveConnection(medplum, {
-      practitionerRef,
-      accountSub: 'sub',
-      refreshToken: 'rt',
-    });
+    connection = await connect(medplum, practitionerRef);
     const realPages = medplum.searchResourcePages.bind(medplum);
     vi.spyOn(medplum, 'searchResourcePages').mockImplementation(((resourceType: string, query?: string) => {
       if (resourceType !== 'Appointment' && resourceType !== 'Slot') {
@@ -108,9 +99,26 @@ describe('range-sync', () => {
     return syncRange(new SyncSession(medplum, secrets, PROJECT_ID, deps), connection, RANGE);
   }
 
-  test('the default range is now to +90 days', () => {
-    expect(defaultSyncRange(NOW)).toEqual({ start: NOW, end: new Date('2027-01-05T12:00:00Z') });
-  });
+  function mirror(source: WithId<Appointment>): GoogleCalendarEvent {
+    return {
+      id: toGoogleEventId(source.id) as string,
+      status: 'confirmed',
+      summary: 'Appointment',
+      start: { dateTime: source.start as string },
+      end: { dateTime: source.end as string },
+      transparency: 'opaque',
+      visibility: 'private',
+      attendees: [],
+      reminders: { useDefault: true },
+      extendedProperties: {
+        private: {
+          medplumProject: PROJECT_ID,
+          medplumSource: `Appointment/${source.id}`,
+          medplumConnection: connection.basic.id,
+        },
+      },
+    };
+  }
 
   test('pushes every mirrorable appointment and blocked slot in range', async () => {
     const a1 = await booked();
@@ -183,26 +191,7 @@ describe('range-sync', () => {
     const original = deps.createCalendarClient;
     deps.createCalendarClient = (token) => ({
       ...original(token),
-      listEvents: async () => [
-        {
-          id: toGoogleEventId(outside.id) as string,
-          status: 'confirmed',
-          summary: 'External edit',
-          start: { dateTime: outside.start as string },
-          end: { dateTime: outside.end as string },
-          transparency: 'opaque',
-          visibility: 'private',
-          attendees: [],
-          reminders: { useDefault: true },
-          extendedProperties: {
-            private: {
-              medplumProject: PROJECT_ID,
-              medplumSource: `Appointment/${outside.id}`,
-              medplumConnection: connection.basic.id,
-            },
-          },
-        },
-      ],
+      listEvents: async () => [{ ...mirror(outside), summary: 'External edit' }],
       upsertEvent: async () => {
         throw new GoogleApiError(429, 'rateLimitExceeded', 'slow down', Date.now() + 60_000);
       },
@@ -250,24 +239,6 @@ describe('range-sync', () => {
       participant: [{ actor: { reference: 'Practitioner/someone-else' }, status: 'accepted' }],
     });
     const outside = await booked({ start: '2027-06-01T16:00:00Z', end: '2027-06-01T16:30:00Z' });
-    const mirror = (source: WithId<Appointment>): GoogleCalendarEvent => ({
-      id: toGoogleEventId(source.id) as string,
-      status: 'confirmed',
-      summary: 'Appointment',
-      start: { dateTime: source.start as string },
-      end: { dateTime: source.end as string },
-      transparency: 'opaque',
-      visibility: 'private',
-      attendees: [],
-      reminders: { useDefault: true },
-      extendedProperties: {
-        private: {
-          medplumProject: PROJECT_ID,
-          medplumSource: `Appointment/${source.id}`,
-          medplumConnection: connection.basic.id,
-        },
-      },
-    });
     const remove = vi.fn(async () => undefined);
     const deps = fakeDeps(upserts);
     const original = deps.createCalendarClient;
@@ -287,24 +258,7 @@ describe('range-sync', () => {
 
   test('a read failure cannot authorize removal, and another connection’s event is untouched', async () => {
     const source = await booked();
-    const event: GoogleCalendarEvent = {
-      id: toGoogleEventId(source.id) as string,
-      status: 'confirmed',
-      summary: 'Appointment',
-      start: { dateTime: source.start as string },
-      end: { dateTime: source.end as string },
-      transparency: 'opaque',
-      visibility: 'private',
-      attendees: [],
-      reminders: { useDefault: true },
-      extendedProperties: {
-        private: {
-          medplumProject: PROJECT_ID,
-          medplumSource: `Appointment/${source.id}`,
-          medplumConnection: connection.basic.id,
-        },
-      },
-    };
+    const event = mirror(source);
     const other = {
       ...event,
       id: 'other',

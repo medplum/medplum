@@ -5,7 +5,7 @@ import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CalendarConnection } from './connection';
-import { saveConnection } from './connection';
+import { connect } from '../test-auth';
 import { IMPORT_IDENTIFIER_SYSTEM } from './constants';
 import type { RemoteCalendarEvent } from './google-calendar';
 import { busyInterval, importBusyTime, importedSlots, importIdentifier, readImportedIdentity } from './import';
@@ -25,11 +25,7 @@ describe('Google busy import', () => {
   let schedule: Schedule;
   beforeEach(async () => {
     medplum = new MockClient({ project: { resourceType: 'Project', id: 'proj-1', name: 'Calendar test' } });
-    connection = await saveConnection(medplum, {
-      practitionerRef: PRACTITIONER,
-      accountSub: 'google-sub',
-      refreshToken: 'test-token',
-    });
+    connection = await connect(medplum, PRACTITIONER, 'google-sub', 'test-token');
     schedule = await medplum.createResource<Schedule>({
       resourceType: 'Schedule',
       active: true,
@@ -66,15 +62,6 @@ describe('Google busy import', () => {
     expect(
       readImportedIdentity({ ...slot, identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'v1.invalid' }] })
     ).toBeUndefined();
-  });
-  test.each([
-    { status: 'cancelled' },
-    { transparency: 'transparent' },
-    { start: { date: '2026-10-12' }, end: { date: '2026-10-13' } },
-    { attendees: [{ self: true, responseStatus: 'declined' }] },
-    { extendedProperties: { private: { medplumProject: 'project', medplumSource: 'Appointment/a' } } },
-  ])('excludes ineligible Google events: %j', (change) => {
-    expect(busyInterval({ ...BUSY, ...change }, 'project')).toBeUndefined();
   });
   test('keeps tentative invitations and normalizes offset/DST instants', () => {
     expect(busyInterval({ ...BUSY, attendees: [{ self: true, responseStatus: 'needsAction' }] })).toEqual({

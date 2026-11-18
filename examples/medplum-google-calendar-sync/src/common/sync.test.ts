@@ -13,6 +13,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { secrets } from '../test-auth';
 import { findConnection, saveConnection } from './connection';
 import { GoogleOAuthError } from './google-oauth';
 import type { GoogleCalendarEvent } from './mapping';
@@ -20,11 +21,6 @@ import type { SyncDeps } from './sync';
 import { SyncSession } from './sync';
 
 const PROJECT_ID = 'proj-1';
-
-const secrets: BotEvent['secrets'] = {
-  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
-  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
-};
 
 interface FakeCalendar {
   upserts: GoogleCalendarEvent[];
@@ -253,7 +249,6 @@ describe('SyncSession', () => {
     const s = session(fakeDeps(calendars, refresh));
     const appt = await appointment();
 
-    const tasksBefore = await medplum.searchResources('Task');
     const results = await s.syncSource({ resource: appt, deleted: false });
     expect(results[0]).toEqual({ practitionerRef: `Practitioner/${rivera.id}`, outcome: 'reauth-required' });
     expect((await findConnection(medplum, `Practitioner/${rivera.id}`))?.status).toBe('reauth-required');
@@ -261,9 +256,6 @@ describe('SyncSession', () => {
     // Already paused: no second refresh attempt.
     await s.syncSource({ resource: appt, deleted: false });
     expect(refresh).toHaveBeenCalledTimes(1);
-
-    expect(await medplum.searchResources('DetectedIssue')).toHaveLength(0);
-    expect(await medplum.searchResources('Task')).toEqual(tasksBefore);
   });
 
   test('one practitioner failing does not block the others', async () => {

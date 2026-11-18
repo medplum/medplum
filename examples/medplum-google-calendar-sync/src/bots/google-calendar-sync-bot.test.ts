@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { BotEvent } from '@medplum/core';
+import type { BotEvent, WithId } from '@medplum/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import type * as SyncModule from '../common/sync';
-import { operationIdentity } from '../test-auth';
+import { operationIdentity, secrets } from '../test-auth';
 import type { SyncBotInput } from './google-calendar-sync-bot';
 import { handler, resolveSource } from './google-calendar-sync-bot';
 
@@ -22,11 +22,6 @@ vi.mock('../common/sync', async (importOriginal) => {
     },
   };
 });
-
-const secrets: BotEvent['secrets'] = {
-  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'cid' },
-  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'csecret' },
-};
 
 function event(input: SyncBotInput): BotEvent<SyncBotInput> {
   return { bot: { reference: 'Bot/sync' }, contentType: 'application/fhir+json', input, secrets };
@@ -45,13 +40,11 @@ describe('google-calendar-sync-bot', () => {
     syncSource.mockReset();
   });
 
+  const booked = (): Promise<WithId<Appointment>> =>
+    medplum.createResource<Appointment>({ resourceType: 'Appointment', status: 'booked', participant: [] });
+
   test('re-reads the current version rather than trusting the payload', async () => {
-    const created = await medplum.createResource<Appointment>({
-      resourceType: 'Appointment',
-      meta: { project: 'proj-1' },
-      status: 'booked',
-      participant: [],
-    });
+    const created = await booked();
     const updated = await medplum.updateResource({ ...created, status: 'cancelled' });
     const source = await resolveSource(medplum, { ...created, meta: { ...created.meta, project: 'p' } });
     expect(source).toEqual({ resource: updated, deleted: false });
@@ -70,12 +63,7 @@ describe('google-calendar-sync-bot', () => {
     });
 
     // A forged delete for a live resource syncs the live version instead.
-    const live = await medplum.createResource<Appointment>({
-      resourceType: 'Appointment',
-      meta: { project: 'proj-1' },
-      status: 'booked',
-      participant: [],
-    });
+    const live = await booked();
     expect(await resolveSource(medplum, { deletedResource: live })).toEqual({
       resource: live,
       deleted: false,
@@ -83,12 +71,7 @@ describe('google-calendar-sync-bot', () => {
   });
 
   test('a transient read failure propagates rather than becoming a deletion', async () => {
-    const appt = await medplum.createResource<Appointment>({
-      resourceType: 'Appointment',
-      meta: { project: 'proj-1' },
-      status: 'booked',
-      participant: [],
-    });
+    const appt = await booked();
     vi.spyOn(medplum, 'readResource').mockRejectedValueOnce(new Error('503 upstream'));
     await expect(resolveSource(medplum, appt)).rejects.toThrow('503 upstream');
   });
@@ -104,14 +87,13 @@ describe('google-calendar-sync-bot', () => {
   test('a Slot payload goes through as a slot source', async () => {
     const slot = await medplum.createResource<Slot>({
       resourceType: 'Slot',
-      meta: { project: 'proj-1' },
       status: 'busy-unavailable',
       schedule: { reference: 'Schedule/s' },
       start: '2026-10-09T13:00:00Z',
       end: '2026-10-09T15:00:00Z',
     });
     syncSource.mockResolvedValueOnce([{ practitionerRef: 'Practitioner/a', outcome: 'inserted' }]);
-    await handler(medplum, event({ ...slot, meta: { ...slot.meta, project: 'proj-1' } }));
+    await handler(medplum, event(slot));
     expect(syncSource).toHaveBeenCalledWith({
       resource: expect.objectContaining({ id: slot.id }),
       deleted: false,
@@ -119,14 +101,7 @@ describe('google-calendar-sync-bot', () => {
   });
 
   test('runs the session with the resource project and surfaces failures', async () => {
-    const created = await medplum.createResource<Appointment>({
-      resourceType: 'Appointment',
-      meta: { project: 'proj-1' },
-      status: 'booked',
-      participant: [],
-    });
-    // The server stamps meta.project on delivered payloads; MockClient doesn't.
-    const appt: Appointment = { ...created, meta: { ...created.meta, project: 'proj-1' } };
+    const appt = await booked();
     syncSource.mockResolvedValueOnce([{ practitionerRef: 'Practitioner/a', outcome: 'inserted' }]);
     await expect(handler(medplum, event(appt))).resolves.toBeUndefined();
     expect(syncSource).toHaveBeenCalledWith({

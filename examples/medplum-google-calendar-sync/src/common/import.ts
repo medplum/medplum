@@ -116,42 +116,22 @@ export async function practitionerSchedules(
   return schedules;
 }
 
-export async function importedSlots(
-  medplum: MedplumClient,
-  connectionId: string,
-  onMalformed?: (slot: WithId<Slot>) => void,
-  filters: Record<string, string> = {},
-  onPage?: () => Promise<void>
-): Promise<WithId<Slot>[]> {
+export async function importedSlots(medplum: MedplumClient, connectionId: string): Promise<WithId<Slot>[]> {
   const slots: WithId<Slot>[] = [];
   for await (const page of medplum.searchResourcePages(
     'Slot',
-    await projectQuery(medplum, {
-      ...filters,
-      identifier: `${IMPORT_IDENTIFIER_SYSTEM}|`,
-      _count: '200',
-    })
+    await projectQuery(medplum, { identifier: `${IMPORT_IDENTIFIER_SYSTEM}|`, _count: '200' })
   )) {
-    await onPage?.();
     for (const slot of page) {
       const identity = readImportedIdentity(slot);
       if (identity?.connectionId === connectionId) {
         slots.push(slot);
       } else if (!identity) {
         console.warn(`Imported Slot ${slot.id} has an invalid identity; retained for administrator repair`);
-        onMalformed?.(slot);
       }
     }
   }
   return slots;
-}
-
-export interface ImportResult {
-  calendarId: string;
-  intervals: BusyInterval[];
-  schedules: WithId<Schedule>[];
-  createdOrUpdated: number;
-  removed: number;
 }
 
 /**
@@ -171,7 +151,7 @@ export async function importBusyTime(
   connection: CalendarConnection,
   range: SyncRange,
   beforeWrite: () => Promise<void>
-): Promise<ImportResult> {
+): Promise<{ createdOrUpdated: number; removed: number }> {
   if (connection.status !== 'active') {
     throw new Error('Connection is not active');
   }
@@ -252,7 +232,7 @@ export async function importBusyTime(
     await medplum.deleteResource('Slot', old.id, ifMatch(old));
     removed++;
   }
-  return { calendarId: snapshot.calendarId, intervals, schedules, createdOrUpdated, removed };
+  return { createdOrUpdated, removed };
 }
 
 function sameBlock(a: Slot, b: Slot): boolean {
