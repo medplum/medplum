@@ -493,7 +493,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
           {toolbarEnd}
         </Group>
       </Group>
-      <AvailabilityShadeHoverContext.Provider value={shadeHover.hoveredId}>
+      <AvailabilityShadeHoverContext.Provider value={shadeHover.hovered}>
         <FullCalendar
           height="100%"
           plugins={[timeGridPlugin, dayGridPlugin, themePlugin, interactionPlugin]}
