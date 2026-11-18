@@ -43,7 +43,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconArrowBackUp, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX, ReactNode, Ref, RefObject } from 'react';
 import { useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { SchedulingActorValue } from '../actors';
+import type { SchedulingActorType, SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
@@ -61,8 +61,9 @@ import {
   EMPTY_REQUIREMENT_VALUES,
   hasRequiredValues,
 } from './AppointmentFinder.requirements';
-import type { ActorSelections, SelectionBlocker } from './AppointmentFinder.schedules';
+import type { ActorSelections, ScheduleCandidate, SelectionBlocker } from './AppointmentFinder.schedules';
 import {
+  createActorRequirement,
   getActorCombinations,
   getFirstCombinationCandidates,
   getSelectedActorResources,
@@ -112,6 +113,12 @@ export interface AppointmentProposalFormActions {
   readonly pickAt: (instant: Date) => boolean;
   /** The offered time `pickAt` would pick for an instant, for a host to show before it is picked. */
   readonly timeAt: (instant: Date) => Appointment | undefined;
+  /**
+   * Names one actor, in place of any of its type already named, and picks the offered time covering an
+   * instant once the search for that actor answers. For a host that knows who is free at a time the
+   * viewer pointed at before the form has anyone named.
+   */
+  readonly pickWith: (actorType: SchedulingActorType, candidate: ScheduleCandidate, instant: Date) => void;
 }
 
 // Long enough that typing a time does not search on every keystroke, short enough
@@ -617,38 +624,54 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }
 
   const revealPick = useRef(false);
-  useImperativeHandle(actionsRef, () => {
-    // The offered time covering an instant that starts latest, so each one answers for the stretch from
-    // its own start to the next one's, however far the visit's length runs past that.
-    const timeAt = (instant: Date): Appointment | undefined => {
-      if (!searching) {
-        return undefined;
+  // The offered time covering an instant that starts latest, so each one answers for the stretch from
+  // its own start to the next one's, however far the visit's length runs past that.
+  const timeAt = (instant: Date): Appointment | undefined => {
+    if (!searching) {
+      return undefined;
+    }
+    const at = instant.getTime();
+    let latest: Appointment | undefined;
+    let latestStart = -Infinity;
+    for (const offered of daySearch.timeResultsByDay.flatMap((day) => day.groups.flatMap((g) => g.appointments))) {
+      const start = offered.start ? new Date(offered.start).getTime() : NaN;
+      const end = offered.end ? new Date(offered.end).getTime() : NaN;
+      if (start <= at && end > at && start > latestStart) {
+        latest = offered;
+        latestStart = start;
       }
-      const at = instant.getTime();
-      let latest: Appointment | undefined;
-      let latestStart = -Infinity;
-      for (const offered of daySearch.timeResultsByDay.flatMap((day) => day.groups.flatMap((g) => g.appointments))) {
-        const start = offered.start ? new Date(offered.start).getTime() : NaN;
-        const end = offered.end ? new Date(offered.end).getTime() : NaN;
-        if (start <= at && end > at && start > latestStart) {
-          latest = offered;
-          latestStart = start;
-        }
-      }
-      return latest;
-    };
-    return {
-      timeAt,
-      pickAt: (instant: Date): boolean => {
-        const offered = timeAt(instant);
-        if (!offered) {
-          return false;
-        }
-        chooseTime(offered);
-        revealPick.current = true;
-        return true;
-      },
-    };
+    }
+    return latest;
+  };
+  const pickAt = (instant: Date): boolean => {
+    const offered = timeAt(instant);
+    if (!offered) {
+      return false;
+    }
+    chooseTime(offered);
+    revealPick.current = true;
+    return true;
+  };
+
+  // The instant `pickWith` asked for, held until the search for the actor it named answers.
+  const pendingPick = useRef<Date>(undefined);
+  useImperativeHandle(actionsRef, () => ({
+    timeAt,
+    pickAt,
+    pickWith: (actorType, candidate, instant): void => {
+      chooseResources({ ...selections, [actorType]: [createActorRequirement([candidate])] });
+      // The actor fields hold their own state, so they are remounted on the new answer.
+      setActorFieldsKey((key) => key + 1);
+      pendingPick.current = instant;
+    },
+  }));
+  // Every render, as the search answering is a render like any other, and the check costs nothing.
+  useEffect(() => {
+    const instant = pendingPick.current;
+    if (instant && !daySearch.loadingFirstDays) {
+      pendingPick.current = undefined;
+      pickAt(instant);
+    }
   });
 
   // Brings a time picked from the host's calendar into view among the times. One picked from the times
