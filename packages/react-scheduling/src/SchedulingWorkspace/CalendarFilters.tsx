@@ -152,6 +152,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
             key={serviceFieldKey}
             label="Visit Type"
             placeholder={getServicesPlaceholder(allServices, services.length)}
+            showColors
             serviceFacilities={serviceFacilities}
             defaultValue={services}
             onChange={selectServices}
