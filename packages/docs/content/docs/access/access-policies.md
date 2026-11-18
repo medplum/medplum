@@ -578,6 +578,8 @@ Limit that user with resource `criteria` and a parameter on their [`ProjectMembe
 
 The default Patient and RelatedPerson policies follow this shape for the clinical resource types in the FHIR Patient compartment. `Patient` is matched by id. `Communication` is matched on `sender` and `recipient`, because those are the references that place it in the FHIR Patient compartment. The other clinical types are matched with `_compartment=%patient`, as `Observation` and `Condition` are above.
 
+`RelatedPerson` records are read-only in both policies, so a patient or caregiver cannot add a contact or change which Patient one points at. The one exception is that a caregiver can update their own `RelatedPerson` profile, as long as its `patient` stays the same.
+
 #### 2. Put the Patient on the membership
 
 At login, Medplum replaces every `%patient` in the policy. A parameter named `patient` on `ProjectMembership.access` supplies the reference. `%patient.id` is the id portion of that reference.
@@ -701,8 +703,8 @@ New projects are created with a set of **default access policies**, one per prof
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden. |
 | `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
-| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. See [Patient access](#patient-access).                                             |
-| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. See [Caregiver access](#caregiver-access).                    |
+| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. `RelatedPerson` records are read-only. See [Patient access](#patient-access).                                             |
+| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. `RelatedPerson` records are read-only, except the caregiver's own profile. See [Caregiver access](#caregiver-access).                    |
 | `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 | `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
 

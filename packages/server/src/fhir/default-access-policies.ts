@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getResourceTypes, projectAdminResourceTypes, protectedResourceTypes } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  getResourceTypes,
+  projectAdminResourceTypes,
+  protectedResourceTypes,
+} from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -38,10 +43,17 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
   }),
   RelatedPerson: () => ({
     name: 'Default RelatedPerson Access Policy',
-    // Same criteria as the patient policy. %patient is the associated Patient, supplied by
-    // ProjectMembership.access.parameter on invite. The profile is the RelatedPerson, so it
-    // cannot fill %patient.
-    resource: patientCompartmentResources(),
+    // %patient is the associated Patient, supplied by ProjectMembership.access.parameter on
+    // invite. The profile is the RelatedPerson, so it cannot fill %patient.
+    resource: [
+      // A caregiver may update their own profile, but not point it at another patient
+      {
+        resourceType: 'RelatedPerson',
+        criteria: 'RelatedPerson?_id=%profile.id&patient=%patient',
+        interaction: [AccessPolicyInteraction.UPDATE],
+      },
+      ...patientCompartmentResources(),
+    ],
   }),
   Admin: () => ({
     name: 'Default Admin Access Policy',
@@ -172,7 +184,7 @@ function patientCompartmentResources(): AccessPolicyResource[] {
     { resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' },
     { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
     { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
-    { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
+    { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient', readonly: true },
     { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
     { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
   ];
