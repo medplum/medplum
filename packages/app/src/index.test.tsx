@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createFakeJwt } from '@medplum/mock';
+import type { Root } from 'react-dom/client';
 import { initApp } from './index';
-import { screen, waitFor } from './test-utils/render';
+import { act, screen, waitFor } from './test-utils/render';
 
 function jsonResponse(body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -12,6 +13,8 @@ function jsonResponse(body: unknown): Response {
 }
 
 describe('App Index', () => {
+  let root: Root | undefined;
+
   beforeAll(() => {
     window.localStorage.setItem(
       '@medplum:activeLogin',
@@ -59,15 +62,17 @@ describe('App Index', () => {
   });
 
   afterAll(() => {
+    // Unmount so React and Mantine timers don't fire after the jsdom environment is torn down
+    act(() => root?.unmount());
     window.localStorage.clear();
     vi.unstubAllGlobals();
   });
 
   test('Renders', async () => {
-    const root = document.createElement('div');
-    root.id = 'root';
-    document.body.appendChild(root);
-    await initApp();
+    const container = document.createElement('div');
+    container.id = 'root';
+    document.body.appendChild(container);
+    root = await initApp();
 
     // createBrowserRouter + jsdom does not reliably complete HomePage URL redirects, so verify
     // initApp mounted an authenticated App shell instead of search-control specifically.
