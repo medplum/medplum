@@ -111,10 +111,7 @@ export function TaskBoard({
     [currentSearch]
   );
 
-  const selectedOwner = useMemo(
-    () => currentSearch.filters?.find((f) => f.code === 'owner')?.value,
-    [currentSearch]
-  );
+  const selectedOwner = useMemo(() => currentSearch.filters?.find((f) => f.code === 'owner')?.value, [currentSearch]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
     const currentRequestId = ++requestIdRef.current;
