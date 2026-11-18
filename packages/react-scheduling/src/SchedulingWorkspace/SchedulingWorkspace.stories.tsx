@@ -254,6 +254,11 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold,
  * and clicking open time opens the booking pane. With the filters pane open, the click offers to instead.
  *
+ * The filters pane also has an Availability field, apart from its filters, taking up to three visit
+ * types. It filters nothing: it shades where a provider on show could take each, one lane of the day's
+ * column per visit type. Try "Injections" and "Follow-up". A click on a lane starts a booking for that
+ * visit type.
+ *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
  * one provider at Riverside is free to take one. Hover a block to see who. Click one with nobody named
  * yet: where a single provider is free the form names them and picks the time, as on Wednesday morning

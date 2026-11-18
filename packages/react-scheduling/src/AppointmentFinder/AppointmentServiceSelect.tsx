@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Box, Pill, useMantineTheme } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
@@ -8,6 +9,7 @@ import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
+import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 
@@ -92,6 +94,11 @@ export interface AppointmentServiceMultiSelectProps {
   readonly serviceFacilities?: readonly (WithId<Location> | Reference<Location>)[];
   readonly label?: string;
   readonly placeholder?: string;
+  readonly description?: string;
+  /** The most that can be chosen. The search box goes once that many are. */
+  readonly maxValues?: number;
+  /** Marks each chosen visit type with its calendar color, for a field whose choices are drawn in them. */
+  readonly showColors?: boolean;
 }
 
 /**
@@ -103,6 +110,7 @@ export interface AppointmentServiceMultiSelectProps {
  */
 export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSelectProps): JSX.Element {
   const { serviceFacilities, defaultValue, onChange, label = 'Visit types', placeholder } = props;
+  const { description, maxValues, showColors } = props;
   // ORed, as a search's comma-separated values are.
   const loadOptions = useServiceOptions(serviceFacilities?.map(getReferenceString).join(',') || undefined);
   return (
@@ -110,12 +118,35 @@ export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSele
       name="services"
       label={label}
       placeholder={placeholder}
+      description={description}
+      maxValues={maxValues}
       defaultValue={defaultValue && [...defaultValue]}
       toOption={toOption}
       loadOptions={loadOptions}
       itemComponent={ServiceItem}
+      pillComponent={showColors ? ServiceColorPill : undefined}
       onChange={onChange}
     />
+  );
+}
+
+function ServiceColorPill(props: {
+  readonly item: AsyncAutocompleteOption<WithId<HealthcareService>>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
+}): JSX.Element {
+  const { item, disabled, onRemove } = props;
+  const theme = useMantineTheme();
+  const color = resolveThemeColor(
+    theme,
+    getSchedulingColor(item.resource),
+    fallbackColorIndex(getReferenceString(item.resource))
+  );
+  return (
+    <Pill withRemoveButton={!disabled} onRemove={onRemove}>
+      <Box component="span" display="inline-block" w={8} h={8} mr={6} bg={`${color}.6`} bdrs="50%" />
+      {item.label}
+    </Pill>
   );
 }
 

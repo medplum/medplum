@@ -16,6 +16,7 @@ import {
   getExtensions,
   getReferenceString,
   getScheduleSchedulingParameters,
+  isDefined,
   isReference,
   serviceTypeOffersService,
 } from '@medplum/core';
@@ -472,8 +473,9 @@ export interface BookingShadingInput {
    */
   readonly rows: readonly (readonly AvailabilityShadingCalendar[])[];
   readonly service: WithId<HealthcareService>;
-  /** Leaves out windows scoped to another service facility. */
-  readonly serviceFacility?: Reference<Location> | WithId<Location>;
+  /** Leaves out windows scoped to a service facility other than this one, or than any of these. */
+  readonly serviceFacility?:
+    Reference<Location> | WithId<Location> | readonly (Reference<Location> | WithId<Location>)[];
   /** The days on show. */
   readonly range: DateTimeRange;
   readonly color: string;
@@ -514,7 +516,12 @@ function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
  */
 export function computeBookingShading(input: BookingShadingInput): AvailabilityShade[] {
   const { rows, service, range, color } = input;
-  const facility = input.serviceFacility && getReferenceString(input.serviceFacility);
+  const facilities = new Set(
+    [input.serviceFacility]
+      .flat()
+      .filter(isDefined)
+      .map((site) => getReferenceString(site))
+  );
   const minMs = (input.minMinutes ?? 0) * MINUTE_MS;
   const from = input.from?.getTime() ?? -Infinity;
 
@@ -525,7 +532,8 @@ export function computeBookingShading(input: BookingShadingInput): AvailabilityS
         schedule: calendar.schedule,
         busy: busyIntervals(calendar),
         windows: getScheduleAvailabilityWindows(calendar.schedule, service).filter(
-          (window) => !facility || !window.serviceFacility || window.serviceFacility.reference === facility
+          (window) =>
+            facilities.size === 0 || !window.serviceFacility || facilities.has(window.serviceFacility.reference ?? '')
         ),
       }))
     );

@@ -55,7 +55,7 @@ import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.wr
 import type { AppointmentProposalFormActions } from '../AppointmentFinder/AppointmentProposalForm';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
-import type { AvailabilityShadingCalendar } from '../availabilityShading';
+import type { AvailabilityShade, AvailabilityShadingCalendar } from '../availabilityShading';
 import { computeBookingShading } from '../availabilityShading';
 import { resolveBookingGeometry } from '../bookingGeometry';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
@@ -253,8 +253,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Prototype: two panes, at most one open, and the open one drives the calendar.
   //
   // The filters pane, on the left, is for browsing. Its site and visit type narrow the calendars listed
-  // and the appointments drawn, and its checklist the calendars on show. It also drives the calendar
-  // while both panes are closed.
+  // and the appointments drawn, and its checklist the calendars on show. Its Availability field, which
+  // filters nothing, shades where the visit types it names could go. It also drives the calendar while
+  // both panes are closed.
   //
   // The booking pane, on the right, is for booking. Its form's visit type narrows the calendars to the
   // ones serving it, whose other appointments stay drawn, as they explain gaps in the shading. Its visit
@@ -277,7 +278,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Remounts the form, starting it over on the site the workspace is on.
   const [formKey, setFormKey] = useState(0);
   // Where open time was clicked while browsing, which is where the offer to start booking is drawn.
-  const [bookPrompt, setBookPrompt] = useState<PointerPosition>();
+  const [bookPrompt, setBookPrompt] = useState<PointerPosition & { readonly service?: WithId<HealthcareService> }>();
   // Where shading several providers are free in was clicked with nobody named, which is where the
   // reminder to name one is drawn.
   const [providerPrompt, setProviderPrompt] = useState<PointerPosition>();
@@ -296,6 +297,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Where the pointer is on the shading, to the pixel. A click reports only the grid row it landed in,
   // which can hold several offered times, so the click picks by this instead.
   const shadingHoverInstant = useRef<Date>(undefined);
+  // The availability block the pointer is on, which while browsing says whose lane a click is in.
+  const hoveredShadeId = useRef<string>(undefined);
+  // The visit type the booking form opens on, when it is opened from a click on that visit type's lane.
+  const [formDefaultService, setFormDefaultService] = useState<WithId<HealthcareService>>();
   const formActionsRef = useRef<AppointmentProposalFormActions>(null);
 
   const [range, setRange] = useState<DateTimeRange>();
@@ -499,28 +504,49 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     selectedSlot,
   ]);
 
+  // A calendar with what is held on it, for working out its open time. Indexed once, as there can be
+  // hundreds of calendars and thousands of appointments, and each shading asks for every calendar.
+  const toShadingCalendar = useMemo(() => {
+    const appointmentsByActor = new Map<string, Appointment[]>();
+    for (const appointment of appointments ?? []) {
+      for (const participant of appointment.participant) {
+        const reference = participant.actor?.reference;
+        if (reference) {
+          const held = appointmentsByActor.get(reference) ?? [];
+          held.push(appointment);
+          appointmentsByActor.set(reference, held);
+        }
+      }
+    }
+    const slotsBySchedule = new Map<string, Slot[]>();
+    for (const slot of slots ?? []) {
+      const reference = slot.schedule?.reference;
+      if (reference) {
+        const held = slotsBySchedule.get(reference) ?? [];
+        held.push(slot);
+        slotsBySchedule.set(reference, held);
+      }
+    }
+    return (candidate: ScheduleCandidate): AvailabilityShadingCalendar => ({
+      schedule: candidate.schedule,
+      appointments: [
+        ...new Set(candidate.schedule.actor.flatMap((actor) => appointmentsByActor.get(actor.reference ?? '') ?? [])),
+      ],
+      slots: slotsBySchedule.get(getReferenceString(candidate.schedule)) ?? [],
+    });
+  }, [appointments, slots]);
+
   // Where the visit the form describes could go, shaded behind the events. With only a visit type, any
   // provider will do; once the form names actors, its rows decide, as they do for `$find`.
   const availabilityShading = useMemo(() => {
     if (!formService || !range) {
       return undefined;
     }
-    const toCalendar = (candidate: ScheduleCandidate): AvailabilityShadingCalendar => {
-      const scheduleReference = getReferenceString(candidate.schedule);
-      const actors = new Set(candidate.schedule.actor.map((actor) => actor.reference));
-      return {
-        schedule: candidate.schedule,
-        appointments: (appointments ?? []).filter((appointment) =>
-          appointment.participant.some((participant) => actors.has(participant.actor?.reference))
-        ),
-        slots: (slots ?? []).filter((slot) => slot.schedule?.reference === scheduleReference),
-      };
-    };
     const namedRows = getRequirements(formSelections).filter((row) => row.candidates.length > 0);
     const rows =
       namedRows.length > 0
-        ? namedRows.map((row) => row.candidates.map(toCalendar))
-        : [candidatesByActorType.Practitioner.map(toCalendar)];
+        ? namedRows.map((row) => row.candidates.map(toShadingCalendar))
+        : [candidatesByActorType.Practitioner.map(toShadingCalendar)];
     return computeBookingShading({
       rows,
       service: formService,
@@ -534,7 +560,42 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       minMinutes: resolveBookingGeometry(formService).duration,
       from: new Date(),
     });
-  }, [formService, formSelections, formServiceFacility, range, appointments, slots, candidatesByActorType, theme]);
+  }, [formService, formSelections, formServiceFacility, range, toShadingCalendar, candidatesByActorType, theme]);
+
+  // While browsing, where each visit type chosen under Availability could go: at least one provider's
+  // calendar on show is open for it. One visit type takes the day's whole column, and several a lane
+  // each, in the order chosen, named on the first block of the day as two can share a color.
+  const browseShading = useMemo(() => {
+    const chosen = filters.availabilityServices ?? [];
+    if (bookingOpen || chosen.length === 0 || !range) {
+      return undefined;
+    }
+    const calendars = candidatesByActorType.Practitioner.filter(
+      (candidate) => !deselectedIds.Practitioner.has(candidate.schedule.id)
+    ).map(toShadingCalendar);
+    const from = new Date();
+    const serviceByShade = new Map<string, WithId<HealthcareService>>();
+    const shades = chosen.flatMap((service, lane) => {
+      let labelledDay: string | undefined;
+      return computeBookingShading({
+        rows: [calendars],
+        service,
+        serviceFacility: filters.serviceFacilities,
+        range,
+        color: resolveThemeColor(theme, getSchedulingColor(service), fallbackColorIndex(getReferenceString(service))),
+        minMinutes: resolveBookingGeometry(service).duration,
+        from,
+      }).map((shade): AvailabilityShade => {
+        const day = shade.start.toDateString();
+        const label = chosen.length > 1 && day !== labelledDay ? service.name : undefined;
+        labelledDay = day;
+        const id = `${service.id}-${shade.id}`;
+        serviceByShade.set(id, service);
+        return { ...shade, id, left: lane / chosen.length, width: 1 / chosen.length, label };
+      });
+    });
+    return { shades, serviceByShade };
+  }, [bookingOpen, filters, range, candidatesByActorType, deselectedIds, toShadingCalendar, theme]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
@@ -575,6 +636,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       setFilters({
         serviceFacilities,
         services: filters.services?.filter((service) => isServiceKeptAtAnyLocation(service, serviceFacilities)),
+        availabilityServices: filters.availabilityServices?.filter((service) =>
+          isServiceKeptAtAnyLocation(service, serviceFacilities)
+        ),
       });
       setFiltersKey((key) => key + 1);
     },
@@ -597,6 +661,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const resetBookingForm = useCallback((): void => {
     setFormKey((key) => key + 1);
     setFormServiceFacility(filters.serviceFacilities?.[0]);
+    setFormDefaultService(undefined);
     setFormService(undefined);
     setFormSelections(NO_SELECTIONS);
     setProposal(undefined);
@@ -614,20 +679,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     resetDirty();
   }, [resetBookingForm, resetDirty]);
 
-  // Takes the filters pane's place, and that of any details open, so the form is what shows.
-  const openBooking = useCallback((): void => {
-    const nextHalfHour = getNextHalfHour();
-    setBlockRange(nextHalfHour);
-    setBlockHighlight(nextHalfHour);
-    setBookPrompt(undefined);
-    setCalendarsOpen(false);
-    setSelectedAppointment(undefined);
-    setSelectedSlot(undefined);
-    setNewBlockSlots(undefined);
-    setRescheduleFinderOpen(false);
-    setFormServiceFacility(filters.serviceFacilities?.[0]);
-    setBookingOpen(true);
-  }, [filters]);
+  // Takes the filters pane's place, and that of any details open, so the form is what shows. A visit
+  // type is given when the click that opens it was on that visit type's availability.
+  const openBooking = useCallback(
+    (service?: WithId<HealthcareService>): void => {
+      const nextHalfHour = getNextHalfHour();
+      setBlockRange(nextHalfHour);
+      setBlockHighlight(nextHalfHour);
+      setBookPrompt(undefined);
+      setCalendarsOpen(false);
+      setSelectedAppointment(undefined);
+      setSelectedSlot(undefined);
+      setNewBlockSlots(undefined);
+      setRescheduleFinderOpen(false);
+      setFormServiceFacility(filters.serviceFacilities?.[0]);
+      setFormDefaultService(service);
+      setFormService(service);
+      setBookingOpen(true);
+    },
+    [filters]
+  );
 
   const toggleBooking = useCallback((): void => {
     if (bookingOpen) {
@@ -666,8 +737,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const goToNextRange = useCallback((): void => calendarRef.current?.next(), []);
 
   // Shows the offered time a click at the pointer would pick, before it is clicked.
-  const hoverShading = useCallback((instant: Date | undefined): void => {
+  const hoverShading = useCallback((instant: Date | undefined, shadeId?: string): void => {
     shadingHoverInstant.current = instant;
+    hoveredShadeId.current = shadeId;
     const offered = instant && formActionsRef.current?.timeAt(instant);
     setHoveredTime((previous) =>
       previous && offered && getAppointmentKey(previous) === getAppointmentKey(offered) ? previous : offered
@@ -770,10 +842,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectInterval = useCallback(
     (interval: CalendarSelection): void => {
       if (!bookingOpen) {
-        if (calendarsOpen) {
-          setBookPrompt(lastPointer.current);
-        } else {
-          openBooking();
+        // A click on a visit type's availability is taken to mean that visit type.
+        const service = hoveredShadeId.current ? browseShading?.serviceByShade.get(hoveredShadeId.current) : undefined;
+        if (!calendarsOpen) {
+          openBooking(service);
+        } else if (lastPointer.current) {
+          setBookPrompt({ ...lastPointer.current, service });
         }
         return;
       }
@@ -805,7 +879,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         }
       }
     },
-    [bookingOpen, calendarsOpen, openBooking, paneTab, formCandidates, availabilityShading, candidatesByActorType]
+    [
+      bookingOpen,
+      calendarsOpen,
+      openBooking,
+      browseShading,
+      paneTab,
+      formCandidates,
+      availabilityShading,
+      candidatesByActorType,
+    ]
   );
 
   // Held apart from the calendar's, like the open appointment, so it closes on being deleted
@@ -994,7 +1077,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
               </ActionIcon>
             </Tooltip>
           }
-          availabilityShading={showBooking && paneTab === 'appointment' ? availabilityShading : undefined}
+          availabilityShading={showBooking && paneTab === 'appointment' ? availabilityShading : browseShading?.shades}
           onHoverAvailability={hoverShading}
           loading={resourcesLoading || servicesPending}
           onSelectInterval={selectInterval}
@@ -1015,8 +1098,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             onClose={() => setBookPrompt(undefined)}
           >
             <Stack gap="xs">
-              <Text size="sm">Book an appointment?</Text>
-              <Button size="xs" onClick={openBooking}>
+              <Text size="sm">{bookPrompt.service ? `Book ${bookPrompt.service.name}?` : 'Book an appointment?'}</Text>
+              <Button size="xs" onClick={() => openBooking(bookPrompt.service)}>
                 Open Find + Book
               </Button>
             </Stack>
@@ -1128,6 +1211,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 actionsRef={formActionsRef}
                 onBooked={finishBooking}
                 defaultServiceFacility={filters.serviceFacilities?.[0]}
+                defaultService={formDefaultService}
               />
             </Tabs.Panel>
             <Tabs.Panel value="block">

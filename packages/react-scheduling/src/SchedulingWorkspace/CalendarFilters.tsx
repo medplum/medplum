@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack } from '@mantine/core';
+import { Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -24,7 +24,15 @@ export interface CalendarFilterValues {
   readonly serviceFacilities?: readonly (WithId<Location> | (Reference<Location> & { reference: string }))[];
   /** The chosen visit types, any of which will do. Absent or empty for every visit type. */
   readonly services?: readonly WithId<HealthcareService>[];
+  /**
+   * Not a filter: the visit types whose availability is shaded on the calendar, three at most. Absent
+   * or empty for none, where the filters' empty is all.
+   */
+  readonly availabilityServices?: readonly WithId<HealthcareService>[];
 }
+
+/** How many visit types' availability can be shaded at once, each in a lane of the day's column. */
+const MAX_AVAILABILITY_SERVICES = 3;
 
 export interface CalendarFiltersProps {
   /**
@@ -32,7 +40,7 @@ export interface CalendarFiltersProps {
    * `onChange`: the caller already holds it.
    */
   readonly defaultValue?: CalendarFilterValues;
-  /** Reports both filters, whichever one changed. */
+  /** Reports every field, whichever one changed. */
   readonly onChange: (values: CalendarFilterValues) => void;
 }
 
@@ -44,6 +52,10 @@ export interface CalendarFiltersProps {
  * for the same way wherever it is chosen.
  *
  * Several sites and several visit types can be chosen, and any one of each will do.
+ *
+ * Below the filters, apart from them, is the choice of visit types to shade the availability of. It
+ * narrows nothing: an appointment a filter hides is what explains a gap in the shading, so the two are
+ * asked separately. Its visit types are offered by the sites chosen, and not by the Visit Type filter.
  *
  * The filters are not peers. The sites decide which visit types are available,
  * so a change of sites drops each chosen visit type none of them holds — the same rule `AppointmentProposalForm` applies when its site
@@ -58,10 +70,14 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
     defaultValue?.serviceFacilities ?? NO_SITES
   );
   const [services, setServices] = useState<readonly WithId<HealthcareService>[]>(defaultValue?.services ?? NONE);
+  const [availabilityServices, setAvailabilityServices] = useState<readonly WithId<HealthcareService>[]>(
+    defaultValue?.availabilityServices ?? NONE
+  );
 
   // Key to remount field relying on `defaultValue` on change
   // see: https://github.com/medplum/medplum/issues/10288
   const [serviceFieldKey, setServiceFieldKey] = useState(0);
+  const [availabilityFieldKey, setAvailabilityFieldKey] = useState(0);
 
   const selectServiceFacilities = useCallback(
     (next: WithId<Location>[]): void => {
@@ -72,36 +88,74 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
         setServices(kept);
         setServiceFieldKey((key) => key + 1);
       }
-      onChange({ serviceFacilities: next, services: kept });
+      const keptAvailability = availabilityServices.filter((service) => isServiceKeptAtAnyLocation(service, next));
+      if (keptAvailability.length !== availabilityServices.length) {
+        setAvailabilityServices(keptAvailability);
+        setAvailabilityFieldKey((key) => key + 1);
+      }
+      onChange({ serviceFacilities: next, services: kept, availabilityServices: keptAvailability });
     },
-    [onChange, services]
+    [onChange, services, availabilityServices]
   );
 
   const selectServices = useCallback(
     (next: WithId<HealthcareService>[]): void => {
       setServices(next);
-      onChange({ serviceFacilities, services: next });
+      onChange({ serviceFacilities, services: next, availabilityServices });
     },
-    [serviceFacilities, onChange]
+    [serviceFacilities, availabilityServices, onChange]
+  );
+
+  const selectAvailabilityServices = useCallback(
+    (next: WithId<HealthcareService>[]): void => {
+      setAvailabilityServices(next);
+      onChange({ serviceFacilities, services, availabilityServices: next });
+    },
+    [serviceFacilities, services, onChange]
   );
 
   return (
-    <Stack gap="xs">
-      <ServiceFacilitiesInput
-        label="Service Facility"
-        placeholder={serviceFacilities.length > 0 ? 'Add a service facility' : 'All service facilities'}
-        searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
-        defaultValue={serviceFacilities}
-        onChange={selectServiceFacilities}
-      />
-      <AppointmentServiceMultiSelect
-        key={serviceFieldKey}
-        label="Visit Type"
-        placeholder={services.length > 0 ? 'Add a visit type' : 'All visit types'}
-        serviceFacilities={serviceFacilities}
-        defaultValue={services}
-        onChange={selectServices}
-      />
+    <Stack gap="md">
+      <Stack gap="xs">
+        <SectionHeading>Filter</SectionHeading>
+        <ServiceFacilitiesInput
+          label="Service Facility"
+          placeholder={serviceFacilities.length > 0 ? 'Add a service facility' : 'All service facilities'}
+          searchCriteria={BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA}
+          defaultValue={serviceFacilities}
+          onChange={selectServiceFacilities}
+        />
+        <AppointmentServiceMultiSelect
+          key={serviceFieldKey}
+          label="Visit Type"
+          placeholder={services.length > 0 ? 'Add a visit type' : 'All visit types'}
+          serviceFacilities={serviceFacilities}
+          defaultValue={services}
+          onChange={selectServices}
+        />
+      </Stack>
+      <Stack gap="xs">
+        <SectionHeading>Availability</SectionHeading>
+        <AppointmentServiceMultiSelect
+          key={availabilityFieldKey}
+          label="Show availability for"
+          placeholder={availabilityServices.length > 0 ? 'Add a visit type' : 'None shown'}
+          description={`Up to ${MAX_AVAILABILITY_SERVICES} visit types`}
+          maxValues={MAX_AVAILABILITY_SERVICES}
+          showColors
+          serviceFacilities={serviceFacilities}
+          defaultValue={availabilityServices}
+          onChange={selectAvailabilityServices}
+        />
+      </Stack>
     </Stack>
+  );
+}
+
+function SectionHeading(props: { readonly children: string }): JSX.Element {
+  return (
+    <Text size="xs" fw={600} c="dimmed" tt="uppercase">
+      {props.children}
+    </Text>
   );
 }

@@ -54,12 +54,13 @@ export interface AvailabilityShadeHover {
  * pointer instead, and stops at an event drawn in front of the block.
  * @param enabled - Whether there are blocks to track.
  * @param onHoverInstant - Called on each move with the instant under the pointer, to the pixel rather
- * than to the grid's rows, and with undefined once the pointer is off the blocks.
+ * than to the grid's rows, and the id of the block it is in, and with undefined once the pointer is off
+ * the blocks.
  * @returns The hovered block, and the handlers that keep it current.
  */
 export function useAvailabilityShadeHover(
   enabled: boolean,
-  onHoverInstant?: (instant: Date | undefined) => void
+  onHoverInstant?: (instant: Date | undefined, shadeId?: string) => void
 ): AvailabilityShadeHover {
   const [hoveredId, setHoveredId] = useState<string>();
   const [hoveredMinute, setHoveredMinute] = useState<number>();
@@ -86,7 +87,7 @@ export function useAvailabilityShadeHover(
     }
     setHoveredId(id);
     setHoveredMinute(instant && Math.floor(instant.getTime() / MINUTE_MS) * MINUTE_MS);
-    latestOnHoverInstant.current?.(instant);
+    latestOnHoverInstant.current?.(instant, instant && id);
   }, []);
 
   const onMouseLeave = useCallback((): void => {
