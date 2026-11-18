@@ -75,11 +75,16 @@ function mockValueSetExpand(medplum: MockClient): void {
   }));
 }
 
+async function openNewDiagnosisTab(user: UserEvent): Promise<void> {
+  await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+  await user.click(await screen.findByRole('tab', { name: 'New Diagnosis' }));
+}
+
 async function submitCholeraDiagnosis(user: UserEvent): Promise<void> {
-  await user.click(screen.getByRole('button', { name: 'Add New' }));
+  await openNewDiagnosisTab(user);
   await user.type(await screen.findByRole('searchbox', { name: 'ICD-10 Code' }), 'cholera');
   await user.click(await screen.findByText('Cholera, unspecified'));
-  await user.click(screen.getByRole('button', { name: 'Save' }));
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' }));
 }
 
 /**
@@ -128,7 +133,7 @@ describe('ConditionList', () => {
   test('renders diagnosis section', () => {
     setup();
     expect(screen.getByText(/^Diagnoses \(/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add New' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Diagnosis' })).toBeInTheDocument();
   });
 
   test('renders condition list', () => {
@@ -147,28 +152,33 @@ describe('ConditionList', () => {
     const user = userEvent.setup();
     setup();
 
-    await user.click(screen.getByRole('button', { name: 'Add New' }));
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Add New Diagnosis', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
+      expect(screen.getByText('Add Diagnosis', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
     });
 
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  test('displays modal form fields', async () => {
+  test('switches between the existing and new diagnosis tabs', async () => {
     const user = userEvent.setup();
     setup();
 
-    await user.click(screen.getByRole('button', { name: 'Add New' }));
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+    expect(await screen.findByRole('textbox', { name: 'Search diagnoses' })).toHaveFocus();
 
-    await waitFor(() => {
-      expect(screen.getByText('ICD-10 Code')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-    });
+    await user.click(screen.getByRole('tab', { name: 'New Diagnosis' }));
+    expect(await screen.findByRole('searchbox', { name: 'ICD-10 Code' })).toHaveFocus();
+    expect(screen.queryByRole('textbox', { name: 'Search diagnoses' })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' })).toBeDisabled();
+
+    // The inactive panel stays mounted but hidden, so both tabs share one height.
+    expect(screen.getByRole('textbox', { name: 'Search diagnoses', hidden: true }).closest('[inert]')).not.toBeNull();
+    await user.click(screen.getByRole('tab', { name: 'Existing Diagnosis' }));
+    expect(screen.getByRole('textbox', { name: 'Search diagnoses' })).toHaveFocus();
   });
 
   test('removes condition', async () => {
@@ -366,7 +376,7 @@ describe('ConditionList', () => {
     expect(onDiagnosisChange).not.toHaveBeenCalled();
   }, 15000);
 
-  test('links an existing patient condition picked from Add Existing', async () => {
+  test('links an existing patient condition picked from the Existing Diagnosis tab', async () => {
     const user = userEvent.setup();
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
@@ -380,9 +390,16 @@ describe('ConditionList', () => {
     const createSpy = vi.spyOn(medplum, 'createResource');
     setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
 
-    await user.click(screen.getByRole('button', { name: 'Add Existing' }));
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+    expect(await screen.findByRole('radiogroup', { name: 'Recent Diagnoses' })).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Search diagnoses' }), 'Asthma');
+    await waitFor(() => expect(screen.queryByText('Recent Diagnoses')).not.toBeInTheDocument());
+    expect(screen.getByRole('radio', { name: 'J45.909 Asthma' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Clear search' }));
+    expect(screen.getByRole('textbox', { name: 'Search diagnoses' })).toHaveValue('');
+    expect(await screen.findByRole('radiogroup', { name: 'Recent Diagnoses' })).toBeInTheDocument();
     await user.click(await screen.findByRole('radio', { name: 'J45.909 Asthma' }));
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' }));
 
     expect(setConditions).toHaveBeenCalledWith([mockCondition, asthma]);
     expect(onDiagnosisChange).toHaveBeenCalledWith([

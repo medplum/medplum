@@ -187,7 +187,7 @@ describe('BillingTab', () => {
     });
 
     expect(screen.getByText(/^Diagnoses \(/)).toBeInTheDocument();
-    expect(screen.getByText('Add New')).toBeInTheDocument();
+    expect(screen.getByText('Add Diagnosis')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Headache')).toBeInTheDocument();
@@ -203,7 +203,7 @@ describe('BillingTab', () => {
     });
 
     expect(screen.getByText(/^Diagnoses \(/)).toBeInTheDocument();
-    expect(screen.getByText('Add New')).toBeInTheDocument();
+    expect(screen.getByText('Add Diagnosis')).toBeInTheDocument();
     expect(screen.queryByText('Headache')).not.toBeInTheDocument();
   });
 

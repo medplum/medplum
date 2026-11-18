@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { sleep } from '@medplum/core';
-import type { Condition, Patient } from '@medplum/fhirtypes';
+import type { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { screen, waitFor } from '@testing-library/react';
@@ -10,9 +10,10 @@ import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render } from '../../test-utils/render';
-import ExistingConditionModal from './ExistingConditionModal';
+import AddDiagnosisModal from './AddDiagnosisModal';
 
 const patient: WithId<Patient> = { resourceType: 'Patient', id: 'patient-1' };
+const encounter: Encounter = { resourceType: 'Encounter', status: 'in-progress', class: { code: 'AMB' } };
 
 function condition(code: string, clinicalStatus: string, verificationStatus?: string): Condition {
   return {
@@ -24,7 +25,7 @@ function condition(code: string, clinicalStatus: string, verificationStatus?: st
   };
 }
 
-describe('ExistingConditionModal', () => {
+describe('AddDiagnosisModal', () => {
   let medplum: MockClient;
 
   beforeEach(() => {
@@ -34,12 +35,14 @@ describe('ExistingConditionModal', () => {
   function setup(excludeCodes: string[] = [], onSubmit = vi.fn()): void {
     render(
       <MedplumProvider medplum={medplum}>
-        <ExistingConditionModal
+        <AddDiagnosisModal
           opened
           onClose={vi.fn()}
           patient={patient}
+          encounter={encounter}
           excludeCodes={excludeCodes}
-          onSubmit={onSubmit}
+          onSubmitExisting={onSubmit}
+          onSubmitNew={vi.fn()}
         />
       </MedplumProvider>
     );
@@ -56,10 +59,10 @@ describe('ExistingConditionModal', () => {
 
     const radio = await screen.findByRole('radio', { name: 'E11.9 Dx E11.9' });
     expect(screen.getAllByRole('radio')).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Add Diagnosis' })).toBeDisabled();
 
     await userEvent.setup().click(radio);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Add' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add Diagnosis' }));
     expect(onSubmit).toHaveBeenCalledWith(active);
   });
 
@@ -73,7 +76,7 @@ describe('ExistingConditionModal', () => {
     const radio = await screen.findByRole('radio', { name: 'A00.1 Dx A00.1' });
     expect(screen.getAllByRole('radio')).toHaveLength(1);
     await userEvent.setup().click(radio);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Add' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Add Diagnosis' }));
     expect(onSubmit).toHaveBeenCalledWith(newer);
   });
 
@@ -106,12 +109,14 @@ describe('ExistingConditionModal', () => {
     const onClose = vi.fn();
     const modal = (opened: boolean): JSX.Element => (
       <MedplumProvider medplum={medplum}>
-        <ExistingConditionModal
+        <AddDiagnosisModal
           opened={opened}
           onClose={onClose}
           patient={patient}
+          encounter={encounter}
           excludeCodes={[]}
-          onSubmit={vi.fn()}
+          onSubmitExisting={vi.fn()}
+          onSubmitNew={vi.fn()}
         />
       </MedplumProvider>
     );
@@ -130,6 +135,6 @@ describe('ExistingConditionModal', () => {
 
   test('shows an empty state when the patient has no other current conditions', async () => {
     setup();
-    expect(await screen.findByText('No other active diagnoses for this patient')).toBeInTheDocument();
+    expect(await screen.findByText('No active diagnoses for this patient.')).toBeInTheDocument();
   });
 });

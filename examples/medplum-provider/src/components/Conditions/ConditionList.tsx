@@ -10,9 +10,8 @@ import type { JSX } from 'react';
 import { Fragment, useEffect, useState } from 'react';
 import { findExistingPatientCondition } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
+import AddDiagnosisModal from './AddDiagnosisModal';
 import ConditionItem from './ConditionItem';
-import ConditionModal from './ConditionModal';
-import ExistingConditionModal from './ExistingConditionModal';
 
 interface ConditionListProps {
   patient: WithId<Patient>;
@@ -29,7 +28,6 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
   const linkedCodes = (conditions ?? []).flatMap((c) => c.code?.coding?.flatMap((coding) => coding.code ?? []) ?? []);
   const medplum = useMedplum();
   const [opened, setOpened] = useState(false);
-  const [existingOpened, setExistingOpened] = useState(false);
 
   useEffect(() => {
     const fetchConditions = async (): Promise<void> => {
@@ -152,7 +150,7 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
 
   const handleExistingSubmit = (condition: WithId<Condition>): void => {
     linkCondition(condition);
-    setExistingOpened(false);
+    setOpened(false);
   };
 
   const linkCondition = (condition: WithId<Condition>): void => {
@@ -171,19 +169,9 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
           <Text fw={600} size="lg">
             Diagnoses ({conditions?.length ?? 0})
           </Text>
-          <Group gap="xs">
-            <Button
-              variant="light"
-              size="xs"
-              leftSection={<IconPlus size={14} />}
-              onClick={() => setExistingOpened(true)}
-            >
-              Add Existing
-            </Button>
-            <Button variant="light" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setOpened(true)}>
-              Add New
-            </Button>
-          </Group>
+          <Button variant="light" size="xs" leftSection={<IconPlus size={14} />} onClick={() => setOpened(true)}>
+            Add Diagnosis
+          </Button>
         </Group>
 
         <Paper withBorder>
@@ -207,19 +195,14 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
           )}
         </Paper>
       </Stack>
-      <ConditionModal
+      <AddDiagnosisModal
         opened={opened}
         onClose={() => setOpened(false)}
         patient={patient}
         encounter={encounter}
-        onSubmit={handleConditionSubmit}
-      />
-      <ExistingConditionModal
-        opened={existingOpened}
-        onClose={() => setExistingOpened(false)}
-        patient={patient}
         excludeCodes={linkedCodes}
-        onSubmit={handleExistingSubmit}
+        onSubmitExisting={handleExistingSubmit}
+        onSubmitNew={handleConditionSubmit}
       />
     </>
   );

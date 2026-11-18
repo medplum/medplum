@@ -1,0 +1,73 @@
+.tabs .tabsList {
+  display: flex;
+  gap: 4px;
+}
+
+.tabs .tab {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--mantine-radius-xl);
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 450;
+  background-color: transparent;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-4));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.tabs .tab:hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-8));
+}
+
+.tabs .tab[data-active],
+.tabs .tab[data-active]:hover {
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
+  color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
+}
+
+/* Both panels share one grid cell, so the modal is as tall as the taller one on either tab. */
+.panels {
+  display: grid;
+}
+
+.panel {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.panel[inert] {
+  visibility: hidden;
+}
+
+/* Matches the Navbar section titles (`.menuTitle` in @medplum/react's AppShell). */
+.listLabel {
+  display: block;
+  padding-block: 4px;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--mantine-color-gray-6);
+}
+
+/* One height whether loading, empty, searching, or showing results: the label plus five rows. */
+.results {
+  --result-row-height: 2.75rem;
+  height: calc(1.25rem + 5 * var(--result-row-height));
+}
+
+/* Fixed height, and no Mantine press nudge, so clicking a row never shifts the layout. */
+.resultRow {
+  height: var(--result-row-height);
+
+  & + & {
+    border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  }
+
+  &:active {
+    transform: none;
+  }
+}

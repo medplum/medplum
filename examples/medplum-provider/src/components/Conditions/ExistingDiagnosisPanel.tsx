@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Flex, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
+import { Flex, Input, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type { Coding, Condition, Patient } from '@medplum/fhirtypes';
-import { Modal, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
+import classes from './AddDiagnosisModal.module.css';
 import { ConditionStatusBadge } from './ConditionStatusBadge';
 
 const ICD10_CM_SYSTEM = HTTP_HL7_ORG + '/fhir/sid/icd-10-cm';
@@ -39,36 +40,31 @@ function latestPerCode(conditions: WithId<Condition>[]): WithId<Condition>[] {
 }
 
 /**
- * Props for ExistingConditionModal.
- * - opened / onClose: modal visibility.
+ * Props for ExistingDiagnosisPanel.
  * - patient: the patient whose current diagnoses are listed.
  * - excludeCodes: diagnosis codes already on the encounter, left out of the list.
- * - onSubmit: called with the chosen Condition.
+ * - onChange: called with the chosen Condition, or undefined while none is chosen.
  */
-export interface ExistingConditionModalProps {
-  readonly opened: boolean;
-  readonly onClose: () => void;
+export interface ExistingDiagnosisPanelProps {
   readonly patient: WithId<Patient>;
   readonly excludeCodes: string[];
-  readonly onSubmit: (condition: WithId<Condition>) => void;
+  readonly onChange: (condition: WithId<Condition> | undefined) => void;
 }
 
-export default function ExistingConditionModal(props: ExistingConditionModalProps): JSX.Element {
-  const { opened, onClose, patient, excludeCodes, onSubmit } = props;
+export default function ExistingDiagnosisPanel(props: ExistingDiagnosisPanelProps): JSX.Element {
+  const { patient, excludeCodes, onChange } = props;
   const medplum = useMedplum();
   const [conditions, setConditions] = useState<WithId<Condition>[] | undefined>();
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(query.trim(), 300);
   const [loadedKey, setLoadedKey] = useState<string | undefined>();
+  const searchRef = useRef<HTMLInputElement>(null);
   const excludeCodesKey = excludeCodes.join(',');
   const requestKey = debouncedQuery + '\n' + excludeCodesKey;
   const searching = query.trim() !== debouncedQuery || loadedKey !== requestKey;
 
   useEffect(() => {
-    if (!opened) {
-      return undefined;
-    }
     const params: Record<string, string> = {
       subject: getReferenceString(patient),
       code: ICD10_CM_SYSTEM + '|',
@@ -83,108 +79,104 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
     if (debouncedQuery) {
       params['code:text'] = debouncedQuery;
     }
-    let active = true;
+    let current = true;
     medplum
       .searchResources('Condition', params, { cache: 'no-cache' })
       .then((results) => {
-        if (active) {
+        if (current) {
           setConditions(latestPerCode(results).slice(0, DISPLAY_LIMIT));
           setLoadedKey(requestKey);
         }
       })
       .catch((err) => {
-        if (active) {
+        if (current) {
           setConditions([]);
           setLoadedKey(requestKey);
           showErrorNotification(err);
         }
       });
     return () => {
-      active = false;
+      current = false;
     };
-  }, [opened, medplum, patient, excludeCodesKey, debouncedQuery, requestKey]);
+  }, [medplum, patient, excludeCodesKey, debouncedQuery, requestKey]);
 
   const selected = conditions?.find((c) => c.id === selectedId);
 
-  const reset = (): void => {
-    setSelectedId(undefined);
-    setQuery('');
-    setConditions(undefined);
-    setLoadedKey(undefined);
-  };
-
-  const close = (): void => {
-    reset();
-    onClose();
-  };
+  useEffect(() => {
+    onChange(selected);
+  }, [selected, onChange]);
 
   return (
-    <Modal
-      opened={opened}
-      onClose={close}
-      title="Add Existing Diagnosis"
-      bodyHeight="26rem"
-      actions={
-        <Button
-          disabled={!selected}
-          onClick={() => {
-            if (selected) {
-              reset();
-              onSubmit(selected);
-            }
-          }}
-        >
-          Add
-        </Button>
-      }
-    >
+    <>
       <TextInput
-        mb="sm"
+        ref={searchRef}
+        mb="md"
         aria-label="Search diagnoses"
         placeholder="Search by name"
         leftSection={<IconSearch size={16} />}
-        rightSection={searching ? <Loader size="xs" aria-label="Searching" /> : undefined}
+        rightSection={
+          searching ? (
+            <Loader size="xs" aria-label="Searching" />
+          ) : (
+            query && (
+              <Input.ClearButton
+                size="sm"
+                aria-label="Clear search"
+                onClick={() => {
+                  setQuery('');
+                  searchRef.current?.focus();
+                }}
+              />
+            )
+          )
+        }
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
         data-autofocus
       />
-      {conditions?.length === 0 && (
-        <Text size="sm" c="dimmed">
-          {debouncedQuery ? 'No matching diagnoses' : 'No other active diagnoses for this patient'}
-        </Text>
-      )}
-      {conditions && conditions.length > 0 && (
-        <Radio.Group value={selectedId ?? null} onChange={setSelectedId}>
-          <Stack gap={0}>
-            {conditions.map((condition, idx) => {
-              const coding = getIcd10Coding(condition);
-              const display = coding?.display ?? condition.code?.text ?? '';
-              return (
-                <Fragment key={condition.id}>
-                  {idx > 0 && <Divider />}
+      <div className={classes.results}>
+        {!searching && conditions?.length === 0 && (
+          <Text size="sm" c="dimmed">
+            {debouncedQuery ? 'No matching diagnoses.' : 'No active diagnoses for this patient.'}
+          </Text>
+        )}
+        {conditions && conditions.length > 0 && (
+          <Radio.Group
+            label={debouncedQuery ? undefined : 'Recent Diagnoses'}
+            classNames={{ label: classes.listLabel }}
+            value={selectedId ?? null}
+            onChange={setSelectedId}
+          >
+            <Stack gap={0}>
+              {conditions.map((condition) => {
+                const coding = getIcd10Coding(condition);
+                const display = coding?.display ?? condition.code?.text ?? '';
+                return (
                   <Radio.Card
+                    key={condition.id}
                     value={condition.id}
                     radius={0}
                     withBorder={false}
+                    className={classes.resultRow}
                     aria-label={[coding?.code, display].filter(Boolean).join(' ')}
                   >
-                    <Flex align="center" gap="md" px="xs" py="sm">
+                    <Flex align="center" gap="md" px={4} h="100%">
                       <Radio.Indicator size="sm" />
-                      <Text size="sm" fw={600} w={80}>
+                      <Text size="sm" fw={600} w={64}>
                         {coding?.code ?? ''}
                       </Text>
-                      <Text size="sm" flex={1} miw={0} lineClamp={2} title={display}>
+                      <Text size="sm" flex={1} miw={0} truncate="end" title={display}>
                         {display}
                       </Text>
                       <ConditionStatusBadge clinicalStatus={condition.clinicalStatus} />
                     </Flex>
                   </Radio.Card>
-                </Fragment>
-              );
-            })}
-          </Stack>
-        </Radio.Group>
-      )}
-    </Modal>
+                );
+              })}
+            </Stack>
+          </Radio.Group>
+        )}
+      </div>
+    </>
   );
 }
