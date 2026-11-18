@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Pill, useMantineTheme } from '@mantine/core';
+import { Box, Center, Group, Pill, useMantineTheme } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
@@ -97,7 +97,7 @@ export interface AppointmentServiceMultiSelectProps {
   readonly description?: string;
   /** The most that can be chosen. The search box goes once that many are. */
   readonly maxValues?: number;
-  /** Marks each chosen visit type with its calendar color, for a field whose choices are drawn in them. */
+  /** Marks each visit type, offered or chosen, with its calendar color, for a field whose choices are drawn in them. */
   readonly showColors?: boolean;
 }
 
@@ -123,7 +123,7 @@ export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSele
       defaultValue={defaultValue && [...defaultValue]}
       toOption={toOption}
       loadOptions={loadOptions}
-      itemComponent={ServiceItem}
+      itemComponent={showColors ? ServiceColorItem : ServiceItem}
       pillComponent={showColors ? ServiceColorPill : undefined}
       onChange={onChange}
     />
@@ -136,18 +136,35 @@ function ServiceColorPill(props: {
   readonly onRemove: () => void;
 }): JSX.Element {
   const { item, disabled, onRemove } = props;
-  const theme = useMantineTheme();
-  const color = resolveThemeColor(
-    theme,
-    getSchedulingColor(item.resource),
-    fallbackColorIndex(getReferenceString(item.resource))
-  );
   return (
     <Pill withRemoveButton={!disabled} onRemove={onRemove}>
-      <Box component="span" display="inline-block" w={8} h={8} mr={6} bg={`${color}.6`} bdrs="50%" />
+      <ServiceColorDot service={item.resource} mr={6} />
       {item.label}
     </Pill>
   );
+}
+
+// The option as `ServiceItem` draws it, behind the dot its pill will carry once it is chosen.
+function ServiceColorItem(props: Readonly<AsyncAutocompleteOption<WithId<HealthcareService>>>): JSX.Element {
+  return (
+    <Group gap="xs" wrap="nowrap" align="flex-start">
+      {/* As tall as the label's line, so the dot sits beside the name rather than the detail. */}
+      <Center h="calc(var(--mantine-font-size-sm) * var(--mantine-line-height-sm))">
+        <ServiceColorDot service={props.resource} />
+      </Center>
+      <ServiceItem {...props} />
+    </Group>
+  );
+}
+
+function ServiceColorDot(props: { readonly service: WithId<HealthcareService>; readonly mr?: number }): JSX.Element {
+  const theme = useMantineTheme();
+  const color = resolveThemeColor(
+    theme,
+    getSchedulingColor(props.service),
+    fallbackColorIndex(getReferenceString(props.service))
+  );
+  return <Box component="span" display="inline-block" w={8} h={8} mr={props.mr} bg={`${color}.6`} bdrs="50%" />;
 }
 
 type LoadServiceOptions = (input: string, signal: AbortSignal) => Promise<WithId<HealthcareService>[]>;
