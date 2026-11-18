@@ -153,11 +153,11 @@ describe('CalendarFilters', () => {
       const { latest } = setup();
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Telehealth Consult');
-      expect(latest().service?.id).toBe('telehealth-consult');
+      expect(latest().services?.map((s) => s.id)).toEqual(['telehealth-consult']);
 
       await removePill('Telehealth Consult');
 
-      expect(latest().service).toBeUndefined();
+      expect(latest().services).toEqual([]);
       expect(serviceField()).toBeInTheDocument();
     });
 
@@ -167,7 +167,7 @@ describe('CalendarFilters', () => {
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Telehealth Consult');
 
-      expect(latest().service?.id).toBe('telehealth-consult');
+      expect(latest().services?.map((s) => s.id)).toEqual(['telehealth-consult']);
     });
 
     test('a chosen site narrows the visit types to the ones held there', async () => {
@@ -219,16 +219,32 @@ describe('CalendarFilters', () => {
       const { latest } = setup();
       await openAutocomplete(serviceField());
       await clickAutocompleteOption('Ultrasound Imaging');
-      expect(latest().service?.id).toBe('ultrasound-imaging');
+      expect(latest().services?.map((s) => s.id)).toEqual(['ultrasound-imaging']);
 
       await openAutocomplete(serviceFacilityField());
       await clickAutocompleteOption('Uro Associates - Satellite');
       await settleAutocomplete();
 
-      expect(latest().service).toBeUndefined();
+      expect(latest().services).toEqual([]);
       // Reported *and* shown: the field ignores `defaultValue` after mount, so a stale
       // pill would leave the sidebar claiming a filter that no longer stands.
       expect(serviceField()).toBeInTheDocument();
+      expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
+    });
+
+    test('changing site drops only the chosen visit types the new site does not hold', async () => {
+      const { latest } = setup();
+      await openAutocomplete(serviceField());
+      await clickAutocompleteOption('Ultrasound Imaging');
+      await openAutocomplete(screen.getByPlaceholderText('Add a visit type'));
+      await clickAutocompleteOption('Telehealth Consult');
+      expect(latest().services?.map((s) => s.id)).toEqual(['ultrasound-imaging', 'telehealth-consult']);
+
+      await openAutocomplete(serviceFacilityField());
+      await clickAutocompleteOption('Uro Associates - Satellite');
+      await settleAutocomplete();
+
+      expect(latest().services?.map((s) => s.id)).toEqual(['telehealth-consult']);
       expect(screen.queryByText('Ultrasound Imaging')).not.toBeInTheDocument();
     });
 
@@ -241,7 +257,7 @@ describe('CalendarFilters', () => {
       await clickAutocompleteOption('Uro Associates - Satellite');
       await settleAutocomplete();
 
-      expect(latest().service?.id).toBe('telehealth-consult');
+      expect(latest().services?.map((s) => s.id)).toEqual(['telehealth-consult']);
     });
 
     test('clearing the site keeps a visit type only that site held', async () => {
@@ -256,10 +272,9 @@ describe('CalendarFilters', () => {
       await removePill('Uro Associates - Main Clinic');
       await settleAutocomplete();
 
-      expect(latest().service?.id).toBe('ultrasound-imaging');
+      expect(latest().services?.map((s) => s.id)).toEqual(['ultrasound-imaging']);
       // Still shown, too — the visit type field must not have been remounted, which
-      // would have emptied it.
-      expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+      // would have emptied it and put its empty placeholder back.
       expect(screen.queryByPlaceholderText('All visit types')).not.toBeInTheDocument();
     });
 

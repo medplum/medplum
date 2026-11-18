@@ -67,7 +67,7 @@ export interface AvailabilityShadingInput {
   readonly calendars: readonly AvailabilityShadingCalendar[];
   /** The visit types whose windows are drawn when the filters choose none. */
   readonly services: readonly WithId<HealthcareService>[];
-  readonly filters: CalendarFilterValues;
+  readonly filters: Pick<CalendarFilterValues, 'serviceFacility'> & { readonly service?: WithId<HealthcareService> };
   /** The days on show. */
   readonly range: DateTimeRange;
   /** Names a visit type's color. Visit types given the same color are drawn as one. */

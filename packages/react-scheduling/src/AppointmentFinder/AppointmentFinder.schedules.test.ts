@@ -356,6 +356,23 @@ describe('searchScheduleCandidates', () => {
     ]);
   });
 
+  test('Lists the schedules offering any one of several services, in one search', async () => {
+    const medplum = await setupSurgicalClient();
+
+    const either = await searchScheduleCandidates(medplum, [UltrasoundImagingService, SurgeryService], {
+      actorType: 'Practitioner',
+      query: '',
+    });
+    expect(medplum.search).toHaveBeenCalledTimes(1);
+
+    const imaging = providersOf(await candidatesFor(medplum, UltrasoundImagingService, 'Practitioner'));
+    const surgery = providersOf(await candidatesFor(medplum, SurgeryService, 'Practitioner'));
+    expect(surgery).not.toStrictEqual(imaging);
+    expect(providersOf(either)).toStrictEqual(
+      [...new Set([...imaging, ...surgery])].sort((left, right) => left.localeCompare(right))
+    );
+  });
+
   test('Lists actors by name, which is the order a field offers them in', async () => {
     const medplum = await setupClient();
     const abbot = await medplum.createResource<Practitioner>({
