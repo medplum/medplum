@@ -69,6 +69,7 @@ import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import { BlockTimeForm } from './BlockTimeForm/BlockTimeForm';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
+import { keepServicesAtSites } from './CalendarFilters.utils';
 import type { ServiceTypeLegendItem } from './CalendarLegend';
 import { CalendarLegend } from './CalendarLegend';
 import type { CalendarsPanelItem } from './CalendarsPanel/CalendarsPanel';
@@ -436,7 +437,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Under a filter, the Slots of an appointment it hides go with it. Blocked time stays: the
     // calendars listed are already the ones the filters keep.
     const shownSlots =
-      calendarFilters.services?.length || calendarFilters.serviceFacilities?.length
+      calendarFilters.services || calendarFilters.serviceFacilities?.length
         ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], visibleAppointments)
         : (slots ?? []);
     const openSlots = filterBookedSlots(
@@ -643,7 +644,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       const serviceFacilities = next ? [next, ...(alreadyChosen ? others : others.slice(1))] : [];
       setFilters({
         serviceFacilities,
-        services: filters.services?.filter((service) => isServiceKeptAtAnyLocation(service, serviceFacilities)),
+        services: keepServicesAtSites(filters.services, serviceFacilities),
         availabilityServices: filters.availabilityServices?.filter((service) =>
           isServiceKeptAtAnyLocation(service, serviceFacilities)
         ),

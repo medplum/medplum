@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text } from '@mantine/core';
+import { Checkbox, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
@@ -9,6 +9,7 @@ import { AppointmentServiceMultiSelect } from '../AppointmentFinder/AppointmentS
 import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { ServiceFacilitiesInput } from '../ServiceFacilityInput';
+import { keepServicesAtSites } from './CalendarFilters.utils';
 
 const NONE: readonly WithId<HealthcareService>[] = [];
 const NO_SITES: NonNullable<CalendarFilterValues['serviceFacilities']> = [];
@@ -22,7 +23,10 @@ export interface CalendarFilterValues {
    * it is a site the filters started on.
    */
   readonly serviceFacilities?: readonly (WithId<Location> | (Reference<Location> & { reference: string }))[];
-  /** The chosen visit types, any of which will do. Absent or empty for every visit type. */
+  /**
+   * The visit types to include, any of which will do. Absent for every visit type. Empty for none of
+   * them, which hides every appointment and narrows no calendars.
+   */
   readonly services?: readonly WithId<HealthcareService>[];
   /**
    * Not a filter: the visit types whose availability is shaded on the calendar, three at most. Absent
@@ -53,6 +57,10 @@ export interface CalendarFiltersProps {
  *
  * Several sites and several visit types can be chosen, and any one of each will do.
  *
+ * The visit types are a list of the ones to include, with an "All visit types" checkbox, ticked to start
+ * with, standing for every one of them. Choosing a visit type unticks it. Unticked with nothing chosen,
+ * no appointment is drawn, which is the way to look at the calendars' availability on its own.
+ *
  * Below the filters, apart from them, is the choice of visit types to shade the availability of. It
  * narrows nothing: an appointment a filter hides is what explains a gap in the shading, so the two are
  * asked separately. Its visit types are offered by the sites chosen, and not by the Visit Type filter.
@@ -70,6 +78,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
     defaultValue?.serviceFacilities ?? NO_SITES
   );
   const [services, setServices] = useState<readonly WithId<HealthcareService>[]>(defaultValue?.services ?? NONE);
+  const [allServices, setAllServices] = useState(defaultValue?.services === undefined);
   const [availabilityServices, setAvailabilityServices] = useState<readonly WithId<HealthcareService>[]>(
     defaultValue?.availabilityServices ?? NONE
   );
@@ -83,9 +92,10 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
     (next: WithId<Location>[]): void => {
       setServiceFacilities(next);
       // Drop the chosen visit types that are not available at any of the service facilities now chosen
-      const kept = services.filter((service) => isServiceKeptAtAnyLocation(service, next));
-      if (kept.length !== services.length) {
-        setServices(kept);
+      const kept = keepServicesAtSites(allServices ? undefined : services, next);
+      if ((kept ?? NONE).length !== services.length) {
+        setServices(kept ?? NONE);
+        setAllServices(kept === undefined);
         setServiceFieldKey((key) => key + 1);
       }
       const keptAvailability = availabilityServices.filter((service) => isServiceKeptAtAnyLocation(service, next));
@@ -95,13 +105,25 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
       }
       onChange({ serviceFacilities: next, services: kept, availabilityServices: keptAvailability });
     },
-    [onChange, services, availabilityServices]
+    [onChange, services, allServices, availabilityServices]
   );
 
   const selectServices = useCallback(
     (next: WithId<HealthcareService>[]): void => {
       setServices(next);
+      setAllServices(false);
       onChange({ serviceFacilities, services: next, availabilityServices });
+    },
+    [serviceFacilities, availabilityServices, onChange]
+  );
+
+  // Ticked, it stands for every visit type, so the list goes. Unticked, the list starts empty: none.
+  const toggleAllServices = useCallback(
+    (all: boolean): void => {
+      setAllServices(all);
+      setServices(NONE);
+      setServiceFieldKey((key) => key + 1);
+      onChange({ serviceFacilities, services: all ? undefined : NONE, availabilityServices });
     },
     [serviceFacilities, availabilityServices, onChange]
   );
@@ -109,9 +131,9 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
   const selectAvailabilityServices = useCallback(
     (next: WithId<HealthcareService>[]): void => {
       setAvailabilityServices(next);
-      onChange({ serviceFacilities, services, availabilityServices: next });
+      onChange({ serviceFacilities, services: allServices ? undefined : services, availabilityServices: next });
     },
-    [serviceFacilities, services, onChange]
+    [serviceFacilities, services, allServices, onChange]
   );
 
   return (
@@ -128,10 +150,16 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
         <AppointmentServiceMultiSelect
           key={serviceFieldKey}
           label="Visit Type"
-          placeholder={services.length > 0 ? 'Add a visit type' : 'All visit types'}
+          placeholder={getServicesPlaceholder(allServices, services.length)}
           serviceFacilities={serviceFacilities}
           defaultValue={services}
           onChange={selectServices}
+        />
+        <Checkbox
+          size="xs"
+          label="All visit types"
+          checked={allServices}
+          onChange={(event) => toggleAllServices(event.currentTarget.checked)}
         />
       </Stack>
       <Stack gap="xs">
@@ -150,6 +178,13 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
       </Stack>
     </Stack>
   );
+}
+
+function getServicesPlaceholder(all: boolean, chosen: number): string {
+  if (all) {
+    return 'All visit types';
+  }
+  return chosen > 0 ? 'Add a visit type' : 'No appointments shown';
 }
 
 function SectionHeading(props: { readonly children: string }): JSX.Element {

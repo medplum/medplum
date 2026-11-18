@@ -250,6 +250,10 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold,
  * and clicking open time opens the booking pane. With the filters pane open, the click offers to instead.
  *
+ * The Visit Type filter is a list of the visit types to include, with an "All visit types" checkbox that
+ * starts ticked. Untick it with nothing chosen and no appointment is drawn, which leaves the availability
+ * shading unobstructed.
+ *
  * The filters pane also has an Availability field, apart from its filters, taking up to three visit
  * types. It filters nothing: it shades where a provider on show could take each, one lane of the day's
  * column per visit type. Try "Injections" and "Follow-up". A click on a lane starts a booking for that

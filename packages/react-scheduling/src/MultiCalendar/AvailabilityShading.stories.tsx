@@ -173,7 +173,7 @@ function useAvailabilityShadingDemo(initial: DemoProps): {
     const drawn = shown.flatMap(heldBy).filter((appointment) =>
       matchesCalendarFilters(appointment, {
         serviceFacilities: facility ? [facility] : [],
-        services: service ? [service] : [],
+        services: service ? [service] : undefined,
       })
     );
     const sources: MultiCalendarSource[] = [
