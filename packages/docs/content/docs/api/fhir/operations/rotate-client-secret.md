@@ -1,0 +1,66 @@
+---
+id: rotate-client-secret
+title: ClientApplication $rotate-secret
+---
+
+The `$rotate-secret` operation securely rotates client application credentials with zero downtime. It uses a two-phase rotation process: first moving the current secret to a "retiring" state while generating a new primary secret, then later removing the retiring secret—ensuring that active clients aren't immediately locked out during credential updates.
+
+Regular credential rotation is a security best practice that limits the impact of compromised credentials and meets compliance requirements for many healthcare security frameworks.
+
+## Use Cases
+
+- **Security Best Practices**: Implement regular credential rotation schedules (e.g., every 90 days)
+- **Incident Response**: Quickly rotate credentials when a potential compromise is detected
+- **Compliance Requirements**: Meet HIPAA, SOC 2, or other security framework requirements for credential management
+- **Zero-Downtime Rotation**: Update credentials without disrupting active integrations during the transition period
+- **Automated Credential Management**: Integrate with CI/CD pipelines or secret management tools for automated rotation
+
+## Invoke the `$rotate-secret` operation
+
+```
+[baseUrl]/ClientApplication/[id]/$rotate-secret
+```
+
+{{< warning title="Privileged Operation" >}}
+
+This operation is only available to Project Admins and Super Admins.
+
+{{< /warning >}}
+
+## Parameters
+
+| Name             | Type     | Description                                                                                   | Required       |
+| ---------------- | -------- | --------------------------------------------------------------------------------------------- | -------------- |
+| `secret`         | `string` | Rotate the primary secret, generating a new one and placing the old one into `retiringSecret` | No (see below) |
+| `retiringSecret` | `string` | Rotate the retiring secret, removing it from use                                              | No             |
+
+{{< note title="Mutually Exclusive Parameters" >}}
+
+One and only one of the `secret` and `retiringSecret` parameters must be provided, and must match the corresponding
+value in the `ClientApplication`.
+
+{{< /note >}}
+
+## Output
+
+The operation returns the `ClientApplication` resource with the updated secret value.
+
+- If the `secret` is provided and matches the current `ClientApplication.secret`, that value is copied into
+  `ClientApplication.retiringSecret` (overwriting any other value there), and a new secret is securely generated and
+  placed into `ClientApplication.secret`; both secrets can be used to grant application access
+- If the `retiringSecret` parameter is provided and matches the current `ClientApplication.retiringSecret` value,
+  the `retiringSecret` is removed from the resource and can no longer be used to grant application access
+
+## Examples
+
+**Fully rotate client secret**:
+
+{{< code-example file="packages/examples/src/api/fhir/operations/rotate-client-secret.ts" language="ts" blocks="rotate" >}}
+
+## Related
+
+- [ClientApplication Guide](/docs/auth/client-credentials) - Understanding client credentials authentication
+- [Admin Access](/docs/access/admin) - Admin credentials required for this operation
+- [Authentication Overview](/docs/auth) - Medplum authentication methods
+- [Compliance](/docs/compliance) - Security and compliance for healthcare applications
+- [SMART App Launch](/docs/integration/smart-app-launch) - OAuth-based authentication for FHIR applications

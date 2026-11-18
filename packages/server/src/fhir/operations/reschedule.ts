@@ -30,6 +30,7 @@ import {
   assertAllLoaded,
   buildAppointmentSlots,
   getSchedulingParametersGroup,
+  getSlotWriterRepo,
   isAlignedToGrid,
   validateAllAvailability,
 } from './utils/scheduling';
@@ -209,9 +210,10 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
 
       await validateAllAvailability(txRepo, withPaths(slots, 'Parameters.schedule'), healthcareService, parameterGroup);
 
+      const slotRepo = getSlotWriterRepo(txRepo);
       const createdSlots = new Array<WithId<Slot>>(slots.length);
       for (const [i, slot] of slots.entries()) {
-        createdSlots[i] = await txRepo.createResource<Slot>(slot);
+        createdSlots[i] = await slotRepo.createResource<Slot>(slot);
       }
 
       // Replace any earlier reschedule marker, whether from $reschedule or a manual move

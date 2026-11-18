@@ -3,7 +3,6 @@
 import type { WithId } from '@medplum/core';
 import {
   badRequest,
-  EMPTY,
   getReferenceString,
   getStatus,
   isOperationOutcome,
@@ -13,14 +12,6 @@ import {
 import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
 import type { SystemRepository } from '../fhir/repo';
-
-/**
- * How many of a user's most recent security requests are examined when superseding prior requests.
- *
- * Only unexpired requests are worth superseding, and expiration bounds how many of those can
- * exist, so there is no need to walk a user's entire history.
- */
-const MAX_SUPERSEDED_REQUESTS = 100;
 
 /**
  * Returns how long a request of the given type stays valid, in milliseconds.
@@ -98,22 +89,7 @@ export async function supersedePriorSecurityRequests(
   user: WithId<User>,
   type: UserSecurityRequest['type']
 ): Promise<void> {
-  const priorRequests = await systemRepo.search<UserSecurityRequest>({
-    resourceType: 'UserSecurityRequest',
-    count: MAX_SUPERSEDED_REQUESTS,
-    sortRules: [{ code: '_lastUpdated', descending: true }],
-    filters: [{ code: 'user', operator: Operator.EQUALS, value: getReferenceString(user) }],
-  });
-
-  for (const entry of priorRequests.entry ?? EMPTY) {
-    const priorRequest = entry.resource as WithId<UserSecurityRequest>;
-    if (priorRequest.type === type && !priorRequest.used) {
-      // Patch rather than update, so that a request being consumed concurrently is not clobbered
-      await systemRepo.patchResource<UserSecurityRequest>('UserSecurityRequest', priorRequest.id, [
-        { op: 'add', path: '/used', value: true },
-      ]);
-    }
-  }
+  await retireSecurityRequests(systemRepo, user, (securityRequest) => securityRequest.type === type);
 }
 
 /**

@@ -34,7 +34,7 @@ describe('Deploy Streaming', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ membership: { admin: true } });
   });
 
   afterAll(async () => {

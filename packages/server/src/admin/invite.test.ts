@@ -8,6 +8,7 @@ import {
   ContentType,
   createReference,
   getReferenceString,
+  Logger,
   normalizeErrorString,
 } from '@medplum/core';
 import type {
@@ -35,7 +36,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { SelectQuery } from '../fhir/sql';
 import {
@@ -182,6 +183,66 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
+  });
+
+  test('Logs a membership granted to an existing user with an unverified email', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const systemRepo = getGlobalSystemRepo();
+    const unverifiedEmail = `bob${randomUUID()}@example.com`;
+    const verifiedEmail = `carol${randomUUID()}@example.com`;
+    const unverifiedUser = await withTestContext(() =>
+      systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: unverifiedEmail,
+      })
+    );
+    await withTestContext(() =>
+      systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Carol',
+        lastName: 'Jones',
+        email: verifiedEmail,
+        emailVerified: true,
+      })
+    );
+
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    const invite = (firstName: string, email: string): request.Test =>
+      request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Practitioner', firstName, lastName: 'Jones', email, sendEmail: false });
+
+    const res1 = await invite('Bob', unverifiedEmail);
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.user.reference).toBe(getReferenceString(unverifiedUser));
+    expect(await invite('Carol', verifiedEmail)).toHaveStatus(200);
+    expect(await invite('Dave', `dave${randomUUID()}@example.com`)).toHaveStatus(200);
+
+    const message = 'Membership granted to existing user with unverified email';
+    expect(warnSpy.mock.calls.filter(([msg]) => msg === message)).toStrictEqual([
+      [
+        message,
+        expect.objectContaining({
+          source: 'invite',
+          userId: unverifiedUser.id,
+          projectId: project.id,
+          membershipId: res1.body.id,
+        }),
+      ],
+    ]);
+    warnSpy.mockRestore();
   });
 
   test('Existing practitioner to project', async () => {
@@ -1351,6 +1412,41 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res2.body)).toContain('does not belong to this project');
   });
 
+  test('Invite with access policy from linked project', async () => {
+    const { project: sharingProject } = await createTestProject({
+      project: { exportedResourceType: ['AccessPolicy'] },
+    });
+    const { project, accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { link: [{ project: createReference(sharingProject) }] },
+      membership: { admin: true },
+    });
+    const systemRepo = await getProjectSystemRepo(project);
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      meta: { project: sharingProject.id },
+    });
+    const projectlessPolicy = await systemRepo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy' });
+
+    const invite = (policy: AccessPolicy): Promise<request.Response> =>
+      request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Carol',
+          lastName: 'Brown',
+          email: `carol${randomUUID()}@example.com`,
+          accessPolicy: createReference(policy),
+          sendEmail: false,
+        });
+
+    expect(await invite(accessPolicy)).toHaveStatus(200);
+    const res = await invite(projectlessPolicy);
+    expect(res).toHaveStatus(400);
+    expect(normalizeErrorString(res.body)).toContain('does not belong to this project');
+  });
+
   test('Invite without access policy (backwards compatibility)', async () => {
     const { project, accessToken } = await withTestContext(() =>
       registerNew({
@@ -1580,6 +1676,7 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1606,11 +1703,13 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
       const explicitAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Explicit Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1654,6 +1753,7 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1680,6 +1780,7 @@ describe('Admin Invite', () => {
       const systemRepo = await getProjectSystemRepo(project);
       const defaultAccessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -1979,7 +2080,6 @@ describe('Admin Invite', () => {
       const relatedPersonPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         name: 'Default RelatedPerson Policy',
-        compartment: { reference: '%patient' },
         resource: [{ resourceType: 'RelatedPerson', criteria: 'RelatedPerson?patient=%patient' }],
       });
       const patient = await systemRepo.createResource<Patient>({
@@ -2078,6 +2178,7 @@ describe('Admin Invite', () => {
       // The Practitioner default must NOT be selected for an admin invite.
       const patientPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });
@@ -2115,6 +2216,7 @@ describe('Admin Invite', () => {
       // The Admin default must NOT be selected for a non-admin Practitioner invite.
       const patientPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: project.id },
         name: 'Default Patient Policy',
         resource: [{ resourceType: 'Patient' }],
       });

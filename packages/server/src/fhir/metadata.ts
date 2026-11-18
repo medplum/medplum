@@ -24,6 +24,7 @@ import {
   getSupportedProfiles,
   getSystemInteractions,
   isResourceTypeAdvertised,
+  TERMINOLOGY_OPERATIONS,
 } from '../config/capabilitystatement';
 import { getConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
@@ -148,6 +149,7 @@ const supportedProfiles: Record<string, string[]> = {
 };
 
 const supportedOperations: Record<string, CapabilityStatementRestResourceOperation[]> = {
+  ...TERMINOLOGY_OPERATIONS,
   Group: [
     {
       name: 'export',

@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+import type { WithId } from '@medplum/core';
 import { badRequest, ContentType, getStatus } from '@medplum/core';
-import type { Bot } from '@medplum/fhirtypes';
+import type { Bot, Project } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
@@ -10,11 +11,12 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { createBotMembership, createTestProject } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
-let streamingBot: Bot;
+let project: WithId<Project>;
+let streamingBot: WithId<Bot>;
 
 describe('Execute', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
@@ -71,7 +73,7 @@ describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ project, accessToken } = await createTestProject({ withAccessToken: true }));
 
     const streamingRes = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -99,7 +101,8 @@ describe('Execute', () => {
         `,
       });
     expect(streamingRes).toHaveStatus(201);
-    streamingBot = streamingRes.body as Bot;
+    streamingBot = streamingRes.body as WithId<Bot>;
+    await createBotMembership(project, streamingBot);
   });
 
   afterAll(async () => {

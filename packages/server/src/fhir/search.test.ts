@@ -14,6 +14,7 @@ import {
   UCUM,
 } from '@medplum/core';
 import type {
+  AccessPolicyResource,
   ActivityDefinition,
   AllergyIntolerance,
   Appointment,
@@ -21,6 +22,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  CarePlan,
   CareTeam,
   Coding,
   Communication,
@@ -2655,6 +2657,50 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
     }));
 
+  test.each<[string, AccessPolicyResource[]]>([
+    ['default', []],
+    ['read interaction', [{ resourceType: 'Questionnaire', interaction: ['read'] }]],
+  ])('Include canonical with access policy (%s)', (_, questionnairePolicy) =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resource: [{ resourceType: 'CarePlan' }, { resourceType: 'PlanDefinition' }, ...questionnairePolicy],
+        },
+      });
+
+      const canonicalURL = 'http://example.com/fhir/definition/' + randomUUID();
+      const questionnaire = await repo.getSystemRepo().createResource<Questionnaire>({
+        resourceType: 'Questionnaire',
+        meta: { project: project.id },
+        status: 'active',
+        url: canonicalURL,
+      });
+      const planDefinition = await repo.createResource<PlanDefinition>({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        url: canonicalURL,
+      });
+      const carePlan = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: { reference: 'Patient/' + randomUUID() },
+        instantiatesCanonical: [canonicalURL],
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'CarePlan',
+        include: [{ resourceType: 'CarePlan', searchParam: 'instantiates-canonical' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: carePlan.id }],
+      });
+      expect(bundle.entry).toHaveLength(2);
+      expect(bundleContains(bundle, carePlan)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
+      expect(bundleContains(bundle, planDefinition)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, questionnaire)).toBeUndefined();
+    })
+  );
+
   test('Include PlanDefinition mixed types', () =>
     withTestContext(async () => {
       const canonical = 'http://example.com/fhir/R4/ActivityDefinition/' + randomUUID();
@@ -4606,6 +4652,16 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
           sortRules: [{ code: 'xyz' }],
         })
       ).rejects.toThrow(/^Unknown search parameter: xyz$/);
+    }));
+
+  test('ValueSet code search parameter is not supported', async () =>
+    withTestContext(async () => {
+      await expect(
+        repo.search({
+          resourceType: 'ValueSet',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'abc' }],
+        })
+      ).rejects.toThrow(/^Unknown search parameter: code$/);
     }));
 
   test('Date range search', () =>

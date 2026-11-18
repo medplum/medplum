@@ -810,17 +810,18 @@ describe('AppointmentProposalForm', () => {
       expect(screen.getByText(/Monday, August 17/)).toBeInTheDocument();
     });
 
-    test('Clears the chosen time when a stretch is picked', async () => {
+    test('Keeps the chosen time when a stretch is picked', async () => {
       setup(medplum);
       await openFinder();
       await chooseFirstOfferedTime();
-      expect(chosenTimeField()).not.toBeNull();
+      const chosen = chosenTimeField()?.value;
+      expect(chosen).toBeDefined();
       await openTimeFinder();
 
       await dragDays('17', '21');
 
-      // A proposal carries the Slots it was found for, and the search has moved on.
-      expect(chosenTimeField()).toBeNull();
+      // Which days are on show says nothing about the time already chosen.
+      expect(chosenTimeField()).toHaveValue(chosen);
     });
   });
 
@@ -976,17 +977,18 @@ describe('AppointmentProposalForm', () => {
       expect(chosenTimeField()).not.toBeNull();
     });
 
-    test('Clears the chosen time when the day changes', async () => {
+    test('Keeps the chosen time when the day changes', async () => {
       setup(medplum);
       await chooseImagingService();
       await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
       await openTimeFinder();
       await chooseFirstOfferedTime();
+      const chosen = chosenTimeField()?.value;
       await openTimeFinder();
 
       await chooseDay('18');
 
-      expect(chosenTimeField()).not.toBeInTheDocument();
+      expect(chosenTimeField()).toHaveValue(chosen);
     });
   });
 
@@ -1221,7 +1223,7 @@ describe('AppointmentProposalForm', () => {
       expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the proposal being dropped when a different day is searched', async () => {
+    test('Reports the proposal being dropped when the actors change', async () => {
       const onChangeProposal = vi.fn();
       setup(medplum, { onChangeProposal });
       await chooseImagingService();
@@ -1229,14 +1231,13 @@ describe('AppointmentProposalForm', () => {
       await openTimeFinder();
       await chooseFirstOfferedTime();
       expect(onChangeProposal).toHaveBeenLastCalledWith(expect.objectContaining({ start: expect.any(String) }));
-      await openTimeFinder();
 
-      await chooseDay('18');
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
 
       expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
     });
 
-    test('Reports the proposal, and its drop even when the host moved the day', async () => {
+    test('Reports the proposal, and keeps it when the host moves the day', async () => {
       const onChangeProposal = vi.fn();
       const { rerender } = renderWithMedplum(
         <AppointmentProposalForm onSubmit={onSubmit} onChangeProposal={onChangeProposal} />,
@@ -1250,7 +1251,9 @@ describe('AppointmentProposalForm', () => {
         expect.objectContaining({ resourceType: 'Appointment', status: 'proposed', start: expect.any(String) })
       );
 
-      // A drop the host caused is reported too: a host drawing the proposal draws only
+      const proposal = onChangeProposal.mock.lastCall?.[0];
+
+      // Searching another day leaves the time chosen, so a host drawing it keeps drawing
       // what Book would book.
       rerender(
         <AppointmentProposalForm
@@ -1259,7 +1262,7 @@ describe('AppointmentProposalForm', () => {
           defaultStart={new Date(2026, 8, 2)}
         />
       );
-      expect(onChangeProposal).toHaveBeenLastCalledWith(undefined);
+      expect(onChangeProposal).toHaveBeenLastCalledWith(proposal);
     });
 
     test('Opens the time search on the day the host named', async () => {
@@ -1312,13 +1315,12 @@ describe('AppointmentProposalForm', () => {
   });
 
   describe('Identifying the patient', () => {
-    test('Asks for the patient below the action that finds a time', async () => {
+    test('Asks for the patient between the visit type and the provider', async () => {
       setup(medplum);
+      await settleAutocomplete();
 
-      // Naming a patient cannot change which times are offered, so asking for one
-      // ahead of the search puts work that cannot affect the result in front of the
-      // one control that can.
-      expect(isBefore(finderButton(), field(/patient/i))).toBe(true);
+      expect(isBefore(field(/visit type/i), field(/patient/i))).toBe(true);
+      expect(isBefore(field(/patient/i), screen.getByText(/^Provider$/))).toBe(true);
     });
 
     test('Offers patients matching the name typed', async () => {
@@ -1403,6 +1405,42 @@ describe('AppointmentProposalForm', () => {
       expect(options[0]).toHaveTextContent('Pat Quinn');
     });
 
+    const DeceasedPatient: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['Lee'], family: 'Whitfield' }],
+      birthDate: '1940-02-03',
+      deceasedDateTime: '2026-07-30T15:45:00.000Z',
+      identifier: [{ type: { coding: [MRN_IDENTIFIER_TYPE] }, value: '100200' }],
+    };
+    const DECEASED_ERROR = "This patient is deceased and can't be booked.";
+
+    test('Offers no patient who has died by name', async () => {
+      await medplum.createResource(DeceasedPatient);
+      setup(medplum);
+
+      await typeInAutocomplete(field(/patient/i), 'Whitfield');
+      expect(await screen.findByText('Sam Whitfield')).toBeInTheDocument();
+      expect(screen.queryByText('Lee Whitfield')).not.toBeInTheDocument();
+    });
+
+    test('Finds a patient who has died by medical record number, but will not book them', async () => {
+      await medplum.createResource(DeceasedPatient);
+      setup(medplum);
+      await chooseImagingService();
+      await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+
+      await choosePatient('100200', `Deceased · ${patientDetail(DeceasedPatient, '100200')}`);
+      expect(screen.getByText(DECEASED_ERROR)).toBeInTheDocument();
+      expect(bookButton()).toBeDisabled();
+
+      await removePill('Lee Whitfield');
+      expect(screen.queryByText(DECEASED_ERROR)).not.toBeInTheDocument();
+      await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
+      expect(bookButton()).toBeEnabled();
+    });
+
     test('Leaves the patient out of the search for times', async () => {
       const get = vi.spyOn(medplum, 'get');
       setup(medplum);
@@ -1415,13 +1453,12 @@ describe('AppointmentProposalForm', () => {
       expect(searched.some((url) => url.includes('Patient'))).toBe(false);
     });
 
-    test('Asks only the patient and the notes below the action that finds a time', async () => {
+    test('Asks only the notes below the action that finds a time', async () => {
       setup(medplum);
 
       // Anything else the visit needs is one of the fields a practice configures.
       const inputs = [...screen.getAllByRole('searchbox'), ...screen.queryAllByRole('textbox')];
       expect(inputs.filter((input) => isBefore(finderButton(), input))).toEqual([
-        field(/patient/i),
         screen.getByRole('textbox', { name: 'Notes' }),
       ]);
     });
@@ -1534,6 +1571,17 @@ describe('AppointmentProposalForm', () => {
       await clickBook();
       const [proposal] = onSubmit.mock.lastCall as [Appointment];
       expect(proposal.comment).toBe('Bring prior films');
+    });
+
+    test('Caps the notes at commentMaxLength, counting them as typed', async () => {
+      setup(medplum, { commentMaxLength: 50 });
+      await fillBooking();
+      const notes = screen.getByRole('textbox', { name: 'Notes' });
+      expect(notes).toHaveAttribute('maxlength', '50');
+      expect(screen.getByText('0/50')).toBeInTheDocument();
+
+      fireEvent.change(notes, { target: { value: 'Bring prior films' } });
+      expect(screen.getByText('17/50')).toBeInTheDocument();
     });
 
     test('Offers to book again once the time changes', async () => {

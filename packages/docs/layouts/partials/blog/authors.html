@@ -1,0 +1,17 @@
+{{- /* Post authors from data/authors.json (the Docusaurus blog/authors.yml); front matter is a key or a list of keys */ -}}
+{{- with .Params.authors -}}
+  {{- $keys := cond (reflect.IsSlice .) . (slice .) -}}
+  <div class="blog-authors">
+    {{- range $keys -}}
+      {{- $author := dict "name" . -}}
+      {{- range first 1 (where hugo.Data.authors "key" .) }}{{ $author = . }}{{ end -}}
+      <div class="blog-author">
+        {{- with $author.image_url }}<img class="blog-author-image" src="{{ . }}" alt="" width="40" height="40" loading="lazy" />{{ end -}}
+        <div>
+          {{- if $author.url }}<a class="blog-author-name" href="{{ $author.url }}">{{ $author.name }}</a>{{ else }}<span class="blog-author-name">{{ $author.name }}</span>{{ end -}}
+          {{- with $author.title }}<div class="blog-author-title">{{ . }}</div>{{ end -}}
+        </div>
+      </div>
+    {{- end -}}
+  </div>
+{{- end -}}

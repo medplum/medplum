@@ -118,3 +118,21 @@
   content: ' *';
   color: var(--mantine-color-error);
 }
+
+/* The notes' count sits at the end of the label's line, so the field below it starts where
+   every other field's does. */
+.notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--mantine-spacing-xs);
+}
+
+.notesField {
+  flex-basis: 100%;
+}
+
+.notes .notesCountOver {
+  color: var(--mantine-color-error);
+}

@@ -1,0 +1,130 @@
+.sidebar-viewport {
+  height: 100%;
+  max-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-container {
+  height: 100%;
+  padding-top: 60px;
+  width: 300px;
+  flex-direction: column;
+  display: flex;
+}
+
+.sidebar {
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  padding: 0.5rem 0 0.5rem 0.5rem;
+  user-select: none;
+}
+
+.sidebar-title {
+  padding: 16px 0 0 0;
+}
+
+.sidebar-toggle {
+  display: none;
+}
+
+.sidebar-list-nested {
+  display: none;
+  list-style: none;
+  padding: 0 0 0 12px;
+  margin: 0;
+  font-size: 90%;
+}
+
+/* Child combinators: an expanded category shows only its own list, not the lists of the categories nested in it */
+.sidebar-category.expanded > .sidebar-list-nested {
+  display: block;
+}
+
+.sidebar-link {
+  display: block;
+  color: var(--ifm-menu-color);
+  cursor: pointer;
+  padding: 6px 4px 6px 12px;
+  margin-top: 4px;
+  border-radius: 4px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.sidebar-link.active,
+.sidebar-link:hover {
+  background: var(--ifm-menu-color-background-hover);
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  color: var(--ifm-menu-color);
+}
+
+.sidebar-caret {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  display: inline-block;
+  padding: 0;
+  background: var(--ifm-menu-link-sublist-icon) 50% / 2rem 2rem;
+  filter: var(--ifm-menu-link-sublist-icon-filter);
+  transform: rotate(90deg); /* Point right */
+}
+
+.sidebar-category {
+  margin-top: 4px;
+}
+
+.sidebar-category.expanded > .sidebar-category-header-wrapper .sidebar-caret {
+  transform: rotate(180deg); /* Point down */
+}
+
+.sidebar-category-header-wrapper {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  border-radius: 4px;
+
+  .sidebar-category-link {
+    flex-grow: 1;
+    padding-right: 0; /* Let the caret handle its own spacing */
+  }
+
+  .sidebar-caret-wrapper {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .sidebar-caret-wrapper:hover {
+    background-color: rgba(0, 0, 0, 0.05); /* Keep the caret highlighted when the category is active */
+  }
+
+  &.active,
+  &:hover {
+    background: var(--ifm-menu-color-background-hover);
+  }
+
+  .sidebar-link {
+    margin-top: 0;
+  }
+
+  .sidebar-link.active,
+  .sidebar-link:hover {
+    background: none;
+  }
+}
+
+.sidebar-link.active {
+  color: var(--ifm-menu-color-active);
+}
+
+li > .sidebar-link {
+  padding: 6px 4px 4px 12px;
+}

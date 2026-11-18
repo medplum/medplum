@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import type { SmartHealthLinkImportProps } from './SmartHealthLinkImport';
 import { SmartHealthLinkImportModal } from './SmartHealthLinkImportModal';
 
@@ -20,12 +20,10 @@ vi.mock('./SmartHealthLinkImport', () => ({
 function setup(opened: boolean, onClose = vi.fn()): void {
   render(
     <MemoryRouter initialEntries={['/Patient']}>
-      <MantineProvider>
-        <Routes>
-          <Route path="/Patient" element={<SmartHealthLinkImportModal opened={opened} onClose={onClose} />} />
-          <Route path={`/Patient/${HomerSimpson.id}/timeline`} element={<div>patient timeline</div>} />
-        </Routes>
-      </MantineProvider>
+      <Routes>
+        <Route path="/Patient" element={<SmartHealthLinkImportModal opened={opened} onClose={onClose} />} />
+        <Route path={`/Patient/${HomerSimpson.id}/timeline`} element={<div>patient timeline</div>} />
+      </Routes>
     </MemoryRouter>
   );
 }

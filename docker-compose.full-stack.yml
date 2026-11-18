@@ -27,13 +27,14 @@ services:
       retries: 5
 
   redis:
-    image: redis:7
+    # Valkey is an open-source, Redis-compatible datastore. Any Redis-compatible server works here.
+    image: valkey/valkey:8.1.11
     restart: unless-stopped # for production usage, consider 'always'
-    command: redis-server --requirepass medplum
+    command: valkey-server --requirepass medplum
     ports:
       - '6379:6379'
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', 'medplum', 'ping']
+      test: ['CMD', 'valkey-cli', '-a', 'medplum', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,8 +71,6 @@ services:
       MEDPLUM_SUPPORT_EMAIL: '\"Medplum\" <support@medplum.com>'
       MEDPLUM_GOOGLE_CLIENT_ID: '397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com'
       MEDPLUM_GOOGLE_CLIENT_SECRET: ''
-      MEDPLUM_RECAPTCHA_SITE_KEY: '6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq'
-      MEDPLUM_RECAPTCHA_SECRET_KEY: '6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL'
       MEDPLUM_MAX_JSON_SIZE: '1mb'
       MEDPLUM_MAX_BATCH_SIZE: '50mb'
       MEDPLUM_BOT_LAMBDA_ROLE_ARN: ''

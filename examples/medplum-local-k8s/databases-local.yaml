@@ -53,7 +53,7 @@ spec:
     - port: 5432
       targetPort: 5432
 ---
-# Redis Cache
+# Valkey cache (Redis-compatible). Service name stays "redis" so existing config keeps working.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -71,9 +71,9 @@ spec:
     spec:
       containers:
         - name: redis
-          image: redis:7
+          image: valkey/valkey:8.1.11
           command:
-            - "redis-server"
+            - "valkey-server"
             - "--requirepass"
             - "medplum"
           ports:

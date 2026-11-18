@@ -1,0 +1,8 @@
+{{- /* Infinite horizontal logo scroller. Params: logos (list of {src, width, height, alt}) */ -}}
+{{- /* The logos render twice so the CSS animation can loop seamlessly at -50%; the second set is hidden from screen readers. */ -}}
+<div class="landing-logo-scroller">
+  <div class="landing-logo-scroller-images">
+    {{ range .logos }}<img src="{{ .src }}" width="{{ .width }}" height="{{ .height }}" alt="{{ .alt }}" />{{ end }}
+    {{ range .logos }}<img src="{{ .src }}" width="{{ .width }}" height="{{ .height }}" alt="" aria-hidden="true" />{{ end }}
+  </div>
+</div>

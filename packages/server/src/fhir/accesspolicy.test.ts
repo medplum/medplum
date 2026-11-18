@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   createReference,
@@ -44,14 +44,17 @@ import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
+import type { TestProjectOptions } from '../test.setup';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { buildAccessPolicy, getRepoForLogin, getRepoForProject, reconcileDefaultAccessPolicy } from './accesspolicy';
+import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
+import { SelectQuery, SqlBuilder } from './sql';
 
 function getRepository(repoContext: Partial<RepositoryContext>): Repository {
   return new Repository({
@@ -78,6 +81,118 @@ describe('AccessPolicy', () => {
   afterAll(async () => {
     await shutdownApp();
   });
+
+  test.each<[string, TestProjectOptions]>([
+    ['without an access policy', {}],
+    ['with a wildcard access policy', { accessPolicy: { resource: [{ resourceType: '*' }] } }],
+    ['with a Bot access policy', { accessPolicy: { resource: [{ resourceType: 'Bot' }] } }],
+    ['as a project admin', { membership: { admin: true } }],
+  ])('Only super admins can set Bot.system %s', (_, options) =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ ...options, withRepo: true });
+
+      // Create, update and patch silently drop the flag
+      const bot1 = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot', system: true });
+      expect(bot1.system).toBeUndefined();
+
+      const bot2 = await repo.updateResource<Bot>({ ...bot1, description: 'update', system: true });
+      expect(bot2.description).toStrictEqual('update');
+      expect(bot2.system).toBeUndefined();
+
+      const bot3 = await repo.patchResource<Bot>('Bot', bot1.id, [
+        { op: 'add', path: '/description', value: 'patch' },
+        { op: 'add', path: '/system', value: true },
+      ]);
+      expect(bot3.description).toStrictEqual('patch');
+      expect(bot3.system).toBeUndefined();
+
+      // A super admin can set the flag, and later edits keep it
+      const bot4 = await (await getProjectSystemRepo(project)).updateResource<Bot>({ ...bot3, system: true });
+      expect(bot4.system).toBe(true);
+
+      const bot5 = await repo.updateResource<Bot>({ ...bot4, description: 'after', system: undefined });
+      expect(bot5.description).toStrictEqual('after');
+      expect(bot5.system).toBe(true);
+    })
+  );
+
+  test('Bot.system rule is added only for wildcard and Bot entries', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resource: [
+            { resourceType: 'Patient' },
+            { resourceType: 'Bot', criteria: 'Bot?name=Readonly', readonlyFields: ['system'] },
+            { resourceType: 'Bot', criteria: 'Bot?name=Hidden', hiddenFields: ['system'] },
+            { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' },
+            { resourceType: '*', readonlyFields: ['identifier'] },
+          ],
+        },
+      });
+      expect(repo.getConfig().accessPolicy?.resource?.slice(0, 7)).toStrictEqual([
+        { resourceType: 'Patient' },
+        { resourceType: 'Bot', criteria: 'Bot?name=Readonly', readonlyFields: ['system'] },
+        { resourceType: 'Bot', criteria: 'Bot?name=Hidden', hiddenFields: ['system'] },
+        { resourceType: 'Bot', criteria: 'Bot?_lastUpdated=gt2000-01-01', readonlyFields: ['system'] },
+        { resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' },
+        { resourceType: 'Bot', readonlyFields: ['identifier', 'system'] },
+        { resourceType: '*', readonlyFields: ['identifier'] },
+      ]);
+
+      const { repo: patientOnlyRepo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: 'Patient' }] },
+      });
+      expect(patientOnlyRepo.getConfig().accessPolicy?.resource?.map((r) => r.resourceType)).not.toContain('Bot');
+    }));
+
+  test('Bot.system rule does not repeat wildcard criteria in Bot searches', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: { resource: [{ resourceType: '*', criteria: '*?_lastUpdated=gt2000-01-01' }] },
+      });
+      const bot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test Bot' });
+
+      // Creating switches the repo to the writer pool
+      const querySpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, repo.shardId), 'query');
+      try {
+        const bundle = await repo.search({
+          resourceType: 'Bot',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: bot.id }],
+        });
+        expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual([bot.id]);
+        const sql = querySpy.mock.calls.map((call) => String(call[0])).find((text) => text.includes('FROM "Bot"'));
+        expect(sql?.match(/"lastUpdated" >/g)).toHaveLength(1);
+      } finally {
+        querySpy.mockRestore();
+      }
+    }));
+
+  test.each<[string, Partial<AccessPolicy> | undefined]>([
+    ['without an access policy', undefined],
+    ['with wildcard criteria', { resource: [{ resourceType: '*', criteria: '*?name=Test' }] }],
+  ])('Only super admins can set Bot.system with SMART scopes %s', (_, accessPolicy) =>
+    withTestContext(async () => {
+      const { project, membership, login } = await createTestProject({
+        accessPolicy,
+        withClient: true,
+        withAccessToken: true,
+      });
+      const repo = await getRepoForLogin({
+        login: { ...login, scope: 'openid user/Bot.cruds' },
+        project,
+        membership,
+        userConfig: { resourceType: 'UserConfiguration' },
+      });
+
+      const bot = await repo.createResource<Bot>({ resourceType: 'Bot', name: 'Test', system: true });
+      expect(bot.system).toBeUndefined();
+      const updated = await repo.updateResource<Bot>({ ...bot, system: true });
+      expect(updated.system).toBeUndefined();
+    })
+  );
 
   test('Access policy restricting read', () =>
     withTestContext(async () => {
@@ -658,6 +773,28 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow('Invalid access policy configuration');
     }));
 
+  test('Access policy in a linked project', () =>
+    withTestContext(async () => {
+      const { project: sharingProject } = await createTestProject({
+        project: { exportedResourceType: ['AccessPolicy'] },
+      });
+      const accessPolicy = await (
+        await getProjectSystemRepo(sharingProject)
+      ).createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: sharingProject.id },
+        resource: [{ resourceType: 'Patient' }],
+      });
+
+      const { repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { link: [{ project: createReference(sharingProject) }] },
+        membership: { accessPolicy: createReference(accessPolicy) },
+      });
+      expect(repo.effectiveAccessPolicy()?.basedOn).toEqual([createReference(accessPolicy)]);
+    }));
+
   test('Multiple entries per resource type', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({
@@ -709,6 +846,7 @@ describe('AccessPolicy', () => {
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
         compartment: {
           reference: account,
         },
@@ -889,6 +1027,7 @@ describe('AccessPolicy', () => {
       // Create the access policy
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
+        meta: { project: testProject.id },
         resource: [
           {
             resourceType: 'Patient',
@@ -1337,6 +1476,37 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-02',
       });
+    }));
+
+  test('Write responses match reads when only the write entry hides fields', () =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            { resourceType: 'Patient', interaction: ['read', 'search'] },
+            { resourceType: 'Patient', interaction: ['update'], hiddenFields: ['name'] },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
+      });
+
+      const updated = await repo2.updateResource<Patient>({ ...patient, name: undefined, birthDate: '1970-01-02' });
+      expect(updated.name).toStrictEqual(patient.name);
+      expect(updated).toEqual(await repo2.readResource('Patient', patient.id));
+
+      const patched = await repo2.patchResource<Patient>('Patient', patient.id, [
+        { op: 'replace', path: '/birthDate', value: '1970-01-03' },
+      ]);
+      expect(patched.name).toStrictEqual(patient.name);
+      expect(patched).toEqual(await repo2.readResource('Patient', patient.id));
     }));
 
   test.each<[string, AccessPolicyResource[]]>([
@@ -3228,6 +3398,118 @@ describe('AccessPolicy', () => {
       await expect(repo.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
     }));
 
+  describe('Wildcard policy with criteria on single resources', () => {
+    const tagSystem = 'http://example.com/tag';
+    let patientA: WithId<Patient>;
+    let patientB: WithId<Patient>;
+
+    beforeEach(async () => {
+      patientA = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+      });
+      patientB = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: testProject.id },
+      });
+    });
+
+    async function getMemberRepo(resource: AccessPolicyResource, scope?: string): Promise<Repository> {
+      const { membership } = await addTestUser(testProject, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [resource] },
+      });
+      return getRepoForLogin({
+        login: { resourceType: 'Login', scope } as Login,
+        smartAppLaunch: { resourceType: 'SmartAppLaunch', id: randomUUID(), patient: createReference(patientA) },
+        project: testProject,
+        membership,
+        userConfig: { resourceType: 'UserConfiguration' },
+      });
+    }
+
+    function observation(patient: Patient, extra?: Partial<Observation>): Observation {
+      return {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+        meta: { project: testProject.id },
+        ...extra,
+      };
+    }
+
+    test('Compartment criteria', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({ resourceType: '*', criteria: `*?_compartment=Patient/${patientA.id}` });
+
+        const created = await repo.createResource(observation(patientA));
+        const updated = await repo.updateResource({ ...created, valueString: 'updated' });
+        expect(updated.valueString).toBe('updated');
+        await expect(repo.updateResource({ ...updated, subject: createReference(patientB) })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(repo.deleteResource('Observation', created.id)).resolves.toBeUndefined();
+
+        await expect(repo.createResource(observation(patientB))).rejects.toThrow('Forbidden');
+        const observationB = await systemRepo.createResource(observation(patientB));
+        await expect(repo.updateResource({ ...observationB, valueString: 'updated' })).rejects.toThrow('Not found');
+        await expect(repo.deleteResource('Observation', observationB.id)).rejects.toThrow('Not found');
+
+        // Not in any Patient compartment
+        await expect(repo.createResource<Organization>({ resourceType: 'Organization' })).rejects.toThrow('Forbidden');
+        await expect(repo.createResource<Bot>({ resourceType: 'Bot', name: 'test' })).rejects.toThrow('Forbidden');
+      }));
+
+    test('Hidden fields', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({
+          resourceType: '*',
+          criteria: `*?_compartment=Patient/${patientA.id}`,
+          hiddenFields: ['note'],
+        });
+        const created = await systemRepo.createResource(observation(patientA, { note: [{ text: 'secret' }] }));
+        const read = await repo.readResource<Observation>('Observation', created.id);
+        expect(read.note).toBeUndefined();
+      }));
+
+    test('Tag criteria', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({ resourceType: '*', criteria: `*?_tag=${tagSystem}|shared` });
+        const tag = [{ system: tagSystem, code: 'shared' }];
+
+        const created = await repo.createResource(observation(patientA, { meta: { tag } }));
+        await expect(repo.updateResource({ ...created, valueString: 'updated' })).resolves.toBeDefined();
+        await expect(repo.updateResource({ ...created, meta: { ...created.meta, tag: [] } })).rejects.toThrow(
+          'Forbidden'
+        );
+        await expect(
+          repo.createResource<Organization>({ resourceType: 'Organization', meta: { tag } })
+        ).resolves.toBeDefined();
+
+        await expect(repo.createResource(observation(patientA))).rejects.toThrow('Forbidden');
+      }));
+
+    test('SMART patient wildcard scope', () =>
+      withTestContext(async () => {
+        // Narrowed to `*?_compartment=Patient/<patientA>`
+        const repo = await getMemberRepo({ resourceType: '*' }, 'openid patient/*.cruds');
+        const created = await repo.createResource(observation(patientA));
+        await expect(repo.updateResource({ ...created, valueString: 'updated' })).resolves.toBeDefined();
+        await expect(repo.createResource(observation(patientB))).rejects.toThrow('Forbidden');
+      }));
+
+    test('Parameter the resource type does not define', () =>
+      withTestContext(async () => {
+        const repo = await getMemberRepo({ resourceType: '*', criteria: '*?status=final' });
+        await expect(repo.createResource(observation(patientA))).resolves.toBeDefined();
+        // Organization has no `status` search parameter, so the criteria never matches it
+        await expect(repo.createResource<Organization>({ resourceType: 'Organization' })).rejects.toThrow('Forbidden');
+
+        const unknownRepo = await getMemberRepo({ resourceType: '*', criteria: '*?not-a-param=x' });
+        await expect(unknownRepo.createResource(observation(patientA))).rejects.toThrow('Forbidden');
+      }));
+  });
+
   test('Limit specific FHIR interactions', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({
@@ -3529,6 +3811,29 @@ describe('AccessPolicy', () => {
         await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
         await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
       }));
+
+    test('Extra ? in scope search string does not drop Patient compartment', async () =>
+      withTestContext(async () => {
+        const login = await tryLogin({
+          authMethod: 'password',
+          email,
+          password,
+          projectId: project.id,
+          scope: 'openid launch/patient patient/Condition.rs',
+          nonce: randomUUID(),
+        });
+
+        const patientRepo = await getRepoForLogin({
+          // Matches both Conditions, so only the Patient compartment hides otherCondition
+          login: { ...login, scope: 'openid launch/patient patient/Condition.rs?code:not=x?y' },
+          project,
+          membership,
+          userConfig: { resourceType: 'UserConfiguration' },
+        });
+
+        await expect(patientRepo.readResource('Condition', compartmentCondition.id)).resolves.toBeDefined();
+        await expect(patientRepo.readResource('Condition', otherCondition.id)).rejects.toThrow('Not found');
+      }));
   });
 
   describe('Logins with SMART scopes', () => {
@@ -3589,111 +3894,167 @@ describe('AccessPolicy', () => {
           );
         }
       }));
-  });
-});
 
-describe('reconcileDefaultAccessPolicy', () => {
-  const practitionerDefault = { reference: 'AccessPolicy/practitioner-default' };
-  const adminDefault = { reference: 'AccessPolicy/admin-default' };
-  const customPolicy = { reference: 'AccessPolicy/custom' };
+    describe('Permission letters grant exactly their interactions', () => {
+      async function setup(
+        resource: AccessPolicyResource[] = [
+          { resourceType: 'Patient', hiddenFields: ['birthDate'], readonlyFields: ['identifier'] },
+        ]
+      ): Promise<{
+        systemRepo: SystemRepository;
+        getScopedRepo: (scope: string, extendedMode?: boolean) => Promise<Repository>;
+        seed: (patient?: Partial<Patient>) => Promise<WithId<Patient>>;
+      }> {
+        const { project, membership, login } = await createTestProject({
+          withClient: true,
+          withAccessToken: true,
+          accessPolicy: { resourceType: 'AccessPolicy', resource },
+        });
+        const systemRepo = await getProjectSystemRepo(project);
+        return {
+          systemRepo,
+          getScopedRepo: (scope, extendedMode) =>
+            getRepoForLogin({ login: { ...login, scope }, project, membership, userConfig }, extendedMode),
+          seed: (patient) =>
+            systemRepo.createResource<Patient>({
+              resourceType: 'Patient',
+              meta: { project: project.id },
+              name: [{ family: 'Original' }],
+              birthDate: '1970-01-01',
+              identifier: [{ system: 'http://hl7.org/fhir/sid/us-ssn', value: '123-45-6789' }],
+              ...patient,
+            }),
+        };
+      }
 
-  const project: Project = {
-    resourceType: 'Project',
-    defaultAccessPolicies: [
-      { profileType: 'Practitioner', accessPolicy: practitionerDefault },
-      { profileType: 'Admin', accessPolicy: adminDefault },
-    ],
-  };
+      const searchById = (id: string): SearchRequest<Patient> => parseSearchRequest<Patient>('Patient?_id=' + id);
 
-  test('Upgrades Practitioner default to Admin default when admin', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: practitionerDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
-  });
+      test('Create and search', () =>
+        withTestContext(async () => {
+          const { getScopedRepo, seed } = await setup();
+          const seeded = await seed();
 
-  test('Downgrades Admin default to Practitioner default when not admin', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      accessPolicy: adminDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(practitionerDefault);
-  });
+          const createRepo = await getScopedRepo('openid user/Patient.c');
+          await createRepo.createResource<Patient>({ resourceType: 'Patient' });
+          await expect(createRepo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(createRepo.searchResources(searchById(seeded.id))).rejects.toThrow('Forbidden');
+          await expect(createRepo.updateResource({ ...seeded, active: true })).rejects.toThrow('Forbidden');
+          await expect(createRepo.deleteResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
 
-  test('Leaves a custom access policy untouched', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: customPolicy,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(customPolicy);
-  });
+          const createSearchRepo = await getScopedRepo('openid user/Patient.cs', true);
+          const created = await createSearchRepo.createResource<Patient>({
+            resourceType: 'Patient',
+            birthDate: '1970-01-01',
+          });
+          expect(created.birthDate).toBeUndefined();
+          expect(created.meta?.project).toBeDefined();
+          expect(created.meta?.author).toBeDefined();
+          expect(await createSearchRepo.searchResources(searchById(created.id))).toStrictEqual([created]);
+        }));
 
-  test('No-op when the policy already matches the role', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: adminDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toStrictEqual(adminDefault);
-  });
+      test.each([false, true])('Update only (extendedMode=%s)', (extendedMode) =>
+        withTestContext(async () => {
+          const { systemRepo, getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+          const repo = await getScopedRepo('openid user/Patient.u', extendedMode);
 
-  test('Switching to admin is a no-op when there is no Admin default', () => {
-    // A project with a Practitioner default but no Admin default (e.g. a project created before
-    // the Admin default existed). Promoting the member to admin must not change their policy.
-    const projectWithoutAdminDefault: Project = {
-      resourceType: 'Project',
-      defaultAccessPolicies: [{ profileType: 'Practitioner', accessPolicy: practitionerDefault }],
-    };
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: practitionerDefault,
-    };
-    expect(reconcileDefaultAccessPolicy(projectWithoutAdminDefault, membership).accessPolicy).toStrictEqual(
-      practitionerDefault
-    );
-  });
+          const update = { ...seeded, name: [{ family: 'Changed' }], birthDate: undefined, identifier: undefined };
+          const first = await repo.updateResource<Patient>(update);
+          const second = await repo.updateResource<Patient>(update);
+          expect(second.meta?.versionId).toStrictEqual(first.meta?.versionId);
+          for (const result of [first, second]) {
+            expect(result.name?.[0]?.family).toBe('Changed');
+            expect(result.birthDate).toBeUndefined();
+            expect(result.identifier).toBeUndefined();
+            if (extendedMode) {
+              expect(result.meta?.project).toBeUndefined();
+              expect(result.meta?.compartment).toBeUndefined();
+              expect(result.meta?.author).toBeUndefined();
+            }
+          }
 
-  test('No-op when membership has no access policy', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-    };
-    expect(reconcileDefaultAccessPolicy(project, membership).accessPolicy).toBeUndefined();
-  });
+          const stored = await systemRepo.readResource<Patient>('Patient', seeded.id);
+          expect(stored.name?.[0]?.family).toBe('Changed');
+          expect(stored.birthDate).toStrictEqual(seeded.birthDate);
+          expect(stored.identifier).toStrictEqual(seeded.identifier);
 
-  test('No-op when project has no default access policies', () => {
-    const membership: ProjectMembership = {
-      resourceType: 'ProjectMembership',
-      project: { reference: 'Project/123' },
-      user: { reference: 'User/123' },
-      profile: { reference: 'Practitioner/123' },
-      admin: true,
-      accessPolicy: practitionerDefault,
-    };
-    expect(reconcileDefaultAccessPolicy({ resourceType: 'Project' }, membership).accessPolicy).toStrictEqual(
-      practitionerDefault
-    );
+          await expect(repo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(
+            repo.patchResource('Patient', seeded.id, [{ op: 'test', path: '/birthDate', value: '1970-01-01' }])
+          ).rejects.toThrow('Forbidden');
+          await expect(repo.searchResources(searchById(seeded.id))).rejects.toThrow('Forbidden');
+        })
+      );
+
+      test('Update only when the update changes the matching entry', () =>
+        withTestContext(async () => {
+          const { systemRepo, getScopedRepo, seed } = await setup([
+            { resourceType: 'Patient', criteria: 'Patient?active=true', readonlyFields: ['identifier'] },
+            { resourceType: 'Patient' },
+          ]);
+          const seeded = await seed({ active: true });
+          const repo = await getScopedRepo('openid user/Patient.u');
+
+          const updated = await repo.updateResource<Patient>({ ...seeded, active: false, identifier: undefined });
+          expect(updated.active).toBe(false);
+          expect(updated.identifier).toBeUndefined();
+
+          const stored = await systemRepo.readResource<Patient>('Patient', seeded.id);
+          expect(stored.active).toBe(false);
+          expect(stored.identifier).toStrictEqual(seeded.identifier);
+        }));
+
+      test('Delete only', () =>
+        withTestContext(async () => {
+          const { systemRepo, getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+          const repo = await getScopedRepo('openid user/Patient.d');
+
+          await expect(repo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(
+            repo.deleteResource('Patient', seeded.id, { ifMatch: seeded.meta?.versionId })
+          ).resolves.toBeUndefined();
+          await expect(systemRepo.readResource('Patient', seeded.id)).rejects.toThrow('Gone');
+        }));
+
+      test('Read and search are independent', () =>
+        withTestContext(async () => {
+          const { getScopedRepo, seed } = await setup();
+          const seeded = await seed();
+
+          const readRepo = await getScopedRepo('openid user/Patient.r');
+          await expect(readRepo.readResource('Patient', seeded.id)).resolves.toBeDefined();
+          await expect(readRepo.readHistory('Patient', seeded.id)).resolves.toBeDefined();
+          await expect(readRepo.searchResources(searchById(seeded.id))).rejects.toThrow('Forbidden');
+
+          const searchRepo = await getScopedRepo('openid user/Patient.s');
+          const results = await searchRepo.searchResources(searchById(seeded.id));
+          expect(results).toHaveLength(1);
+          expect(results[0].id).toBe(seeded.id);
+          expect(results[0].birthDate).toBeUndefined();
+          await expect(searchRepo.readResource('Patient', seeded.id)).rejects.toThrow('Forbidden');
+          await expect(searchRepo.readHistory('Patient', seeded.id)).rejects.toThrow('Forbidden');
+        }));
+
+      test('Entries with the same criteria filter once', () =>
+        withTestContext(async () => {
+          const { getScopedRepo } = await setup([
+            { resourceType: 'Patient', interaction: ['read'], criteria: 'Patient?active=true' },
+            { resourceType: 'Patient', interaction: ['update'], criteria: 'Patient?active=true' },
+          ]);
+          const repo = await getScopedRepo('openid user/Patient.ru');
+
+          const toSql = (interactions: AccessPolicyInteraction[]): string => {
+            const builder = new SelectQuery('Patient');
+            repo.addSecurityFilters(builder, 'Patient', interactions);
+            const sql = new SqlBuilder();
+            builder.buildSql(sql);
+            return sql.toString();
+          };
+          expect(toSql([AccessPolicyInteraction.READ, AccessPolicyInteraction.UPDATE])).toStrictEqual(
+            toSql([AccessPolicyInteraction.READ])
+          );
+        }));
+    });
   });
 });
