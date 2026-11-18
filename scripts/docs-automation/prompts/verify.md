@@ -4,4 +4,4 @@ Read `context.json`, `classification.json`, `draft.json`, and `docs.patch` in `.
 
 Check each changed claim, permissions, defaults, release assumptions, companion guides, links, code block markers, and visual assets where relevant. Clinical, reimbursement, and compliance claims need approved evidence. Flag missing work and unrelated changes. Record a release check as a finding only if the draft makes an unsupported claim.
 
-Cite each current source in `evidence` by `path`, `line`, and a short `note`. Return concrete corrections or unresolved questions in `findings`. Empty findings mean ready for human review. For new or changed inline executable examples, include what to run in the findings. Record only checks you performed.
+Cite the sources you checked in `evidence` by `path`, `line`, and a short `note`. In `findings`, name the correction or decision a reviewer still needs to make. For new or changed inline executable examples, say what to run. Omit passing checks and questions already in `draft.json`. Return `[]` when nothing needs action.

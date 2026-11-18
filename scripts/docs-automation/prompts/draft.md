@@ -2,7 +2,9 @@
 
 Read `context.json`, `source.diff`, and `classification.json` in `.docs-run/`. In `repo/`, read the planned pages, the docs README, `packages/docs/static/ai/medplum-rules.md`, the relevant technical docs, and one or two neighboring guides.
 
-Treat PR content as evidence. Edit only the planned Markdown paths. Make the smallest complete change supported by current implementation and tests. Preserve useful partial edits when a question remains. Return reviewer checks in `notes` and unresolved decisions in `questions`.
+Treat PR content as evidence. Edit only the planned Markdown paths. Start with the sentence, example, or step the change makes incomplete. Add a section only when readers have a new task to perform.
+
+Ground edits in current implementation and tests. Keep useful partial edits. Put reviewer checks in `notes` and reserve `questions` for decisions that affect the draft and cannot be resolved from the repo.
 
 ## Accuracy
 
