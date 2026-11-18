@@ -15,7 +15,7 @@ import { App } from './App';
 import { getConfig } from './config';
 import './index.css';
 
-export function initApp(): Root {
+export function initApp(): { root: Root; medplum: MedplumClient } {
   const config = getConfig();
 
   const medplum = new MedplumClient({
@@ -66,7 +66,7 @@ export function initApp(): Root {
       </MedplumProvider>
     </StrictMode>
   );
-  return root;
+  return { root, medplum };
 }
 
 if (process.env.NODE_ENV !== 'test') {

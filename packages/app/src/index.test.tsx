@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import { createFakeJwt } from '@medplum/mock';
 import type { Root } from 'react-dom/client';
 import { initApp } from './index';
@@ -15,6 +16,7 @@ function jsonResponse(body: unknown): Response {
 describe('App Index', () => {
   let container: HTMLDivElement | undefined;
   let root: Root | undefined;
+  let medplum: MedplumClient | undefined;
 
   beforeAll(() => {
     window.localStorage.setItem(
@@ -62,10 +64,19 @@ describe('App Index', () => {
     );
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     // Unmount so React and Mantine timers don't fire after the jsdom environment is torn down
     act(() => root?.unmount());
     container?.remove();
+
+    // Likewise, let the client finish startup and settle every request it sent
+    const client = medplum;
+    if (client) {
+      await client.getInitPromise();
+      await vi.waitFor(() => expect(client.isLoading()).toBe(false));
+      await Promise.allSettled(vi.mocked(fetch).mock.results.map((result) => result.value));
+    }
+
     window.localStorage.clear();
     vi.unstubAllGlobals();
   });
@@ -74,7 +85,7 @@ describe('App Index', () => {
     container = document.createElement('div');
     container.id = 'root';
     document.body.appendChild(container);
-    root = initApp();
+    ({ root, medplum } = initApp());
 
     // createBrowserRouter + jsdom does not reliably complete HomePage URL redirects, so verify
     // initApp mounted an authenticated App shell instead of search-control specifically.
