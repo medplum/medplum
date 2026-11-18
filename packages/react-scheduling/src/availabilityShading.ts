@@ -29,7 +29,6 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { toAvailableTime } from './availability';
-import type { CalendarFilterValues } from './SchedulingWorkspace/CalendarFilters';
 import type { DateTimeRange } from './types';
 
 /** The `availableTime` sub-extension naming the one service facility a window holds at. Prototype only. */
@@ -63,11 +62,19 @@ export interface AvailabilityShadingCalendar {
   readonly slots: readonly Slot[];
 }
 
+/** What the calendar is narrowed to. The workspace's calendar filters fit it as they are. */
+export interface AvailabilityShadingFilters {
+  /** The chosen visit type, or absent for every visit type. */
+  readonly service?: WithId<HealthcareService>;
+  /** The chosen service facility, or absent for every one. */
+  readonly serviceFacility?: WithId<Location> | Reference<Location>;
+}
+
 export interface AvailabilityShadingInput {
   readonly calendars: readonly AvailabilityShadingCalendar[];
   /** The visit types whose windows are drawn when the filters choose none. */
   readonly services: readonly WithId<HealthcareService>[];
-  readonly filters: CalendarFilterValues;
+  readonly filters: AvailabilityShadingFilters;
   /** The days on show. */
   readonly range: DateTimeRange;
   /** Names a visit type's color. Visit types given the same color are drawn as one. */
