@@ -1276,8 +1276,8 @@ describe('External', () => {
     test.each<[string, () => Record<string, unknown>, string]>([
       ['missing code challenge', () => ({ clientId: otherClient.id, codeChallengeMethod }), 'Missing code challenge'],
       [
-        'plain code challenge',
-        () => ({ clientId: otherClient.id, codeChallenge, codeChallengeMethod: 'plain' }),
+        'unsupported code challenge method',
+        () => ({ clientId: otherClient.id, codeChallenge, codeChallengeMethod: 'S512' }),
         'Invalid code challenge method',
       ],
       [
@@ -1424,6 +1424,54 @@ describe('External', () => {
       } finally {
         config.externalAuthProviders = externalAuthProviders;
       }
+    });
+
+    test('Plain code challenge round trip through the token exchange', async () => {
+      const verifier = randomUUID();
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+      const state = await startState({
+        clientId: otherClient.id,
+        redirectUri,
+        codeChallenge: verifier,
+        codeChallengeMethod: 'plain',
+      });
+      expect(warnSpy).toHaveBeenCalledWith('External auth start with plain code challenge', {
+        clientId: otherClient.id,
+        domain: undefined,
+        issuer: undefined,
+      });
+      warnSpy.mockRestore();
+
+      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(otherEmail)));
+      const res = await request(app).get(
+        appendQueryParams(`/auth/external/${otherClient.id}`, { code: randomUUID(), state })
+      );
+      expect(res).toHaveStatus(302);
+      const code = new URL(res.header.location).searchParams.get('code') as string;
+
+      const wrong = await request(app)
+        .post('/oauth2/token')
+        .type('form')
+        .send({ grant_type: 'authorization_code', code, code_verifier: randomUUID() });
+      expect(wrong).toHaveStatus(400);
+
+      const tokenRes = await request(app)
+        .post('/oauth2/token')
+        .type('form')
+        .send({ grant_type: 'authorization_code', code, code_verifier: verifier });
+      expect(tokenRes).toHaveStatus(200);
+      expect(tokenRes.body.access_token).toBeTruthy();
+    });
+
+    test('Plain code challenge is not copied to the sign-in page URL', async () => {
+      const state = await startState({ domain, codeChallenge: randomUUID(), codeChallengeMethod: 'plain' });
+      fetchMock.mockImplementation(() => mockFetchJson(buildTokens(email)));
+      const res = await request(app).get(appendQueryParams('/auth/external', { code: randomUUID(), state }));
+      expect(res).toHaveStatus(302);
+      const redirect = new URL(res.header.location);
+      expect(redirect.searchParams.get('login')).toBeTruthy();
+      expect(redirect.searchParams.has('code_challenge')).toBe(false);
+      expect(redirect.searchParams.has('code_challenge_method')).toBe(false);
     });
 
     test('State expires', async () => {

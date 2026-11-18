@@ -88,7 +88,7 @@ export const externalStartValidator = makeValidationMiddleware([
     .isString()
     .isLength({ max: MAX_EXTERNAL_AUTH_STATE_FIELD_LENGTH }),
   body('codeChallenge').notEmpty().withMessage('Missing code challenge'),
-  body('codeChallengeMethod').equals('S256').withMessage('Invalid code challenge method'),
+  body('codeChallengeMethod').isIn(['S256', 'plain']).withMessage('Invalid code challenge method'),
 ]);
 
 /**
@@ -148,6 +148,14 @@ export async function externalStartHandler(req: Request, res: Response): Promise
   } catch {
     sendOutcome(res, badRequest('Invalid authorize URL for external identity provider'));
     return;
+  }
+
+  if (loginRequest.codeChallengeMethod === 'plain') {
+    getLogger().warn('External auth start with plain code challenge', {
+      clientId: loginRequest.clientId,
+      domain: loginRequest.domain,
+      issuer: loginRequest.issuer,
+    });
   }
 
   const state = randomBytes(32).toString('base64url');
@@ -345,11 +353,10 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
   redirectUrl.searchParams.set('login', login.id);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
-  if (login.codeChallenge) {
+  // A plain challenge is the verifier itself, so keep it out of the URL
+  if (login.codeChallenge && login.codeChallengeMethod !== 'plain') {
     redirectUrl.searchParams.set('code_challenge', login.codeChallenge);
-  }
-  if (login.codeChallengeMethod) {
-    redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod);
+    redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
   }
   res.redirect(redirectUrl.toString());
 }
