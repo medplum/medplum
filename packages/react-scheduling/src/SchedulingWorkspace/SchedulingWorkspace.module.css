@@ -12,9 +12,7 @@
   container-type: inline-size;
   --pane-width: 320px;
   /* One surface under the pane and everything it docks beside and slides over, in the color
-     the host passes as `backgroundColor`, with room inside so nothing runs up against its edges. */
-  --workspace-padding: var(--mantine-spacing-md);
-  padding: var(--workspace-padding);
+     the host passes as `backgroundColor`. */
   background-color: var(--scheduling-workspace-background, var(--mantine-color-body));
 }
 
@@ -71,13 +69,11 @@
 /*
  * The pane beside the calendar, holding the booking form, or the details of the
  * appointment or blocked time that is open. Only one at a time — each takes the
- * others' place. Reaches out through the workspace's padding to its edges, so the drawer
- * docks against them, and pads its content back to where the narrow pane stands.
+ * others' place.
  */
 .pane {
   position: absolute;
-  inset: calc(-1 * var(--workspace-padding)) calc(-1 * var(--workspace-padding)) calc(-1 * var(--workspace-padding)) 0;
-  padding: var(--workspace-padding) var(--workspace-padding) var(--workspace-padding) 0;
+  inset: 0;
   z-index: 200;
   display: flex;
   flex-direction: column;
@@ -89,15 +85,13 @@
    finder's times column, so the form keeps its width when the times open beside it. */
 .paneWide {
   left: auto;
-  width: calc(
-    var(--mantine-spacing-md) + var(--pane-width) + var(--mantine-spacing-lg) + 350px + var(--workspace-padding)
-  );
-  max-width: calc(100cqi + var(--workspace-padding));
+  width: calc(var(--mantine-spacing-md) + var(--pane-width) + var(--mantine-spacing-lg) + 350px);
+  max-width: 100cqi;
   padding-inline-start: var(--mantine-spacing-md);
   box-shadow: var(--mantine-shadow-xl);
   animation: paneSlideIn 100ms ease;
   /* Leaves the pane's first `--pane-width` where the narrow pane stands. */
-  --pane-tucked: translateX(calc(100% - var(--pane-width) - var(--mantine-spacing-md) - var(--workspace-padding)));
+  --pane-tucked: translateX(calc(100% - var(--pane-width) - var(--mantine-spacing-md)));
 }
 
 .paneClosing {
