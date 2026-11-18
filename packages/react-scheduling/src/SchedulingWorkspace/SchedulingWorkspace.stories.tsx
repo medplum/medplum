@@ -253,7 +253,7 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * The filters pane also has an Availability field, apart from its filters, taking up to three visit
  * types. It filters nothing: it shades where a provider on show could take each, one lane of the day's
  * column per visit type. Try "Injections" and "Follow-up". A click on a lane starts a booking for that
- * visit type.
+ * visit type, and where only one provider is free at the time clicked, with that provider and time too.
  *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
  * one provider at Riverside is free to take one. Hover a block to see who. Click one with nobody named

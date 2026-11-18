@@ -276,7 +276,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // Remounts the form, starting it over on the site the workspace is on.
   const [formKey, setFormKey] = useState(0);
   // Where open time was clicked while browsing, which is where the offer to start booking is drawn.
-  const [bookPrompt, setBookPrompt] = useState<PointerPosition & { readonly service?: WithId<HealthcareService> }>();
+  const [bookPrompt, setBookPrompt] = useState<PointerPosition & { readonly start?: BookingStart }>();
   // Where shading several providers are free in was clicked with nobody named, which is where the
   // reminder to name one is drawn.
   const [providerPrompt, setProviderPrompt] = useState<PointerPosition>();
@@ -299,6 +299,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const hoveredShadeId = useRef<string>(undefined);
   // The visit type the booking form opens on, when it is opened from a click on that visit type's lane.
   const [formDefaultService, setFormDefaultService] = useState<WithId<HealthcareService>>();
+  // The provider and time that click also settled, handed to the form once the pane's opening mounts it.
+  const pendingFormPick = useRef<{ readonly provider: ScheduleCandidate; readonly instant: Date }>(undefined);
+  useEffect(() => {
+    const pick = pendingFormPick.current;
+    if (bookingOpen && pick) {
+      pendingFormPick.current = undefined;
+      formActionsRef.current?.pickWith('Practitioner', pick.provider, pick.instant);
+    }
+  }, [bookingOpen]);
   const formActionsRef = useRef<AppointmentProposalFormActions>(null);
 
   const [range, setRange] = useState<DateTimeRange>();
@@ -676,10 +685,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     resetDirty();
   }, [resetBookingForm, resetDirty]);
 
-  // Takes the filters pane's place, and that of any details open, so the form is what shows. A visit
-  // type is given when the click that opens it was on that visit type's availability.
+  // Takes the filters pane's place, and that of any details open, so the form is what shows. What to
+  // start on is given when the click that opens it was on a visit type's availability.
   const openBooking = useCallback(
-    (service?: WithId<HealthcareService>): void => {
+    (start?: BookingStart): void => {
       const nextHalfHour = getNextHalfHour();
       setBlockRange(nextHalfHour);
       setBlockHighlight(nextHalfHour);
@@ -690,8 +699,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       setNewBlockSlots(undefined);
       setRescheduleFinderOpen(false);
       setFormServiceFacility(filters.serviceFacilities?.[0]);
-      setFormDefaultService(service);
-      setFormService(service);
+      setFormDefaultService(start?.service);
+      setFormService(start?.service);
+      pendingFormPick.current =
+        start?.provider && start.instant ? { provider: start.provider, instant: start.instant } : undefined;
       setBookingOpen(true);
     },
     [filters]
@@ -832,6 +843,19 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     setNewBlockSlots(undefined);
   }, []);
 
+  // The providers whose own open time, among what an availability block is made of, covers an instant.
+  const providersFreeAt = useCallback(
+    (shade: AvailabilityShade, instant: Date): ScheduleCandidate[] => {
+      const free = new Set(
+        shade.details
+          .filter((detail) => detail.start <= instant && instant < detail.end)
+          .map((detail) => detail.schedule.id)
+      );
+      return candidatesByActorType.Practitioner.filter((candidate) => free.has(candidate.schedule.id));
+    },
+    [candidatesByActorType]
+  );
+
   // With the filters pane open, open time on the grid offers to start booking, beside the pointer, as
   // taking the pane's place unasked would lose the viewer's place in it. With both panes closed it opens
   // the booking pane. While booking, on the Block Time tab it sets the block's time, and on the Book
@@ -839,12 +863,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectInterval = useCallback(
     (interval: CalendarSelection): void => {
       if (!bookingOpen) {
-        // A click on a visit type's availability is taken to mean that visit type.
-        const service = hoveredShadeId.current ? browseShading?.serviceByShade.get(hoveredShadeId.current) : undefined;
+        // A click on a visit type's availability is taken to mean that visit type, and where only one
+        // provider is free at the time clicked, that provider and time too.
+        const shadeId = hoveredShadeId.current;
+        const service = shadeId ? browseShading?.serviceByShade.get(shadeId) : undefined;
+        const shade = service && browseShading?.shades.find((block) => block.id === shadeId);
+        const instant = shadingHoverInstant.current;
+        const providers = shade && instant ? providersFreeAt(shade, instant) : [];
+        const start: BookingStart | undefined = service && {
+          service,
+          ...(providers.length === 1 ? { provider: providers[0], instant } : undefined),
+        };
         if (!calendarsOpen) {
-          openBooking(service);
+          openBooking(start);
         } else if (lastPointer.current) {
-          setBookPrompt({ ...lastPointer.current, service });
+          setBookPrompt({ ...lastPointer.current, start });
         }
         return;
       }
@@ -863,12 +896,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         if (!shade) {
           return;
         }
-        const free = new Set(
-          shade.details
-            .filter((detail) => detail.start <= instant && instant < detail.end)
-            .map((detail) => detail.schedule.id)
-        );
-        const providers = candidatesByActorType.Practitioner.filter((candidate) => free.has(candidate.schedule.id));
+        const providers = providersFreeAt(shade, instant);
         if (providers.length === 1) {
           formActionsRef.current?.pickWith('Practitioner', providers[0], instant);
         } else {
@@ -884,7 +912,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       paneTab,
       formCandidates,
       availabilityShading,
-      candidatesByActorType,
+      providersFreeAt,
     ]
   );
 
@@ -1078,8 +1106,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             onClose={() => setBookPrompt(undefined)}
           >
             <Stack gap="xs">
-              <Text size="sm">{bookPrompt.service ? `Book ${bookPrompt.service.name}?` : 'Book an appointment?'}</Text>
-              <Button size="xs" onClick={() => openBooking(bookPrompt.service)}>
+              <Text size="sm">{getBookPromptText(bookPrompt.start)}</Text>
+              <Button size="xs" onClick={() => openBooking(bookPrompt.start)}>
                 Open Find + Book
               </Button>
             </Stack>
@@ -1212,6 +1240,24 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       </DiscardChangesModal>
     </div>
   );
+}
+
+/** What a click on a visit type's availability says a booking should start on. */
+interface BookingStart {
+  readonly service: WithId<HealthcareService>;
+  /** The one provider free at the time clicked. Absent where several are. */
+  readonly provider?: ScheduleCandidate;
+  /** The time clicked, given with `provider`. */
+  readonly instant?: Date;
+}
+
+function getBookPromptText(start: BookingStart | undefined): string {
+  if (!start) {
+    return 'Book an appointment?';
+  }
+  return start.provider
+    ? `Book ${start.service.name} with ${getCandidateDisplay(start.provider)}?`
+    : `Book ${start.service.name}?`;
 }
 
 /** A point on the calendar, from the top left of the box around it. */
