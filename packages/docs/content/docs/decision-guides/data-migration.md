@@ -220,7 +220,7 @@ Decide whether a source record remains distinct, maps to an existing resource, o
 | Existing target ID is not known                 | Use a conditional reference only when the identifier finds exactly one resource and the migration identity can search it.                                                                                                                                                               |
 | Related resources are created together          | Load prerequisites first, then batch dependent upserts with saved references; reconcile partial progress.                                                                                                                                                                               |
 | Related resource was loaded earlier             | Use a source-to-target ID lookup or a conditional reference that resolves uniquely.                                                                                                                                                                                                     |
-| Related resource will arrive later              | If profiles and workflows permit it, preserve a logical reference in `Reference.identifier` and track the link for a [two-pass backfill](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references). Keep actual Patient references for patient-compartment access. |
+| Related resource will arrive later              | If profiles and workflows permit it, preserve a logical reference in `Reference.identifier` and track the link for a [two-pass backfill](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references). Keep actual Patient references for FHIR Patient compartment access. |
 | A resolved relationship is required immediately | Load a valid target first or stage the dependent record until the target is available.                                                                                                                                                                                                  |
 | Keys are missing or unstable                    | Define a governed replacement key before loading; do not use mutable demographics as the key for repeated runs.                                                                                                                                                                         |
 
@@ -391,7 +391,7 @@ Decide how closely testing must match production volume, infrastructure, access,
 | Strict cutover window                      | Rehearse full volume on production-like infrastructure and measure every stage.   |
 | Pipeline can be interrupted                | Stop and resume during rehearsal; verify checkpoints and counts.                  |
 | Clinical workflows depend on migrated data | Run user acceptance tests with representative patient journeys.                   |
-| Access varies by role or tenant            | Test allowed and denied access using actual migrated references and compartments. |
+| Access varies by role or tenant            | Test allowed and denied access using actual migrated Patient references and tenant assignments in `meta.compartment`. |
 
 A small pilot does not prove production throughput. A full-volume load does not prove clinical meaning. Test both when those risks apply.
 
@@ -426,7 +426,7 @@ Decide how protected data is extracted, staged, transmitted, logged, retained, a
 | Extracts contain PHI                | Use approved encrypted storage, restrict access, and destroy temporary copies after acceptance.                                                   |
 | Logs contain source data            | Minimize fields and apply regulated-data access and retention controls.                                                                           |
 | Production-like test data is needed | Prefer synthetic or de-identified data unless approved controls authorize PHI.                                                                    |
-| Multi-tenant target                 | Define the tenant `AccessPolicy`; populate each resource's own patient references and/or governed `meta.account`; test allowed and denied access. |
+| Multi-tenant target                 | Define the tenant `AccessPolicy`; preserve each resource's patient references and assign tenant `meta.accounts` through [`$set-accounts`](/docs/api/fhir/operations/set-accounts) where required; test allowed and denied access. |
 | Wrong-scope load                    | Stop the pipeline, preserve evidence, assess exposure, and use a reviewed correction plan.                                                        |
 
 Security review covers the pipeline and temporary artifacts, not only final FHIR resources.

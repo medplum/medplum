@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications, Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { isReference } from '@medplum/core';
 import type { Appointment, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { CreateEncounterForm } from './CreateEncounterForm';
@@ -49,18 +49,14 @@ describe('CreateEncounterForm', () => {
   });
 
   const setup = (appointment: WithId<Appointment>): ReturnType<typeof render> => {
-    return render(<CreateEncounterForm appointment={appointment} />, {
-      wrapper: ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              {children}
-            </MantineProvider>
-          </MedplumProvider>
-        </MemoryRouter>
-      ),
-    });
+    return render(<CreateEncounterForm appointment={appointment} />, ({ children }) => (
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Notifications />
+          {children}
+        </MedplumProvider>
+      </MemoryRouter>
+    ));
   };
 
   test('renders form with required fields', async () => {

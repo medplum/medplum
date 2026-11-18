@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type { RenderResult } from '@testing-library/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { showErrorNotification } from '../../utils/notifications';
 import { AppointmentDetails } from './AppointmentDetails';
 
@@ -38,18 +38,14 @@ describe('AppointmentDetails', () => {
 
     let result!: RenderResult;
     await act(async () => {
-      result = render(<AppointmentDetails appointment={appointment} />, {
-        wrapper: ({ children }) => (
-          <MemoryRouter>
-            <MedplumProvider medplum={medplum}>
-              <MantineProvider>
-                <Notifications />
-                {children}
-              </MantineProvider>
-            </MedplumProvider>
-          </MemoryRouter>
-        ),
-      });
+      result = render(<AppointmentDetails appointment={appointment} />, ({ children }) => (
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <Notifications />
+            {children}
+          </MedplumProvider>
+        </MemoryRouter>
+      ));
     });
     return result;
   };

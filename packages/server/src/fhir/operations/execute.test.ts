@@ -32,7 +32,13 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
-import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import {
+  addTestUser,
+  createBotMembership,
+  createTestProject,
+  waitForAsyncJob,
+  withTestContext,
+} from '../../test.setup';
 import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
@@ -156,6 +162,18 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  return event.headers;
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  return event.headers;
+};
+`,
+  ],
 ] as [string, string][];
 
 type BotName =
@@ -166,7 +184,8 @@ type BotName =
   | 'binaryBot'
   | 'streamingBot'
   | 'streamingErrorBot'
-  | 'streamingHeadersBot';
+  | 'streamingHeadersBot'
+  | 'headersBot';
 const botDefinitions: {
   name: BotName;
   system: boolean;
@@ -182,6 +201,7 @@ const botDefinitions: {
   { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
   { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
   { name: 'streamingHeadersBot', system: false, code: botCodes[5], streaming: true },
+  { name: 'headersBot', system: false, code: botCodes[6] },
 ];
 
 describe('Execute', () => {
@@ -231,13 +251,18 @@ describe('Execute', () => {
           name: `${name} Test Bot`,
           runtimeVersion: 'vmcontext',
           code: esmCode,
-          system,
           ...(streaming && { streamingEnabled: true }),
           ...(rawBody && { rawBody: true }),
         });
 
       expect(res1).toHaveStatus(201);
       const bot = res1.body as WithId<Bot>;
+
+      if (system) {
+        // Only super admins can set Bot.system
+        const systemRepo = await getProjectSystemRepo(project1);
+        await systemRepo.patchResource('Bot', bot.id, [{ op: 'add', path: '/system', value: true }]);
+      }
 
       const res2 = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -254,6 +279,7 @@ describe('Execute', () => {
 
     for (const { name, system, code, streaming, rawBody } of botDefinitions) {
       bots[name] = await setupBot(name, system, code[0], code[1], streaming, rawBody);
+      await createBotMembership(project1, bots[name]);
     }
   });
 
@@ -270,6 +296,20 @@ describe('Execute', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
+  });
+
+  test('Request headers passed to bot without Authorization', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.headersBot.id}/$execute`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .set('Cookie', 'session=abc')
+      .set('X-Test', 'test')
+      .send({});
+    expect(res).toHaveStatus(200);
+    expect(res.body['x-test']).toBe('test');
+    expect(res.body.authorization).toBeUndefined();
+    expect(res.body.cookie).toBe('session=abc');
   });
 
   test('Submit FHIR with content type returns non-FHIR JSON', async () => {
@@ -395,7 +435,8 @@ describe('Execute', () => {
         code: '',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Execute the bot
     const res2 = await request(app)
@@ -417,7 +458,8 @@ describe('Execute', () => {
         runtimeVersion: 'unsupported',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Step 2: Publish the bot
     const res2 = await request(app)
@@ -487,7 +529,8 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext' });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     const { project: otherProject } = await createTestProject();
     const systemRepo = await getProjectSystemRepo(otherProject);
@@ -627,7 +670,8 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Deploy the bot
     const res5 = await request(app)
@@ -772,7 +816,6 @@ describe('Execute', () => {
 
   test.each<[string, Partial<Bot>, boolean]>([
     ['runAsUser', { runAsUser: true }, false],
-    ['without a membership', {}, false],
     ['with its own membership', {}, true],
   ])('Bot %s and a caller with SMART scopes', async (_name, botProps, withMembership) => {
     const res1 = await request(app)
@@ -784,13 +827,7 @@ describe('Execute', () => {
     const bot = res1.body as WithId<Bot>;
 
     if (withMembership) {
-      const systemRepo = await getProjectSystemRepo(project1);
-      await systemRepo.createResource<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        project: createReference(project1),
-        user: createReference(bot),
-        profile: createReference(bot),
-      });
+      await createBotMembership(project1, bot);
     }
 
     const res2 = await request(app)
@@ -851,7 +888,8 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Deploy the bot
     const res5 = await request(app)
@@ -891,7 +929,8 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -1090,48 +1129,16 @@ describe('Execute', () => {
       expect(authState?.project?.id).toBe(expectedProject.id);
     });
 
-    describe('bot with a membership in the project that owns it', () => {
-      const ownMemberships = {} as Record<BotName, WithId<ProjectMembership>>;
-
-      beforeAll(async () => {
-        // This is what the admin route and Bot/$init create
-        const systemRepo = await getProjectSystemRepo(project1);
-        for (const botName of ['echoBot', 'booleanBot'] as const) {
-          ownMemberships[botName] = await systemRepo.createResource<ProjectMembership>({
-            resourceType: 'ProjectMembership',
-            project: createReference(project1),
-            user: createReference(bots[botName]),
-            profile: createReference(bots[botName]),
-          });
-        }
-      });
-
-      test.each<[BotName, 'own' | 'linking', boolean]>([
-        ['echoBot', 'own', true],
-        ['echoBot', 'linking', false], // Has a membership in the linking project too
-        ['booleanBot', 'own', true],
-        ['booleanBot', 'linking', false], // Falls back to the caller's membership
-      ])('Bot %s called from %s project', async (botName, whichProject, expectOwnMembership) => {
-        clearBotAccessTokenCache();
-        const generateAccessTokenSpy = vi.spyOn(oathKeysModule, 'generateAccessToken');
-        generateAccessTokenSpy.mockClear();
-
-        const accessTokens = { own: accessToken1, linking: accessToken2 };
-
-        const res = await request(app)
-          .post(`/fhir/R4/Bot/${bots[botName].id}/$execute`)
-          .set('Content-Type', ContentType.TEXT)
-          .set('Authorization', 'Bearer ' + accessTokens[whichProject])
-          .send('input: true');
-        expect(res).toHaveStatus(200);
-
-        expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
-        const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
-        const authState = (await getLoginForAccessToken(undefined, generatedAccessToken))?.authState;
-
-        expect(authState?.project?.id).toBe(expectOwnMembership ? project1.id : project2.id);
-        expect(authState?.membership?.id === ownMemberships[botName].id).toBe(expectOwnMembership);
-      });
+    test('Bot without a membership in the calling project is rejected', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.booleanBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken2)
+        .send('input: true');
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(
+        badRequest('Bot does not have a ProjectMembership in this project; create one or set Bot.runAsUser')
+      );
     });
   });
 

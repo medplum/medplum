@@ -11,6 +11,7 @@ import {
   getExtensionValue,
   getReferenceString,
   isDefined,
+  isReference,
   isResource,
   MEDPLUM_VERSION,
   OperationOutcomeError,
@@ -1051,6 +1052,32 @@ async function aboutAppointment<T>(appointments: Appointment[], idx: number, val
 }
 
 /**
+ * Returns a Repository for writing Slots that does not name a Patient or RelatedPerson on them.
+ *
+ * Slots are visible to everyone who may search their Schedule, e.g. all patients of a
+ * self-scheduling Project. A Patient or RelatedPerson author is replaced with `system`, and one in
+ * `onBehalfOf` or the access policy compartment is dropped. Other authors and compartments, such as
+ * staff or a tenant Organization, are kept. The caller's access policy rules still apply.
+ * @param repo - The caller's Repository, typically transaction-scoped.
+ * @returns A Repository with the caller's permissions for writing Slots.
+ */
+export function getSlotWriterRepo(repo: Repository): Repository {
+  const { author, onBehalfOf, accessPolicy } = repo.getConfig();
+  return repo.withOverrideConfig({
+    author: identifiesPatient(author) ? { reference: 'system' } : author,
+    onBehalfOf: identifiesPatient(onBehalfOf) ? undefined : onBehalfOf,
+    accessPolicy:
+      accessPolicy && identifiesPatient(accessPolicy.compartment)
+        ? { ...accessPolicy, compartment: undefined }
+        : accessPolicy,
+  });
+}
+
+function identifiesPatient(reference: Reference | undefined): boolean {
+  return isReference(reference, 'Patient') || isReference(reference, 'RelatedPerson');
+}
+
+/**
  * Books proposed Appointments all or none, each validated on its own, in one serializable
  * transaction.
  *
@@ -1095,13 +1122,14 @@ export async function createProposedAppointments(
       // Sequential: a transaction is pinned to one database connection, and each Appointment's
       // availability is checked against the ones created before it.
       const results: (Appointment | Slot)[] = [];
+      const slotRepo = getSlotWriterRepo(txRepo);
       for (const [idx, { appointment, slots, healthcareService, schedulingParametersGroup }] of validated.entries()) {
         await aboutAppointment(proposedAppointments, idx, () =>
           validateAllAvailability(txRepo, slots, healthcareService, schedulingParametersGroup)
         );
         const createdSlots = new Array<WithId<Slot>>(slots.length);
         for (const [i, slot] of slots.entries()) {
-          createdSlots[i] = await txRepo.createResource<Slot>(slot);
+          createdSlots[i] = await slotRepo.createResource<Slot>(slot);
         }
         const createdAppointment = await txRepo.createResource<Appointment>({
           ...appointment,

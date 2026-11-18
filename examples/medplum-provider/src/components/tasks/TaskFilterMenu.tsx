@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Button, Divider, Flex, Indicator, Menu, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import type { CodeableConcept, Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import type { CodeableConcept, Patient, Reference, Task } from '@medplum/fhirtypes';
 import { Modal, ReferenceInput } from '@medplum/react';
 import {
   IconCheck,
@@ -18,6 +18,7 @@ import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
 import {
+  TASK_OWNER_TYPES,
   TASK_PRIORITIES,
   TASK_PRIORITY_LABELS,
   TASK_STATUSES,
@@ -64,8 +65,6 @@ function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps):
     </Menu.Item>
   );
 }
-
-const ASSIGNED_TARGET_TYPES: ResourceType[] = ['Practitioner', 'Organization', 'CareTeam'];
 
 interface TaskFilterMenuProps {
   statuses?: Task['status'][];
@@ -165,12 +164,7 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
         {!isMyTasksTab && (
           <Menu.Item
             leftSection={<IconUser size={16} color="var(--mantine-color-dimmed)" />}
-            rightSection={
-              <Flex align="center" gap={4}>
-                {selectedOwner && <ActiveDot />}
-                <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />
-              </Flex>
-            }
+            rightSection={selectedOwner ? <ActiveDot /> : undefined}
             onClick={() => {
               setDraftOwner(selectedOwner ? { reference: selectedOwner } : undefined);
               close();
@@ -232,24 +226,35 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
         title="Filter by assignee"
         size="md"
         actions={
-          <Button
-            disabled={!draftOwner?.reference || draftOwner.reference === selectedOwner}
-            onClick={() => {
-              if (draftOwner?.reference) {
-                onFilterChange?.(TaskFilterType.OWNER, draftOwner.reference);
+          <>
+            {selectedOwner && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onFilterChange?.(TaskFilterType.OWNER, '');
+                  closeAssigneeModal();
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              disabled={draftOwner?.reference === selectedOwner}
+              onClick={() => {
+                onFilterChange?.(TaskFilterType.OWNER, draftOwner?.reference ?? '');
                 closeAssigneeModal();
-              }
-            }}
-          >
-            Apply
-          </Button>
+              }}
+            >
+              Apply
+            </Button>
+          </>
         }
       >
         <ReferenceInput
           name="assignee"
-          targetTypes={ASSIGNED_TARGET_TYPES}
+          targetTypes={TASK_OWNER_TYPES}
           defaultValue={selectedOwner ? { reference: selectedOwner } : undefined}
-          onChange={(value) => setDraftOwner(value as Reference | undefined)}
+          onChange={(value) => setDraftOwner(value)}
         />
       </Modal>
     </Menu>

@@ -95,7 +95,7 @@ Where `medplum-postgres-1` can be replaced with the name of your postgres docker
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
 
 1. [Install PostgreSQL](https://www.postgresql.org/download/) (version 13+ required)
-2. [Install Valkey](https://valkey.io/download/) (or [Redis](https://redis.io/download) version 6+)
+2. [Install Valkey](https://valkey.io/download/) (any version) or [Redis](https://redis.io/download) version 7+
 
 After that, you will have to update the file `packages/server/medplum.config.json`
 

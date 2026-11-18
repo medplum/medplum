@@ -225,4 +225,40 @@ describe('CDS Hooks', () => {
       });
     expect(res).toHaveStatus(404);
   });
+
+  test('Request headers passed to bot without Authorization', async () => {
+    // Separate project so the discovery test only sees the bots above
+    const { accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'CDS Headers Bot',
+        runtimeVersion: 'vmcontext',
+        cdsService: { hook: 'patient-view', title: 'CDS Headers Bot', description: 'Returns headers' },
+      });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ code: 'exports.handler = async (medplum, event) => ({ cards: [], headers: event.headers });' });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post(`/cds-services/${bot.id}`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Cookie', 'session=abc')
+      .set('X-Test', 'test')
+      .send({ hookInstance: 'd1577c69-dfbe-44ad-ba6d-3e05e953b2ea', hook: 'patient-view', context: {} });
+    expect(res3).toHaveStatus(200);
+    expect(res3.body.headers['x-test']).toBe('test');
+    expect(res3.body.headers.authorization).toBeUndefined();
+    expect(res3.body.headers.cookie).toBe('session=abc');
+  });
 });
