@@ -26,7 +26,7 @@ export interface CalendarFilterValues {
   readonly serviceFacilities?: readonly (WithId<Location> | (Reference<Location> & { reference: string }))[];
   /**
    * The visit types to include, any of which will do. Absent for every visit type. Empty for none of
-   * them, which hides every appointment and narrows no calendars.
+   * them, which hides every appointment. They narrow the appointments drawn and never the calendars.
    */
   readonly services?: readonly WithId<HealthcareService>[];
   /**
@@ -50,7 +50,8 @@ export interface CalendarFiltersProps {
 }
 
 /**
- * Fields narrowing which calendars and appointments are visible
+ * Fields narrowing which calendars and appointments are visible: the sites both, and the visit types
+ * the appointments only
  *
  * Typeaheads rather than lists: a tenant might have dozens of sites or visit
  * types. The same pickers the booking form uses, so a visit type is searched
@@ -139,7 +140,7 @@ export function CalendarFilters(props: CalendarFiltersProps): JSX.Element {
 
   return (
     <Stack gap="md">
-      <PanelSection title="Filters" description="Narrow which calendars and appointments are shown.">
+      <PanelSection title="Filters" description="Narrow the appointments shown, and the calendars by facility.">
         <Stack gap="xs">
           <ServiceFacilitiesInput
             label="Service Facility"

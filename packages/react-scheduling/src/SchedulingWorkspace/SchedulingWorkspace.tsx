@@ -255,10 +255,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // Prototype: two panes, at most one open, and the open one drives the calendar.
   //
-  // The filters pane, on the left, is for browsing. Its site and visit type narrow the calendars listed
-  // and the appointments drawn, and its checklist the calendars on show. Its Availability field, which
-  // filters nothing, shades where the visit types it names could go. It also drives the calendar while
-  // both panes are closed.
+  // The filters pane, on the left, is for browsing. Its site narrows the calendars listed and the
+  // appointments drawn, its visit types the appointments drawn only, and its checklist the calendars on
+  // show. Its Availability field, which filters nothing, shades where the visit types it names could
+  // go. It also drives the calendar while both panes are closed.
   //
   // The booking pane, on the right, is for booking. Its form's visit type narrows the calendars to the
   // ones serving it, whose other appointments stay drawn, as they explain gaps in the shading. Its visit
@@ -286,7 +286,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // reminder to name one is drawn.
   const [providerPrompt, setProviderPrompt] = useState<PointerPosition>();
   const lastPointer = useRef<PointerPosition>(undefined);
-  const calendarService = bookingOpen ? formService : filters.services;
+  // Only the booking form's visit type narrows the calendars. The filter's does not: the availability
+  // shaded is worked out from the calendars on show, so it would take away shading asked for beside it.
+  const calendarService = bookingOpen ? formService : undefined;
   // A visit type in the booking form hides no appointments, so only its site is left of the filters.
   const calendarFilters = useMemo(
     (): CalendarFilterValues =>
