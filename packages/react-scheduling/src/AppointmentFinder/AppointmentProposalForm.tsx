@@ -36,8 +36,17 @@ import type { Appointment, Extension, HealthcareService, Location, Patient, Refe
 import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
-import type { JSX, RefObject } from 'react';
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { JSX, Ref, RefObject } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
@@ -64,6 +73,7 @@ import {
   getSelectionError,
   getUnsatisfiableRows,
 } from './AppointmentFinder.schedules';
+import type { AppointmentDay } from './AppointmentFinder.times';
 import {
   formatTimezoneLabel,
   formatZonedDateTimeInput,
@@ -120,6 +130,26 @@ const OCCURRENCE_OPTIONS = [
  */
 export type AppointmentProposalMode = 'book' | 'reschedule';
 
+/** Prototype. A time picked outside the form, such as on a host's calendar, with what it was offered for. */
+export interface AppointmentTimePick {
+  /** When the visit would start. */
+  readonly start: Date;
+  /** The visit type the time was offered for. */
+  readonly service: WithId<HealthcareService>;
+  /** Who and what the time was offered on. */
+  readonly selections: ActorSelections;
+}
+
+/** Prototype. What a host can ask of a mounted form. */
+export interface AppointmentProposalFormActions {
+  /**
+   * Takes a time picked outside the form: puts its visit type and actors in place of the form's, keeping
+   * every other answer, and chooses the offered time covering its start once the search has it. A time
+   * the search does not offer leaves the search open on that day.
+   */
+  readonly pick: (pick: AppointmentTimePick) => void;
+}
+
 export interface AppointmentProposalFormProps {
   /** What the proposal is for. Defaults to booking a new visit. */
   readonly mode?: AppointmentProposalMode;
@@ -136,6 +166,13 @@ export interface AppointmentProposalFormProps {
    * Read once, at mount: the fields own what they are asked for afterwards.
    */
   readonly defaultSelections?: ActorSelections;
+  /**
+   * Prototype. A time picked before the form opened, which it opens on as {@link AppointmentProposalFormActions.pick}
+   * would leave it. Takes the place of `defaultService` and `defaultSelections`. Read once, at mount.
+   */
+  readonly defaultPick?: AppointmentTimePick;
+  /** Prototype. See {@link AppointmentProposalFormActions}. */
+  readonly actionsRef?: Ref<AppointmentProposalFormActions>;
   /**
    * An appointment whose own times are not to count as taken.
    *
@@ -250,6 +287,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     defaultService,
     defaultPatient,
     defaultSelections,
+    defaultPick,
+    actionsRef,
     ignoreAppointment,
     ignoreAppointmentSchedules,
     defaultStart,
@@ -271,10 +310,12 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
     defaultServiceFacility
   );
-  const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultService);
-  const [selections, setSelections] = useState<ActorSelections>(defaultSelections ?? {});
-  const [month, setMonth] = useState<Date | undefined>(defaultStart);
-  const [finding, setFinding] = useState(false);
+  const [service, setService] = useState<WithId<HealthcareService> | undefined>(defaultPick?.service ?? defaultService);
+  const [selections, setSelections] = useState<ActorSelections>(defaultPick?.selections ?? defaultSelections ?? {});
+  const [month, setMonth] = useState<Date | undefined>(defaultPick?.start ?? defaultStart);
+  const [finding, setFinding] = useState(defaultPick !== undefined);
+  // The start of a picked time the search has yet to answer for.
+  const [pendingPickStart, setPendingPickStart] = useState(defaultPick?.start);
   const [chosen, setChosen] = useState<Appointment | undefined>(undefined);
   // The fields ignore `defaultValue` after mount, so remounting is the only way to
   // clear their pills. Counters, so a field is never remounted out from under a pick.
@@ -330,6 +371,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // Derived, not a flag: closing is never its own rule, so losing the last resource
   // closes the search however it was lost.
   const searching = finding && !selectionError;
+  // A picked time is searched for out of sight: the times are shown only if it turns out not to be offered.
+  const finderOpen = searching && pendingPickStart === undefined;
 
   // Nothing is searched until the time search is open, so the answers above cost no
   // request per keystroke.
@@ -374,7 +417,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     service,
     combinations,
     timezone,
-    defaultStart,
+    defaultStart: defaultPick?.start ?? defaultStart,
     actorResources,
     ignoreAppointment,
     occurrenceCount: effectiveOccurrenceCount,
@@ -420,11 +463,11 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   // search that closed on its own is reported like one closed by hand.
   const reported = useRef(false);
   useEffect(() => {
-    if (reported.current !== searching) {
-      reported.current = searching;
-      onToggleTimeFinder?.(searching);
+    if (reported.current !== finderOpen) {
+      reported.current = finderOpen;
+      onToggleTimeFinder?.(finderOpen);
     }
-  }, [searching, onToggleTimeFinder]);
+  }, [finderOpen, onToggleTimeFinder]);
 
   useEffect(() => {
     onChangeProposal?.(chosen);
@@ -512,15 +555,49 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     resetDaySearch();
   }
 
-  function chooseTime(next: Appointment): void {
+  function takeTime(next: Appointment): void {
     setChosen(next);
     setConflicts([]);
     setWritten(false);
     setFinding(false);
     setPickCount((count) => count + 1);
+  }
+
+  function chooseTime(next: Appointment): void {
+    takeTime(next);
     // The picked time's button goes with the search, so focus would fall to the page.
     finderButtonRef.current?.focus();
   }
+
+  // Settles a picked time once its day is answered, or once nothing is searching for it.
+  if (pendingPickStart && !(searching && daySearch.loadingFirstDays)) {
+    setPendingPickStart(undefined);
+    const offered = searching ? findOfferedTime(daySearch.timeResultsByDay, pendingPickStart) : undefined;
+    if (offered) {
+      takeTime(offered);
+    }
+  }
+
+  useImperativeHandle(actionsRef, () => ({
+    pick: (pick: AppointmentTimePick): void => {
+      if (!fixedService && pick.service.id !== service?.id) {
+        setService(pick.service);
+        onChangeService?.(pick.service);
+        setRequirementValues(EMPTY_REQUIREMENT_VALUES);
+        setServiceFieldKey((key) => key + 1);
+      }
+      setSelections(pick.selections);
+      setActorFieldsKey((key) => key + 1);
+      setChosen(undefined);
+      clearManualTime();
+      setWritten(false);
+      resetDaySearch();
+      daySearch.chooseDayRange(pick.start);
+      setMonth(pick.start);
+      setFinding(true);
+      setPendingPickStart(pick.start);
+    },
+  }));
 
   const configuredDurationMinutes = useMemo(
     () => (service ? resolveBookingGeometry(service, manualCandidates[0]?.schedule).duration : undefined),
@@ -777,7 +854,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           appointment={chosen}
           timezone={timezone}
           actors={chosenActors}
-          searching={searching}
+          searching={finderOpen}
+          finding={pendingPickStart !== undefined}
           blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
           onToggleFinder={toggleFinder}
           finderButtonRef={finderButtonRef}
@@ -824,7 +902,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         </Button>
       </Stack>
 
-      {searching && (
+      {finderOpen && (
         <div className={classes.results}>
           <Title order={5} size="h4">
             Select a time
@@ -926,6 +1004,8 @@ interface ChosenTimeProps {
   /** Who the chosen time is held on. */
   readonly actors: readonly SchedulingActorValue[];
   readonly searching: boolean;
+  /** Whether a time picked outside the form is being looked for. */
+  readonly finding: boolean;
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
   readonly onToggleFinder: () => void;
@@ -944,7 +1024,8 @@ interface ChosenTimeProps {
  * @returns The chosen time, once there is one, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder, finderButtonRef, flashKey } = props;
+  const { appointment, timezone, actors, searching, finding, blockedBy, onToggleFinder, finderButtonRef } = props;
+  const { flashKey } = props;
   // Taken off once played, as the browser replays an animation each time its element is shown
   // again, as switching back to the field's tab does.
   const [flashedKey, setFlashedKey] = useState(0);
@@ -982,6 +1063,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           fullWidth
           leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
           disabled={!!blockedBy}
+          loading={finding}
           onClick={onToggleFinder}
         >
           {getFinderLabel(searching, !!appointment)}
@@ -1159,6 +1241,23 @@ function getSubmitLabel(mode: AppointmentProposalMode, occurrenceCount: number):
     return 'Reschedule appointment';
   }
   return occurrenceCount > 1 ? `Book ${occurrenceCount} appointments` : 'Book appointment';
+}
+
+// The offered time covering an instant that starts latest, so each one answers for the stretch from its own
+// start to the next one's.
+function findOfferedTime(days: readonly AppointmentDay[], instant: Date): Appointment | undefined {
+  const at = instant.getTime();
+  let latest: Appointment | undefined;
+  let latestStart = -Infinity;
+  for (const offered of days.flatMap((day) => day.groups.flatMap((group) => group.appointments))) {
+    const start = offered.start ? new Date(offered.start).getTime() : Number.NaN;
+    const end = offered.end ? new Date(offered.end).getTime() : Number.NaN;
+    if (start <= at && end > at && start > latestStart) {
+      latest = offered;
+      latestStart = start;
+    }
+  }
+  return latest;
 }
 
 /**

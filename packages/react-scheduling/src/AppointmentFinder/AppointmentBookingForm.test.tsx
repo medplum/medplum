@@ -8,7 +8,13 @@ import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
-import { DrOkaforPractitioner, DrOkaforSchedule, DrRiveraSchedule, ElderJordanPatient } from '../stories/scheduling';
+import {
+  DrOkaforPractitioner,
+  DrOkaforSchedule,
+  DrRiveraSchedule,
+  ElderJordanPatient,
+  UltrasoundImagingService,
+} from '../stories/scheduling';
 import { installAutocompleteTimers, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   bookButton,
@@ -21,16 +27,19 @@ import {
   clickBook,
   field,
   fillBooking,
+  hasPill,
   MONDAY_MORNING,
   openTimeFinder,
   patientDetail,
   setupBookingClient,
   typedTimeField,
 } from '../test-utils/bookingForm';
-import { fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
+import { createActorRequirement } from './AppointmentFinder.schedules';
 import { formatZonedDateTimeInput } from './AppointmentFinder.times';
+import type { AppointmentProposalFormActions, AppointmentTimePick } from './AppointmentProposalForm';
 
 installAutocompleteTimers();
 
@@ -116,6 +125,58 @@ describe('AppointmentBookingForm', () => {
       // Still reported for hosts written before series, until they have moved off it.
       expect(booking.appointment).toBe(booking.appointments[0]);
       expect(booking.slots.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Taking a time picked outside the form', () => {
+    function pickAt(hours: number, minutes: number, schedule = DrRiveraSchedule): AppointmentTimePick {
+      return {
+        start: new Date(2026, 7, 17, hours, minutes),
+        service: UltrasoundImagingService,
+        selections: { Practitioner: [createActorRequirement([{ schedule, actorResource: undefined }])] },
+      };
+    }
+
+    // The start of the time the form holds, read off what it reports rather than off the field, which
+    // names the time in the provider's zone.
+    function chosenStart(onChangeProposal: MockInstance): Date | undefined {
+      const [proposal] = onChangeProposal.mock.lastCall as [Appointment | undefined];
+      return proposal?.start ? new Date(proposal.start) : undefined;
+    }
+
+    test('Opens on the visit type, the provider, and the offered time covering the pick', async () => {
+      const onChangeProposal = vi.fn();
+      setup(medplum, { defaultPick: pickAt(14, 10), onChangeProposal });
+      await settleAutocomplete();
+
+      // The stub offers imaging visits on the half hour.
+      expect(chosenStart(onChangeProposal)).toEqual(new Date(2026, 7, 17, 14, 0));
+      expect(hasPill(/Rivera/)).toBe(true);
+      expect(screen.queryByText('Select a time')).not.toBeInTheDocument();
+    });
+
+    test('Leaves the search open on a pick it does not offer', async () => {
+      // After the stub's clinic closes.
+      setup(medplum, { defaultPick: pickAt(18, 0) });
+      await settleAutocomplete();
+
+      expect(chosenTimeField()).toBeNull();
+      expect(screen.getByText('Select a time')).toBeInTheDocument();
+    });
+
+    test('Takes a pick while open, keeping the patient', async () => {
+      const actionsRef: { current: AppointmentProposalFormActions | null } = { current: null };
+      const onChangeProposal = vi.fn();
+      setup(medplum, { actionsRef, onChangeProposal });
+      await fillBooking();
+
+      await act(async () => actionsRef.current?.pick(pickAt(15, 40, DrOkaforSchedule)));
+      await settleAutocomplete();
+
+      expect(chosenStart(onChangeProposal)).toEqual(new Date(2026, 7, 17, 15, 30));
+      expect(hasPill(/Okafor/)).toBe(true);
+      // Enabled only with a time and a patient both in hand.
+      expect(bookButton()).toBeEnabled();
     });
   });
 

@@ -5,6 +5,7 @@ import type { Coding, Resource } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
 import type { Decorator } from '@storybook/react';
 import { MockDateWrapper } from './MockDateWrapper';
+import type { FindStubOptions } from './mockFind';
 import { WithBookStub } from './WithBookStub';
 import { WithCancelStub } from './WithCancelStub';
 import { WithConfirmStub } from './WithConfirmStub';
@@ -57,12 +58,14 @@ export const withFixtures =
  * Answers `Appointment/$find` from the stored fixtures, which MockClient cannot.
  * @param options - How the stub should answer.
  * @param options.empty - Offer no times at all, for the empty state.
+ * @param options.respectAvailability - Offer a schedule with availability for the visit type only the times
+ * it has open.
  * @returns The decorator.
  */
 export const withFindStub =
-  (options: { empty?: boolean } = {}): Decorator =>
+  (options: FindStubOptions = {}): Decorator =>
   (Story) => (
-    <WithFindStub empty={options.empty}>
+    <WithFindStub {...options}>
       <Story />
     </WithFindStub>
   );

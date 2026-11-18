@@ -94,7 +94,9 @@ export default {
     withRescheduleStub(),
     // Cancellation reasons, plus the code value sets for visit types that ask for codes.
     withValueSets({ ...CancellationReasonValueSets, ...AuthorizationValueSets }),
-    withFindStub(),
+    // Only the made-up providers in `Basic` set hours for the stub to keep to; every other calendar is
+    // offered clinic hours.
+    withFindStub({ respectAvailability: true }),
     withMockedDate,
   ],
   parameters: {
@@ -188,6 +190,12 @@ export default {
  *   by the filter and still leaves its gap in the orange.
  * - Show only **Dr. Ryan Dalton**, who sets no hours of their own: nothing is drawn until a visit type
  *   is chosen, and then its default hours are, marked as such.
+ *
+ * With a visit type chosen, the blocks book. Move the pointer over one, on a time still to come, and
+ * the visit under it is drawn faintly, at the visit type's own length and start times. Click, and the
+ * booking form opens on that visit type, on the providers open then, and on the time, leaving the
+ * patient to name. Click another and the form takes the new time and providers, keeping its other
+ * answers.
  *
  * Everything here is kept on your own clock, so no time names a zone and nothing is
  * said under the calendar. `From A Different Timezone` is the same clinic scheduled

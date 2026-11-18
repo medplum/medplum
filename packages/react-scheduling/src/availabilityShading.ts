@@ -469,3 +469,87 @@ export function computeAvailabilityShading(input: AvailabilityShadingInput): Ava
   }
   return { mode: chosen ? 'service' : 'calendar', shades };
 }
+
+/** A time a visit could be held at, read off the blocks on show. */
+export interface AvailabilityOffer {
+  readonly start: Date;
+  readonly end: Date;
+  /** The calendars open through the whole of it. */
+  readonly schedules: readonly WithId<Schedule>[];
+}
+
+export interface AvailabilityOfferOptions {
+  /** The visit's length, in minutes. */
+  readonly durationMinutes: number;
+  /** How far apart visits may start, in minutes, counted from midnight. Defaults to the visit's length. */
+  readonly alignmentMinutes?: number;
+  /** Time before this is not offered, as it can no longer be booked. */
+  readonly from?: Date;
+}
+
+/**
+ * Reads the visit an instant on a visit type's blocks points at: the start on the alignment grid nearest
+ * the instant that leaves some calendar open through the whole visit.
+ *
+ * A prototype, and only a suggestion: alignment offsets and buffers are not read, and whether a time may
+ * be booked is `$find`'s to say.
+ * @param shades - The blocks on show, as {@link computeAvailabilityShading} works them out for a visit type.
+ * @param instant - The instant asked about, such as the one under the pointer.
+ * @param options - The visit's length and start grid, and the earliest time to offer.
+ * @returns The visit and the calendars open for it, or undefined where no visit fits around the instant.
+ */
+export function getAvailabilityOffer(
+  shades: readonly AvailabilityShade[],
+  instant: Date,
+  options: AvailabilityOfferOptions
+): AvailabilityOffer | undefined {
+  const at = instant.getTime();
+  const shade = shades.find(
+    (candidate) => candidate.kind === 'service' && candidate.start.getTime() <= at && candidate.end.getTime() > at
+  );
+  if (!shade || options.durationMinutes <= 0) {
+    return undefined;
+  }
+
+  const durationMs = options.durationMinutes * MINUTE_MS;
+  const stepMs = (options.alignmentMinutes || options.durationMinutes) * MINUTE_MS;
+  const midnight = new Date(instant.getFullYear(), instant.getMonth(), instant.getDate()).getTime();
+  const floor = (time: number): number => midnight + Math.floor((time - midnight) / stepMs) * stepMs;
+  const ceil = (time: number): number => midnight + Math.ceil((time - midnight) / stepMs) * stepMs;
+  const from = options.from?.getTime() ?? -Infinity;
+
+  // Each calendar's open stretches through the block, its back-to-back windows joined.
+  const schedules = unique(shade.details.map((detail) => detail.schedule));
+  const open = schedules.flatMap((schedule) =>
+    merge(
+      shade.details
+        .filter((detail) => detail.schedule === schedule)
+        .map((detail) => ({ start: detail.start.getTime(), end: detail.end.getTime() }))
+    ).map((stretch) => ({ schedule, start: stretch.start, end: stretch.end }))
+  );
+
+  let start: number | undefined;
+  for (const stretch of open) {
+    const first = ceil(Math.max(stretch.start, from));
+    const last = floor(stretch.end - durationMs);
+    if (first > last || stretch.start > at || stretch.end <= at) {
+      continue;
+    }
+    const nearest = Math.min(Math.max(floor(at), first), last);
+    if (start === undefined || Math.abs(nearest - at) < Math.abs(start - at)) {
+      start = nearest;
+    }
+  }
+  if (start === undefined) {
+    return undefined;
+  }
+
+  const visit = { start, end: start + durationMs };
+  return {
+    start: new Date(visit.start),
+    end: new Date(visit.end),
+    schedules: unique(
+      open.filter((stretch) => stretch.start <= visit.start && stretch.end >= visit.end).map((s) => s.schedule)
+    ),
+  };
+}

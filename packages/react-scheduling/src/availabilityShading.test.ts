@@ -16,7 +16,11 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import type { AvailabilityShade, AvailabilityShadingCalendar } from './availabilityShading';
-import { AVAILABILITY_SERVICE_FACILITY_URL, computeAvailabilityShading } from './availabilityShading';
+import {
+  AVAILABILITY_SERVICE_FACILITY_URL,
+  computeAvailabilityShading,
+  getAvailabilityOffer,
+} from './availabilityShading';
 
 // Monday 4 May 2020, read in the runner's zone throughout.
 const MONDAY = new Date(2020, 4, 4);
@@ -259,5 +263,43 @@ describe('computeAvailabilityShading', () => {
     expect(offered.shades.map(drawn)).toEqual(['green 9:00-17:00']);
     expect(offered.shades[0].tag).toBe('Any facility · default hours');
     expect(notOffered.shades).toEqual([]);
+  });
+});
+
+describe('getAvailabilityOffer', () => {
+  // Alvarez is open 9-12 less a 10-10:30 appointment, and Bennett 11-4, so 11-12 is open on both.
+  const alvarez = schedule('alvarez', [[newPatient, window('09:00:00', '12:00:00')]]);
+  const bennett = schedule('bennett', [[newPatient, window('11:00:00', '16:00:00')]]);
+  const { shades } = computeAvailabilityShading({
+    calendars: [calendar(alvarez, { appointments: [appointment(newPatient, at(10), at(10, 30))] }), calendar(bennett)],
+    services,
+    filters: { service: newPatient },
+    range,
+    colorOf,
+  });
+  const visit = { durationMinutes: 30, alignmentMinutes: 15 };
+
+  function offered(instant: Date, from?: Date): string | undefined {
+    const offer = getAvailabilityOffer(shades, instant, { ...visit, from });
+    const time = (date: Date): string => `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return offer && `${time(offer.start)}-${time(offer.end)} ${offer.schedules.map((s) => s.id).join('+')}`;
+  }
+
+  test('offers the visit starting on the grid at the instant, on every calendar open through it', () => {
+    expect(offered(at(9, 20))).toBe('9:15-9:45 alvarez');
+    expect(offered(at(11, 20))).toBe('11:15-11:45 alvarez+bennett');
+  });
+
+  test('keeps the visit inside the stretch the instant is in', () => {
+    // 9:45 would run into the appointment, 11:45 past the end of Alvarez's hours.
+    expect(offered(at(9, 50))).toBe('9:30-10:00 alvarez');
+    expect(offered(at(11, 50))).toBe('11:45-12:15 bennett');
+  });
+
+  test('offers nothing off the blocks, in a gap, or before the earliest time', () => {
+    expect(offered(at(8))).toBeUndefined();
+    expect(offered(at(10, 10))).toBeUndefined();
+    expect(offered(at(9, 20), at(11, 40))).toBeUndefined();
+    expect(offered(at(11, 50), at(11, 40))).toBe('11:45-12:15 bennett');
   });
 });
