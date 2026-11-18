@@ -21,17 +21,7 @@ export interface WatchChannel {
   /** The webhook address the channel was registered with; absent on channels from earlier versions. */
   address?: string;
 }
-export interface OutboundWork {
-  start: string;
-  end: string;
-  phase: 'discover' | 'repair';
-  cursor?: string;
-  errors: number;
-  request: string;
-}
-
 export interface SyncState {
-  outboundWork?: OutboundWork;
   inboundRequest?: string;
   inboundCompleted?: string;
   outboundCompleted?: string;
@@ -75,55 +65,6 @@ const BOOLEANS = [
   'statusPublishPending',
 ] as const;
 
-export class InvalidCheckpointError extends Error {
-  constructor() {
-    super('Invalid outbound checkpoint requires repair');
-  }
-}
-
-/**
- * Preserve corrupt checkpoint data privately and restart discovery without trusting its cursor.
- * @param basic - Private connection record.
- * @returns The original record or a repaired copy with the corrupt checkpoint preserved.
- */
-export function repairCheckpoint<T extends Basic>(basic: T): T {
-  try {
-    readState(basic);
-    return basic;
-  } catch (err) {
-    if (!(err instanceof InvalidCheckpointError)) {
-      throw err;
-    }
-  }
-  const checkpoints =
-    basic.extension?.find((e) => e.url === STATE_URL)?.extension?.filter((e) => e.url === 'outboundWork') ?? [];
-  const quarantineUrl = `${GOOGLE_CALENDAR_NAMESPACE}/invalid-outbound-checkpoint`;
-  const repaired = {
-    ...basic,
-    extension: [
-      ...(basic.extension ?? [])
-        .filter((e) => e.url !== quarantineUrl)
-        .map((e) =>
-          e.url === STATE_URL
-            ? {
-                ...e,
-                extension: e.extension?.filter((f) => f.url !== 'outboundWork'),
-              }
-            : e
-        ),
-      {
-        url: quarantineUrl,
-        extension: checkpoints[0]?.extension ?? [],
-      },
-    ],
-  };
-  return withState(repaired, {
-    ...readState(repaired),
-    outboundRequest: randomUUID(),
-    outboundError: 'checkpoint-repair-required',
-  }) as T;
-}
-
 export function readState(basic: Basic): SyncState {
   const fields = basic.extension?.find((e) => e.url === STATE_URL)?.extension ?? [];
   const state: SyncState = { channels: [] };
@@ -141,24 +82,6 @@ export function readState(basic: Basic): SyncState {
   for (const field of fields) {
     const text = (url: string): string => field.extension?.find((e) => e.url === url)?.valueString ?? '';
     const instant = (url: string): string => field.extension?.find((e) => e.url === url)?.valueInstant ?? '';
-    if (field.url === 'outboundWork') {
-      const phase = field.extension?.find((e) => e.url === 'phase')?.valueCode;
-      if (
-        !['discover', 'repair'].includes(phase ?? '') ||
-        !Number.isFinite(Date.parse(instant('start'))) ||
-        !(Date.parse(instant('end')) > Date.parse(instant('start')))
-      ) {
-        throw new InvalidCheckpointError();
-      }
-      state.outboundWork = {
-        start: instant('start'),
-        end: instant('end'),
-        phase: field.extension?.find((e) => e.url === 'phase')?.valueCode as 'discover' | 'repair',
-        cursor: text('cursor') || undefined,
-        errors: field.extension?.find((e) => e.url === 'errors')?.valueUnsignedInt ?? 0,
-        request: text('request'),
-      };
-    }
     if (field.url === 'channel') {
       state.channels.push({
         id: text('id'),
@@ -192,20 +115,6 @@ export function withState(basic: Basic, state: SyncState): Basic {
   }
   if (state.projectDetailLevel) {
     fields.push({ url: 'projectDetailLevel', valueCode: state.projectDetailLevel });
-  }
-  if (state.outboundWork) {
-    const work = state.outboundWork;
-    fields.push({
-      url: 'outboundWork',
-      extension: [
-        { url: 'start', valueInstant: work.start },
-        { url: 'end', valueInstant: work.end },
-        { url: 'phase', valueCode: work.phase },
-        { url: 'errors', valueUnsignedInt: work.errors },
-        { url: 'request', valueString: work.request },
-        ...(work.cursor ? [{ url: 'cursor', valueString: work.cursor }] : []),
-      ],
-    });
   }
   for (const channel of state.channels) {
     fields.push({
@@ -246,7 +155,7 @@ export async function mutateConnectionState(
   change: (basic: WithId<Basic>) => Basic
 ): Promise<WithId<Basic>> {
   for (let attempt = 0; ; attempt++) {
-    const basic = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
+    const basic = await medplum.readResource('Basic', id, { cache: 'no-cache' });
     await assertCurrentProject(medplum, basic);
     const updated = change(basic);
     try {

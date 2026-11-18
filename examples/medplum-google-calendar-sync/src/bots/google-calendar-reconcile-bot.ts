@@ -9,7 +9,7 @@ import { BOT_IDENTIFIER_SYSTEM, BOT_IDENTIFIER_VALUE, INSTALL_SYSTEM } from '../
 import { LEASE_URL } from '../common/lease';
 import { assertCurrentProject, projectQuery } from '../common/project';
 import { defaultSyncRange, syncRange } from '../common/range-sync';
-import { readState, repairCheckpoint, requestSync } from '../common/state';
+import { readState, requestSync } from '../common/state';
 import { getProjectId, SyncSession } from '../common/sync';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
@@ -23,8 +23,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const counts = await syncRange(
       new SyncSession(medplum, event.secrets, getProjectId(connection.basic)),
       connection,
-      defaultSyncRange(new Date()),
-      true
+      defaultSyncRange(new Date())
     );
     if (counts.errors || counts.unmappable) {
       throw new Error('Outbound calendar repair incomplete; retry delivery');
@@ -57,7 +56,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           if (expires && Date.parse(expires) > Date.now()) {
             continue;
           }
-          const state = readState(repairCheckpoint(basic));
+          const state = readState(basic);
           const directions: ('inbound' | 'outbound')[] = [];
           if (
             state.statusPublishPending ||
@@ -114,8 +113,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const ids = page
       .filter(
         (b) =>
-          ['active', 'disconnecting'].includes(readConnection(b)?.status ?? '') ||
-          readState(repairCheckpoint(b)).statusPublishPending
+          ['active', 'disconnecting'].includes(readConnection(b)?.status ?? '') || readState(b).statusPublishPending
       )
       .map((b) => b.id);
     if (ids.length) {

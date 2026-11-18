@@ -41,26 +41,23 @@ export function defaultSyncRange(now: Date): SyncRange {
  * @param session - The sync session for this project.
  * @param connection - The practitioner's active connection.
  * @param range - The date range.
- * @param resume - Resume the durable range and cursors for a worker delivery.
  * @returns How many candidates were found, and a count per outcome.
  */
 export async function syncRange(
   session: SyncSession,
   connection: CalendarConnection,
-  range: SyncRange,
-  resume = false
+  range: SyncRange
 ): Promise<Record<string, number>> {
   return session.withConnection(connection, async (current) => {
     if (current.status !== 'active') {
       throw new Error('Calendar connection is not active');
     }
     try {
-      const work = await session.beginWork(range, resume);
-      const counts = await syncRangeLocked(session, current, { start: new Date(work.start), end: new Date(work.end) });
+      const counts = await syncRangeLocked(session, current, range);
       if (counts.pending) {
+        await session.recordOutbound(false, 'outbound-incomplete');
         return counts;
       }
-      counts.errors = await session.finishWork();
       await session.recordOutbound(
         true,
         counts.errors || counts.unmappable || counts['reauth-required'] ? 'outbound-incomplete' : undefined
@@ -81,50 +78,31 @@ async function syncRangeLocked(
   const counts: Record<string, number> = { candidates: 0, errors: 0 };
   const processed = new Map<string, string>();
   const practitionerRef = connection.practitionerRef;
-  const work = await session.workState();
-  if (work?.phase === 'discover') {
-    const ref = (resource: Appointment | Slot): string => `${resource.resourceType}/${resource.id}`;
-    const candidates = (await findCandidates(session, practitionerRef, range)).sort((a, b) =>
-      ref(a).localeCompare(ref(b))
-    );
-    for (const candidate of candidates) {
-      if (work.cursor && ref(candidate).localeCompare(work.cursor) <= 0) {
-        continue;
-      }
-      if (await session.yieldWork()) {
-        return { ...counts, pending: 1 };
-      }
-      counts.candidates++;
-      let failed = false;
-      try {
-        const source = await currentSource(session, candidate);
-        if (source && (await session.isMirroredFor(source, practitionerRef))) {
-          const outcome = await session.syncForConnection(source, connection);
-          counts[outcome] = (counts[outcome] ?? 0) + 1;
-          failed = outcome === 'unmappable' || outcome === 'reauth-required';
-          if (!failed && source.resource.meta?.versionId) {
-            processed.set(ref(source.resource), source.resource.meta.versionId);
-          }
-        }
-      } catch (err) {
-        counts.errors++;
-        failed = true;
-        if (err instanceof GoogleApiError && err.retryAt) {
-          throw err;
-        }
-        console.warn(`${practitionerRef}: ${ref(candidate)}: ${normalizeErrorString(err)}`);
-      }
-      await session.checkpoint('discover', ref(candidate), failed);
-      if (counts['reauth-required']) {
-        break;
-      }
+  for (const candidate of await findCandidates(session, practitionerRef, range)) {
+    if (session.outOfTime()) {
+      return { ...counts, pending: 1 };
     }
-    if (!counts['reauth-required']) {
-      await session.checkpoint('repair');
+    const ref = `${candidate.resourceType}/${candidate.id}`;
+    counts.candidates++;
+    try {
+      const source = await currentSource(session, candidate);
+      if (source && (await session.isMirroredFor(source, practitionerRef))) {
+        const outcome = await session.syncForConnection(source, connection);
+        counts[outcome] = (counts[outcome] ?? 0) + 1;
+        if (outcome === 'reauth-required') {
+          return counts;
+        }
+        if (outcome !== 'unmappable' && source.resource.meta?.versionId) {
+          processed.set(ref, source.resource.meta.versionId);
+        }
+      }
+    } catch (err) {
+      counts.errors++;
+      if (err instanceof GoogleApiError && err.retryAt) {
+        throw err;
+      }
+      console.warn(`${practitionerRef}: ${ref}: ${normalizeErrorString(err)}`);
     }
-  }
-  if (counts['reauth-required']) {
-    return counts;
   }
   const repairs = await session.reconcileExisting(connection, processed);
   for (const [key, count] of Object.entries(repairs)) {

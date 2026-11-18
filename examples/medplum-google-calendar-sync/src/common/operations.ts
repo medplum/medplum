@@ -91,7 +91,7 @@ export function connectionStatusParameters(connection: CalendarConnection | unde
       { name: 'privacyCleanupPending', valueBoolean: state.privacyPending === true },
       {
         name: 'outboundPending',
-        valueBoolean: Boolean(state.outboundWork) || state.outboundRequest !== state.outboundCompleted,
+        valueBoolean: state.outboundRequest !== state.outboundCompleted,
       },
       {
         name: 'inboundPending',

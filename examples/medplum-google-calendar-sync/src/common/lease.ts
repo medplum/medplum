@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { GOOGLE_CALENDAR_NAMESPACE } from './constants';
 import { assertCurrentProject } from './project';
 import { publishStatus } from './public-status';
-import { readState, repairCheckpoint, withState } from './state';
+import { readState, withState } from './state';
 import { ifMatch, isVersionConflict } from './versioning';
 
 export const LEASE_URL = `${GOOGLE_CALENDAR_NAMESPACE}/worker-lease`;
@@ -73,7 +73,7 @@ export async function withConnectionLease<T>(
   work: (lease: ConnectionLease) => Promise<T>,
   now: () => number = Date.now
 ): Promise<T> {
-  const basic = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
+  const basic = await medplum.readResource('Basic', id, { cache: 'no-cache' });
   await assertCurrentProject(medplum, basic);
   const previous = basic.extension?.find((e) => e.url === LEASE_URL);
   const expires = previous?.extension?.find((e) => e.url === 'expires')?.valueInstant;
@@ -118,7 +118,7 @@ export async function withConnectionLease<T>(
   } finally {
     const release = async (): Promise<void> => {
       for (let attempt = 0; attempt < 5; attempt++) {
-        const current = repairCheckpoint(await medplum.readResource('Basic', id, { cache: 'no-cache' }));
+        const current = await medplum.readResource('Basic', id, { cache: 'no-cache' });
         const owner = current.extension
           ?.find((e) => e.url === LEASE_URL)
           ?.extension?.find((e) => e.url === 'owner')?.valueString;

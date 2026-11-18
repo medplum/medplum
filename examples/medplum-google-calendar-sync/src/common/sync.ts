@@ -18,7 +18,6 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import { ceilingFromAllowEventDetails, readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
@@ -42,8 +41,6 @@ import {
 import type { OwnershipStore } from './ownership';
 import { ownershipStore } from './ownership';
 import { assertCurrentProject, projectQuery } from './project';
-import type { SyncRange } from './range-sync';
-import type { OutboundWork } from './state';
 import { readState, withState } from './state';
 
 /*
@@ -184,69 +181,12 @@ export class SyncSession {
     });
   }
 
-  async beginWork(range: SyncRange, resume: boolean): Promise<OutboundWork> {
-    const saved = await this.requireLease().mutate((basic) => {
-      const state = readState(basic);
-      if (!resume || !state.outboundWork || state.outboundWork.request !== state.outboundRequest) {
-        state.outboundWork = {
-          start: range.start.toISOString(),
-          end: range.end.toISOString(),
-          phase: 'discover',
-          errors: 0,
-          request: state.outboundRequest ?? '',
-        };
-      }
-      return withState(basic, state);
-    });
-    return readState(saved).outboundWork as OutboundWork;
-  }
-
-  async workState(): Promise<OutboundWork | undefined> {
-    return readState(await this.requireLease().read()).outboundWork;
-  }
-
-  async checkpoint(phase: 'discover' | 'repair', cursor?: string, failed = false): Promise<void> {
-    await this.requireLease().mutate((basic) => {
-      const state = readState(basic);
-      if (state.outboundWork) {
-        state.outboundWork = {
-          ...state.outboundWork,
-          phase,
-          cursor,
-          errors: state.outboundWork.errors + (failed ? 1 : 0),
-        };
-      }
-      return withState(basic, state);
-    });
-  }
-
-  async yieldWork(): Promise<boolean> {
-    if (Date.now() < this.requireLease().deadline - 60_000) {
-      return false;
-    }
-    await this.requireLease().mutate((basic) => {
-      const state = readState(basic);
-      if (state.outboundWork && state.outboundWork.request !== state.outboundRequest) {
-        state.outboundWork = undefined;
-      }
-      state.outboundRequest = randomUUID();
-      if (state.outboundWork) {
-        state.outboundWork.request = state.outboundRequest;
-      }
-      return withState(basic, state);
-    });
-    return true;
-  }
-
-  async finishWork(): Promise<number> {
-    let errors = 0;
-    await this.requireLease().mutate((basic) => {
-      const state = readState(basic);
-      errors = state.outboundWork?.errors ?? 0;
-      state.outboundWork = undefined;
-      return withState(basic, state);
-    });
-    return errors;
+  /**
+   * Long passes stop a minute before the lease deadline; the minute Cron starts the pass again.
+   * @returns True when the pass must stop.
+   */
+  outOfTime(): boolean {
+    return Date.now() >= this.requireLease().deadline - 60_000;
   }
 
   async recordOutbound(complete: boolean, error?: string): Promise<void> {
@@ -274,8 +214,7 @@ export class SyncSession {
   }
 
   /**
-   * Mirrors one source to each practitioner it names, and removes it from practitioners the
-   * previous version named who are no longer on it. One practitioner's failure never blocks
+   * Mirrors one source to each practitioner it names. One practitioner's failure never blocks
    * another's; failures come back as `error` results.
    * @param source - The Appointment or Slot.
    * @returns One result per practitioner considered.
@@ -290,13 +229,8 @@ export class SyncSession {
       return [];
     }
 
+    // A practitioner taken off the source keeps the event until the hourly repair removes it.
     const recipients = await this.resolveRecipients(source.resource);
-    const named = new Set(recipients.map((r) => r.practitioner));
-    for (const practitioner of await this.previousRecipients(source)) {
-      if (!named.has(practitioner)) {
-        recipients.push({ practitioner, declined: true });
-      }
-    }
 
     const results: SyncResult[] = [];
     for (const recipient of recipients) {
@@ -362,16 +296,10 @@ export class SyncSession {
       ownershipStore(this.requireLease(), connection)
     );
     const events = await calendar.listEvents([`${EVENT_PROPERTY.project}=${this.projectId}`]);
-    const work = await this.workState();
-    for (const event of events.sort((a, b) => a.id.localeCompare(b.id))) {
-      if (work?.cursor && event.id.localeCompare(work.cursor) <= 0) {
-        continue;
-      }
-      if (await this.yieldWork()) {
+    for (const event of events) {
+      if (this.outOfTime()) {
         return { ...counts, pending: 1 };
       }
-      let failed = false;
-      let deferred = false;
       try {
         const owner = event.extendedProperties?.private;
         if (owner?.[EVENT_PROPERTY.connection] && owner[EVENT_PROPERTY.connection] !== connection.basic.id) {
@@ -431,17 +359,10 @@ export class SyncSession {
         counts.repaired++;
       } catch (err) {
         counts.errors++;
-        failed = true;
         if (err instanceof GoogleApiError && err.retryAt) {
-          // Not checkpointed: the deferred event is retried when the work resumes.
-          deferred = true;
           throw err;
         }
         console.warn(`Owned mirror repair failed: ${normalizeErrorString(err)}`);
-      } finally {
-        if (!deferred) {
-          await this.checkpoint('repair', event.id, failed);
-        }
       }
     }
     return counts;
@@ -561,28 +482,6 @@ export class SyncSession {
       }
     }
     return [...merged].map(([practitioner, declined]) => ({ practitioner, declined }));
-  }
-
-  /**
-   * Practitioners the previous version named. A practitioner taken off an Appointment, or a
-   * Slot moved to another Schedule, isn't visible in the current version; history is.
-   * @param source - The current version.
-   * @returns Practitioner references from the previous version, or none when unavailable.
-   */
-  private async previousRecipients(source: SyncSource): Promise<string[]> {
-    if (source.deleted || !source.resource.id) {
-      return [];
-    }
-    try {
-      const history = await this.medplum.readHistory(source.resource.resourceType, source.resource.id, { count: 2 });
-      const previous = history.entry?.[1]?.resource;
-      return previous ? (await this.resolveRecipients(previous)).map((r) => r.practitioner) : [];
-    } catch (err) {
-      console.warn(
-        `History unavailable for ${source.resource.resourceType}/${source.resource.id}: ${normalizeErrorString(err)}`
-      );
-      return [];
-    }
   }
 
   // `Practitioner/<id>` for a Practitioner or PractitionerRole reference; undefined for anything else.

@@ -288,29 +288,6 @@ describe('SyncSession', () => {
     ]);
   });
 
-  test('a practitioner taken off an appointment has their event removed', async () => {
-    await connect(rivera, 'rt-rivera');
-    await connect(chen, 'rt-chen');
-    const s = session();
-    const original = await appointment();
-    await s.syncSource({ resource: original, deleted: false });
-
-    const reassigned = await medplum.updateResource({
-      ...original,
-      participant: [
-        { actor: { reference: `Practitioner/${chen.id}` }, status: 'accepted' },
-        { actor: { reference: `Patient/${jane.id}` }, status: 'accepted' },
-      ],
-    });
-    const results = await s.syncSource({ resource: reassigned, deleted: false });
-
-    expect(results).toEqual([
-      { practitionerRef: `Practitioner/${chen.id}`, outcome: 'inserted' },
-      { practitionerRef: `Practitioner/${rivera.id}`, outcome: 'deleted' },
-    ]);
-    expect(calendars.get('access-for-rt-rivera')?.deletes).toEqual([original.id?.replaceAll('-', '')]);
-  });
-
   test('the referenced HealthcareService names the visit, not the fallback text', async () => {
     await connect(rivera, 'rt-rivera', 'full');
     const service = await medplum.createResource<HealthcareService>({

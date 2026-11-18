@@ -177,7 +177,7 @@ describe('range-sync', () => {
     expect(state.lastOutbound).toBeUndefined();
   });
 
-  test('a rate-limited repair is retried when the work resumes rather than skipped', async () => {
+  test('a rate-limited repair backs off and leaves the request open', async () => {
     const outside = await booked({ start: '2027-06-01T16:00:00Z', end: '2027-06-01T16:30:00Z' });
     const deps = fakeDeps(upserts);
     const original = deps.createCalendarClient;
@@ -207,13 +207,12 @@ describe('range-sync', () => {
         throw new GoogleApiError(429, 'rateLimitExceeded', 'slow down', Date.now() + 60_000);
       },
     });
-    await expect(
-      syncRange(new SyncSession(medplum, secrets, PROJECT_ID, deps), connection, RANGE, true)
-    ).rejects.toThrow('slow down');
+    await expect(syncRange(new SyncSession(medplum, secrets, PROJECT_ID, deps), connection, RANGE)).rejects.toThrow(
+      'slow down'
+    );
     const state = readState(await medplum.readResource('Basic', connection.basic.id));
     expect(state.outboundRetryAt).toBeDefined();
-    expect(state.outboundWork).toMatchObject({ phase: 'repair' });
-    expect(state.outboundWork?.cursor).toBeUndefined();
+    expect(state.outboundCompleted).not.toBe(state.outboundRequest);
   });
 
   test.each(['unchanged', 'rescheduled', 'cancelled', 'google-edit'] as const)(
@@ -245,8 +244,11 @@ describe('range-sync', () => {
     }
   );
 
-  test('repairs cancellations missed by Subscriptions, verifies sources outside the discovery window', async () => {
+  test('removes mirrors of cancelled and reassigned sources, and verifies sources outside the discovery window', async () => {
     const cancelled = await booked({ status: 'cancelled' });
+    const reassigned = await booked({
+      participant: [{ actor: { reference: 'Practitioner/someone-else' }, status: 'accepted' }],
+    });
     const outside = await booked({ start: '2027-06-01T16:00:00Z', end: '2027-06-01T16:30:00Z' });
     const mirror = (source: WithId<Appointment>): GoogleCalendarEvent => ({
       id: toGoogleEventId(source.id) as string,
@@ -271,10 +273,11 @@ describe('range-sync', () => {
     const original = deps.createCalendarClient;
     deps.createCalendarClient = (token) => ({
       ...original(token),
-      listEvents: async () => [mirror(cancelled), mirror(outside)],
+      listEvents: async () => [mirror(cancelled), mirror(reassigned), mirror(outside)],
       deleteOwnedEvent: remove,
     });
-    expect(await run(deps)).toMatchObject({ candidates: 0, repaired: 1, deleted: 1, errors: 0 });
+    expect(await run(deps)).toMatchObject({ candidates: 0, repaired: 1, deleted: 2, errors: 0 });
+    expect(remove).toHaveBeenCalledWith(toGoogleEventId(reassigned.id), expect.anything());
     expect(remove).toHaveBeenCalledWith(
       toGoogleEventId(cancelled.id),
       expect.objectContaining({ medplumSource: `Appointment/${cancelled.id}` })
@@ -340,37 +343,8 @@ describe('range-sync', () => {
     const counts = await run(deps);
 
     // Stopped after the first candidate: the second was never attempted.
-    expect(counts).toEqual({ candidates: 1, errors: 1, 'reauth-required': 1 });
+    expect(counts).toEqual({ candidates: 1, errors: 0, 'reauth-required': 1 });
     expect((await findConnection(medplum, practitionerRef))?.status).toBe('reauth-required');
-  });
-  test('resumes an interrupted discovery from its durable cursor', async () => {
-    searched.appointments = [await booked(), await booked()].sort((a, b) => a.id.localeCompare(b.id));
-    let time = Date.now();
-    vi.spyOn(Date, 'now').mockImplementation(() => time);
-    const deps = fakeDeps(upserts);
-    const client = deps.createCalendarClient('token');
-    const upsert = client.upsertEvent;
-    client.upsertEvent = async (event) => {
-      const result = await upsert(event);
-      time += 7 * 60_000;
-      return result;
-    };
-    deps.createCalendarClient = () => client;
-    const first = await syncRange(new SyncSession(medplum, secrets, PROJECT_ID, deps), connection, RANGE, true);
-    expect(first.pending).toBe(1);
-    const stored = await medplum.readResource('Basic', connection.basic.id);
-    expect(readState(stored).outboundWork?.cursor).toBe(`Appointment/${searched.appointments[0].id}`);
-    expect(readState(stored).privacyPending).toBe(true);
-    const result = await syncRange(
-      new SyncSession(medplum, secrets, PROJECT_ID, fakeDeps(upserts)),
-      connection,
-      RANGE,
-      true
-    );
-    expect(result.errors).toBe(0);
-    expect(upserts.map((e) => e.id)).toEqual(searched.appointments.map((a) => toGoogleEventId(a.id)));
-    expect(readState(await medplum.readResource('Basic', connection.basic.id)).outboundWork).toBeUndefined();
-    expect(readState(await medplum.readResource('Basic', connection.basic.id)).privacyPending).toBe(false);
   });
 
   test('a new privacy request during a run remains pending for the next run', async () => {

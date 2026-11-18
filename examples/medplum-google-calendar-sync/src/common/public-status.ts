@@ -44,7 +44,7 @@ export async function publishStatus(medplum: MedplumClient, basic: WithId<Basic>
       privacyPending: state.privacyPending,
       projectDetailLevel: state.projectDetailLevel,
       inboundRequest: state.inboundRequest !== state.inboundCompleted ? 'pending' : undefined,
-      outboundRequest: state.outboundRequest !== state.outboundCompleted || state.outboundWork ? 'pending' : undefined,
+      outboundRequest: state.outboundRequest !== state.outboundCompleted ? 'pending' : undefined,
     }
   );
   const saved = await medplum.createResourceIfNoneExist(
