@@ -49,10 +49,12 @@ async function credential(medplum: MedplumClient, id: string): Promise<WithId<Ba
  * Identifies the stored token without reading it, so the connect Bot can tell whether its save landed.
  * @param medplum - The client.
  * @param connectionId - The connection the credential belongs to.
- * @returns A value that changes whenever the token does; undefined when nothing is stored.
+ * @returns A value that changes whenever the token does; undefined when no token is stored.
  */
 export async function credentialRevision(medplum: MedplumClient, connectionId: string): Promise<string | undefined> {
-  return (await credential(medplum, connectionId))?.meta?.versionId;
+  const saved = await credential(medplum, connectionId);
+  // An empty placeholder from an interrupted first save holds no token.
+  return saved && getExtensionValue(saved, TOKEN_URL) ? saved.meta?.versionId : undefined;
 }
 
 export async function writeCredential(lease: ConnectionLease, token: string, accountSub: string): Promise<void> {

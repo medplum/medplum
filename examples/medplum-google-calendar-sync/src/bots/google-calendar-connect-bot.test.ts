@@ -187,15 +187,12 @@ describe('google-calendar-connect-bot', () => {
   });
 
   test('revokes a failed first-connect grant when the placeholder exists but the credential is absent', async () => {
-    const create = vi.mocked(medplum.createResourceIfNoneExist).getMockImplementation()?.bind(medplum);
-    if (!create) {
-      throw new Error('Missing project-stamping adapter');
-    }
-    vi.spyOn(medplum, 'createResourceIfNoneExist').mockImplementation(async (resource, query, options) => {
+    const update = medplum.updateResource.bind(medplum);
+    vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource, options) => {
       if (resource.resourceType === 'Basic' && resource.code.coding?.some((c) => c.code === 'calendar-credential')) {
         throw new Error('credential write failed');
       }
-      return create(resource, query, options);
+      return update(resource, options);
     });
     const fetch = mockGoogle({
       access_token: 'at',
