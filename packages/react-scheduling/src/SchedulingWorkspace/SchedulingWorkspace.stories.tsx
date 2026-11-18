@@ -250,7 +250,8 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold,
  * and clicking open time opens the booking pane. With the filters pane open, the click offers to instead.
  *
- * The Visit Type filter is a list of the visit types to include, with an "All visit types" checkbox that
+ * The Visit Type filter narrows the appointments drawn and leaves the calendars listed alone, so that it
+ * takes no availability away. It is a list of the visit types to include, with an "All visit types" checkbox that
  * starts ticked. Untick it with nothing chosen and no appointment is drawn, which leaves the availability
  * shading unobstructed.
  *
