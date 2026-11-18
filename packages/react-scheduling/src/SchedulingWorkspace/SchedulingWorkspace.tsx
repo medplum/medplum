@@ -7,8 +7,10 @@ import {
   Anchor,
   Box,
   Button,
+  CloseButton,
   Divider,
   getThemeColor,
+  Group,
   Popover,
   Stack,
   Tabs,
@@ -1103,6 +1105,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             key={`${bookPrompt.left},${bookPrompt.top}`}
             at={bookPrompt}
             position="right-start"
+            closeLabel="Dismiss the offer to book"
             onClose={() => setBookPrompt(undefined)}
           >
             <Stack gap="xs">
@@ -1119,6 +1122,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             key={`${providerPrompt.left},${providerPrompt.top}`}
             at={providerPrompt}
             position="top"
+            closeLabel="Dismiss the note"
             onClose={() => setProviderPrompt(undefined)}
           >
             <Text size="sm" maw={220}>
@@ -1269,23 +1273,31 @@ interface PointerPosition {
 interface PointerPromptProps {
   readonly at: PointerPosition;
   readonly position: 'right-start' | 'top';
+  /** Names the button that closes the note, for assistive technology. */
+  readonly closeLabel: string;
   readonly onClose: () => void;
   readonly children: ReactNode;
 }
 
 /**
- * Prototype. A note drawn beside where the calendar was clicked, closed by a click anywhere else.
+ * Prototype. A note drawn beside where the calendar was clicked, closed by its own button or by a click
+ * anywhere else.
  * @param props - The React props.
  * @returns The note.
  */
 function PointerPrompt(props: PointerPromptProps): JSX.Element {
-  const { at, position, onClose, children } = props;
+  const { at, position, closeLabel, onClose, children } = props;
   return (
     <Popover opened onChange={(opened) => !opened && onClose()} position={position} withArrow shadow="md">
       <Popover.Target>
         <Box className={classes.promptAnchor} left={at.left} top={at.top} />
       </Popover.Target>
-      <Popover.Dropdown>{children}</Popover.Dropdown>
+      <Popover.Dropdown>
+        <Group align="flex-start" gap="xs" wrap="nowrap">
+          {children}
+          <CloseButton size="sm" aria-label={closeLabel} onClick={onClose} />
+        </Group>
+      </Popover.Dropdown>
     </Popover>
   );
 }
