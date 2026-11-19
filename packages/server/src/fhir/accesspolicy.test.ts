@@ -31,6 +31,7 @@ import type {
   ProjectMembership,
   Quantity,
   Questionnaire,
+  RelatedPerson,
   ServiceRequest,
   SmartAppLaunch,
   StructureDefinition,
@@ -50,6 +51,7 @@ import { tryLogin } from '../oauth/utils';
 import type { TestProjectOptions } from '../test.setup';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
+import { DEFAULT_ACCESS_POLICIES } from './default-access-policies';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import type { RepositoryContext } from './repository/repository-context';
@@ -2044,6 +2046,50 @@ describe('AccessPolicy', () => {
       await expect(repo2.readResource<Patient>('Patient', p1.id)).resolves.toBeDefined();
       await expect(repo2.readResource<Patient>('Patient', p2.id)).resolves.toBeDefined();
       await expect(repo2.readResource<Patient>('Patient', p3.id)).rejects.toThrow('Not found');
+    }));
+
+  test('Default RelatedPerson policy limits RelatedPerson writes to own profile', () =>
+    withTestContext(async () => {
+      const adminRepo = getRepository({
+        projects: [testProject],
+        strictMode: true,
+        extendedMode: true,
+      });
+      const patient = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const otherPatient = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const relatedPerson: RelatedPerson = { resourceType: 'RelatedPerson', patient: createReference(patient) };
+      const self = await adminRepo.createResource(relatedPerson);
+      const other = await adminRepo.createResource(relatedPerson);
+      const accessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        ...DEFAULT_ACCESS_POLICIES.RelatedPerson(),
+      });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: createReference(testProject),
+        profile: createReference(self),
+        access: [
+          {
+            policy: createReference(accessPolicy),
+            parameter: [{ name: 'patient', valueReference: createReference(patient) }],
+          },
+        ],
+      });
+      const repo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+        userConfig: {} as UserConfiguration,
+      });
+
+      const updated = await repo.updateResource({ ...self, active: false });
+      expect(updated.active).toBe(false);
+      await expect(repo.updateResource({ ...updated, patient: createReference(otherPatient) })).rejects.toThrow(
+        'Forbidden'
+      );
+      await expect(repo.deleteResource('RelatedPerson', self.id)).rejects.toThrow('Forbidden');
+      await expect(repo.updateResource({ ...other, active: false })).rejects.toThrow('Forbidden');
     }));
 
   test('String parameters', () =>
