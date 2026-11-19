@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Divider, Flex, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
+import { Divider, Flex, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type { Coding, Condition, Patient } from '@medplum/fhirtypes';
-import { Modal, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useEffect, useState } from 'react';
@@ -39,25 +39,23 @@ function latestPerCode(conditions: WithId<Condition>[]): WithId<Condition>[] {
 }
 
 /**
- * Props for ExistingConditionModal.
- * - opened / onClose: modal visibility.
+ * Props for ExistingConditionPicker.
  * - patient: the patient whose current diagnoses are listed.
  * - excludeCodes: diagnosis codes already on the encounter, left out of the list.
- * - onSubmit: called with the chosen Condition.
+ * - value: the chosen Condition, if any.
+ * - onChange: called with the chosen Condition, or undefined when a new search clears the choice.
  */
-export interface ExistingConditionModalProps {
-  readonly opened: boolean;
-  readonly onClose: () => void;
+export interface ExistingConditionPickerProps {
   readonly patient: WithId<Patient>;
   readonly excludeCodes: string[];
-  readonly onSubmit: (condition: WithId<Condition>) => void;
+  readonly value: WithId<Condition> | undefined;
+  readonly onChange: (condition: WithId<Condition> | undefined) => void;
 }
 
-export default function ExistingConditionModal(props: ExistingConditionModalProps): JSX.Element {
-  const { opened, onClose, patient, excludeCodes, onSubmit } = props;
+export function ExistingConditionPicker(props: ExistingConditionPickerProps): JSX.Element {
+  const { patient, excludeCodes, value, onChange } = props;
   const medplum = useMedplum();
   const [conditions, setConditions] = useState<WithId<Condition>[] | undefined>();
-  const [selectedId, setSelectedId] = useState<string | undefined>();
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(query.trim(), 300);
   const [loadedKey, setLoadedKey] = useState<string | undefined>();
@@ -66,9 +64,6 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
   const searching = query.trim() !== debouncedQuery || loadedKey !== requestKey;
 
   useEffect(() => {
-    if (!opened) {
-      return undefined;
-    }
     const params: Record<string, string> = {
       subject: getReferenceString(patient),
       code: ICD10_CM_SYSTEM + '|',
@@ -102,42 +97,10 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
     return () => {
       active = false;
     };
-  }, [opened, medplum, patient, excludeCodesKey, debouncedQuery, requestKey]);
-
-  const selected = conditions?.find((c) => c.id === selectedId);
-
-  const reset = (): void => {
-    setSelectedId(undefined);
-    setQuery('');
-    setConditions(undefined);
-    setLoadedKey(undefined);
-  };
-
-  const close = (): void => {
-    reset();
-    onClose();
-  };
+  }, [medplum, patient, excludeCodesKey, debouncedQuery, requestKey]);
 
   return (
-    <Modal
-      opened={opened}
-      onClose={close}
-      title="Add Existing Diagnosis"
-      bodyHeight="26rem"
-      actions={
-        <Button
-          disabled={!selected}
-          onClick={() => {
-            if (selected) {
-              reset();
-              onSubmit(selected);
-            }
-          }}
-        >
-          Add
-        </Button>
-      }
-    >
+    <>
       <TextInput
         mb="sm"
         aria-label="Search diagnoses"
@@ -145,7 +108,10 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
         leftSection={<IconSearch size={16} />}
         rightSection={searching ? <Loader size="xs" aria-label="Searching" /> : undefined}
         value={query}
-        onChange={(e) => setQuery(e.currentTarget.value)}
+        onChange={(e) => {
+          setQuery(e.currentTarget.value);
+          onChange(undefined);
+        }}
         data-autofocus
       />
       {conditions?.length === 0 && (
@@ -154,7 +120,10 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
         </Text>
       )}
       {conditions && conditions.length > 0 && (
-        <Radio.Group value={selectedId ?? null} onChange={setSelectedId}>
+        <Radio.Group
+          value={value?.id ?? null}
+          onChange={(id) => onChange(conditions.find((condition) => condition.id === id))}
+        >
           <Stack gap={0}>
             {conditions.map((condition, idx) => {
               const coding = getIcd10Coding(condition);
@@ -185,6 +154,6 @@ export default function ExistingConditionModal(props: ExistingConditionModalProp
           </Stack>
         </Radio.Group>
       )}
-    </Modal>
+    </>
   );
 }

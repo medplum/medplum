@@ -76,10 +76,11 @@ function mockValueSetExpand(medplum: MockClient): void {
 }
 
 async function submitCholeraDiagnosis(user: UserEvent): Promise<void> {
-  await user.click(screen.getByRole('button', { name: 'Add New' }));
+  await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+  await user.click(await screen.findByRole('tab', { name: 'New Diagnosis' }));
   await user.type(await screen.findByRole('searchbox', { name: 'ICD-10 Code' }), 'cholera');
   await user.click(await screen.findByText('Cholera, unspecified'));
-  await user.click(screen.getByRole('button', { name: 'Save' }));
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' }));
 }
 
 /**
@@ -128,7 +129,7 @@ describe('ConditionList', () => {
   test('renders diagnosis section', () => {
     setup();
     expect(screen.getByText(/^Diagnoses \(/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add New' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Diagnosis' })).toBeInTheDocument();
   });
 
   test('renders condition list', () => {
@@ -147,11 +148,11 @@ describe('ConditionList', () => {
     const user = userEvent.setup();
     setup();
 
-    await user.click(screen.getByRole('button', { name: 'Add New' }));
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Add New Diagnosis', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
+      expect(screen.getByText('Add Diagnosis', { selector: '.mantine-Modal-title' })).toBeInTheDocument();
     });
 
     await user.keyboard('{Escape}');
@@ -162,13 +163,11 @@ describe('ConditionList', () => {
     const user = userEvent.setup();
     setup();
 
-    await user.click(screen.getByRole('button', { name: 'Add New' }));
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+    await user.click(await screen.findByRole('tab', { name: 'New Diagnosis' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('ICD-10 Code')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-    });
+    expect(screen.getByText('ICD-10 Code')).toBeInTheDocument();
+    expect(screen.getByText('Status')).toBeInTheDocument();
   });
 
   test('removes condition', async () => {
@@ -366,7 +365,7 @@ describe('ConditionList', () => {
     expect(onDiagnosisChange).not.toHaveBeenCalled();
   }, 15000);
 
-  test('links an existing patient condition picked from Add Existing', async () => {
+  test('links an existing patient condition picked from the existing tab', async () => {
     const user = userEvent.setup();
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
@@ -380,9 +379,9 @@ describe('ConditionList', () => {
     const createSpy = vi.spyOn(medplum, 'createResource');
     setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
 
-    await user.click(screen.getByRole('button', { name: 'Add Existing' }));
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
     await user.click(await screen.findByRole('radio', { name: 'J45.909 Asthma' }));
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' }));
 
     expect(setConditions).toHaveBeenCalledWith([mockCondition, asthma]);
     expect(onDiagnosisChange).toHaveBeenCalledWith([
