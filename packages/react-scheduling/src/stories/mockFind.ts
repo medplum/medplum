@@ -1,9 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import { RecurrenceTemplateExtensionURI } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import {
+  getHealthcareServiceSchedulingParameters,
+  RecurrenceTemplateExtensionURI,
+  schedulingDurationToMinutes,
+} from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getServiceDurationMinutes } from '../AppointmentFinder/AppointmentServiceSelect.utils';
+import { computeAvailabilityShading, getScheduleAvailabilityWindows } from '../availabilityShading';
 import { buildFindBundle, buildProposedAppointment } from './scheduling';
 
 /** Clinic hours the stub offers times within, as local hours of the day. */
@@ -16,6 +21,12 @@ const DEFAULT_DURATION_MINUTES = 30;
 export interface FindStubOptions {
   /** Offer nothing at all, for the empty state. Defaults to false. */
   readonly empty?: boolean;
+  /**
+   * For a schedule that has availability for the visit type, offer only the times it has open: inside
+   * that availability, and clear of its appointments and blocked time. A schedule with none is offered
+   * through clinic hours, as it is without this. Defaults to false.
+   */
+  readonly respectAvailability?: boolean;
 }
 
 /**
@@ -67,8 +78,12 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
   // every actor, so the stub does the same.
   const actorReferences = schedules.map((schedule) => schedule.actor[0]);
 
+  const open = options.respectAvailability
+    ? await enumerateOpenTimes(medplum, { schedules, service, start, end, durationMinutes })
+    : undefined;
+
   const appointments: Appointment[] = [];
-  for (const slotStart of enumerateSlots(start, end, durationMinutes)) {
+  for (const slotStart of open ?? enumerateSlots(start, end, durationMinutes)) {
     if (appointments.length >= count) {
       break;
     }
@@ -93,6 +108,92 @@ async function findTimes(medplum: MedplumClient, url: URL, options: FindStubOpti
   }
 
   return buildFindBundle(appointments);
+}
+
+interface OpenTimesInput {
+  readonly schedules: readonly WithId<Schedule>[];
+  readonly service: WithId<HealthcareService>;
+  readonly start: Date;
+  readonly end: Date;
+  readonly durationMinutes: number;
+}
+
+interface Interval {
+  readonly start: number;
+  readonly end: number;
+}
+
+// The stretches two lists of intervals, each in order and free of overlaps, both cover.
+function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
+  const both: Interval[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length && j < b.length) {
+    const start = Math.max(a[i].start, b[j].start);
+    const end = Math.min(a[i].end, b[j].end);
+    if (start < end) {
+      both.push({ start, end });
+    }
+    if (a[i].end < b[j].end) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  return both;
+}
+
+/**
+ * Lays times on the visit type's alignment grid through the time every schedule with availability for it
+ * has open.
+ *
+ * Open time is worked out as the calendar's shading works it out, so the two agree.
+ * @param medplum - The client holding the appointments and Slots.
+ * @param input - The schedules, visit type and window asked about.
+ * @returns Each time a visit could start at, in order, or undefined when no schedule has availability for
+ * the visit type.
+ */
+async function enumerateOpenTimes(medplum: MedplumClient, input: OpenTimesInput): Promise<Date[] | undefined> {
+  const { schedules, service, start, end, durationMinutes } = input;
+  const withAvailability = schedules.filter((schedule) => getScheduleAvailabilityWindows(schedule, service).length);
+  if (!withAvailability.length) {
+    return undefined;
+  }
+
+  const openBySchedule = await Promise.all(
+    withAvailability.map(async (schedule): Promise<Interval[]> => {
+      const [appointments, slots] = await Promise.all([
+        medplum.searchResources('Appointment', { actor: schedule.actor[0].reference ?? '', _count: '1000' }),
+        medplum.searchResources('Slot', { schedule: `Schedule/${schedule.id}`, _count: '1000' }),
+      ]);
+      const { shades } = computeAvailabilityShading({
+        calendars: [{ schedule, appointments, slots }],
+        services: [],
+        filters: { service },
+        range: { start, end },
+        colorOf: () => 'gray',
+      });
+      return shades.map((shade) => ({ start: shade.start.getTime(), end: shade.end.getTime() }));
+    })
+  );
+
+  const alignment = getHealthcareServiceSchedulingParameters(service, 'alignmentInterval')[0]?.valueDuration;
+  const stepMs = (schedulingDurationToMinutes(alignment) ?? durationMinutes) * 60_000;
+  const durationMs = durationMinutes * 60_000;
+
+  const times: Date[] = [];
+  for (const block of openBySchedule.reduce(intersect)) {
+    const midnight = new Date(block.start);
+    midnight.setHours(0, 0, 0, 0);
+    // The first grid line at or after the block opens, counted from the day's midnight.
+    const offset = Math.ceil((block.start - midnight.getTime()) / stepMs) * stepMs;
+    for (let time = midnight.getTime() + offset; time + durationMs <= block.end; time += stepMs) {
+      if (time >= start.getTime() && time <= end.getTime()) {
+        times.push(new Date(time));
+      }
+    }
+  }
+  return times;
 }
 
 /**

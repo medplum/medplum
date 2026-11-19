@@ -30,7 +30,9 @@ import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBooking
 import { AppointmentBookingForm } from '../AppointmentFinder/AppointmentBookingForm';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
 import { getCandidateDisplay, searchScheduleCandidates } from '../AppointmentFinder/AppointmentFinder.schedules';
+import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
 import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.writes';
+import type { AppointmentProposalFormActions, AppointmentTimePick } from '../AppointmentFinder/AppointmentProposalForm';
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
@@ -57,15 +59,16 @@ import {
   matchesCalendarFilters,
 } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
+import { useAvailabilityOffer } from './useAvailabilityOffer';
+import { useAvailabilityShading } from './useAvailabilityShading';
 import { useBookingPaneGuard } from './useBookingPaneGuard';
+import { useHealthcareServices } from './useHealthcareServices';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
 type PaneTab = 'appointment' | 'block';
 
 const NO_CANDIDATES: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
-
-const NO_SERVICES: ReadonlyMap<string, HealthcareService | undefined> = new Map();
 
 const NO_FILTERS: CalendarFilterValues = {};
 
@@ -143,6 +146,14 @@ export interface SchedulingWorkspaceProps {
    * the workspace to start it over on another site.
    */
   readonly defaultServiceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
+  /**
+   * Draws availability behind the events, in each visit type's color. A prototype, and off by default.
+   * See {@link computeAvailabilityShading} for what is drawn when.
+   *
+   * With a Visit Type chosen, the visit under the pointer is drawn over its block, and a click books it:
+   * the form opens on that visit type, the providers open then, and the time.
+   */
+  readonly showAvailabilityShading?: boolean;
 }
 
 /**
@@ -185,6 +196,10 @@ export interface SchedulingWorkspaceProps {
  *   filters or hidden calendars are why.
  * - Can open on a site the host chooses: `defaultServiceFacility` is where the Service facility filter,
  *   and so the booking form, starts.
+ * - Can draw when providers are available, with `showAvailabilityShading`: with a Visit Type chosen, a
+ *   block in its color wherever a provider on show can take it, and with none chosen and one provider on
+ *   show, that provider's hours for each visit type. Several providers and no Visit Type draw none, and
+ *   a line under the calendar says how to bring the colors back.
  *
  * @param props - Component props
  * @returns A React Node with the coordinated Calendars panel + calendar UI in it
@@ -201,6 +216,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     canBypassSchedulingRules,
     appointmentExtensions,
     defaultServiceFacility,
+    showAvailabilityShading = false,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -225,6 +241,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   // What was selected
   const [bookingSelection, setBookingSelection] = useState<CalendarSelection>();
+  // The visit clicked on the availability shading, which the booking form opens on.
+  const [bookingPick, setBookingPick] = useState<AppointmentTimePick>();
+  const formActionsRef = useRef<AppointmentProposalFormActions>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlot, setSelectedSlot] = useState<WithId<Slot>>();
   // The Slots of a block just written, one per calendar, listed beside whichever is open.
@@ -297,6 +316,21 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     error: resourcesError,
   } = useSchedulingResources(schedules, range, RESOURCE_OPTIONS);
   const services = useAppointmentServices(appointments);
+  const availability = useAvailabilityShading({
+    enabled: showAvailabilityShading,
+    candidates: activeCandidates,
+    appointments,
+    slots,
+    filters,
+    range,
+  });
+  const offer = useAvailabilityOffer({
+    // While blocking time, a click on the calendar sets the time to block.
+    enabled: !(bookingSelection !== undefined && paneTab === 'block'),
+    shades: availability.shades,
+    service: selectedService,
+    candidates: activeCandidates,
+  });
 
   const { sources, serviceTypes, servicesPending, shownSlots, isOnShownCalendar } = useMemo(() => {
     const isSettled = (reference: string): boolean =>
@@ -368,6 +402,24 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           } satisfies MultiCalendarSource,
         ]
       : [];
+    // The visit under the pointer on the shading, until it is the one the form holds.
+    const offered = offer.proposed;
+    const offeredReference = extractServiceTypeReferences(offered?.serviceType)[0]?.reference;
+    const offeredSources =
+      offered?.start && !(offered.start === drawnProposal?.start && offered.end === drawnProposal?.end)
+        ? [
+            {
+              color: offeredReference ? serviceColor(offeredReference) : 'gray',
+              slots: [],
+              appointments: [offered],
+              interactive: false,
+              draft: true,
+              ghost: true,
+              // The time comes first, as a short visit's one line is cut off after a few words.
+              label: `${formatZonedTime(new Date(offered.start))} · Proposed`,
+            } satisfies MultiCalendarSource,
+          ]
+        : [];
     const legend = groups
       .map(({ reference, group, color }): ServiceTypeLegendItem => ({
         id: reference ?? 'none',
@@ -379,23 +431,40 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
       // shows them. The appointments naming no service type go last.
       .sort((a, b) => Number(a.id === 'none') - Number(b.id === 'none') || a.id.localeCompare(b.id));
     return {
-      sources: [...calendarSources, ...serviceSources, ...proposalSources],
+      sources: [...calendarSources, ...serviceSources, ...proposalSources, ...offeredSources],
       serviceTypes: legend,
       servicesPending: groups.length < allGroups.length,
       shownSlots,
       isOnShownCalendar,
     };
-  }, [activeCandidates, slots, appointments, filters, services, medplum, theme, paneTab, proposal]);
+  }, [activeCandidates, slots, appointments, filters, services, medplum, theme, paneTab, proposal, offer.proposed]);
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
-  const startBooking = useCallback((interval: CalendarSelection): void => {
+  const startBooking = useCallback((interval: CalendarSelection, pick?: AppointmentTimePick): void => {
     setSelectedAppointment(undefined);
     setSelectedSlot(undefined);
     setNewBlockSlots(undefined);
     setBookingSelection(interval);
     setBlockHighlight(interval);
+    setBookingPick(pick);
   }, []);
+
+  // A click with a visit drawn under the pointer books that visit, in place of the grid row clicked. A
+  // form already open takes it, keeping its other answers.
+  const { pick: offeredPick, proposed: offeredVisit } = offer;
+  const selectInterval = useCallback(
+    (interval: CalendarSelection): void => {
+      if (!offeredPick || !offeredVisit?.end || interval.allDay) {
+        startBooking(interval);
+        return;
+      }
+      setPaneTab('appointment');
+      startBooking({ start: offeredPick.start, end: new Date(offeredVisit.end) }, offeredPick);
+      formActionsRef.current?.pick(offeredPick);
+    },
+    [offeredPick, offeredVisit, startBooking]
+  );
 
   const startBookingNow = useCallback((): void => {
     const durationMinutes = 30;
@@ -412,6 +481,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
+    setBookingPick(undefined);
     setProposal(undefined);
     setBlockHighlight(undefined);
     setTimeFinderOpen(false);
@@ -633,6 +703,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           ref={calendarRef}
           className={classes.multiCalendar}
           sources={sources}
+          availabilityShading={availability.shades}
+          onHoverAvailability={offer.onHover}
           onRangeChange={setRange}
           toolbarStart={
             <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
@@ -659,7 +731,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Tooltip>
           }
           loading={resourcesLoading || servicesPending}
-          onSelectInterval={startBooking}
+          onSelectInterval={selectInterval}
           onSelectAppointment={selectAppointment}
           onSelectSlot={selectSlot}
           selection={blocking ? blockHighlight : bookingSelection}
@@ -667,6 +739,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         />
         <div className={classes.footer}>
           <CalendarTimezoneNotice timezones={timezones} anyUnknown={anyUnknown} />
+          {availability.hint && (
+            <Text size="xs" c="dimmed">
+              {availability.hint}
+            </Text>
+          )}
           <CalendarLegend className={classes.legend} serviceTypes={serviceTypes} />
         </div>
       </div>
@@ -755,6 +832,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 onBooked={finishBooking}
                 defaultServiceFacility={selectedServiceFacility}
                 defaultService={selectedService}
+                defaultPick={bookingPick}
+                actionsRef={formActionsRef}
               />
             </Tabs.Panel>
             <Tabs.Panel value="block">
@@ -843,41 +922,11 @@ function SidePane(props: SidePaneProps): JSX.Element {
 function useAppointmentServices(
   appointments: readonly Appointment[] | undefined
 ): ReadonlyMap<string, HealthcareService | undefined> {
-  const medplum = useMedplum();
-  const [services, setServices] = useState(NO_SERVICES);
-
-  // A string, so the effect below runs only when the references themselves change.
-  const referencesKey = useMemo(() => {
-    const references = new Set(
-      (appointments ?? []).map((a) => extractServiceTypeReferences(a.serviceType)[0]?.reference).filter(isDefined)
-    );
-    return [...references].sort((a, b) => a.localeCompare(b)).join(',');
-  }, [appointments]);
-
-  useEffect(() => {
-    if (!referencesKey) {
-      return;
-    }
-    // No abort signal: these reads are shared, through the client's cache, with the event
-    // titles, which would fail along with them. A late result is still worth keeping.
-    // Each settles on its own, so one slow read doesn't hold back the other service types.
-    const settle = (reference: string, read: HealthcareService | undefined): void =>
-      setServices((previous) => {
-        // A failed read settles the service without forgetting one read before.
-        const service = read ?? previous.get(reference);
-        return previous.has(reference) && previous.get(reference) === service
-          ? previous
-          : new Map(previous).set(reference, service);
-      });
-    for (const reference of referencesKey.split(',')) {
-      medplum
-        .readReference<HealthcareService>({ reference })
-        .then((service) => settle(reference, service))
-        .catch(() => settle(reference, undefined));
-    }
-  }, [medplum, referencesKey]);
-
-  return services;
+  const references = useMemo(
+    () => (appointments ?? []).map((a) => extractServiceTypeReferences(a.serviceType)[0]?.reference).filter(isDefined),
+    [appointments]
+  );
+  return useHealthcareServices(references);
 }
 
 // Whether `resource` was last updated before `than`. Either without a time is taken as current.

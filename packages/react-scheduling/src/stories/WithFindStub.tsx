@@ -21,17 +21,17 @@ export interface WithFindStubProps extends FindStubOptions {
  */
 export function WithFindStub(props: WithFindStubProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { empty } = props;
+  const { empty, respectAvailability } = props;
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const restore = installFindStub(medplum, { empty });
+    const restore = installFindStub(medplum, { empty, respectAvailability });
     setReady(true);
     return () => {
       setReady(false);
       restore();
     };
-  }, [medplum, empty]);
+  }, [medplum, empty, respectAvailability]);
 
   return ready ? <>{props.children}</> : null;
 }
