@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, assert, badRequest } from '@medplum/core';
+import { AccessPolicyInteraction, allOk, assert, badRequest, forbidden } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { AsyncJob } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { makeOperationDefinition } from './definitions';
-import { readAsyncJob } from './utils/asyncjobexecutor';
+import { isAsyncJobRequesterOrAdmin, readAsyncJob } from './utils/asyncjobexecutor';
 
 export const operation = makeOperationDefinition(
   { scope: 'instance', resource: 'AsyncJob' },
@@ -19,6 +20,7 @@ export const operation = makeOperationDefinition(
 /**
  * Handles HTTP requests for the AsyncJob $cancel operation.
  * Sets the status of the `AsyncJob` to `cancelled`.
+ * Only the job's requester, an admin of its project, or a super admin can cancel it.
  *
  * @param req - A request to cancel a particular async job.
  * @returns A FhirResponse.
@@ -28,6 +30,16 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
   // Update status of async job
   const ctx = getAuthenticatedContext();
   const job = await readAsyncJob(req.params.id);
+  // The system repo patch below checks nothing, so authorize with the caller's repo.
+  // Authorize before the status checks, so an unauthorized caller gets 403 whatever the job's state.
+  if (!(await ctx.repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'AsyncJob', job.id))) {
+    return [forbidden];
+  }
+  // readAsyncJob strips meta.project and policy-hidden fields, so check the stored job
+  const storedJob = await ctx.systemRepo.readResource<AsyncJob>('AsyncJob', job.id);
+  if (!isAsyncJobRequesterOrAdmin(ctx.repo, storedJob)) {
+    return [forbidden];
+  }
   switch (job.status) {
     case 'accepted':
       // We patch with system repo so that AsyncJob is not added to a project

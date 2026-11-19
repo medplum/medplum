@@ -1,14 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, ContentType } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest, ContentType, createReference, forbidden, getReferenceString, Logger } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
-import type { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
+import type { AsyncJob, OperationOutcome, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSuperAdminTestProject, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, getSuperAdminTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
@@ -185,4 +188,141 @@ describe('AsyncJob/$cancel', () => {
         },
       });
     }));
+
+  describe.each([
+    {
+      route: 'POST AsyncJob/:id/$cancel',
+      send: (id: string) => request(app).post(`/fhir/R4/AsyncJob/${id}/$cancel`),
+      okStatus: 200,
+    },
+    {
+      route: 'DELETE job/:id/status',
+      send: (id: string) => request(app).delete(`/fhir/R4/job/${id}/status`),
+      okStatus: 202,
+    },
+  ])('Requester or admin only: $route', ({ send, okStatus }) => {
+    let project: WithId<Project>;
+    let adminToken: string;
+    let requester: Awaited<ReturnType<typeof addTestUser>>;
+    let otherMember: Awaited<ReturnType<typeof addTestUser>>;
+    let readOnlyMember: Awaited<ReturnType<typeof addTestUser>>;
+    let linkedToken: string;
+
+    beforeAll(async () => {
+      ({ project, accessToken: adminToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+      }));
+      requester = await addTestUser(project);
+      otherMember = await addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: '*' }] },
+      });
+      readOnlyMember = await addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'AsyncJob', readonly: true }] },
+      });
+      // An admin of their own project, to show that admin status does not carry across the link
+      ({ accessToken: linkedToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: { link: [{ project: createReference(project) }] },
+      }));
+    });
+
+    async function createJob(
+      jobRequester: AsyncJob['requester'],
+      status: AsyncJob['status'] = 'accepted'
+    ): Promise<WithId<AsyncJob>> {
+      return (await getProjectSystemRepo(project)).createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        meta: { project: project.id },
+        status,
+        requestTime: new Date().toISOString(),
+        request: 'random-request',
+        requester: jobRequester,
+      });
+    }
+
+    async function cancel(token: string, job: WithId<AsyncJob>): Promise<request.Response> {
+      return send(job.id).set('Authorization', 'Bearer ' + token);
+    }
+
+    async function expectStatus(job: WithId<AsyncJob>, status: AsyncJob['status']): Promise<void> {
+      const stored = await (await getProjectSystemRepo(project)).readResource<AsyncJob>('AsyncJob', job.id);
+      expect(stored.status).toStrictEqual(status);
+    }
+
+    test('Requester can cancel', async () => {
+      const job = await createJob(createReference(requester.profile));
+      expect(await cancel(requester.accessToken, job)).toHaveStatus(okStatus);
+      await expectStatus(job, 'cancelled');
+    });
+
+    test('Project admin can cancel the job of another member', async () => {
+      const job = await createJob(createReference(requester.profile));
+      expect(await cancel(adminToken, job)).toHaveStatus(okStatus);
+      await expectStatus(job, 'cancelled');
+    });
+
+    test('Super admin can cancel', async () => {
+      const { accessToken: superAdminToken } = await getSuperAdminTestProject();
+      const job = await createJob(createReference(requester.profile));
+      expect(await cancel(superAdminToken, job)).toHaveStatus(okStatus);
+      await expectStatus(job, 'cancelled');
+    });
+
+    test.each(['accepted', 'completed'] as const)(
+      'Forbidden for a non-admin member who is not the requester, job status %s',
+      async (status) => {
+        const job = await createJob(createReference(requester.profile), status);
+        const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+        try {
+          const res = await cancel(otherMember.accessToken, job);
+          expect(res).toHaveStatus(403);
+          expect(res.body).toMatchObject(forbidden);
+          expect(warnSpy).toHaveBeenCalledWith('AsyncJob accessed by another user', {
+            asyncJobId: job.id,
+            projectId: project.id,
+            requester: getReferenceString(requester.profile),
+            reader: getReferenceString(otherMember.profile),
+            suppressed: 0,
+          });
+        } finally {
+          warnSpy.mockRestore();
+        }
+        await expectStatus(job, status);
+      }
+    );
+
+    test('Forbidden with read-only AsyncJob access, even for the requester', async () => {
+      const job = await createJob(createReference(readOnlyMember.profile));
+      const res = await cancel(readOnlyMember.accessToken, job);
+      expect(res).toHaveStatus(403);
+      expect(res.body).toMatchObject(forbidden);
+      await expectStatus(job, 'accepted');
+    });
+
+    test('Forbidden for a member of a linked project', async () => {
+      const job = await createJob(createReference(requester.profile));
+      const read = await request(app)
+        .get(`/fhir/R4/AsyncJob/${job.id}`)
+        .set('Authorization', 'Bearer ' + linkedToken);
+      expect(read).toHaveStatus(200);
+
+      const res = await cancel(linkedToken, job);
+      expect(res).toHaveStatus(403);
+      expect(res.body).toMatchObject(forbidden);
+      await expectStatus(job, 'accepted');
+    });
+
+    test('Job without requester can be cancelled by an admin only', async () => {
+      const job = await createJob(undefined);
+      const res = await cancel(otherMember.accessToken, job);
+      expect(res).toHaveStatus(403);
+      expect(res.body).toMatchObject(forbidden);
+      await expectStatus(job, 'accepted');
+
+      expect(await cancel(adminToken, job)).toHaveStatus(okStatus);
+      await expectStatus(job, 'cancelled');
+    });
+  });
 });

@@ -222,22 +222,34 @@ export function getAsyncJobRequester(): AsyncJob['requester'] {
 }
 
 /**
+ * Returns true if the current user is the AsyncJob's requester, an admin of its project, or a super admin.
+ * A job without a requester belongs to admins only.
+ * @param repo - The repository of the current user.
+ * @param asyncJob - The AsyncJob, including `meta.project` and `requester`.
+ * @returns True if the current user is the requester or an admin.
+ */
+export function isAsyncJobRequesterOrAdmin(repo: Repository, asyncJob: AsyncJob): boolean {
+  if (repo.isSuperAdmin()) {
+    return true;
+  }
+  if (repo.isProjectAdmin() && asyncJob.meta?.project === repo.currentProject()?.id) {
+    return true;
+  }
+  const requester = asyncJob.requester?.reference;
+  return requester !== undefined && requester === getAsyncJobRequester()?.reference;
+}
+
+/**
  * Diagnostic logging for access to an AsyncJob by users other than its requester and admins of its project.
  * @param repo - The repository of the access.
  * @param asyncJob - The AsyncJob, including `meta.project`.
  */
 export function logAsyncJobAccess(repo: Repository, asyncJob: WithId<AsyncJob>): void {
-  if (repo.isSuperAdmin()) {
+  if (isAsyncJobRequesterOrAdmin(repo, asyncJob)) {
     return;
   }
   const projectId = asyncJob.meta?.project;
-  if (repo.isProjectAdmin() && projectId === repo.currentProject()?.id) {
-    return;
-  }
   const reader = getAsyncJobRequester()?.reference;
-  if (asyncJob.requester?.reference === reader) {
-    return;
-  }
   asyncJobAccessLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
     getLogger().warn('AsyncJob accessed by another user', {
       asyncJobId: asyncJob.id,
