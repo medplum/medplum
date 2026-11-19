@@ -54,5 +54,5 @@ async function changePassword(systemRepo: SystemRepository, request: ChangePassw
     throw new OperationOutcomeError(badRequest('Incorrect password', 'oldPassword'));
   }
 
-  await setPassword(systemRepo, request.user, request.newPassword);
+  await setPassword(systemRepo, request.user, request.newPassword, { expectedPasswordHash: oldPasswordHash });
 }
