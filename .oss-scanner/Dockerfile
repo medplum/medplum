@@ -44,6 +44,6 @@ RUN .oss-scanner/start-services.sh \
 
 # Smoke test a few server tests so the image is known to work, without letting a failure abort the build
 RUN .oss-scanner/start-services.sh \
-    && (cd packages/server && npx vitest run --project @medplum/server src/healthcheck.test.ts src/fhir/repo.test.ts \
+    && (cd packages/server && npx vitest run --project @medplum/server src/healthcheck.int.test.ts src/fhir/repo.int.test.ts \
         || echo "WARNING: server smoke tests reported failures") \
     && pg_ctlcluster "$(ls /etc/postgresql | sort -V | tail -n 1)" main stop

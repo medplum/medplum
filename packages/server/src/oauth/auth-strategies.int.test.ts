@@ -28,7 +28,7 @@ import { mockFetchJson } from '../test.setup.fetch';
 // against a remote JWKS (Google's public certs, or a client's configured jwksUri). Mocking
 // the network fetch is not viable here — jose's Node build fetches JWKS via raw node:http(s),
 // bypassing any `globalThis.fetch` mock — so, matching the existing convention in
-// google.test.ts and oauth/token.test.ts, `jwtVerify` is wrapped to decode-only for THOSE two
+// google.int.test.ts and oauth/token.int.test.ts, `jwtVerify` is wrapped to decode-only for THOSE two
 // external-JWKS cases specifically.
 //
 // `jwtVerify` is also how Medplum verifies its own issued access tokens on every FHIR request
@@ -83,8 +83,8 @@ vi.mock('jose', async (importOriginal) => {
  * `initApp()` instance), obtains a Medplum access token, and then uses that token to
  * make a real `/fhir/R4` call — proving the token is actually usable, not just that a
  * token-shaped object was returned. Fine-grained edge cases (bad credentials, malformed
- * input, IP rules, etc.) remain covered by the existing per-strategy unit test files
- * (login.test.ts, google.test.ts, external.test.ts, oauth/token.test.ts); this suite is
+ * input, IP rules, etc.) remain covered by the existing per-strategy test files
+ * (login.int.test.ts, google.int.test.ts, external.int.test.ts, oauth/token.int.test.ts); this suite is
  * the coarse-grained "did the whole flow work" net.
  */
 
