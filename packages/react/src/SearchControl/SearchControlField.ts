@@ -42,6 +42,9 @@ export interface SearchControlField {
   readonly searchParams?: SearchParameter[];
 }
 
+/** Columns shown when a search has no explicit `fields`. */
+export const DEFAULT_SEARCH_FIELDS: readonly string[] = ['id', '_lastUpdated'];
+
 /**
  * Returns the collection of field definitions for the search request.
  * @param search - The search request definition.
@@ -51,7 +54,7 @@ export function getFieldDefinitions(search: SearchRequest): SearchControlField[]
   const resourceType = search.resourceType;
   const fields = [] as SearchControlField[];
 
-  for (const name of search.fields || ['id', '_lastUpdated']) {
+  for (const name of search.fields || DEFAULT_SEARCH_FIELDS) {
     fields.push(getFieldDefinition(resourceType, name));
   }
   return fields;

@@ -27,7 +27,6 @@ import { useMedplum } from '@medplum/react-hooks';
 import {
   IconArrowDown,
   IconArrowUp,
-  IconColumns,
   IconDots,
   IconLibraryPlus,
   IconPlus,
@@ -40,8 +39,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Modal } from '../Modal/Modal';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import { SearchColumnEditor } from '../SearchColumnEditor/SearchColumnEditor';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
-import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterPopover } from '../SearchFilterEditor/SearchFilterPopover';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
@@ -101,6 +100,8 @@ export interface SearchControlProps {
   readonly hideToolbar?: boolean;
   /** Hides the per-column filter description row under the column headers. */
   readonly hideFilters?: boolean;
+  /** Columns the Columns popover's Reset Default restores; defaults to `id` and `_lastUpdated`. */
+  readonly defaultFields?: readonly string[];
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
@@ -124,7 +125,6 @@ interface SearchControlState {
   readonly deleteConfirmVisible?: boolean;
   readonly deleting?: boolean;
   readonly dialogOpenTime?: number;
-  readonly fieldEditorVisible: boolean;
   readonly filterDialogVisible: boolean;
   readonly filterDialogFilter?: Filter;
   readonly filterDialogSearchParam?: SearchParameter;
@@ -152,7 +152,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [state, setState] = useState<SearchControlState>({
     selected: {},
     exportDialogVisible: false,
-    fieldEditorVisible: false,
     filterDialogVisible: false,
   });
   const [activeRowId, setActiveRowId] = useState<string>();
@@ -335,16 +334,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       {!props.hideToolbar && (
         <Group justify="space-between" pb="md" className={classes.toolbar}>
           <Group gap="xs">
-            <Button
-              className={classes.toolbarButton}
-              size="compact-md"
-              variant="subtle"
-              color="gray"
-              leftSection={<IconColumns size={16} />}
-              onClick={() => setState((s) => ({ ...s, fieldEditorVisible: true, dialogOpenTime: Date.now() }))}
-            >
-              Fields
-            </Button>
+            <SearchColumnEditor
+              search={memoizedSearch}
+              defaultFields={props.defaultFields}
+              onChange={emitSearchChange}
+            />
             <SearchFilterPopover search={memoizedSearch} onChange={emitSearchChange} />
             <SearchSortEditor search={memoizedSearch} onChange={emitSearchChange} />
             {lastResult && (
@@ -591,16 +585,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           />
         </Center>
       )}
-      <SearchFieldEditor
-        key={`search-field-editor-${state.dialogOpenTime}`}
-        search={memoizedSearch}
-        visible={state.fieldEditorVisible}
-        onOk={(result) => {
-          emitSearchChange(result);
-          setState((s) => ({ ...s, fieldEditorVisible: false }));
-        }}
-        onCancel={() => setState((s) => ({ ...s, fieldEditorVisible: false }))}
-      />
       <SearchExportDialog
         key={`search-export-dialog-${state.dialogOpenTime}`}
         visible={state.exportDialogVisible}
