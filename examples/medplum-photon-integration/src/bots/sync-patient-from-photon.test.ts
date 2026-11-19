@@ -17,6 +17,33 @@ import {
   handler,
 } from './sync-patient-from-photon';
 
+// Mock the photon GraphQL fetch
+vi.mock('./utils.ts', async () => {
+  const actual = await vi.importActual('./utils.ts');
+  return {
+    ...actual,
+    handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+    photonGraphqlFetch: vi.fn().mockImplementation(() => {
+      return {
+        data: {
+          patients: [
+            {
+              id: '123',
+              externalId: undefined,
+              name: { first: 'John', last: 'Doe', full: 'Jane Doe' },
+              sex: 'MALE',
+              dateOfBirth: '1990-01-01',
+              phone: '555-1234',
+              allergies: [],
+              prescriptions: [],
+            },
+          ],
+        },
+      };
+    }),
+  };
+});
+
 describe('Sync patients from Photon', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -34,33 +61,6 @@ describe('Sync patients from Photon', async () => {
         resourceType: 'Bundle',
         type: 'batch-response',
         entry: [],
-      });
-
-      // Mock the photon GraphQL fetch
-      vi.mock('./utils.ts', async () => {
-        const actual = await vi.importActual('./utils.ts');
-        return {
-          ...actual,
-          handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
-          photonGraphqlFetch: vi.fn().mockImplementation(() => {
-            return {
-              data: {
-                patients: [
-                  {
-                    id: '123',
-                    externalId: undefined,
-                    name: { first: 'John', last: 'Doe', full: 'Jane Doe' },
-                    sex: 'MALE',
-                    dateOfBirth: '1990-01-01',
-                    phone: '555-1234',
-                    allergies: [],
-                    prescriptions: [],
-                  },
-                ],
-              },
-            };
-          }),
-        };
       });
 
       const mockEvent = {
