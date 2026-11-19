@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { render } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { SmartLogo } from './SmartLogo';
 
 describe('SmartLogo', () => {

@@ -65,7 +65,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   const output: string[][] = [];
 
   // Header row
-  output.push(columnNames);
+  output.push(columnNames.map(csvEscapeString));
 
   // For each resource...
   for (const resource of resources) {

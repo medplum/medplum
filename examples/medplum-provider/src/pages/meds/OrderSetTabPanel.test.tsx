@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Parameters, Patient, PlanDefinition, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { SCRIPTSURE_ORDERSET_ID_SYSTEM } from '@medplum/scriptsure-react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { OrderSetPreflightSummary, OrderSetTabPanel } from './OrderSetTabPanel';
 
 const PATIENT: Patient = {
@@ -66,27 +66,21 @@ function Harness(props: HarnessProps): JSX.Element {
   const [requester, setRequester] = useState(props.initialRequester);
   return (
     <MemoryRouter>
-      <MantineProvider>
-        <MedplumProvider medplum={props.medplum}>
-          <OrderSetTabPanel
-            patient={patient}
-            requester={requester}
-            onPatientChange={setPatient}
-            onRequesterChange={setRequester}
-            onOrderComplete={props.onOrderComplete}
-          />
-        </MedplumProvider>
-      </MantineProvider>
+      <MedplumProvider medplum={props.medplum}>
+        <OrderSetTabPanel
+          patient={patient}
+          requester={requester}
+          onPatientChange={setPatient}
+          onRequesterChange={setRequester}
+          onOrderComplete={props.onOrderComplete}
+        />
+      </MedplumProvider>
     </MemoryRouter>
   );
 }
 
 function renderPreflight(props: { pd: PlanDefinition | undefined; scriptSureIdEscape: number | undefined }): void {
-  render(
-    <MantineProvider>
-      <OrderSetPreflightSummary pd={props.pd} scriptSureIdEscape={props.scriptSureIdEscape} />
-    </MantineProvider>
-  );
+  render(<OrderSetPreflightSummary pd={props.pd} scriptSureIdEscape={props.scriptSureIdEscape} />);
 }
 
 describe('OrderSetTabPanel', () => {

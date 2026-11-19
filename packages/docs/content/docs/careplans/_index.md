@@ -54,4 +54,6 @@ This diagram shows one directly authored plan. Resources also carry their own pa
 
 Enforce visibility through [AccessPolicy and ProjectMembership](/docs/access/access-policies). Assignment and CareTeam membership do not automatically grant access. Populate each resource's own patient references, including work created by Bots.
 
+Care-team permissions can apply within one care operation or within each tenant of a multi-tenant application. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access) to preserve both practice and team restrictions.
+
 For the operational motivation, see [Digital Health is an Operations Game](/blog/digital-health-operations), particularly its discussion of task classification, delegation, and asynchronous care.

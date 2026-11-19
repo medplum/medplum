@@ -6,4 +6,8 @@
     {{- $src = .RelPermalink -}}
   {{- end -}}
 {{- end -}}
+{{- if strings.HasPrefix $src "/img/tenancy-design/" -}}
+<span class="tenancy-diagram"><span class="tenancy-diagram-scroll" role="group" aria-label="Scrollable diagram" tabindex="0"><img src="{{ $src }}" alt="{{ .PlainText }}"{{ with .Title }} title="{{ . }}"{{ end }} width="760" loading="lazy" /></span><span class="tenancy-diagram-hint">Scroll horizontally to view the full diagram.</span></span>
+{{- else -}}
 <img src="{{ $src }}" alt="{{ .PlainText }}"{{ with .Title }} title="{{ . }}"{{ end }} loading="lazy" />
+{{- end -}}

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // See: https://mantine.dev/guides/vitest/
 
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 import { MemoryStorage, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';

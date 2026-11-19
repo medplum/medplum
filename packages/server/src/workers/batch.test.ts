@@ -79,10 +79,6 @@ describe('Batch worker', () => {
 
   beforeAll(async () => {
     config = await loadTestConfig();
-    // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
-    // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
-    // throttle timing, so zero the delay to keep the worker-processor tests fast.
-    config.asyncDelayScaling = 0;
     await initAppServices(config);
 
     const project = await createTestProject({ withClient: true, withAccessToken: true, withRepo: true });

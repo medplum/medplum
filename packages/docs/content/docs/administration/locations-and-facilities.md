@@ -27,15 +27,13 @@ Use `Organization.partOf` for organizational subdivisions. For relationships bet
 
 ### Organizations and Tenant Boundaries
 
-**Projects provide Medplum's primary data-isolation boundary. Organizations within a project can share PHI according to the project's access policies.** An Organization can represent a tenant, with selected patient data, including the Patient resource itself, shared across tenants by design.
+An Organization describes an entity; a Location describes a place. Neither automatically establishes a tenant boundary. One practice can operate several clinics in a single tenant, while a platform serving independent practices may treat each practice as a tenant. Choose the boundary in the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design).
 
-- **Access rules:** Define separation and sharing through [AccessPolicy and ProjectMembership](/docs/access/access-policies). Configure those policies to enforce the intended access to patient records; `managingOrganization` and `partOf` describe directory relationships.
+- **Access rules:** `partOf` and `managingOrganization` describe relationships. Enforce permissions through [AccessPolicy and ProjectMembership](/docs/access/access-policies). A tenant can contain finer care-team access groups.
+- **Patient information:** Decide whether practices use one common Patient record or independently maintained Patients. Choose access to clinical records separately. [Patient Records and Clinical Sharing](/docs/tenancy-design/patient-records) explains both choices and how patient-wide account assignment can share clinical records.
+- **Shared directories:** Organizations can represent payers, pharmacies, laboratories, and networks used by several practices. Keep patient-specific information on appropriately protected records. See [Sharing pharmacy Organizations](/docs/integration/scriptsure/multiple-locations#sharing-pharmacy-organizations).
 
-- **Patient enrollment:** In Medplum's standard patient-enrollment model, related clinical resources can inherit the Patient's tenant assignments. If you need to share the Patient record while keeping clinical records separate, account for that inheritance in the access design. See [Multi-Tenant Access Control](/docs/access/multi-tenant-access-policy) and the [Access Control Decision Guide](/docs/decision-guides/access-control).
-
-- **Shared directories:** Organizations can serve as shared directory entries for payers, pharmacies, laboratories, and networks. For example, practices can share a pharmacy directory while protecting each patient's pharmacy preference separately. See [Sharing pharmacy Organizations](/docs/integration/scriptsure/multiple-locations#sharing-pharmacy-organizations).
-
-For project isolation and explicitly configured sharing between projects, see [Projects](/docs/access/projects).
+For within-project boundaries, choose an Organization, HealthcareService, or other resource that represents your access group in [Tenant Assignment and Access](/docs/access/multi-tenant-access-policy). For resource containers and project administration, see [Projects](/docs/access/projects).
 
 ## Choose the Location Detail You Need
 

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, Anchor, Box, Tabs, Text, Tooltip, useMantineTheme } from '@mantine/core';
+import type { MantineColor } from '@mantine/core';
+import { ActionIcon, Alert, Anchor, Box, getThemeColor, Tabs, Text, Tooltip, useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -21,7 +22,7 @@ import type {
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX, ReactNode } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
@@ -84,6 +85,12 @@ const RESOURCE_OPTIONS = {
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
+  /**
+   * The workspace's background: behind the calendars, the calendar and the pane beside it, and
+   * the drawer the pane widens into. Pass the host page's color to sit the workspace flush on
+   * the page. A theme color such as `gray.0`, or any CSS color. Defaults to the body color.
+   */
+  readonly backgroundColor?: MantineColor;
   /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
@@ -599,7 +606,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const blocking = showBooking && paneTab === 'block';
 
   return (
-    <div className={`${classes.root} ${props.className ?? ''}`}>
+    <div
+      className={`${classes.root} ${props.className ?? ''}`}
+      style={
+        props.backgroundColor
+          ? ({ '--scheduling-workspace-background': getThemeColor(props.backgroundColor, theme) } as CSSProperties)
+          : undefined
+      }
+    >
       {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
       <Box id={sidebarId} className={classes.sidebar} display={calendarsOpen ? undefined : 'none'}>
         <CalendarsPanel

@@ -51,7 +51,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   if (hasSmartResourceScopes(authState.login) && !repo.canPerformInteraction(AccessPolicyInteraction.READ, profile)) {
     profile = { resourceType: profile.resourceType, id: profile.id } as WithId<ProfileResource>;
   }
-  profile = repo.removeHiddenFields(profile, AccessPolicyInteraction.READ, true);
+  profile = repo.removeHiddenFields(profile, undefined, true);
   if (profile.resourceType === 'ClientApplication') {
     profile = { ...profile };
     delete profile.secret;

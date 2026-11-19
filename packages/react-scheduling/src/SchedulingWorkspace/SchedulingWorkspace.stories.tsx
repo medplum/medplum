@@ -97,7 +97,8 @@ export default {
  * and leaves how to say so to whatever is hosting it.
  *
  * The grid highlights the time clicked. Picking a time in the search draws the visit it
- * would book as a draft, hatched and outlined, and searching another day takes it down.
+ * would book as a draft, hatched and outlined, and it stays drawn while other days are
+ * searched.
  * Hovering open time marks nothing — a whole-column tint cannot say which time is under
  * the pointer. The calendar never moves itself to keep either in sight; page to a week
  * they are on and they are there.

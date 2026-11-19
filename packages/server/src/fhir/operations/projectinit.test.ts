@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, forbidden, getReferenceString, isUUID, Operator } from '@medplum/core';
+import { ContentType, createReference, forbidden, getReferenceString, isUUID, Logger, Operator } from '@medplum/core';
 import type {
   AccessPolicy,
   Bot,
@@ -205,12 +205,18 @@ describe('Project $init', () => {
     const ownerEmail = randomUUID() + '@example.com';
     const owner = await createServerUser(ownerEmail);
 
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
     const res = await initProject(superAdminAccessToken, [
       { name: 'name', valueString: 'Test Init Project ' + randomUUID() },
       { name: 'ownerEmail', valueString: ownerEmail },
     ]);
     expect(res).toHaveStatus(201);
     expect((res.body as Project).owner).toStrictEqual(createReference(owner));
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Membership granted to existing user with unverified email',
+      expect.objectContaining({ source: 'project-init', userId: owner.id, projectId: res.body.id, admin: true })
+    );
+    warnSpy.mockRestore();
   });
 
   test('Creates new owner User from email', async () => {
@@ -224,10 +230,16 @@ describe('Project $init', () => {
     expect(clientRes).toHaveStatus(403);
     expect(await getUserByEmailWithoutProject(ownerEmail)).toBeUndefined();
 
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
     const res = await initProject(superAdminAccessToken, parameter);
     expect(res).toHaveStatus(201);
     const owner = await getUserByEmailWithoutProject(ownerEmail);
     expect((res.body as Project).owner).toStrictEqual(createReference(owner as WithId<User>));
+    expect(warnSpy).not.toHaveBeenCalledWith(
+      'Membership granted to existing user with unverified email',
+      expect.anything()
+    );
+    warnSpy.mockRestore();
   });
 
   test('Defaults to no owner and applies defaultProjectSystemSetting', async () => {
