@@ -82,7 +82,7 @@ describe('Default access policies', () => {
     DefaultAccessPolicyProfileType,
     { others: Access; except: Partial<Record<ResourceType, Access>> }
   > = {
-    Patient: { others: 'none', except: patientCompartmentAccess },
+    Patient: { others: 'none', except: { ...patientCompartmentAccess, RelatedPerson: 'read' } },
     RelatedPerson: { others: 'none', except: patientCompartmentAccess },
     Admin: { others: 'write', except: {} },
     Practitioner: {

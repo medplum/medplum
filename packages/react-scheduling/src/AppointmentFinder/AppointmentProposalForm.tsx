@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { TextInputProps } from '@mantine/core';
 import {
+  ActionIcon,
   Alert,
+  Anchor,
   Button,
   Divider,
   Group,
@@ -12,6 +15,7 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import type { SchedulingRequirement, WithId } from '@medplum/core';
@@ -35,9 +39,9 @@ import {
 import type { Appointment, Extension, HealthcareService, Location, Patient, Reference } from '@medplum/fhirtypes';
 import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconAlertCircle, IconCalendarSearch } from '@tabler/icons-react';
+import { IconAlertCircle, IconArrowBackUp, IconCalendarSearch } from '@tabler/icons-react';
 import type { JSX, RefObject } from 'react';
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
 import { resolveBookingGeometry } from '../bookingGeometry';
@@ -287,14 +291,21 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   const [written, setWritten] = useState(false);
   const [writeError, setWriteError] = useState<unknown>(undefined);
   const [manualChoice, setManualChoice] = useState<Appointment | undefined>(undefined);
-  const [manualDateTime, setManualDateTime] = useState<string | undefined>(undefined);
-  const [manualDurationMinutes, setManualDurationMinutes] = useState<number | undefined>(undefined);
+  // The time and length as typed, held together, so a length emptied out stays empty rather
+  // than bringing a default back.
+  const [typed, setTyped] = useState<TypedTime | undefined>(undefined);
+  // Set while the length is being changed, holding the length to reset to: the one on screen
+  // when the change began, which the first keystroke would otherwise move off a picked time's.
+  // Goes with the typed time, as a length changed from the default is part of it.
+  const [durationResetTo, setDurationResetTo] = useState<number>();
   const [conflicts, setConflicts] = useState<readonly BookingConflict[]>([]);
   const [occurrenceCount, setOccurrenceCount] = useState(1);
   const [pickCount, setPickCount] = useState(0);
   const [initial] = useState({ serviceFacility, service, selections, patient });
 
   const manual = chosen !== undefined && chosen === manualChoice;
+  // A time picked from the search fills the fields, so adjusting it starts from there.
+  const picked = manual ? undefined : chosen;
 
   // Settles once the time and length fields stop moving; only the conflict lookup waits.
   const [debouncedChoice] = useDebouncedValue(manualChoice, CONFLICT_DEBOUNCE_MS);
@@ -362,18 +373,10 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   const clearManualTime = useCallback((): void => {
     setManualChoice(undefined);
-    setManualDateTime(undefined);
-    setManualDurationMinutes(undefined);
+    setTyped(undefined);
+    setDurationResetTo(undefined);
     setConflicts([]);
   }, []);
-
-  // A proposal carries the Slots it was found for, so it cannot outlive the days it was
-  // offered from. A typed time carries none: dropping it here would take the proposal
-  // away while its fields, and their warnings, stayed on screen saying otherwise.
-  const clearChosen = useCallback(
-    (): void => setChosen((current) => (current === manualChoice ? current : undefined)),
-    [manualChoice]
-  );
 
   // All actor resources, keyed by their reference.
   const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
@@ -386,7 +389,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     actorResources,
     ignoreAppointment,
     occurrenceCount: effectiveOccurrenceCount,
-    onResultsReplaced: clearChosen,
   });
   const { reset: resetDaySearch } = daySearch;
 
@@ -424,6 +426,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   }, [daySearch.selectedDayRange.start]);
 
   const chosenActors = getAppointmentActors(chosen, actorResources);
+  const chosenActorsId = useId();
 
   // The ref holds what the host was last told, so mounting reports nothing and a
   // search that closed on its own is reported like one closed by hand.
@@ -455,9 +458,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     requirementValues !== EMPTY_REQUIREMENT_VALUES ||
     comment !== '' ||
     occurrenceCount !== 1 ||
-    manualDateTime !== undefined ||
-    manualDurationMinutes !== undefined ||
-    (chosen !== undefined && chosen !== manualChoice);
+    typed !== undefined ||
+    picked !== undefined;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   function toggleFinder(): void {
@@ -523,7 +525,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
 
   function chooseTime(next: Appointment): void {
     setChosen(next);
-    setConflicts([]);
+    // The fields show the picked time, so a typed one goes.
+    clearManualTime();
     setWritten(false);
     setFinding(false);
     setPickCount((count) => count + 1);
@@ -536,21 +539,27 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     [service, manualCandidates]
   );
 
+  // A series is only ever found by the search: a typed time books a single visit.
+  const offersManualTime = !!canBypassSchedulingRules && effectiveOccurrenceCount === 1;
+
   const storedDurationMinutes = ignoreAppointment ? getRescheduleDurationMinutes(ignoreAppointment) : undefined;
+  const openingDurationMinutes = mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes;
+  const shownDurationMinutes = picked ? getDurationMinutes(picked) : openingDurationMinutes;
   // State holds the edit rather than the value, so a different visit type falls back to
   // its own default instead of keeping the last length typed.
-  const effectiveDurationMinutes =
-    manualDurationMinutes ?? (mode === 'reschedule' ? storedDurationMinutes : configuredDurationMinutes);
+  const effectiveDurationMinutes = typed ? typed.durationMinutes : shownDurationMinutes;
   // A move starts from where the visit is now, so only what changes needs typing.
   const storedStart = mode === 'reschedule' && ignoreAppointment?.start ? new Date(ignoreAppointment.start) : undefined;
   const [bookingStart] = useState(() => upcoming(defaultDateTime));
   const openingTime = mode === 'reschedule' ? storedStart : bookingStart;
-  const effectiveDateTime = manualDateTime ?? (openingTime ? formatZonedDateTimeInput(openingTime, timezone) : '');
+  const shownStart = picked?.start ? new Date(picked.start) : openingTime;
+  const effectiveDateTime = typed?.dateTime ?? (shownStart ? formatZonedDateTimeInput(shownStart, timezone) : '');
 
   // Proposes the time and length on screen, typed or prefilled, against whichever schedules
-  // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced.
-  const reproposeKey =
-    searching && canBypassSchedulingRules && (mode === 'book' || storedStart) ? scheduleKey : undefined;
+  // are chosen, so a reassignment needs nothing retyped. A searched time is never replaced,
+  // and nothing is proposed while the form is blocked and the field with it.
+  const blockedBy = service ? selectionError : NO_SERVICE_BLOCKER;
+  const reproposeKey = offersManualTime && !blockedBy && (mode === 'book' || storedStart) ? scheduleKey : undefined;
   const [reproposedKey, setReproposedKey] = useState<string>();
   if (reproposeKey !== reproposedKey) {
     setReproposedKey(reproposeKey);
@@ -572,9 +581,21 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
    * @param durationMinutes - How long the visit runs.
    */
   function enterManualTime(dateTime: string, durationMinutes: number | undefined): void {
-    setManualDateTime(dateTime);
-    setManualDurationMinutes(durationMinutes);
+    setTyped({ dateTime, durationMinutes });
     proposeManualTime(dateTime, durationMinutes);
+  }
+
+  /**
+   * Puts back the length the visit had before it was changed, and hides the field it was changed in.
+   */
+  function resetDuration(): void {
+    setDurationResetTo(undefined);
+    // Re-entered at the time on screen rather than cleared: editing the length already turned a
+    // picked time into a typed one, and with nothing typed the field would fall back to the time
+    // the form opened on.
+    if (durationResetTo !== undefined && effectiveDurationMinutes !== durationResetTo) {
+      enterManualTime(effectiveDateTime, durationResetTo);
+    }
   }
 
   /**
@@ -596,8 +617,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
       durationMinutes === storedDurationMinutes;
     if (!start || !durationMinutes || durationMinutes <= 0 || !service || manualCandidates.length === 0 || unchanged) {
       setManualChoice(undefined);
-      // Only ever clears a manual time: a time from the search is not this field's to drop.
-      setChosen((current) => (current === manualChoice ? undefined : current));
+      // The fields show a searched time too, so emptying them drops it.
+      setChosen(undefined);
       return;
     }
 
@@ -762,6 +783,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
+        {takesDetails && (
+          <AppointmentPatientInput
+            defaultValue={defaultPatient}
+            mrnSystem={mrnSystem}
+            required
+            onChange={choosePatient}
+          />
+        )}
+
         <AppointmentActorSelections
           key={`actors-${actorFieldsKey}`}
           value={selections}
@@ -785,24 +815,27 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         <ChosenTime
           appointment={chosen}
           timezone={timezone}
-          actors={chosenActors}
           searching={searching}
-          blockedBy={service ? selectionError : NO_SERVICE_BLOCKER}
+          blockedBy={blockedBy}
           onToggleFinder={toggleFinder}
           finderButtonRef={finderButtonRef}
-          // Only a picked time flashes, as the search closes on it. A typed time changes with
-          // every keystroke, with the search still open.
-          flashKey={manual ? 0 : pickCount}
+          // Only a pick flashes, as the search closes on it. Typing keeps the key, so the field
+          // isn't remounted out from under the cursor.
+          flashKey={pickCount}
+          manualTime={
+            offersManualTime
+              ? {
+                  dateTime: effectiveDateTime,
+                  durationMinutes: effectiveDurationMinutes,
+                  durationResetTo,
+                  onCustomizeDuration: () => setDurationResetTo(effectiveDurationMinutes),
+                  onResetDuration: resetDuration,
+                  conflicts,
+                  onChange: enterManualTime,
+                }
+              : undefined
+          }
         />
-
-        {takesDetails && (
-          <AppointmentPatientInput
-            defaultValue={defaultPatient}
-            mrnSystem={mrnSystem}
-            required
-            onChange={choosePatient}
-          />
-        )}
 
         {takesDetails && (
           <AppointmentNotesInput
@@ -828,9 +861,19 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
         )}
 
         {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
-        <Button fullWidth disabled={!chosen || written || detailsOutstanding} loading={writing} onClick={handleSubmit}>
-          {getSubmitLabel(mode, effectiveOccurrenceCount)}
-        </Button>
+        <Stack gap={4}>
+          <Button
+            fullWidth
+            disabled={!chosen || written || detailsOutstanding}
+            loading={writing}
+            onClick={handleSubmit}
+            aria-describedby={chosenActors.length > 0 ? chosenActorsId : undefined}
+          >
+            {getSubmitLabel(mode, effectiveOccurrenceCount)}
+          </Button>
+          {/* Read off the proposal, as the search may be what settled who holds it. */}
+          {chosenActors.length > 0 && <ChosenActors id={chosenActorsId} actors={chosenActors} />}
+        </Stack>
       </Stack>
 
       {searching && (
@@ -870,15 +913,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
               )}
               <Divider mt="sm" />
             </div>
-            {canBypassSchedulingRules && effectiveOccurrenceCount === 1 && (
-              <ManualTime
-                dateTime={effectiveDateTime}
-                durationMinutes={effectiveDurationMinutes}
-                timezone={timezone}
-                conflicts={conflicts}
-                onChange={enterManualTime}
-              />
-            )}
             {daySearch.loadingFirstDays && <Loader size="sm" />}
             {daySearch.findRequestError && (
               <Alert color="red">{normalizeErrorString(daySearch.findRequestError)}</Alert>
@@ -892,7 +926,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
                   groups={day.groups}
                   timezone={timezone}
                   // A typed time is written as typed, even when the search offers the same one.
-                  selected={manual ? undefined : chosen}
+                  selected={picked}
                   onSelectAppointment={chooseTime}
                 />
               ))}
@@ -932,8 +966,6 @@ interface ChosenTimeProps {
   readonly appointment: Appointment | undefined;
   /** IANA timezone the visit is held in. */
   readonly timezone: string | undefined;
-  /** Who the chosen time is held on. */
-  readonly actors: readonly SchedulingActorValue[];
   readonly searching: boolean;
   /** What is still owed before a time can be searched for, if anything. */
   readonly blockedBy: SelectionBlocker | undefined;
@@ -941,35 +973,51 @@ interface ChosenTimeProps {
   readonly finderButtonRef: RefObject<HTMLButtonElement | null>;
   /** Changing this flashes the chosen time; at 0, the time is shown without a flash. */
   readonly flashKey: number;
+  /** The time and length as typed, when the user may type them; the time is read-only otherwise. */
+  readonly manualTime?: ManualTimeValue;
 }
 
 /**
  * The chosen time, and under it the action that found it.
  *
- * Read-only whichever way the time was arrived at: a time offered by the search and a
- * time typed into {@link ManualTime} both land here.
+ * Editable when the user may type a time of their own, and then always on show: a time
+ * picked from the search fills it, and changing it makes a typed time.
  *
  * @param props - The React props.
- * @returns The chosen time, once there is one, and the action.
+ * @returns The chosen time, once there is one or it can be typed, and the action.
  */
 function ChosenTime(props: ChosenTimeProps): JSX.Element {
-  const { appointment, timezone, actors, searching, blockedBy, onToggleFinder, finderButtonRef, flashKey } = props;
+  const { appointment, timezone, searching, blockedBy, onToggleFinder, finderButtonRef, flashKey, manualTime } = props;
   // Taken off once played, as the browser replays an animation each time its element is shown
   // again, as switching back to the field's tab does.
   const [flashedKey, setFlashedKey] = useState(0);
+  const flash: FlashProps = {
+    classNames: flashKey > 0 && flashKey !== flashedKey ? { input: classes.justPicked } : undefined,
+    onAnimationEnd: (event) => {
+      if (event.animationName === classes.justPicked) {
+        setFlashedKey(flashKey);
+      }
+    },
+  };
+
+  const durationMinutes = appointment ? getDurationMinutes(appointment) : 0;
 
   return (
     <>
-      {appointment?.start && (
-        <TextInput
+      {manualTime && (
+        <ManualTime
           // Remounted on each change, so the flash replays even when the field was already showing.
           key={flashKey}
-          classNames={flashKey > 0 && flashKey !== flashedKey ? { input: classes.justPicked } : undefined}
-          onAnimationEnd={(event) => {
-            if (event.animationName === classes.justPicked) {
-              setFlashedKey(flashKey);
-            }
-          }}
+          {...manualTime}
+          flash={flash}
+          timezone={timezone}
+          disabled={!!blockedBy}
+        />
+      )}
+      {!manualTime && appointment?.start && (
+        <TextInput
+          key={flashKey}
+          {...flash}
           label="Date & time"
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
@@ -977,7 +1025,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           inputWrapperOrder={['label', 'input', 'description']}
           description={
             <>
-              <ChosenTimeCommitment appointment={appointment} actors={actors} />
+              {durationMinutes > 0 && `${durationMinutes} min visit`}
               <LaterOccurrences appointment={appointment} timezone={timezone} />
             </>
           }
@@ -1035,54 +1083,133 @@ function BlockerMessage(props: BlockerMessageProps): JSX.Element {
   );
 }
 
-interface ManualTimeProps {
+/** Flashes the chosen time's field as a pick lands in it. */
+type FlashProps = Pick<TextInputProps, 'classNames' | 'onAnimationEnd'>;
+
+interface TypedTime {
   /** A `YYYY-MM-DDTHH:MM` wall-clock value, read in the visit's timezone. */
   readonly dateTime: string;
   readonly durationMinutes: number | undefined;
-  /** IANA timezone the visit is held in. */
-  readonly timezone: string | undefined;
+}
+
+interface ManualTimeValue extends TypedTime {
+  /** Set while the length is being changed, in a field of its own: the length to go back to. */
+  readonly durationResetTo: number | undefined;
+  readonly onCustomizeDuration: () => void;
+  readonly onResetDuration: () => void;
   readonly conflicts: readonly BookingConflict[];
   readonly onChange: (dateTime: string, durationMinutes: number | undefined) => void;
 }
 
+interface ManualTimeProps extends ManualTimeValue {
+  /** IANA timezone the visit is held in. */
+  readonly timezone: string | undefined;
+  readonly disabled: boolean;
+  readonly flash: FlashProps;
+}
+
 /**
- * Fields prompting the user for a datetime and a duration, used to manually choose
- * when an appointment should be scheduled and for how long.
+ * A field prompting the user for a datetime, used to manually choose when an appointment
+ * should be scheduled, with the visit's length beneath it. The length is rarely changed, so
+ * it opens a field of its own to change it, which stays on show as part of the visit until
+ * it is reset.
  * @param props - The React props.
  * @returns The fields, and what the time entered clashes with.
  */
 function ManualTime(props: ManualTimeProps): JSX.Element {
-  const { dateTime, durationMinutes, timezone, conflicts, onChange } = props;
+  const {
+    dateTime,
+    durationMinutes,
+    durationResetTo,
+    onCustomizeDuration,
+    onResetDuration,
+    conflicts,
+    onChange,
+    timezone,
+    disabled,
+    flash,
+  } = props;
+  const customizingDuration = durationResetTo !== undefined;
+  const resetLabel = customizingDuration ? `Reset to ${Math.round(durationResetTo)} min` : undefined;
+  // The visit is held where it is held, not where the person booking it is sitting, and a
+  // typed time is read there.
+  const timezoneNote =
+    !isViewerTimezone(timezone) && timezone ? `Times are ${formatTimezoneLabel(timezone)}.` : undefined;
+
+  // Until the visit type gives it a length, there is nothing to show or change yet.
+  const durationNote = !customizingDuration && durationMinutes !== undefined && (
+    <>
+      {Math.round(durationMinutes)} min visit
+      {/* An anchor looks clickable whether or not it is, so a blocked form shows plain text. */}
+      {!disabled && (
+        <>
+          {' · '}
+          <Anchor
+            component="button"
+            type="button"
+            fz="inherit"
+            aria-label="Change duration"
+            onClick={onCustomizeDuration}
+          >
+            Change
+          </Anchor>
+        </>
+      )}
+    </>
+  );
 
   return (
-    <Stack gap={4}>
-      <Text fw={500} size="sm">
-        Or enter a time
-      </Text>
-      <Group align="flex-start" gap="xs" wrap="nowrap">
-        <TextInput
-          label="Date & time"
-          type={getNativeInputType('datetime-local')}
-          flex={1}
-          value={dateTime}
-          onChange={(event) => onChange(event.currentTarget.value, durationMinutes)}
-        />
+    <>
+      <TextInput
+        {...flash}
+        label="Date & time"
+        type={getNativeInputType('datetime-local')}
+        value={dateTime}
+        disabled={disabled}
+        onChange={(event) => onChange(event.currentTarget.value, durationMinutes)}
+        // Mantine puts the description above the input by default.
+        inputWrapperOrder={['label', 'input', 'description']}
+        description={
+          (durationNote || timezoneNote) && (
+            <>
+              {durationNote}
+              {durationNote && timezoneNote && <br />}
+              {timezoneNote}
+            </>
+          )
+        }
+      />
+
+      {customizingDuration && (
         <NumberInput
-          label="Minutes"
+          label="Custom duration (minutes)"
           min={1}
+          step={5}
           allowDecimal={false}
-          w={110}
+          // Typed rather than stepped, as any length goes; the arrow keys still step it.
+          hideControls
+          disabled={disabled}
+          // Only ever opened from its Change link, which it takes the place of.
+          autoFocus
+          // Selected as it opens, so typing replaces the length rather than adding to it.
+          onFocus={(event) => event.currentTarget.select()}
           value={durationMinutes === undefined ? '' : Math.round(durationMinutes)}
           onChange={(value) => onChange(dateTime, typeof value === 'number' ? value : undefined)}
+          rightSectionPointerEvents="all"
+          rightSection={
+            <Tooltip label={resetLabel} withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                aria-label={resetLabel}
+                disabled={disabled}
+                onClick={onResetDuration}
+              >
+                <IconArrowBackUp size={16} stroke={1.8} />
+              </ActionIcon>
+            </Tooltip>
+          }
         />
-      </Group>
-
-      {/* The visit is held where it is held, not where the person booking it is
-          sitting, and a typed time is read there. */}
-      {!isViewerTimezone(timezone) && timezone && (
-        <Text size="xs" c="dimmed">
-          Times are {formatTimezoneLabel(timezone)}.
-        </Text>
       )}
 
       {conflicts.map((conflict) => (
@@ -1090,43 +1217,32 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
           {describeConflict(conflict)}
         </Text>
       ))}
-    </Stack>
+    </>
   );
 }
 
-interface ChosenTimeCommitmentProps {
-  readonly appointment: Appointment;
+interface ChosenActorsProps {
+  readonly id: string;
   /** Who the time is held on. */
   readonly actors: readonly SchedulingActorValue[];
 }
 
 /**
- * What the chosen time commits to: how long the visit runs, and what holds it.
- *
- * Read off the proposal rather than the answers above, since the proposal is what
- * gets booked. Inline elements only: it renders inside a `description`, which is a
- * paragraph.
- *
+ * Who the chosen time holds, under the action that books it.
  * @param props - The React props.
- * @returns The detail beneath the time.
+ * @returns A line naming each actor.
  */
-function ChosenTimeCommitment(props: ChosenTimeCommitmentProps): JSX.Element {
-  const { appointment, actors } = props;
-  const durationMinutes = getDurationMinutes(appointment);
+function ChosenActors(props: ChosenActorsProps): JSX.Element {
+  const { id, actors } = props;
 
   return (
-    <>
-      {durationMinutes > 0 && `${durationMinutes} min visit`}
-      {actors.map((actor, index) => {
-        const actorLabel = getActorTypeLabel(getActorType(actor));
-        return (
-          <Fragment key={getReferenceString(actor)}>
-            {(index > 0 || durationMinutes > 0) && ' · '}
-            {actorLabel}: <ResourceName value={actor} link={false} inherit />
-          </Fragment>
-        );
-      })}
-    </>
+    <div id={id}>
+      {actors.map((actor) => (
+        <Text key={getReferenceString(actor)} size="xs" c="dimmed">
+          {getActorTypeLabel(getActorType(actor))}: <ResourceName value={actor} link={false} inherit />
+        </Text>
+      ))}
+    </div>
   );
 }
 

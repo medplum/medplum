@@ -12,6 +12,24 @@ export enum TaskFilterType {
   PATIENT = 'patient',
 }
 
+/** Resource types allowed by `Task.owner`, derived from its `Reference<...>` type. */
+export type TaskOwnerType = NonNullable<NonNullable<Task['owner']>['resource']>['resourceType'];
+
+/** Keyed by `TaskOwnerType` so the compiler flags any type missing from or invalid for `Task.owner`. */
+const TASK_OWNER_TYPE_MAP: Record<TaskOwnerType, true> = {
+  Practitioner: true,
+  PractitionerRole: true,
+  Organization: true,
+  CareTeam: true,
+  HealthcareService: true,
+  Patient: true,
+  Device: true,
+  RelatedPerson: true,
+};
+
+/** Resource types that can be assigned as the Task owner. */
+export const TASK_OWNER_TYPES = Object.keys(TASK_OWNER_TYPE_MAP) as TaskOwnerType[];
+
 export const TASK_STATUSES: Task['status'][] = [
   'draft',
   'requested',
