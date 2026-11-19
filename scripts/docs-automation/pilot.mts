@@ -35,7 +35,7 @@ export function docPath(name: string): string {
   return path;
 }
 
-export function capturePatch(pages: string[], partial: boolean): string {
+export function capturePatch(pages: string[], partial: boolean): { tree: string; pages: string[] } {
   const status = git('status', '--porcelain', '--no-renames', '--untracked-files=all', '-z');
   const entries = status.split('\0').filter(Boolean);
   const changed = entries.map((entry) => entry.slice(3));
@@ -57,11 +57,11 @@ export function capturePatch(pages: string[], partial: boolean): string {
       assert(hasTitle, `Missing front matter: ${name}`);
     }
   }
-  if (!changed.length) return '';
+  if (!changed.length) return { tree: '', pages: changed };
   git('add', '--', ...changed);
   git('diff', '--cached', '--check');
   writeFileSync(run + '/docs.patch', git('diff', '--cached', '--no-ext-diff', '--no-textconv'));
-  return git('write-tree').trim();
+  return { tree: git('write-tree').trim(), pages: changed };
 }
 
 type Pull = { html_url: string; state: string; assignees: { login: string }[] };

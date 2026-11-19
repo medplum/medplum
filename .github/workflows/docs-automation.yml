@@ -53,8 +53,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - name: Install pilot tools
         run: |
-          zod_version=$(node -p "require('./repo/package.json').devDependencies.zod")
-          npm install --prefix "$GITHUB_WORKSPACE" --no-save --package-lock=false @anthropic-ai/claude-code@2.1.310 "zod@$zod_version"
+          tools=(@anthropic-ai/claude-code@2.1.310)
+          for name in zod mdast-util-from-markdown mdast-util-to-markdown; do
+            version=$(node -p "require('./repo/package.json').devDependencies['$name']")
+            tools+=("$name@$version")
+          done
+          npm install --prefix "$GITHUB_WORKSPACE" --no-save --package-lock=false "${tools[@]}"
           echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Classify, draft, and verify
         id: review

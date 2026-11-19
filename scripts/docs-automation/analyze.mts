@@ -1,3 +1,5 @@
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { defaultHandlers, toMarkdown } from 'mdast-util-to-markdown';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { existsSync, statSync, writeFileSync } from 'node:fs';
@@ -7,7 +9,8 @@ import config from './config.json' with { type: 'json' };
 import { append, capturePatch, checkedPath, docPath, load, read, run, save } from './pilot.mts';
 
 const text = z.string().min(1).max(1600);
-const list = z.array(text).max(8);
+const maxItems = 8;
+const list = z.array(text).max(maxItems);
 const cites = z.array(z.strictObject({ path: text, line: z.number().int().min(1), note: text })).max(8);
 const schemas = {
   classify: z.strictObject({
@@ -52,7 +55,26 @@ function ask(stage: keyof typeof schemas, pages: string[] = []): unknown {
 }
 
 const relative = (ref: string): string => ref.replace(/^(?:\.\/)?repo\//, '');
-const cited = (c: z.infer<typeof cites>[number]): string => `${c.path}:${c.line} ${c.note}`;
+const cited = (c: z.infer<typeof cites>[number]): string => `\`${c.path}:${c.line}\` ${reportText(c.note)}`;
+
+function reportText(value: string): string {
+  // Treat model-supplied HTML as text. Neutralize mentions in prose while preserving literal code.
+  const markdown = fromMarkdown(value, { extensions: [{ disable: { null: ['htmlFlow', 'htmlText'] } }] });
+  return toMarkdown(markdown, {
+    bullet: '-',
+    fences: true,
+    handlers: {
+      text(node, parent, state, info) {
+        return defaultHandlers.text({ ...node, value: node.value.replaceAll('@', '@\u200b') }, parent, state, info);
+      },
+    },
+  }).trimEnd();
+}
+
+function bullets(items: string[]): string {
+  return items.map((item) => '- ' + item.replace(/\n(?=[^\n])/g, '\n  ')).join('\n');
+}
+
 function evidence(citations: z.infer<typeof cites>): z.infer<typeof cites> {
   return citations
     .map((c) => ({ ...c, path: relative(c.path) }))
@@ -81,32 +103,65 @@ function classify(value: unknown): z.infer<typeof schemas.classify> {
   return plan;
 }
 
+function reviewReport(
+  plan: z.infer<typeof schemas.classify>,
+  attention: string[],
+  citations: string[],
+  draft?: { pages: string[]; notes: string }
+): string {
+  let headline = {
+    'no-docs': 'No documentation update needed.',
+    'already-covered': 'The docs already cover this change.',
+    'needs-human': 'The documentation decision needs review.',
+    'update-docs': 'Documentation update recommended.',
+  }[plan.outcome];
+  if (draft) {
+    const count = draft.pages.length;
+    headline = count ? `Drafted ${count} ${count === 1 ? 'page' : 'pages'}.` : 'No pages drafted.';
+  }
+  if (attention.length)
+    headline += ` ${attention.length} ${attention.length === 1 ? 'item needs' : 'items need'} review.`;
+  const lines = [`**${headline}**`];
+  if (attention.length) lines.push('### Needs attention', bullets(attention.map(reportText)));
+  if (!attention.includes(plan.summary)) lines.push('### Summary', reportText(plan.summary));
+  const pages = draft?.pages ?? plan.pages;
+  if (pages.length)
+    lines.push(draft ? '### Pages drafted' : '### Planned pages', bullets(pages.map((p) => `\`${p}\``)));
+  if (draft) lines.push('### Reviewer notes', reportText(draft.notes));
+  if (citations.length)
+    lines.push('<details><summary>Evidence</summary>', bullets([...new Set(citations)]), '</details>');
+  return lines.join('\n\n') + '\n';
+}
+
 export function review(agent = ask): void {
   const plan = existsSync(run + '/classification.json')
     ? schemas.classify.parse(load('classification.json'))
     : classify(agent('classify'));
   const questions = [...plan.questions];
-  const details = [plan.summary, ...plan.evidence.map(cited), ...plan.pages];
+  const citations = plan.evidence.map(cited);
+  let drafted: { pages: string[]; notes: string } | undefined;
   let tree = '';
   if (process.env.MODE !== 'classify' && plan.outcome === 'update-docs') {
     const draft = schemas.draft.parse(agent('draft', plan.pages));
     save('draft.json', draft);
-    details.push(draft.notes);
     questions.push(...draft.questions);
-    tree = capturePatch(plan.pages, draft.questions.length > 0);
+    const patch = capturePatch(plan.pages, draft.questions.length > 0);
+    tree = patch.tree;
+    drafted = { pages: patch.pages, notes: draft.notes };
     if (tree) {
       const check = schemas.verify.parse(agent('verify'));
       check.evidence = evidence(check.evidence);
-      if (!check.evidence.length)
-        check.findings.push('Check the draft against the implementation. The verifier cited no source.');
+      if (!check.evidence.length) {
+        // Keep the controller warning in the report even when all verifier slots are in use.
+        const items = check.findings.length === maxItems ? questions : check.findings;
+        items.push('Check the draft against the implementation. The verifier cited no source.');
+      }
       save('verification.json', check);
       questions.push(...check.findings);
-      details.push(...check.evidence.map(cited));
+      citations.push(...check.evidence.map(cited));
     }
   }
-  const lines = [`**${questions.length ? 'needs-human' : plan.outcome}**`];
-  if (questions.length) lines.push('### Open Questions', questions.map((q) => '- ' + q).join('\n'));
-  const report = [...lines, ...new Set(details)].join('\n\n').replaceAll('@', '@\u200b').replaceAll('<', '&lt;') + '\n';
+  const report = reviewReport(plan, [...new Set(questions)], citations, drafted);
   writeFileSync(run + '/review.md', report);
   append('GITHUB_STEP_SUMMARY', '\n' + report);
   append('GITHUB_OUTPUT', `tree=${tree}\nneeds_input=${questions.length > 0}`);

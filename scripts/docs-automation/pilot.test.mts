@@ -49,6 +49,7 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
   });
   assert(!fs.existsSync(run + '/docs.patch'));
   assert.deepEqual(load<typeof plan>('classification.json').evidence, [plan.evidence[0]]);
+  assert.match(read(run + '/review.md'), /Documentation update recommended\.[\s\S]*### Planned pages/);
   process.env.MODE = 'draft';
   review((stage, pages) => {
     if (stage === 'draft') {
@@ -61,6 +62,11 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
   });
   assert.match(read(run + '/docs.patch'), /\+New behavior\./);
   assert.equal(load<{ findings: string[] }>('verification.json').findings.length, 2);
+  const report = read(run + '/review.md');
+  assert(report.startsWith('**Drafted 1 page. 3 items need review.**\n\n### Needs attention'));
+  assert(report.includes(`### Pages drafted\n\n- \`${page}\``));
+  assert(!report.includes(plan.pages[1]));
+  assert(report.includes('<details><summary>Evidence</summary>'));
   assert.match(read('outputs'), /tree=[0-9a-f]{40}\nneeds_input=true\n$/);
   const tree = git('write-tree').trim();
   git('read-tree', 'HEAD');
@@ -70,6 +76,17 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
   save('classification.json', { ...plan, outcome: 'needs-human', pages: [], questions: ['Which default?'] });
   review(() => assert.fail('Unexpected model call'));
   assert(read('outputs').endsWith('tree=\nneeds_input=true\n'));
+});
+
+test('the report preserves inline and fenced code, and escapes HTML and mentions in prose', () => {
+  const example = '```tsx\nconst view = <Patient />; // @medplum/core\n```';
+  const summary = 'Ask @reviewer about <b>labels</b>. Use `label ?? <AppointmentPatientName/>` and `@medplum/core`.';
+  review(() => ({ ...plan, outcome: 'no-docs', pages: [], summary: summary + '\n\n' + example }));
+  const report = read(run + '/review.md');
+  assert(report.includes('Ask @\u200breviewer about \\<b>labels\\</b>.'));
+  assert(report.includes('`label ?? <AppointmentPatientName/>` and `@medplum/core`'));
+  assert(report.includes(example));
+  assert(!report.includes('### Needs attention'));
 });
 
 test('edits must stay on planned, hand-written pages and citations must exist', () => {
@@ -84,6 +101,21 @@ test('edits must stay on planned, hand-written pages and citations must exist', 
   const folder = { path: 'packages/docs', line: 1, note: 'A directory.' };
   assert.throws(() => review(() => ({ ...plan, evidence: [missing, absent, folder] })), /needs evidence/);
   assert.throws(() => review(() => ({ ...plan, pages: 'unexpected' })));
+});
+
+test('a full verifier response keeps its overflow notice and still reports missing evidence', () => {
+  const findings = Array.from({ length: 7 }, (_, i) => `Fix passage ${i + 1}.`);
+  findings.push('Review is incomplete. Check the remaining examples on the operation page.');
+  review((stage) => {
+    if (stage === 'classify') return { ...plan, pages: [page] };
+    if (stage === 'verify') return { findings, evidence: [] };
+    fs.appendFileSync(docPath(page), '\nNew behavior.\n');
+    return { notes: 'Added an example.', questions: [] };
+  });
+  assert.deepEqual(load<{ findings: string[] }>('verification.json').findings, findings);
+  const report = read(run + '/review.md');
+  assert(report.includes(findings[7]));
+  assert(report.includes('The verifier cited no source.'));
 });
 
 test('a failed build updates the comment and a retry recovers an unassigned PR', () => {
