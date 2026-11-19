@@ -11,7 +11,9 @@ import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { createTestProject, initTestAuth, streamToString } from '../test.setup';
+import { writeBinaryContent } from './binary-content';
+import { getProjectSystemRepo } from './repo';
 
 const app = express();
 let accessToken: string;
@@ -100,12 +102,17 @@ describe('Binary', () => {
     expect(res).toHaveStatus(201);
 
     const binary = res.body;
+    const copySpy = vi.spyOn(getBinaryStorage(), 'copyBinary');
     const res2 = await request(app)
       .put('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
       .send('Hello world 2');
     expect(res2).toHaveStatus(200);
+    expect(copySpy).not.toHaveBeenCalled();
+    copySpy.mockRestore();
+    expect(res2.body.meta.versionId).not.toBe(binary.meta.versionId);
+    expect(await readStored(binary.id, binary.meta.versionId)).toBe('Hello world');
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
@@ -343,7 +350,26 @@ describe('Binary', () => {
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
   });
+
+  test('Replace content inside a transaction', async () => {
+    const { project } = await createTestProject();
+    const systemRepo = await getProjectSystemRepo(project);
+    const fields = { contentType: ContentType.TEXT };
+    const binary = await writeBinaryContent(systemRepo, { kind: 'create', fields, source: 'original' });
+
+    const replaced = await systemRepo.withTransaction(
+      (txRepo) => writeBinaryContent(txRepo, { kind: 'replace', id: binary.id, fields, source: 'replaced' }),
+      { resourceTypes: 'Binary', source: 'test.binary.replace' }
+    );
+    expect(await readStored(binary.id, replaced.meta?.versionId as string)).toBe('replaced');
+  });
 });
+
+async function readStored(id: string, versionId: string): Promise<string> {
+  return streamToString(
+    await getBinaryStorage().readBinary({ resourceType: 'Binary', id, meta: { versionId } } as Binary)
+  );
+}
 
 async function createBufferForStream(message: string, stream: Duplex): Promise<Buffer> {
   const input = new Readable();

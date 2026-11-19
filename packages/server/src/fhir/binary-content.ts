@@ -17,7 +17,7 @@ export interface BinaryContentFields {
 export type BinaryContentWrite =
   /** Creates a new Binary and stores `source` as its content. */
   | { kind: 'create'; fields: BinaryContentFields; source: BinarySource; filename?: string }
-  /** Replaces an existing Binary with `fields` (FHIR PUT semantics) and stores `source` as its content. */
+  /** Replaces an existing Binary with `fields` (FHIR PUT semantics) in a new version that stores `source`. */
   | { kind: 'replace'; id: string; fields: BinaryContentFields; source: BinarySource; filename?: string };
 
 /**
@@ -42,11 +42,13 @@ export async function startBinaryContentWrite(
   repo: Repository,
   write: BinaryContentWrite
 ): Promise<{ binary: WithId<Binary>; stored: Promise<void> }> {
+  // On replace, the forced version runs writeConstraint even when the fields are unchanged. The previous content is not
+  // copied to it: the write below provides the content, and a deferred copy would overwrite it inside a transaction.
   const resource: Binary = { resourceType: 'Binary', ...write.fields };
   const binary =
     write.kind === 'create'
       ? await repo.createResource(resource)
-      : await repo.updateResource({ ...resource, id: write.id });
+      : await repo.updateResource({ ...resource, id: write.id }, { forceNewVersion: true, skipBinaryCopy: true });
   const stored = getBinaryStorage().writeBinary(binary, write.filename, write.fields.contentType, write.source);
   return { binary, stored };
 }
