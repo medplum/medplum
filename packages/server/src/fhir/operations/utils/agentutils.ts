@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentError, AgentRequestMessage, AgentResponseMessage, WithId } from '@medplum/core';
+import type { AgentError, AgentRequestMessage, AgentResponseMessage, SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
   OperationOutcomeError,
@@ -83,7 +83,10 @@ export async function getAgentsForRequest(req: FhirRequest, repo: Repository): P
     const agent = await getAgentForRequest(req, repo);
     return agent ? [agent] : undefined;
   }
-  return repo.searchResources(parseSearchRequest('Agent', req.query));
+  const searchRequest = parseSearchRequest<Agent>('Agent', req.query);
+  assertSingleTypeSearch(searchRequest);
+  const agents = await repo.searchResources(searchRequest);
+  return agents.filter((agent) => agent.resourceType === 'Agent');
 }
 
 export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
@@ -96,12 +99,30 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return searchUnique<Device>(repo, parseSearchRequest(destination));
+    const searchRequest = parseSearchRequest<Device>(destination);
+    assertSingleTypeSearch(searchRequest);
+    const device = await searchUnique(repo, searchRequest);
+    return device?.resourceType === 'Device' ? device : undefined;
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
   }
   return undefined;
+}
+
+/**
+ * Rejects a user-supplied search whose results could include resources other than `searchRequest.resourceType`:
+ * `_type` replaces the searched type, and `_include`/`_revinclude` add resources of other types.
+ * Callers also check each result's type, so a parameter not covered here cannot swap in another resource.
+ *
+ * @param searchRequest - The parsed search request.
+ */
+function assertSingleTypeSearch(searchRequest: SearchRequest): void {
+  if (searchRequest.types || searchRequest.include || searchRequest.revInclude) {
+    throw new OperationOutcomeError(
+      badRequest(`_type, _include, and _revinclude are not supported when searching for ${searchRequest.resourceType}`)
+    );
+  }
 }
 
 export async function handleBulkAgentOperation(
