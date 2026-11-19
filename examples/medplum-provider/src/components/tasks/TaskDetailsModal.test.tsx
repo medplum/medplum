@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Patient, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import * as usePatientModule from '../../hooks/usePatient';
+import { render } from '../../test-utils/render';
 import { TaskDetailsModal } from './TaskDetailsModal';
 
 describe('TaskDetailsModal', () => {
@@ -46,14 +46,12 @@ describe('TaskDetailsModal', () => {
     return render(
       <MemoryRouter initialEntries={['/Patient/patient-123/Encounter/encounter-123/Task/task-123']}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route
-                path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId"
-                element={<TaskDetailsModal task={{ reference: 'Task/task-123' }} onUpdateTask={onUpdateTask} />}
-              />
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route
+              path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId"
+              element={<TaskDetailsModal task={{ reference: 'Task/task-123' }} onUpdateTask={onUpdateTask} />}
+            />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

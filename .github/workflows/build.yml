@@ -69,6 +69,8 @@ jobs:
           echo "npm version: $(npm --version)"
       - name: Install
         run: npm ci
+      - name: Check Provider documentation labels
+        run: node packages/docs/scripts/check-provider-labels.mjs
       - name: Build Project
         run: npm run build
         env:
@@ -90,6 +92,7 @@ jobs:
       pull-requests: write
     env:
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      PREVIEW_ID: pr-${{ github.event.pull_request.number }}-${{ github.run_number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -199,7 +202,7 @@ jobs:
         run: './scripts/deploy-app.sh'
         env:
           AWS_REGION: 'us-east-1'
-          APP_BUCKET: preview.medplum.dev/previews/app-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          APP_BUCKET: preview.medplum.dev/previews/app-${{ env.PREVIEW_ID }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           MEDPLUM_REGISTER_ENABLED: ${{ vars.STAGING_MEDPLUM_REGISTER_ENABLED }}
@@ -209,13 +212,13 @@ jobs:
         run: './scripts/deploy-docs.sh'
         env:
           AWS_REGION: 'us-east-1'
-          DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          DOCS_DESTINATION: preview.medplum.dev/previews/docs-${{ env.PREVIEW_ID }}
       - name: Deploy foomedical preview
         if: steps.changes.outputs.deploy_foomedical == 'true'
         run: './scripts/deploy-foomedical.sh'
         env:
           AWS_REGION: 'us-east-1'
-          FOOMEDICAL_BUCKET: preview.medplum.dev/previews/foomedical-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          FOOMEDICAL_BUCKET: preview.medplum.dev/previews/foomedical-${{ env.PREVIEW_ID }}
           FOOMEDICAL_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           FOOMEDICAL_PROJECT_ID: ${{ vars.STAGING_FOOMEDICAL_PROJECT_ID }}
           FOOMEDICAL_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
@@ -225,7 +228,7 @@ jobs:
         run: './scripts/deploy-provider-app.sh'
         env:
           AWS_REGION: 'us-east-1'
-          PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          PROVIDER_APP_BUCKET: preview.medplum.dev/previews/provider-${{ env.PREVIEW_ID }}
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
@@ -234,7 +237,7 @@ jobs:
         run: './scripts/deploy-storybook.sh'
         env:
           AWS_REGION: 'us-east-1'
-          STORYBOOK_BUCKET: preview.medplum.dev/previews/storybook-${{ github.event.pull_request.user.login }}-${{ github.run_number }}
+          STORYBOOK_BUCKET: preview.medplum.dev/previews/storybook-${{ env.PREVIEW_ID }}
       - name: Comment preview URLs
         if: steps.changes.outputs.deploy_any == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
@@ -247,25 +250,9 @@ jobs:
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const login = context.payload.pull_request.user.login;
-            const n = context.runNumber;
-
-            const rows = [];
-            if (process.env.DEPLOY_APP === 'true') {
-              rows.push(`| App       | https://app-${login}-${n}.preview.medplum.dev |`);
-            }
-            if (process.env.DEPLOY_DOCS === 'true') {
-              rows.push(`| Docs      | https://docs-${login}-${n}.preview.medplum.dev |`);
-            }
-            if (process.env.DEPLOY_FOOMEDICAL === 'true') {
-              rows.push(`| Foo Medical | https://foomedical-${login}-${n}.preview.medplum.dev |`);
-            }
-            if (process.env.DEPLOY_PROVIDER === 'true') {
-              rows.push(`| Provider  | https://provider-${login}-${n}.preview.medplum.dev |`);
-            }
-            if (process.env.DEPLOY_STORYBOOK === 'true') {
-              rows.push(`| Storybook | https://storybook-${login}-${n}.preview.medplum.dev |`);
-            }
+            const rows = Object.entries({ app: 'App', docs: 'Docs', foomedical: 'Foo Medical', provider: 'Provider', storybook: 'Storybook' })
+              .filter(([name]) => process.env[`DEPLOY_${name.toUpperCase()}`] === 'true')
+              .map(([name, label]) => `| ${label} | https://${name}-${process.env.PREVIEW_ID}.preview.medplum.dev |`);
 
             const body = [
               '### Preview Links',

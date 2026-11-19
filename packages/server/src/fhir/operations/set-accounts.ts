@@ -29,6 +29,7 @@ import { getCacheRedis } from '../../redis';
 import { getAsyncJobTracking } from '../../workers/base';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import { CancelledError } from '../../workers/utils';
+import { FhirQuotaCost } from '../fhirquota';
 import { getPatients } from '../patient';
 import type { Repository, SystemRepository } from '../repo';
 import { makeOperationDefinition } from './definitions';
@@ -204,7 +205,8 @@ async function updateTargetResource(
   accounts: Reference[]
 ): Promise<{ target: WithId<Resource>; oldAccounts: Reference[] | undefined }> {
   const systemRepo = userRepo.getSystemRepo();
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
+  // System repo writes skip quota accounting, so charge the user's repo, which also exempts async jobs
+  await userRepo.recordFhirQuota(FhirQuotaCost.WRITE);
 
   // Each read+write below runs in one transaction, so the read comes from the database rather
   // than the cache, and a concurrent write to the same resource retries against the newer version
@@ -306,7 +308,7 @@ async function updateCompartmentResource(
 
   const { resourceType } = resource;
   const id = resource.id as string;
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
+  await userRepo.recordFhirQuota(FhirQuotaCost.WRITE);
   try {
     // Read and write with the system repo to keep fields hidden from the user
     return await userRepo.getSystemRepo().withTransaction<CompartmentUpdateResult>(

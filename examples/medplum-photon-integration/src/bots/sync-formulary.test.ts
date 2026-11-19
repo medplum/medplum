@@ -23,6 +23,14 @@ import { vi } from 'vitest';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_TREATMENTS } from './constants';
 import { addPhotonIdToMedicationKnowledge, handler } from './sync-formulary';
 
+vi.mock('./utils.ts', async () => {
+  const actualModule = await vi.importActual('./utils.ts');
+  return {
+    ...actualModule,
+    handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+  };
+});
+
 describe('Sync formulary', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -31,14 +39,6 @@ describe('Sync formulary', async () => {
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
       indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
     }
-  });
-
-  vi.mock('./utils.ts', async () => {
-    const actualModule = await vi.importActual('./utils.ts');
-    return {
-      ...actualModule,
-      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
-    };
   });
 
   const bot: Reference<Bot> = { reference: 'Bot/123' };

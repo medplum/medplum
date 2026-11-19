@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { FaxPage } from './FaxPage';
 
 vi.mock('@medplum/react-hooks', async () => {
@@ -80,16 +80,14 @@ describe('FaxPage', () => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <LocationDisplay />
-            <Routes>
-              <Route path="/Fax/Communication" element={<FaxPage />} />
-              <Route path="/Fax/Communication/new" element={<FaxPage />} />
-              <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
-              <Route path="/Fax/Communication/:faxId/new" element={<FaxPage />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <LocationDisplay />
+          <Routes>
+            <Route path="/Fax/Communication" element={<FaxPage />} />
+            <Route path="/Fax/Communication/new" element={<FaxPage />} />
+            <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
+            <Route path="/Fax/Communication/:faxId/new" element={<FaxPage />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

@@ -17,7 +17,7 @@ graph TD
 	User1["<strong>User</strong><br/>email: foo＠example.com<br/><span style='color:grey'><em>Server Scoped</em></span>"]
 	PM1_1("<strong>ProjectMembership</strong><br/>admin: true")
 	PM1_2("<strong>ProjectMembership</strong><br/>admin: false")
-	PM2_2("<strong>ProjectMembership</strong><br/>accessPolicy: ['AccessPolicy/123']")
+	PM2_2("<strong>ProjectMembership</strong><br/>AccessPolicy grant")
 
   User1 -->PM1_1
 	User1 -->PM1_2
@@ -28,7 +28,7 @@ graph TD
 	  p1[[Practitioner]]
 	  p2[[DiagnosticReport]]
 	  p3[[Observation]]
-    Bot["<strong>Bot</strong>"] --> PM2_3("<strong>ProjectMembership</strong><br/>accessPolicy: ['AccessPolicy/456']")
+    Bot["<strong>Bot</strong>"] --> PM2_3("<strong>ProjectMembership</strong><br/>AccessPolicy grant")
 	end
 	subgraph Project1
     User2["<strong>User</strong><br/>email: bar＠example.com<br/><span style='color:grey'><em>Project Scoped</em></span>"]
@@ -44,9 +44,9 @@ graph TD
 
 | Resource                                                        | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| [`User`](/docs/api/fhir/medplum/user)                           | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
+| [`User`](/docs/api/fhir/medplum/user)                           | An authentication identity with project or server scope. Credential and profile information have separate lifecycles; project admins can manage project-scoped Users.                                                                                                                     | None                                                                                                                     |
 | [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. See the [Projects guide](/docs/access/projects)                                                                                           | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
-| [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
+| [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | Connects a User to a Project, one profile, and access grants. A User can have multiple memberships, including within one project. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
 
 ### Users
 
@@ -61,7 +61,7 @@ See our guide on [Project vs Server Scoped Users](/docs/user-management/project-
 
 ### Profiles
 
-_Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource.
+_Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource. Each membership has one profile; the same User can have additional memberships with different profiles. During authentication, a `Login` selects a membership, establishing the session's profile and permissions. See [Identity, Memberships, and Sessions](/docs/access/tenant-selector) for staff and patient account approaches and their resource diagrams.
 
 A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/access/access-policies) can access the profile of the current user ([read more](/docs/access/access-policies#patient-access))
 
@@ -132,22 +132,20 @@ With is `ClientApplication`, you can create a `Project` resource and invite the 
 
 ## User Administration via Medplum App
 
-Users in Medplum can be members of multiple projects, so cannot be edited directly. You'll need to invite a user to a project in order to grant access. If the user does not exist, it will be created when invited.
+Invite a user to grant project access. The invite flow creates or reuses a User according to its matching key and identity scope, and creates or selects the intended profile. Project admins can manage project-scoped Users; see [User scope and account updates](/docs/user-management/project-vs-server-scoped-users).
 
 ### Creating Memberships
 
 Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/access/access-policies) at time of invite. The invite flow will do the following:
 
 1. Create a `User` if one does not already exist
-2. Create a FHIR resource (Patient, Practitioner or RelatedPerson)
+2. Create or reuse a profile resource (Patient, Practitioner, or RelatedPerson); `membership.profile` can select an existing profile explicitly
 3. Create a ProjectMembership that links User, ProfileResource and access policy
 4. (Optional) send an email invite user
 
-{{< danger title="Note" >}}
-
-Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner) or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that belong to [`ProjectMemberships`](/docs/api/fhir/medplum/projectmembership). This will cause the login to be non-functional. Do not edit or change the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources directly. If you do delete one of these resources, you will need to register a new project.
-
-{{< /danger >}}
+{{< note title="Preserve profile resources" >}}
+Keep Patient, Practitioner, and RelatedPerson profiles referenced by active memberships. Deleting a profile can break sign-in. Administrators can update membership grants and deactivate memberships when access ends; the clinical profile can remain for record keeping. For multiple memberships, select the intended membership ID before changing its access.
+{{< /note >}}
 
 ### Deactivating Memberships
 

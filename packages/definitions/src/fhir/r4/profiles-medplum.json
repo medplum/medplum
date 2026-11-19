@@ -5884,6 +5884,21 @@
             }
           },
           {
+            "id" : "SmartHealthLink.passcodeFailures",
+            "path" : "SmartHealthLink.passcodeFailures",
+            "definition" : "Number of incorrect passcodes submitted for the SMART Health Link.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.passcodeFailures",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "SmartHealthLink.file",
             "path" : "SmartHealthLink.file",
             "definition" : "Encrypted file available from the SMART Health Link.",

@@ -177,6 +177,10 @@ Build an expected-reference inventory from the transformed data, then verify tha
 - Subject, encounter, performer, requester, author, custodian, and organization links preserve their meaning.
 - Patient-facing resources contain their own required patient-compartment references.
 
+For a [two-pass backfill](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references), count pending logical references separately from resolved links. Reconcile the pending-link manifest against the stored resources so an interrupted write cannot leave an untracked relationship. Use a [reference identifier search](/docs/migration/migration-pipelines#finding-dependents-by-their-logical-reference), such as `Condition?encounter:identifier=system%7Cvalue`, to find dependents for each expected target identifier, including links missing from the manifest. Paginate all results and inspect the literal reference because retained identifiers also match after resolution. After pass 2, verify the target's source identifier and patient context, the stored literal reference, and the completion status of each manifest entry. Zero-match links remain pending; multiple matches and changed relationships require review.
+
+If a Subscription-triggered Bot resolves links, also run the manifest sweep and inspect handler failures. A target's successful import or event delivery does not prove that all dependents were patched. Required links must resolve before acceptance; any intentionally retained logical references need an explicit scope decision, owner, and assessment of affected searches, access, and workflows.
+
 {{< warning title="An identifier match is not proof of identity" >}}
 
 Preserving an identifier does not prove that two source patients are the same person. Check duplicate rates, matching outcomes, identifier collisions, and potential incorrect merges separately. Decide before migration whether duplicates are merely reported, blocked, or processed through a governed [patient deduplication](/docs/fhir-datastore/patient-deduplication) workflow.

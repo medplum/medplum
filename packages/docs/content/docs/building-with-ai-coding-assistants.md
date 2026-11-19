@@ -103,7 +103,7 @@ Agnostic to your LLM and editor:
 
 3. Tell the model it can read `medplum-link/`. The clone includes the technical docs,
    reusable components, and example apps. The planning workflow uses:
-   - `medplum-link/packages/docs/docs/decision-guides/`: questions and design tradeoffs.
+   - `medplum-link/packages/docs/content/docs/decision-guides/`: questions and design tradeoffs.
    - `medplum-link/packages/docs/static/ai/planning.md`: instructions for planning and implementation.
    - `medplum-link/packages/docs/static/ai/medplum-rules.md`: reusable rules, shown in
      [section 5](#5-encode-your-conventions-in-a-rule-file).
@@ -159,7 +159,7 @@ These are illustrative answers, not defaults for every application:
 # Charting decisions
 
 Source: https://www.medplum.com/docs/decision-guides/charting
-Local source: medplum-link/packages/docs/docs/decision-guides/charting.md
+Local source: medplum-link/packages/docs/content/docs/decision-guides/charting.md
 Source revision: [commit from git -C medplum-link rev-parse HEAD]
 Consulted: [date]
 

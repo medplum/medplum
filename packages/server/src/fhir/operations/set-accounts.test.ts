@@ -30,7 +30,7 @@ import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.set
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
 import { CancelledError } from '../../workers/utils';
-import { FhirRateLimiter } from '../fhirquota';
+import { FhirQuotaCost, FhirRateLimiter } from '../fhirquota';
 import { getProjectSystemRepo, Repository } from '../repo';
 import { setAccountsHandler, setResourceAccounts } from './set-accounts';
 
@@ -281,26 +281,26 @@ describe('Patient Set Accounts Operation', () => {
     expect(stripped.meta?.accounts).toBeUndefined();
 
     const transactionSpy = vi.spyOn(Repository.prototype, 'withTransaction');
-    const recordWriteSpy = vi.spyOn(FhirRateLimiter.prototype, 'recordWrite');
+    const consumeSpy = vi.spyOn(FhirRateLimiter.prototype, 'consume');
 
     const repair = await setPatientAccounts([organization1], true);
     expect(repair).toHaveStatus(200);
     expect(repair.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
     // Only the Observation needed a write, in addition to the target
     expect(compartmentWrites(transactionSpy)).toStrictEqual(['Observation']);
-    expect(recordWriteSpy).toHaveBeenCalledTimes(2);
+    expect(chargedWrites(consumeSpy)).toBe(2);
 
     const obs = await readExtended<Observation>(`Observation/${observation.id}`);
     expect(obs.meta?.accounts).toStrictEqual([{ reference: getReferenceString(organization1) }]);
 
     // With every compartment resource up to date, only the target is written
     transactionSpy.mockClear();
-    recordWriteSpy.mockClear();
+    consumeSpy.mockClear();
     const noop = await setPatientAccounts([organization1], true);
     expect(noop).toHaveStatus(200);
     expect(noop.body.parameter?.[0]).toMatchObject({ name: 'resourcesUpdated', valueInteger: 3 });
     expect(compartmentWrites(transactionSpy)).toHaveLength(0);
-    expect(recordWriteSpy).toHaveBeenCalledTimes(1);
+    expect(chargedWrites(consumeSpy)).toBe(1);
   });
 
   test('Counts and writes each compartment resource once when its write moves it to a later page', async () => {
@@ -389,13 +389,13 @@ describe('Patient Set Accounts Operation', () => {
         await originalUpdate.call(concurrentRepo, { ...current, gender: 'female' });
       }
     });
-    const recordWriteSpy = vi.spyOn(FhirRateLimiter.prototype, 'recordWrite');
+    const consumeSpy = vi.spyOn(FhirRateLimiter.prototype, 'consume');
 
     const res = await setPatientAccounts([organization1], false);
     expect(res).toHaveStatus(200);
     // Operation's write, then its retried write
     expect(patientUpdates).toBe(2);
-    expect(recordWriteSpy).toHaveBeenCalledTimes(1);
+    expect(chargedWrites(consumeSpy)).toBe(1);
 
     const updated = await readExtended<Patient>(`Patient/${patient.id}`);
     expect(updated.gender).toBe('female');
@@ -574,7 +574,10 @@ describe('Patient Set Accounts Operation', () => {
 
   test('Supports async response', async () => {
     const { contentLocation, job } = await requestAsyncSetAccounts();
+    const consumeSpy = vi.spyOn(FhirRateLimiter.prototype, 'consume');
     await runInJobContext(() => execSetAccountsJob(job));
+    // Async propagation must not charge the user's FHIR quota
+    expect(consumeSpy).not.toHaveBeenCalled();
 
     await waitForAsyncJob(contentLocation, app, accessToken);
     const statusRes = await request(app)
@@ -894,6 +897,15 @@ function compartmentWrites(transactionSpy: MockInstance<Repository['withTransact
   return transactionSpy.mock.calls
     .filter(([, options]) => options.source === 'setAccounts.compartment')
     .map(([, options]) => (options.resourceTypes as string[])[0]);
+}
+
+/**
+ * Counts the writes charged to the user's FHIR quota.
+ * @param consumeSpy - A spy on `FhirRateLimiter.consume`.
+ * @returns The number of write charges.
+ */
+function chargedWrites(consumeSpy: MockInstance<FhirRateLimiter['consume']>): number {
+  return consumeSpy.mock.calls.filter(([points]) => points === FhirQuotaCost.WRITE).length;
 }
 
 /**

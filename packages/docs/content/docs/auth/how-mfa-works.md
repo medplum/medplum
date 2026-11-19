@@ -87,7 +87,7 @@ POST /auth/mfa/verify  { login, token }  ──▶  { login, code, ... }
 Exchange `code` for tokens (or handle `memberships` if profile selection is required)
 ```
 
-`token` in `/auth/mfa/verify` is accepted as either a TOTP code or an emailed code, so a single verify call works regardless of which factor the user chose.
+`token` in `/auth/mfa/verify` is accepted as either a TOTP code or an emailed code, so a single verify call works regardless of which factor the user chose. A TOTP code is checked against the user's enrolled authenticator, or, for a user not yet enrolled, against the secret offered to that `login`, which enrolls the user as `/auth/mfa/login-enroll` does.
 
 ## Flow: Forced enrollment at first login
 
@@ -106,7 +106,7 @@ POST /auth/login  ──▶  { login, mfaEnrollRequired: true, enrollQrCode, enr
                    POST /auth/mfa/verify { login, token }  ──▶  { login, code, ... }
 ```
 
-For TOTP, `login-enroll` both enrolls the user and verifies the supplied code, completing the login in one step. For email, enrollment makes email the user's factor and forces a normal email challenge (so the emailed code reverifies their address) before the login is granted.
+For TOTP, `login-enroll` both enrolls the user and verifies the supplied code, completing the login in one step. The QR code is specific to that `login`, so the code must be submitted with the same `login`. For email, enrollment makes email the user's factor and forces a normal email challenge (so the emailed code reverifies their address) before the login is granted.
 
 ## Flow: Self-enrolling from a settings page
 
@@ -125,7 +125,9 @@ const status = await medplum.get('auth/mfa/status', { cache: 'no-cache' });
 // }
 ```
 
-`/auth/mfa/status` returns a TOTP `enrollQrCode`/`enrollUri` while the user is not enrolled in TOTP (generating a secret if the user does not have one yet), so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email. Once TOTP is enrolled, they are no longer returned.
+`/auth/mfa/status` returns a TOTP `enrollQrCode`/`enrollUri` while the user is not enrolled in TOTP, so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email. Once TOTP is enrolled, they are no longer returned.
+
+Each session (and, at login, each `login`) is offered its own TOTP secret, which is returned unchanged on repeated reads for 20 minutes. It becomes the user's authenticator secret only when that same session or `login` confirms it with a code. After 20 minutes, enrollment fails with `Secret not found` and the QR code must be fetched again.
 
 **Enroll in TOTP (authenticator app):**
 
@@ -172,4 +174,4 @@ Notes:
 
 ## Error responses
 
-The MFA routes return a FHIR `OperationOutcome` with `400 Bad Request` on failure. Common cases include `Invalid token` / `Invalid MFA token`, `MFA code expired`, `Already enrolled`, `MFA method not allowed`, `User not enrolled in MFA`, `Missing token`, and `Cannot remove the last MFA factor because MFA is required`. The login-time routes additionally reject a `login` that is already `revoked`, `granted`, or verified.
+The MFA routes return a FHIR `OperationOutcome` with `400 Bad Request` on failure. Common cases include `Invalid token` / `Invalid MFA token`, `MFA code expired`, `Secret not found` (the TOTP enrollment offer expired), `Already enrolled`, `MFA method not allowed`, `User not enrolled in MFA`, `Missing token`, and `Cannot remove the last MFA factor because MFA is required`. The login-time routes additionally reject a `login` that is already `revoked`, `granted`, or verified.

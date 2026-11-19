@@ -39,6 +39,7 @@ const DOCS_DIR = path.join(__dirname, '..', 'content', 'docs', 'decision-guides'
 const OUT_DIR = path.join(__dirname, '..', 'static', 'decision-guides');
 const REFERENCE_DOCX = path.join(__dirname, 'decision-guide-reference.docx');
 const WORDMARK_PNG = path.join(__dirname, 'assets', 'medplum-wordmark-grape.png');
+const STATIC_DIR = path.join(__dirname, '..', 'static');
 
 // The guide's body for pandoc. Hugo pages render their title from front matter, so the H1 is restored here.
 function guideMarkdown(markdown) {
@@ -67,7 +68,9 @@ function isMissingToolError(err) {
 // pandoc succeeded) can't leave a raw even-columns docx sitting in static/.
 function buildDocx(slug, markdownBody, tmpDir) {
   const tmpMd = path.join(tmpDir, `${slug}.md`);
-  const content = `![Medplum](${WORDMARK_PNG})\n\n${markdownBody}`;
+  // Resolve site image paths for pandoc, preserving any optional title after the URL.
+  const bodyWithImages = markdownBody.replace(/(!\[[^\]]*\]\()\/(img\/[^\s)]+)(?=\s|\))/g, (_, prefix, asset) => `${prefix}<${path.join(STATIC_DIR, asset)}>`);
+  const content = `![Medplum](${WORDMARK_PNG})\n\n${bodyWithImages}`;
   fs.writeFileSync(tmpMd, content);
 
   const tmpDocx = path.join(tmpDir, `${slug}.docx`);
@@ -86,6 +89,18 @@ function postProcessDocx(docxPath) {
   xml = ensureTrailingParagraph(xml);
   xml = stripImageSourcePaths(xml);
   fs.writeFileSync(documentXmlPath, xml);
+
+  // Root-relative site links need absolute URLs when opened in a downloaded file.
+  const relationshipsPath = path.join(extractDir, 'word', '_rels', 'document.xml.rels');
+  const relationships = fs.readFileSync(relationshipsPath, 'utf8');
+  fs.writeFileSync(
+    relationshipsPath,
+    relationships.replace(/<Relationship\b[^>]*\/>/g, (relationship) =>
+      relationship.includes('Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"')
+        ? relationship.replace(/Target="\/(?!\/)/, 'Target="https://www.medplum.com/')
+        : relationship
+    )
+  );
 
   const corePropsPath = path.join(extractDir, 'docProps', 'core.xml');
   if (fs.existsSync(corePropsPath)) {

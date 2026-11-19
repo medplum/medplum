@@ -17,6 +17,7 @@ import {
   getTypedPropertyValueWithSchema,
   isDateString,
   isDateTimeString,
+  removeDuplicates,
   toJsBoolean,
   toPeriod,
   toTypedValue,
@@ -37,6 +38,26 @@ describe('FHIRPath utils', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  });
+
+  test('removeDuplicates', () => {
+    const str1 = { type: PropertyType.string, value: '1' };
+    const strTrue = { type: PropertyType.string, value: 'true' };
+    const nearly1 = { type: PropertyType.decimal, value: 1 + 1e-10 };
+    expect(
+      removeDuplicates([
+        str1,
+        TYPED_1,
+        TYPED_TRUE,
+        strTrue,
+        { type: PropertyType.code, value: '1' },
+        nearly1,
+        { ...TYPED_TRUE },
+        TYPED_CODING_MEDPLUM123,
+        { type: PropertyType.Coding, value: { code: 'MEDPLUM123' } },
+        TYPED_CODING_MEDPLUM123_W_SYSTEM,
+      ])
+    ).toStrictEqual([str1, TYPED_1, TYPED_TRUE, strTrue, TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123_W_SYSTEM]);
   });
 
   test('toJsBoolean', () => {

@@ -30,7 +30,6 @@ import { installAutocompleteTimers, removePill, settleAutocomplete } from '../te
 import {
   addRow,
   chooseActor,
-  chooseDay,
   chooseFirstOfferedTime,
   chooseImagingService,
   choosePatient,
@@ -40,6 +39,7 @@ import {
   clickBook,
   codePill,
   dragDays,
+  durationEditorButton,
   enterAuthorizationDetails,
   enterCode,
   field,
@@ -316,8 +316,7 @@ describe('SchedulingWorkspace booking', () => {
       fireEvent.click(screen.getAllByRole('button', { name: `click appointment ${appointment.id}` })[0]);
       fireEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
       await settleAutocomplete();
-      await openTimeFinder();
-      expect(screen.queryByText('Or enter a time') !== null).toBe(canBypassSchedulingRules);
+      expect(durationEditorButton() !== null).toBe(canBypassSchedulingRules);
     }
   );
 
@@ -583,11 +582,10 @@ describe('SchedulingWorkspace booking', () => {
       await openTimeFinder();
       await chooseSecondOfferedTime();
       expect(proposedTime()).not.toBe('none');
-      await openTimeFinder();
 
-      // Searching another day drops the time, and a proposal left on the old one would
-      // be pointing at a time nobody has chosen.
-      await chooseDay('19');
+      // Another provider drops the time, and a proposal left on it would be pointing at
+      // a time nobody has chosen.
+      await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
 
       expect(proposedTime()).toBe('none');
     });
@@ -610,7 +608,7 @@ describe('SchedulingWorkspace booking', () => {
       expect(proposedTime()).toBe(proposed);
     });
 
-    test('Moves the mark to each new click, and the proposal only where Book would book', async () => {
+    test('Moves the mark to each new click, and leaves the proposal where Book would book', async () => {
       setup();
       await clickCalendar('tuesday morning');
       await chooseImagingService();
@@ -624,10 +622,10 @@ describe('SchedulingWorkspace booking', () => {
       expect(markedTime()).toBe(TUESDAY_AFTERNOON.toISOString());
       expect(proposedTime()).toBe(proposed);
 
-      // Another day drops it.
+      // So does another day: searching it is not choosing a time on it.
       await clickCalendar('thursday');
       expect(markedTime()).toBe(THURSDAY_MORNING.toISOString());
-      expect(proposedTime()).toBe('none');
+      expect(proposedTime()).toBe(proposed);
     });
   });
 

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications, Notifications } from '@mantine/notifications';
 import type { MedicationOrderRequest, MedicationOrderResponse, WithId } from '@medplum/core';
 import {
@@ -23,11 +22,12 @@ import {
   SCRIPTSURE_ROUTED_MED_ID_SYSTEM,
   SCRIPTSURE_SIG_EXTENSION,
 } from '@medplum/scriptsure-react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import type { OrderMedicationPageProps } from './OrderMedicationPage';
 import { OrderMedicationPage } from './OrderMedicationPage';
 
@@ -110,7 +110,7 @@ function preferredPharmacies(...ids: string[]): Extension[] {
 async function renderPage(medplum: MockClient, props: OrderMedicationPageProps = {}): Promise<void> {
   await act(async () => {
     render(
-      <MantineProvider>
+      <>
         <Notifications />
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
@@ -119,7 +119,7 @@ async function renderPage(medplum: MockClient, props: OrderMedicationPageProps =
             </Routes>
           </MemoryRouter>
         </MedplumProvider>
-      </MantineProvider>
+      </>
     );
   });
 }
@@ -161,15 +161,13 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
-          <MedplumProvider medplum={medplum}>
-            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
-              <Routes>
-                <Route path="/Patient/:patientId/MedicationRequest" element={<OrderMedicationPage />} />
-              </Routes>
-            </MemoryRouter>
-          </MedplumProvider>
-        </MantineProvider>
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+            <Routes>
+              <Route path="/Patient/:patientId/MedicationRequest" element={<OrderMedicationPage />} />
+            </Routes>
+          </MemoryRouter>
+        </MedplumProvider>
       );
     });
 
@@ -205,7 +203,7 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
+        <>
           <Notifications />
           <MedplumProvider medplum={medplum}>
             <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
@@ -217,7 +215,7 @@ describe('OrderMedicationPage', () => {
               </Routes>
             </MemoryRouter>
           </MedplumProvider>
-        </MantineProvider>
+        </>
       );
     });
 
@@ -279,18 +277,16 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
-          <MedplumProvider medplum={medplum}>
-            <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
-              <Routes>
-                <Route
-                  path="/Patient/:patientId/MedicationRequest"
-                  element={<OrderMedicationPage patient={HomerSimpson} />}
-                />
-              </Routes>
-            </MemoryRouter>
-          </MedplumProvider>
-        </MantineProvider>
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
+            <Routes>
+              <Route
+                path="/Patient/:patientId/MedicationRequest"
+                element={<OrderMedicationPage patient={HomerSimpson} />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </MedplumProvider>
       );
     });
 
@@ -349,7 +345,7 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
+        <>
           <Notifications />
           <MedplumProvider medplum={medplum}>
             <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
@@ -361,7 +357,7 @@ describe('OrderMedicationPage', () => {
               </Routes>
             </MemoryRouter>
           </MedplumProvider>
-        </MantineProvider>
+        </>
       );
     });
 
@@ -405,7 +401,7 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
+        <>
           <Notifications />
           <MedplumProvider medplum={medplum}>
             <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
@@ -417,7 +413,7 @@ describe('OrderMedicationPage', () => {
               </Routes>
             </MemoryRouter>
           </MedplumProvider>
-        </MantineProvider>
+        </>
       );
     });
 
@@ -453,7 +449,7 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
+        <>
           <Notifications />
           <MedplumProvider medplum={medplum}>
             <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
@@ -465,7 +461,7 @@ describe('OrderMedicationPage', () => {
               </Routes>
             </MemoryRouter>
           </MedplumProvider>
-        </MantineProvider>
+        </>
       );
     });
 
@@ -525,7 +521,7 @@ describe('OrderMedicationPage', () => {
 
     await act(async () => {
       render(
-        <MantineProvider>
+        <>
           <Notifications />
           <MedplumProvider medplum={medplum}>
             <MemoryRouter initialEntries={[`/Patient/${HomerSimpson.id}/MedicationRequest`]}>
@@ -544,7 +540,7 @@ describe('OrderMedicationPage', () => {
               </Routes>
             </MemoryRouter>
           </MedplumProvider>
-        </MantineProvider>
+        </>
       );
     });
 

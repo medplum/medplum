@@ -124,125 +124,121 @@ export interface TokensContext {
 }
 
 export function convertToSearchableTokens(typedValues: TypedValue[], context: TokensContext = {}): SearchableToken[] {
-  const result: SearchableToken[] = [];
+  const tokens = new SearchableTokenSet(context);
   for (const typedValue of typedValues) {
-    buildTokens(context, result, typedValue);
+    buildTokens(tokens, typedValue);
   }
-  return result;
+  return tokens.result;
+}
+
+/**
+ * Accumulates unique tokens in insertion order.
+ * Uniqueness is tracked by hash lookup so that resources with many tokens (e.g. large ValueSets) stay linear.
+ */
+class SearchableTokenSet {
+  readonly context: TokensContext;
+  readonly result: SearchableToken[] = [];
+  private readonly seen = new Map<string | undefined, Set<string | undefined>>();
+
+  constructor(context: TokensContext) {
+    this.context = context;
+  }
+
+  /**
+   * Adds a token if there is a system or a value, and if it is not already in the set.
+   * @param system - The token system.
+   * @param value - The token value.
+   */
+  add(system: string | undefined, value: string | undefined): void {
+    if (!system && !value) {
+      return;
+    }
+    const normalizedValue = value && this.context.caseInsensitive ? value.toLocaleLowerCase() : value;
+    let values = this.seen.get(system);
+    if (!values) {
+      values = new Set();
+      this.seen.set(system, values);
+    }
+    if (!values.has(normalizedValue)) {
+      values.add(normalizedValue);
+      this.result.push({ system, value: normalizedValue });
+    }
+  }
 }
 
 /**
  * Builds a list of zero or more tokens for a search parameter and value.
- * @param context - The context for building tokens.
- * @param result - The result array where tokens will be added.
+ * @param tokens - The token set where tokens will be added.
  * @param typedValue - A typed value to be indexed for the search parameter.
  */
-function buildTokens(context: TokensContext, result: SearchableToken[], typedValue: TypedValue): void {
+function buildTokens(tokens: SearchableTokenSet, typedValue: TypedValue): void {
   const { type, value } = typedValue;
 
   switch (type) {
     case PropertyType.Identifier:
-      buildIdentifierToken(result, context, value as Identifier);
+      buildIdentifierToken(tokens, value as Identifier);
       break;
     case PropertyType.CodeableConcept:
-      buildCodeableConceptToken(result, context, value as CodeableConcept);
+      buildCodeableConceptToken(tokens, value as CodeableConcept);
       break;
     case PropertyType.Coding:
-      buildCodingToken(result, context, value as Coding);
+      buildCodingToken(tokens, value as Coding);
       break;
     case PropertyType.ContactPoint:
-      buildContactPointToken(result, context, value as ContactPoint);
+      buildContactPointToken(tokens, value as ContactPoint);
       break;
     default:
-      buildSimpleToken(result, context, undefined, value?.toString() as string | undefined);
+      tokens.add(undefined, value?.toString() as string | undefined);
   }
 }
 
 /**
  * Builds an identifier token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
+ * @param tokens - The token set where tokens will be added.
  * @param identifier - The Identifier object to be indexed.
  */
-function buildIdentifierToken(
-  result: SearchableToken[],
-  context: TokensContext,
-  identifier: Identifier | undefined
-): void {
+function buildIdentifierToken(tokens: SearchableTokenSet, identifier: Identifier | undefined): void {
   if (identifier?.type?.text) {
-    buildSimpleToken(result, context, context.textSearchSystem, identifier.type.text);
+    tokens.add(tokens.context.textSearchSystem, identifier.type.text);
   }
-  buildSimpleToken(result, context, identifier?.system, identifier?.value);
+  tokens.add(identifier?.system, identifier?.value);
 }
 
 /**
  * Builds zero or more CodeableConcept tokens.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
+ * @param tokens - The token set where tokens will be added.
  * @param codeableConcept - The CodeableConcept object to be indexed.
  */
-function buildCodeableConceptToken(
-  result: SearchableToken[],
-  context: TokensContext,
-  codeableConcept: CodeableConcept | undefined
-): void {
+function buildCodeableConceptToken(tokens: SearchableTokenSet, codeableConcept: CodeableConcept | undefined): void {
   if (codeableConcept?.text) {
-    buildSimpleToken(result, context, context.textSearchSystem, codeableConcept.text);
+    tokens.add(tokens.context.textSearchSystem, codeableConcept.text);
   }
   for (const coding of codeableConcept?.coding ?? EMPTY) {
-    buildCodingToken(result, context, coding);
+    buildCodingToken(tokens, coding);
   }
 }
 
 /**
  * Builds a Coding token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
+ * @param tokens - The token set where tokens will be added.
  * @param coding - The Coding object to be indexed.
  */
-function buildCodingToken(result: SearchableToken[], context: TokensContext, coding: Coding | undefined): void {
+function buildCodingToken(tokens: SearchableTokenSet, coding: Coding | undefined): void {
   if (coding) {
     if (coding.display) {
-      buildSimpleToken(result, context, context.textSearchSystem, coding.display);
+      tokens.add(tokens.context.textSearchSystem, coding.display);
     }
-    buildSimpleToken(result, context, coding.system, coding.code);
+    tokens.add(coding.system, coding.code);
   }
 }
 
 /**
  * Builds a ContactPoint token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
+ * @param tokens - The token set where tokens will be added.
  * @param contactPoint - The ContactPoint object to be indexed.
  */
-function buildContactPointToken(
-  result: SearchableToken[],
-  context: TokensContext,
-  contactPoint: ContactPoint | undefined
-): void {
+function buildContactPointToken(tokens: SearchableTokenSet, contactPoint: ContactPoint | undefined): void {
   if (contactPoint) {
-    buildSimpleToken(result, context, contactPoint.system, contactPoint.value?.toLocaleLowerCase());
-  }
-}
-
-/**
- * Builds a simple token.
- * @param result - The result array where tokens will be added.
- * @param context - Context for building tokens.
- * @param system - The token system.
- * @param value - The token value.
- */
-function buildSimpleToken(
-  result: SearchableToken[],
-  context: TokensContext,
-  system: string | undefined,
-  value: string | undefined
-): void {
-  // Only add the token if there is a system or a value, and if it is not already in the list.
-  if ((system || value) && !result.some((token) => token.system === system && token.value === value)) {
-    result.push({
-      system,
-      value: value && context.caseInsensitive ? value.toLocaleLowerCase() : value,
-    });
+    tokens.add(contactPoint.system, contactPoint.value);
   }
 }
