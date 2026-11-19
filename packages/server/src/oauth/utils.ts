@@ -220,10 +220,12 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   });
 
   if (request.password) {
-    // The password was checked against `user` as read above. A password change revokes only the
-    // logins that exist once it commits (see setPassword), so re-read the hash now that this login
-    // exists: either the change is visible here, or this login is visible to its revocation.
-    // Searched rather than read, so that it comes from the database and not the resource cache.
+    // The password was checked against `user` as read above. A password change commits the new hash
+    // and then revokes the logins it finds (see setPassword). This re-read must come after the login
+    // is stored, so that either the change is visible here or this login is visible to its
+    // revocation; checked before, a change committing in between would be seen by neither.
+    // Until it is revoked below, the login is unusable: its code, cookie and refresh secret are only
+    // returned on success. Searched rather than read, so it comes from the database, not the cache.
     const current = await systemRepo.searchOne<User>({
       resourceType: 'User',
       filters: [{ code: '_id', operator: Operator.EQUALS, value: user.id }],

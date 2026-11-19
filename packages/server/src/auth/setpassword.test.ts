@@ -354,6 +354,53 @@ describe('Set Password', () => {
     expect(res2).toHaveStatus(200);
   });
 
+  test('Sign-in is rejected when the password is replaced just before its login is stored', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+
+    // The change's revocation runs before the login exists, so only the sign-in can catch it
+    const createResource = Repository.prototype.createResource;
+    let replaced = false;
+    const createSpy = vi.spyOn(Repository.prototype, 'createResource').mockImplementation(async function (
+      this: Repository,
+      resource,
+      options
+    ) {
+      if (resource.resourceType === 'Login' && !replaced) {
+        replaced = true;
+        await setPassword(systemRepo, user, 'my-new-password');
+      }
+      return createResource.call(this, resource, options);
+    });
+    try {
+      const res = await request(app)
+        .post('/auth/login')
+        .type('json')
+        .send({ email, password: 'password!@#', scope: 'openid' });
+      expect(replaced).toBe(true);
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Email or password is invalid'));
+    } finally {
+      createSpy.mockRestore();
+    }
+
+    const logins = await systemRepo.searchResources<Login>({
+      resourceType: 'Login',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+    });
+    expect(logins).toHaveLength(2);
+    expect(logins.every((login) => login.revoked)).toBe(true);
+  });
+
   test('Completing a sign-in keeps the revocation from a password change', async () => {
     const email = `george${randomUUID()}@example.com`;
     const { user } = await withTestContext(() =>
