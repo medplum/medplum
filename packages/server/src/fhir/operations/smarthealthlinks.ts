@@ -40,6 +40,7 @@ import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { safeFetch } from '../../util/url';
+import { writeBinaryContent } from '../binary-content';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { getPatientEverything } from './patienteverything';
@@ -169,12 +170,11 @@ export async function generateSmartHealthLinkHandler(req: FhirRequest): Promise<
         }
       : bundle;
   const encryptedBundle = await encryptSmartHealthLinkFile(shlBundle, key);
-  const binary = await ctx.systemRepo.createResource<Binary>({
-    resourceType: 'Binary',
-    meta: { project: ctx.project.id },
-    contentType: ContentType.JOSE,
+  const binary = await writeBinaryContent(ctx.systemRepo, {
+    kind: 'create',
+    fields: { contentType: ContentType.JOSE, meta: { project: ctx.project.id } },
+    source: Readable.from(encryptedBundle),
   });
-  await getBinaryStorage().writeBinary(binary, undefined, ContentType.JOSE, Readable.from(encryptedBundle));
   await ctx.systemRepo.createResource<SmartHealthLink>(
     {
       resourceType: 'SmartHealthLink',

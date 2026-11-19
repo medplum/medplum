@@ -10,6 +10,7 @@ import dcmjs from 'dcmjs';
 import { Readable } from 'node:stream';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getRepoForProject } from '../fhir/accesspolicy';
+import { writeBinaryContent } from '../fhir/binary-content';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import type { ProjectJobTarget } from './base';
@@ -193,15 +194,12 @@ export async function execDicomJob(job: Job<DicomJobData>): Promise<void> {
       } else if (pixelData instanceof ArrayBuffer) {
         const buffer = Buffer.from(pixelData);
         const readable = Readable.from(buffer);
-        const binary = await systemRepo.createResource<Binary>({
-          resourceType: 'Binary',
-          contentType,
-          meta: {
-            project: resource.meta?.project,
-          },
-          securityContext,
+        const binary = await writeBinaryContent(systemRepo, {
+          kind: 'create',
+          fields: { contentType, meta: { project: resource.meta?.project }, securityContext },
+          source: readable,
+          filename: 'pixeldata.bin',
         });
-        await getBinaryStorage().writeBinary(binary, 'pixeldata.bin', contentType, readable);
         binaries.push(binary);
       } else {
         log.info('Unexpected PixelData format', { id, pixelData });

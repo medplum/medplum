@@ -9,10 +9,10 @@ import zlib from 'node:zlib';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
-import { getBinaryStorage, getPresignedUrl } from '../storage/loader';
+import { getPresignedUrl } from '../storage/loader';
 import type { BinarySource } from '../storage/types';
+import { writeBinaryContent } from './binary-content';
 import { sendOutcome } from './outcomes';
-import type { Repository } from './repo';
 import { sendFhirResponse } from './response';
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
@@ -77,12 +77,19 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
     }
   }
 
-  const binary = await uploadBinaryData(repo, binarySource, {
-    id,
-    contentType,
-    filename: req.query['_filename'] as string | undefined,
-    securityContext: req.get('X-Security-Context'),
-  });
+  const securityContext = req.get('X-Security-Context');
+  const fields = {
+    contentType: contentType ?? DEFAULT_CONTENT_TYPE,
+    securityContext: securityContext ? { reference: securityContext } : undefined,
+  };
+  const filename = req.query['_filename'] as string | undefined;
+  const binary = await writeBinaryContent(
+    repo,
+    id
+      ? { kind: 'replace', id, fields, source: binarySource, filename }
+      : { kind: 'create', fields, source: binarySource, filename }
+  );
+  binary.url = await getPresignedUrl(binary);
 
   await sendFhirResponse(req, res, create ? created : allOk, binary);
 }
@@ -127,35 +134,4 @@ async function readStreamToString(stream: Readable): Promise<string> {
     data += chunk;
   }
   return data;
-}
-
-/**
- * Uploads the given data as a Binary resource.
- * @param repo - The repository to use.
- * @param source - The binary source data.
- * @param options - Optional parameters.
- * @param options.id - If present, Binary resource will be updated in place.
- * @param options.contentType - The MIME type of the binary data.
- * @param options.filename - The filename to use for the uploaded data.
- * @param options.securityContext - The security context associated with the data.
- * @returns The updated Binary resource.
- */
-export async function uploadBinaryData(
-  repo: Repository,
-  source: BinarySource,
-  options?: { id?: string; contentType?: string; filename?: string; securityContext?: string }
-): Promise<Binary> {
-  const resource: Binary = {
-    resourceType: 'Binary',
-    id: options?.id,
-    contentType: options?.contentType ?? DEFAULT_CONTENT_TYPE,
-    securityContext: options?.securityContext ? { reference: options.securityContext } : undefined,
-  };
-  const binary = await (options?.id ? repo.updateResource(resource) : repo.createResource(resource));
-
-  const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
-  await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);
-
-  binary.url = await getPresignedUrl(binary);
-  return binary;
 }

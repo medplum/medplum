@@ -11,14 +11,14 @@ import {
   getReferenceString,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { AccessPolicy, Attachment, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import type { AccessPolicy, Attachment, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getDefaultAccessPolicy } from '../../fhir/default-access-policies';
 import type { Repository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
-import { getBinaryStorage } from '../../storage/loader';
+import { writeBinaryContent } from '../binary-content';
 import { makeOperationDefinition } from './definitions';
 import { deployBot } from './deploy';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -172,14 +172,12 @@ async function createCodeBinary(
   const contentType = attachment.contentType ?? ContentType.JAVASCRIPT;
   const filename = attachment.title ?? 'index.js';
 
-  const binary = await repo.createResource<Binary>({
-    meta: {
-      project: project.id,
-    },
-    resourceType: 'Binary',
-    contentType,
+  const binary = await writeBinaryContent(repo, {
+    kind: 'create',
+    fields: { contentType, meta: { project: project.id } },
+    source: Readable.from(code),
+    filename,
   });
-  await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(code));
   return {
     contentType,
     title: filename,

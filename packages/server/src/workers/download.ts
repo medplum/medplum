@@ -11,14 +11,14 @@ import {
   Pointer,
   toTypedValue,
 } from '@medplum/core';
-import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { writeBinaryContent } from '../fhir/binary-content';
 import { getLogger, globalLogger } from '../logger';
-import { getBinaryStorage } from '../storage/loader';
 import { buildTraceparent } from '../util/tracing';
 import { isAllowedOutboundUrlForQueue, safeFetch } from '../util/url';
 import type { ProjectJobTarget } from './base';
@@ -267,26 +267,16 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
     const contentDisposition = response.headers.get('content-disposition') as string | undefined;
     const contentType = response.headers.get('content-type') as string;
-    const binary = await systemRepo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType,
-      meta: {
-        project: resource.meta?.project,
-      },
-      securityContext: {
-        reference,
-      },
-    });
     if (response.body === null) {
       throw new Error('Received null response body');
     }
 
-    await getBinaryStorage().writeBinary(
-      binary,
-      contentDisposition,
-      contentType,
-      Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0])
-    );
+    const binary = await writeBinaryContent(systemRepo, {
+      kind: 'create',
+      fields: { contentType, meta: { project: resource.meta?.project }, securityContext: { reference } },
+      source: Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
+      filename: contentDisposition,
+    });
     log.info('Downloaded content successfully', { binaryId: binary.id });
 
     // re-fetch resource so we are mutating as recent a copy as possible

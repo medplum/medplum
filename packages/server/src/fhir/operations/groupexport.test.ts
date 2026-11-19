@@ -534,10 +534,10 @@ describe('Group Export', () => {
         name: [{ given: ['Compartment'], family: 'Scoped' }],
       });
       await exporter.writeResource(patient);
-      expect(exporter.writers.Patient.binary.meta?.accounts).toContainEqual(compartment);
 
       // The account survives close() so the completed job stays readable.
       const completed = await exporter.close(project);
+      expect(exporter.writers.Patient.binary.meta?.accounts).toContainEqual(compartment);
       expect(completed.meta?.accounts).toContainEqual(compartment);
     }));
 });

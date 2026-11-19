@@ -5,7 +5,8 @@ import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Binary, Parameters, ParametersParameter, Project, Resource } from '@medplum/fhirtypes';
 import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { getBinaryStorage } from '../../../storage/loader';
+import type { BinaryContentFields } from '../../binary-content';
+import { startBinaryContentWrite } from '../../binary-content';
 import type { Repository } from '../../repo';
 import { getAsyncJobRequester } from './asyncjobexecutor';
 
@@ -14,27 +15,45 @@ const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 class BulkFileWriter {
   readonly binary: WithId<Binary>;
   private readonly stream: PassThrough;
-  private readonly writerPromise: Promise<void>;
+  private readonly stored: Promise<void>;
+  /** Aborted with the storage error, which ends drain waits that would otherwise hang. */
+  private readonly failed = new AbortController();
 
-  constructor(binary: WithId<Binary>) {
+  private constructor(binary: WithId<Binary>, stream: PassThrough, stored: Promise<void>) {
     this.binary = binary;
+    this.stream = stream;
+    this.stored = stored;
+    this.stored.catch((err) => this.failed.abort(err));
+  }
 
-    const filename = `export.ndjson`;
-    this.stream = new PassThrough();
-    this.writerPromise = getBinaryStorage().writeBinary(binary, filename, NDJSON_CONTENT_TYPE, this.stream);
+  static async create(repo: Repository, fields: BinaryContentFields): Promise<BulkFileWriter> {
+    const stream = new PassThrough();
+    const { binary, stored } = await startBinaryContentWrite(repo, {
+      kind: 'create',
+      fields,
+      source: stream,
+      filename: 'export.ndjson',
+    });
+    return new BulkFileWriter(binary, stream, stored);
   }
 
   async write(resource: Resource): Promise<void> {
+    this.failed.signal.throwIfAborted();
     const data = JSON.stringify(resource) + '\n';
     // Handle backpressure - if write buffer is full, wait for drain
     if (!this.stream.write(data)) {
-      await once(this.stream, 'drain');
+      try {
+        await once(this.stream, 'drain', { signal: this.failed.signal });
+      } catch (err) {
+        this.failed.signal.throwIfAborted();
+        throw err;
+      }
     }
   }
 
   close(): Promise<void> {
     this.stream.end();
-    return this.writerPromise;
+    return this.stored;
   }
 }
 
@@ -82,8 +101,7 @@ export class BulkExporter {
       // with the system repo (scoped to the caller's project + account compartment so they can
       // presign/download it). The exported data was already access-checked when read.
       const accountCompartment = this.repo.effectiveAccessPolicy()?.compartment;
-      const binary = await this.repo.getSystemRepo().createResource<Binary>({
-        resourceType: 'Binary',
+      writer = await BulkFileWriter.create(this.repo.getSystemRepo(), {
         contentType: NDJSON_CONTENT_TYPE,
         // Bind export output Binary authorization to the export job context.
         // Binary read/presign paths must be able to read this reference.
@@ -95,7 +113,6 @@ export class BulkExporter {
           accounts: accountCompartment ? [accountCompartment] : undefined,
         },
       });
-      writer = new BulkFileWriter(binary);
       this.writers[resourceType] = writer;
     }
     return writer;

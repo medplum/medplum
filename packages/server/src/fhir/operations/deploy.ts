@@ -23,6 +23,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
+import { writeBinaryContent } from '../binary-content';
 import { findProjectMembership } from '../projectmembership';
 import type { Repository } from '../repo';
 import { getGlobalSystemRepo } from '../repo';
@@ -125,11 +126,12 @@ export async function deployBot(
     const contentType = ContentType.JAVASCRIPT;
 
     // Create a Binary for the executable code
-    const binary = await repo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType,
+    const binary = await writeBinaryContent(repo, {
+      kind: 'create',
+      fields: { contentType },
+      source: Readable.from(code),
+      filename,
     });
-    await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(code));
 
     // Update the bot
     updatedBot = await repo.updateResource<Bot>({
