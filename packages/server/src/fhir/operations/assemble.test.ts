@@ -308,6 +308,66 @@ describe('Questionnaire/$assemble', () => {
     ]);
   });
 
+  test('Prefixes conditions on questions in a nested subQuestionnaire', async () => {
+    const patientModule = await repo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: `https://example.com/patient-${randomUUID()}`,
+      version: '1',
+      item: [
+        {
+          linkId: 'name-import',
+          type: 'display',
+          extension: [{ url: subQuestionnaireExtension, valueCanonical: `${nameModule.url}|1` }],
+        },
+        {
+          linkId: 'nickname',
+          type: 'string',
+          enableWhen: [{ question: 'given', operator: 'exists', answerBoolean: true }],
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Questionnaire/$assemble`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: `https://example.com/root-${randomUUID()}`,
+        version: '1',
+        item: [
+          {
+            linkId: 'patient',
+            type: 'group',
+            extension: [
+              {
+                url: variableExtension,
+                valueExpression: { name: 'linkIdPrefix', language: 'text/fhirpath', expression: "'patient.'" },
+              },
+            ],
+            item: [
+              {
+                linkId: 'patient-import',
+                type: 'display',
+                extension: [{ url: subQuestionnaireExtension, valueCanonical: `${patientModule.url}|1` }],
+              },
+            ],
+          },
+        ],
+      } satisfies Questionnaire);
+    expect(res).toHaveStatus(200);
+    expect(res.body.item[0].item).toStrictEqual([
+      { linkId: 'patient.given', type: 'string', text: 'Given name' },
+      { linkId: 'patient.family', type: 'string', text: 'Family name' },
+      {
+        linkId: 'patient.nickname',
+        type: 'string',
+        enableWhen: [{ question: 'patient.given', operator: 'exists', answerBoolean: true }],
+      },
+    ]);
+  });
+
   test('Imports the pinned version of a subQuestionnaire', async () => {
     const url = `https://example.com/versioned-${randomUUID()}`;
     await repo.createResource<Questionnaire>({
@@ -621,5 +681,88 @@ describe('Questionnaire/$assemble', () => {
       { linkId: 'given', type: 'string', text: 'Given name' },
       { linkId: 'family', type: 'string', text: 'Family name' },
     ]);
+  });
+
+  test('SubQuestionnaire must not have contained resources', async () => {
+    const choiceModule = await repo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: `https://example.com/choice-${randomUUID()}`,
+      version: '1',
+      contained: [{ resourceType: 'ValueSet', id: 'colors', status: 'active' }],
+      item: [{ linkId: 'color', type: 'choice', answerValueSet: '#colors' }],
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Questionnaire/$assemble`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: `https://example.com/root-${randomUUID()}`,
+        version: '1',
+        item: [
+          {
+            linkId: 'choice-import',
+            type: 'display',
+            extension: [{ url: subQuestionnaireExtension, valueCanonical: `${choiceModule.url}|1` }],
+          },
+        ],
+      } satisfies Questionnaire);
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining('contained resources') },
+        }),
+      ],
+    });
+  });
+
+  test('SubQuestionnaire must not have root-level variables', async () => {
+    const scoreModule = await repo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: `https://example.com/score-${randomUUID()}`,
+      version: '1',
+      extension: [
+        {
+          url: variableExtension,
+          valueExpression: { name: 'threshold', language: 'text/fhirpath', expression: '10' },
+        },
+      ],
+      item: [{ linkId: 'score', type: 'integer' }],
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Questionnaire/$assemble`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: `https://example.com/root-${randomUUID()}`,
+        version: '1',
+        item: [
+          {
+            linkId: 'score-import',
+            type: 'display',
+            extension: [{ url: subQuestionnaireExtension, valueCanonical: `${scoreModule.url}|1` }],
+          },
+        ],
+      } satisfies Questionnaire);
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining(variableExtension) },
+        }),
+      ],
+    });
   });
 });

@@ -39,6 +39,13 @@ export const expectationExtension =
 export const assembledFromExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-assembledFrom';
 export const variableExtension = 'http://hl7.org/fhir/StructureDefinition/variable';
 
+// Root-level extensions of a subQuestionnaire that its items may depend on, and which are not carried over
+const unsupportedModuleExtensions = [
+  variableExtension,
+  'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-launchContext',
+  'http://hl7.org/fhir/StructureDefinition/cqf-library',
+];
+
 export async function assembleHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<{ questionnaire?: Questionnaire }>(operation, req);
   const { repo } = getAuthenticatedContext();
@@ -98,11 +105,13 @@ async function expandItems(
       if (stack.includes(key)) {
         throw new OperationOutcomeError(badRequest(`Found circular subQuestionnaire reference to ${canonical}`));
       }
-      const subItems = deepClone(subQuestionnaire.item ?? []);
+      checkSupported(subQuestionnaire, canonical);
+      // Expand nested imports before prefixing, so conditions between nested modules are prefixed consistently
+      const subItems = await expandItems(repo, deepClone(subQuestionnaire.item ?? []), undefined, [...stack, key]);
       if (prefix) {
         prefixItems(subItems, prefix);
       }
-      result.push(...(await expandItems(repo, subItems, prefix, [...stack, key])));
+      result.push(...subItems);
     } else {
       if (item.item) {
         item.item = await expandItems(repo, item.item, getLinkIdPrefix(item) ?? prefix, stack);
@@ -127,6 +136,26 @@ async function resolveSubQuestionnaire(repo: Repository, canonical: string): Pro
     throw new OperationOutcomeError(badRequest(`Ambiguous subQuestionnaire ${canonical}; specify a version`));
   }
   return results[0];
+}
+
+/**
+ * Rejects subQuestionnaires with resources or root-level extensions that their items may depend on,
+ * since those are not carried over into the assembled Questionnaire.
+ * @param subQuestionnaire - The resolved subQuestionnaire.
+ * @param canonical - The canonical the subQuestionnaire was imported by.
+ */
+function checkSupported(subQuestionnaire: Questionnaire, canonical: string): void {
+  if (subQuestionnaire.contained?.length) {
+    throw new OperationOutcomeError(
+      badRequest(`SubQuestionnaire ${canonical} has contained resources, which are not supported`)
+    );
+  }
+  const extension = subQuestionnaire.extension?.find((ext) => unsupportedModuleExtensions.includes(ext.url));
+  if (extension) {
+    throw new OperationOutcomeError(
+      badRequest(`SubQuestionnaire ${canonical} has extension ${extension.url}, which is not supported`)
+    );
+  }
 }
 
 /**
