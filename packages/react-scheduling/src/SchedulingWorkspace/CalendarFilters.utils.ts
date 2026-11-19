@@ -4,6 +4,9 @@ import type { WithId } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
 import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 
+/** How many visit types' availability can be shaded at once, each in a lane of the day's column. */
+export const MAX_AVAILABILITY_SERVICES = 3;
+
 /**
  * Works out the Visit Type filter once the sites change: the visit types one of the sites still holds.
  *

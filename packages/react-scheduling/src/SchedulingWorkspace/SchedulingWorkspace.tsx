@@ -86,6 +86,7 @@ import {
   matchesCalendarFilters,
 } from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
+import { UnifiedCalendarFilters } from './UnifiedCalendarFilters';
 import { useBookingPaneGuard } from './useBookingPaneGuard';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
@@ -178,6 +179,12 @@ export interface SchedulingWorkspaceProps {
   readonly defaultServiceFacility?: WithId<Location> | (Reference<Location> & { reference: string });
   /** Prototype. Called with the site the workspace is on, on mount and whenever either pane changes it. */
   readonly onChangeServiceFacility?: (serviceFacility: Reference<Location> | WithId<Location> | undefined) => void;
+  /**
+   * Prototype. Lists the filters pane's visit types once, each with its appointments and its availability
+   * to turn on, in place of a Visit Type filter and an Availability field picked from apart. See
+   * `UnifiedCalendarFilters`.
+   */
+  readonly unifiedVisitTypes?: boolean;
 }
 
 /**
@@ -242,6 +249,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     appointmentExtensions,
     defaultServiceFacility,
     onChangeServiceFacility,
+    unifiedVisitTypes = false,
   } = props;
   const medplum = useMedplum();
   const theme = useMantineTheme();
@@ -1052,7 +1060,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           items={panelItems}
           candidatesLoading={candidatesLoading}
           onToggle={toggleCandidate}
-          filters={<CalendarFilters key={filtersKey} defaultValue={filters} onChange={changeFilters} />}
+          filters={
+            unifiedVisitTypes ? (
+              <UnifiedCalendarFilters key={filtersKey} defaultValue={filters} onChange={changeFilters} />
+            ) : (
+              <CalendarFilters key={filtersKey} defaultValue={filters} onChange={changeFilters} />
+            )
+          }
         />
       </Box>
       <div className={classes.calendar} onPointerUpCapture={recordPointer}>

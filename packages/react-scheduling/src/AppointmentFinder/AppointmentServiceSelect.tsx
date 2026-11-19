@@ -157,7 +157,18 @@ function ServiceColorItem(props: Readonly<AsyncAutocompleteOption<WithId<Healthc
   );
 }
 
-function ServiceColorDot(props: { readonly service: WithId<HealthcareService>; readonly mr?: number }): JSX.Element {
+export interface ServiceColorDotProps {
+  readonly service: WithId<HealthcareService>;
+  /** The room to leave after the dot. */
+  readonly mr?: number;
+}
+
+/**
+ * A dot in the color a visit type's appointments and availability are drawn in.
+ * @param props - The React props.
+ * @returns The dot.
+ */
+export function ServiceColorDot(props: ServiceColorDotProps): JSX.Element {
   const theme = useMantineTheme();
   const color = resolveThemeColor(
     theme,
