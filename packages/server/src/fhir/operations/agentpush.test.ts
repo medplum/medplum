@@ -21,11 +21,9 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import * as pubsub from '../../pubsub';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
-import type { Repository } from '../repo';
 import type { AgentPushParameters } from './agentpush';
 import { getAgentCallbackChannel } from './utils/agentcallback';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
-import { getDevice } from './utils/agentutils';
 
 describe('Agent Push', () => {
   const app = express();
@@ -196,14 +194,6 @@ describe('Agent Push', () => {
     } finally {
       publishSpy.mockRestore();
     }
-  });
-
-  test('Destination by device search ignores non-Device results', async () => {
-    const questionnaire = { resourceType: 'Questionnaire', id: randomUUID(), status: 'draft', url: 'mllp://x:1' };
-    const repo = { searchResources: async () => [questionnaire] } as unknown as Repository;
-    await expect(
-      getDevice(repo, { contentType: ContentType.TEXT, body: 'input', destination: 'Device?model=x' })
-    ).resolves.toBeUndefined();
   });
 
   test('Missing parameters', async () => {

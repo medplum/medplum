@@ -20,9 +20,8 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
-import type { Repository } from '../repo';
 import { expectBundleToContainOutcome } from './utils/agenttestutils';
-import { getAgentsForRequest, MAX_AGENTS_PER_PAGE } from './utils/agentutils';
+import { MAX_AGENTS_PER_PAGE } from './utils/agentutils';
 
 const NUM_DEFAULT_AGENTS = 2;
 
@@ -239,17 +238,6 @@ describe('Agent/$bulk-status', () => {
         '_type, _include, and _revinclude are not supported when searching for Agent'
       );
     }
-  });
-
-  test('Get agent statuses -- ignores non-Agent search results', async () => {
-    const device = { resourceType: 'Device', id: randomUUID() };
-    const repo = { searchResources: async () => [connectedAgent, device] } as unknown as Repository;
-    await expect(
-      getAgentsForRequest(
-        { method: 'GET', url: '/Agent/$bulk-status', pathname: '', params: {}, query: {}, body: undefined },
-        repo
-      )
-    ).resolves.toStrictEqual([connectedAgent]);
   });
 
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {

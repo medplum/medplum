@@ -93,8 +93,7 @@ export async function getAgentsForRequest(req: FhirRequest, repo: Repository): P
   }
   const searchRequest = parseSearchRequest<Agent>('Agent', req.query);
   assertSingleTypeSearch(searchRequest, 'Agent');
-  const agents = await repo.searchResources(searchRequest);
-  return agents.filter((agent) => agent.resourceType === 'Agent');
+  return repo.searchResources(searchRequest);
 }
 
 export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
@@ -109,8 +108,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
   if (destination.startsWith('Device?')) {
     const searchRequest = parseSearchRequest<Device>(destination);
     assertSingleTypeSearch(searchRequest, 'Device');
-    const device = await searchUnique(repo, searchRequest);
-    return device?.resourceType === 'Device' ? device : undefined;
+    return searchUnique(repo, searchRequest);
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
@@ -121,7 +119,6 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
 /**
  * Rejects a user-supplied search whose results could include resources other than `resourceType`:
  * a search of another type, `_type` replacing the searched type, or `_include`/`_revinclude` adding other types.
- * Callers also check each result's type, so a parameter not covered here cannot swap in another resource.
  *
  * @param searchRequest - The parsed search request.
  * @param resourceType - The only resource type the search may return.
