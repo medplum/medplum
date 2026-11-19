@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { EventDisplayInfo } from '@fullcalendar/react';
 import { Badge, Divider, Group, Popover, Stack, Text } from '@mantine/core';
-import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI, TimezoneExtensionURI } from '@medplum/core';
+import { getExtension, getPrimaryProvider, RecurrenceIdExtensionURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import { ResourceName } from '@medplum/react';
 import { IconRepeat } from '@tabler/icons-react';
@@ -14,6 +14,7 @@ import { formatZonedTimeRange } from '../AppointmentFinder/AppointmentFinder.tim
 import { AppointmentStatusBadge } from '../AppointmentStatusBadge';
 import { ServiceTypeDisplay } from '../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../serviceTypes';
+import { getOwnTimezone } from '../timezones';
 // Its own sheet: importing CalendarBase's here would load it ahead of FullCalendar's theme,
 // which its rules are written to override.
 import classes from './AppointmentEvent.module.css';
@@ -96,8 +97,7 @@ function AppointmentCard(props: AppointmentEventProps): JSX.Element {
   const { start, end } = info.event;
   const hasServiceType = !!partitionServiceTypes(appointment).visitType;
   // Told on the clock of the zone the appointment names, while the grid draws it on the viewer's.
-  const times =
-    start && end && formatZonedTimeRange(start, end, getExtension(appointment, TimezoneExtensionURI)?.valueCode);
+  const times = start && end && formatZonedTimeRange(start, end, getOwnTimezone(appointment));
 
   return (
     <Stack gap={4}>

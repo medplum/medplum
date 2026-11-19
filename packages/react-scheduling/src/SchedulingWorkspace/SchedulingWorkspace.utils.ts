@@ -4,7 +4,6 @@ import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
   getAppointmentSite,
-  getExtension,
   getExtensionValue,
   getReferenceString,
   isDefined,
@@ -19,6 +18,7 @@ import {
   formatZonedTimeRange,
   isViewerTimezone,
 } from '../AppointmentFinder/AppointmentFinder.times';
+import { getOwnTimezone } from '../timezones';
 import type { CalendarFilterValues } from './CalendarFilters';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */
@@ -155,7 +155,7 @@ export function formatWhen(period: {
   if (!period.start) {
     return undefined;
   }
-  const timezone = getExtension(period, TimezoneExtensionURI)?.valueCode;
+  const timezone = getOwnTimezone(period);
   const start = new Date(period.start);
   const end = period.end ? new Date(period.end) : undefined;
   const startDay = formatDayHeading(start, timezone);
