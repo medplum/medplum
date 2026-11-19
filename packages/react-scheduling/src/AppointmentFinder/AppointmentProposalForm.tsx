@@ -114,11 +114,11 @@ export interface AppointmentProposalFormActions {
   /** The offered time `pickAt` would pick for an instant, for a host to show before it is picked. */
   readonly timeAt: (instant: Date) => Appointment | undefined;
   /**
-   * Names one actor, in place of any of its type already named, and picks the offered time covering an
-   * instant once the search for that actor answers. For a host that knows who is free at a time the
-   * viewer pointed at before the form has anyone named.
+   * Names actors of one type, any one of which will do, in place of any of that type already named. Given
+   * an instant, picks the offered time covering it once the search for them answers, if one does. For a
+   * host that knows who the viewer means before the form has anyone named.
    */
-  readonly pickWith: (actorType: SchedulingActorType, candidate: ScheduleCandidate, instant: Date) => void;
+  readonly pickWith: (actorType: SchedulingActorType, candidates: readonly ScheduleCandidate[], instant?: Date) => void;
 }
 
 // Long enough that typing a time does not search on every keystroke, short enough
@@ -658,8 +658,8 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
   useImperativeHandle(actionsRef, () => ({
     timeAt,
     pickAt,
-    pickWith: (actorType, candidate, instant): void => {
-      chooseResources({ ...selections, [actorType]: [createActorRequirement([candidate])] });
+    pickWith: (actorType, candidates, instant): void => {
+      chooseResources({ ...selections, [actorType]: [createActorRequirement(candidates)] });
       // The actor fields hold their own state, so they are remounted on the new answer.
       setActorFieldsKey((key) => key + 1);
       pendingPick.current = instant;

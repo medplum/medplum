@@ -54,6 +54,8 @@ export interface MultiCalendarProps {
   availabilityShading?: readonly AvailabilityShade[];
   /** Prototype. See `CalendarBaseProps.onHoverAvailability`. */
   onHoverAvailability?: (instant: Date | undefined, shadeId?: string) => void;
+  /** Prototype. See `CalendarBaseProps.eventsPassThrough`. */
+  eventsPassThrough?: boolean;
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;

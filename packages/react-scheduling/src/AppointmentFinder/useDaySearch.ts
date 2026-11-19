@@ -34,7 +34,7 @@ const TIMES_PER_DAY = 65;
  * question the first few usually settle. So a round is asked, and the rest are
  * asked for.
  */
-const COMBINATION_WAVE = 6;
+export const COMBINATION_WAVE = 6;
 
 export interface UseDaySearchOptions {
   /** The service being booked. No search runs without one. */
