@@ -18,11 +18,9 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     throw new Error('Google Calendar is not connected');
   }
   const level = parseDetailLevel(getParam(event.input, 'eventDetailLevel'));
+  const ceiling = await projectCeiling(medplum, event.secrets);
   try {
-    return mutationStatus(
-      await updateConnection(medplum, connection, { eventDetailLevel: level }),
-      await projectCeiling(medplum, event.secrets)
-    );
+    return mutationStatus(await updateConnection(medplum, connection, { eventDetailLevel: level }), ceiling);
   } catch (err) {
     if (err instanceof ConnectionBusyError) {
       throw new Error('A calendar sync is running; try again in a few minutes', { cause: err });

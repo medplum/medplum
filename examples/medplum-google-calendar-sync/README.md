@@ -69,7 +69,9 @@ Run every command from the root of the Medplum repository. The steps use two CLI
    | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` | `true` lets practitioners choose `initials` or `full`         | No       |
    | `GOOGLE_CALENDAR_APPOINTMENT_URL`     | Link added to each Appointment's event; `{id}` becomes its ID | No       |
 
-   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level. Without `GOOGLE_CALENDAR_APPOINTMENT_URL`, events carry no link. Turning details off takes effect at once; turning them on needs the installer run again.
+   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level. Without `GOOGLE_CALENDAR_APPOINTMENT_URL`, events carry no link.
+
+   To turn details off, set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `false` rather than deleting it. Events written from then on are Busy, and existing events are rewritten by the next repair, within the hour. To turn details on for the first time, set it to `true` and run the installer.
 
 6. Run the installer in the customer project as a project admin. Run it again each time you change a secret.
 

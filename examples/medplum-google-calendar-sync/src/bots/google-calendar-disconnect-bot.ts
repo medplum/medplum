@@ -5,6 +5,7 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { requireOperationBot } from '../common/authorization';
+import { projectCeiling } from '../common/configuration';
 import { findConnection, readConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_NAMESPACE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
@@ -44,7 +45,9 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
       state
     );
   });
-  return mutationStatus(await findConnection(medplum, connection.practitionerRef));
+  // Cleanup must not depend on the detail configuration, so a bad secret reports Busy here.
+  const ceiling = await projectCeiling(medplum, event.secrets).catch(() => 'busy-only' as const);
+  return mutationStatus(await findConnection(medplum, connection.practitionerRef), ceiling);
 }
 
 export const handler = operationHandler('disconnect', execute);
