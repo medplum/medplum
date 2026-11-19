@@ -3,7 +3,7 @@
 import { Anchor } from '@mantine/core';
 import { ContentType } from '@medplum/core';
 import type { Attachment } from '@medplum/fhirtypes';
-import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import { useCachedBinaryUrl, useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 import { ScannedImage } from './ScannedImage';
@@ -14,8 +14,9 @@ export interface AttachmentDisplayProps {
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
+  const medplum = useMedplum();
   const { contentType, data, url: storedUrl, title } = props.value ?? {};
-  const uncachedUrl = toSafeUrl(storedUrl);
+  const uncachedUrl = toSafeUrl(storedUrl, medplum.getBaseUrl());
   const cachedUrl = useCachedBinaryUrl(uncachedUrl);
 
   if (!cachedUrl && !data) {
@@ -73,20 +74,32 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
 
 /**
  * Returns the URL only when it cannot load a page of the current app.
- * Same-origin and relative URLs are rejected, because the URL is rendered into an iframe and a link.
+ * Same-origin URLs are rejected unless they are under the Medplum server base URL (single-origin deployments),
+ * because the URL is rendered into an iframe and a link.
  * @param url - The attachment URL.
- * @returns The URL if it is a data, blob, or other-origin http(s) URL; otherwise undefined.
+ * @param baseUrl - The Medplum server base URL.
+ * @returns The URL if it is a data, blob, other-origin http(s), or Medplum server URL; otherwise undefined.
  */
-function toSafeUrl(url: string | undefined): string | undefined {
+function toSafeUrl(url: string | undefined, baseUrl: string): string | undefined {
   if (!url) {
     return undefined;
   }
   try {
-    const { protocol, origin } = new URL(url, window.location.href);
-    if (protocol === 'data:' || protocol === 'blob:') {
+    const parsed = new URL(url, window.location.href);
+    if (parsed.protocol === 'data:' || parsed.protocol === 'blob:') {
       return url;
     }
-    return (protocol === 'https:' || protocol === 'http:') && origin !== window.location.origin ? url : undefined;
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return undefined;
+    }
+    if (parsed.origin !== window.location.origin) {
+      return parsed.href;
+    }
+    // Return the parsed href so the browser loads exactly the path that was checked
+    const server = new URL(baseUrl, window.location.href);
+    const isServerUrl =
+      server.origin === parsed.origin && server.pathname !== '/' && parsed.pathname.startsWith(server.pathname);
+    return isServerUrl ? parsed.href : undefined;
   } catch {
     return undefined;
   }

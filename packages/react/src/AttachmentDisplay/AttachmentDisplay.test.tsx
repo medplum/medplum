@@ -29,10 +29,10 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-async function setup(args?: AttachmentDisplayProps): Promise<void> {
+async function setup(args?: AttachmentDisplayProps, client = medplum): Promise<void> {
   await act(async () => {
     render(
-      <MedplumProvider medplum={medplum}>
+      <MedplumProvider medplum={client}>
         <AttachmentDisplay {...args} />
       </MedplumProvider>
     );
@@ -146,6 +146,14 @@ describe('AttachmentDisplay', () => {
       expect(screen.queryByTestId('attachment-display')).not.toBeInTheDocument();
     }
   );
+
+  test('Same-origin server URLs', async () => {
+    const client = new MedplumClient({ baseUrl: `${window.location.origin}/api/`, fetch: mockFetch });
+    await setup({ value: { contentType: 'text/plain', url: '/api/storage/123', title: 'a' } }, client);
+    expect(screen.getByText('a')).toHaveAttribute('href', `${window.location.origin}/api/storage/123`);
+    await setup({ value: { contentType: 'text/plain', url: '/api/../smart', title: 'b' } }, client);
+    expect(screen.queryByText('b')).not.toBeInTheDocument();
+  });
 
   test('Renders plain text', async () => {
     await setup({
