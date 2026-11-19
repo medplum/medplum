@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Loader, Table } from '@mantine/core';
-import { normalizeOperationOutcome } from '@medplum/core';
+import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { ChangeEvent, JSX, MouseEvent } from 'react';
@@ -47,6 +47,12 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
 
   useEffect(() => {
     setOutcome(undefined);
+    // Read-only table; same check as the server's includesMutations()
+    if (query.includes('mutation')) {
+      setResponse(undefined);
+      setOutcome(badRequest('Mutations are not allowed'));
+      return;
+    }
     medplum
       .graphql(query)
       .then(setResponse)
