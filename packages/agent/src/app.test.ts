@@ -42,7 +42,7 @@ import type { AgentHl7ChannelConnection } from './hl7';
 import { AgentHl7Channel } from './hl7';
 import type { Hl7ClientPool } from './hl7-client-pool';
 import * as pidModule from './pid';
-import { createEndpointWithRandomPort, waitFor } from './test-utils';
+import { createEndpointWithRandomPort, createMockLogger, waitFor } from './test-utils';
 import { buildManifest, mockFetchForUpgrader } from './upgrader-test-utils';
 
 vi.mock('./constants', async (importOriginal) => {
@@ -6595,6 +6595,137 @@ describe('App', () => {
         body: 'MSH.10 is missing but required',
         callback,
       });
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+  });
+
+  describe('Message content stays out of the main log', () => {
+    const pid = 'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+    function logLines(logger: ReturnType<typeof createMockLogger>): string[] {
+      return [logger.debug, logger.info, logger.warn, logger.error].flatMap((fn) =>
+        vi.mocked(fn).mock.calls.map((c) => String(c[0]))
+      );
+    }
+
+    async function startApp(transmitResponses: AgentTransmitResponse[]): Promise<{
+      app: App;
+      socket: Client;
+      mockServer: Server;
+      mainLogger: ReturnType<typeof createMockLogger>;
+      channelLogger: ReturnType<typeof createMockLogger>;
+    }> {
+      let socket: Client | undefined;
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (s) => {
+        socket = s;
+        s.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            s.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            transmitResponses.push(command);
+          }
+        });
+      });
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+      const mainLogger = createMockLogger(LogLevel.DEBUG);
+      const channelLogger = createMockLogger(LogLevel.DEBUG);
+      const app = new App(medplum, agent.id, LogLevel.DEBUG, { mainLogger, channelLogger });
+      await app.start();
+      await waitFor(() => socket !== undefined, 2000, 'agent connects to the mock server');
+      if (!socket) {
+        throw new Error('expected a socket');
+      }
+      return { app, socket, mockServer, mainLogger, channelLogger };
+    }
+
+    test('$push request and response', async () => {
+      const transmitResponses: AgentTransmitResponse[] = [];
+      const { app, socket, mockServer, mainLogger, channelLogger } = await startApp(transmitResponses);
+
+      const port = await getFreePort();
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          conn.send(message.buildAck());
+        });
+      });
+      await hl7Server.start(port);
+
+      const remote = `mllp://localhost:${port}`;
+      socket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote,
+            contentType: ContentType.HL7_V2,
+            body: `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r${pid}`,
+            callback: 'test-callback',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+      await waitFor(() => transmitResponses.length > 0, 2000, 'transmit response');
+      expect(transmitResponses[0].statusCode).toBe(200);
+
+      const mainLines = logLines(mainLogger);
+      expect(mainLines).toEqual(
+        expect.arrayContaining([
+          'Received from WebSocket: agent:transmit:request',
+          `[Request -- ID: MSG00001 -- Type: ADT^A01 -- Remote: ${remote}]`,
+          expect.stringMatching(/^\[Response -- ID: MSG00001 -- ACK: AA -- Duration: \d+ms\]$/),
+        ])
+      );
+      expect(mainLines.filter((line) => line.includes('PID|') || line.includes('MSA|'))).toStrictEqual([]);
+
+      const channelLines = logLines(channelLogger);
+      expect(channelLines).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/^Received from WebSocket: \{.*PID\|\|\|PATID1234/),
+          expect.stringMatching(/^\[Request -- ID: MSG00001\]: MSH\|.*\nPID\|\|\|PATID1234/),
+          expect.stringMatching(/^\[Response -- ID: MSG00001\]: MSH\|.*\nMSA\|AA\|MSG00001/),
+        ])
+      );
+
+      await app.stop();
+      await hl7Server.stop({ forceDrainTimeoutMs: 0 });
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+    });
+
+    test('Error transmit response', async () => {
+      const { app, socket, mockServer, mainLogger, channelLogger } = await startApp([]);
+
+      const body = `Bot execution logs:\n${pid}`;
+      socket.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:response',
+            channel: 'test',
+            remote: '127.0.0.1:5000',
+            contentType: ContentType.TEXT,
+            statusCode: 400,
+            body,
+            callback: 'test-callback',
+          } satisfies AgentTransmitResponse)
+        )
+      );
+      await waitFor(() => vi.mocked(mainLogger.error).mock.calls.length > 0, 2000, 'transmit error logged');
+
+      const mainLines = logLines(mainLogger);
+      expect(mainLines).toContain(
+        'Error during handling transmit request (channel: test, remote: 127.0.0.1:5000, status: 400) - check channel logs'
+      );
+      expect(mainLines.filter((line) => line.includes('PID|'))).toStrictEqual([]);
+      expect(logLines(channelLogger)).toContain(`Error during handling transmit request: ${body}`);
 
       await app.stop();
       await new Promise<void>((resolve) => {
