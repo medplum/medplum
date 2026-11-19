@@ -1,0 +1,10 @@
+/* BlockTimeForm.module.css */
+
+/* Fills whatever holds it, so the controls take the foot of it rather than trailing the last field. */
+.form {
+  flex: 1;
+}
+
+.controls {
+  margin-top: auto;
+}

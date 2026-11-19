@@ -45,12 +45,15 @@ function select(container, value) {
 
 function onTabClick(container, value) {
   select(container, value);
+  const containers = [container];
   const { groupId, queryString } = container.dataset;
   if (groupId) {
     storeValue(groupId, value);
     document.querySelectorAll('.tabs-container').forEach((other) => {
       if (other !== container && other.dataset.groupId === groupId) {
-        select(other, value);
+        if (select(other, value)) {
+          containers.push(other);
+        }
       }
     });
   }
@@ -60,6 +63,8 @@ function onTabClick(container, value) {
     url.searchParams.set(queryString, value);
     window.history.replaceState(window.history.state, '', url);
   }
+  // Notify layout-dependent content after every synchronized panel has become visible.
+  document.dispatchEvent(new CustomEvent('tabs:change', { detail: { containers } }));
 }
 
 export function initTabs() {
