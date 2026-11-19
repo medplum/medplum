@@ -4962,43 +4962,45 @@ describe('App', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    while (!state.mySocket) {
-      await sleep(100);
+    await waitFor(() => state.mySocket !== undefined, 5000, 'agent connects to the mock server');
+    const socket = state.mySocket;
+    if (!socket) {
+      throw new Error('expected a socket');
     }
 
-    // Start an HL7 server that ACKs messages
+    // Start an HL7 server that ACKs messages. Port 0, not a fixed port: `start()` retries
+    // EADDRINUSE without a deadline, and on a busy CI runner a fixed port in the ephemeral
+    // range can be held by an unrelated outbound connection.
     const hl7Server = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57110);
+    const port = await hl7Server.start(0);
+    const remote = `mllp://localhost:${port}`;
 
     const hl7MessageBody =
       'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
       'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
 
     // Send a transmit request to create a pool
-    state.mySocket.send(
+    socket.send(
       Buffer.from(
         JSON.stringify({
           type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body: hl7MessageBody,
-          remote: 'mllp://localhost:57110',
+          remote,
           callback: getReferenceString(agent) + '-' + randomUUID(),
         } satisfies AgentTransmitRequest)
       )
     );
 
-    // Wait for the response
-    while (state.transmitResponses.length < 1) {
-      await sleep(100);
-    }
+    await waitFor(() => state.transmitResponses.length >= 1, 5000, 'first transmit response');
 
     // Pool should exist
     expect(app.hl7Clients.size).toBe(1);
-    expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
+    expect(app.hl7Clients.has(remote)).toBe(true);
 
     // Stop the HL7 server — this closes connections from the server side. Force the
     // drain: the agent holds a keepAlive connection open, so `close()` would otherwise
@@ -5007,48 +5009,46 @@ describe('App', () => {
 
     // Pool should STILL be in hl7Clients — it is never removed by client errors
     expect(app.hl7Clients.size).toBe(1);
-    expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
+    expect(app.hl7Clients.has(remote)).toBe(true);
 
     // The pool sheds its clients as the closes land — waited on rather than slept off,
     // so a shed that never happens names itself instead of failing a later assertion.
-    const pool = app.hl7Clients.get('mllp://localhost:57110') as Hl7ClientPool;
+    const pool = app.hl7Clients.get(remote) as Hl7ClientPool;
     await waitFor(() => pool.size() === 0, 2000, 'pool sheds its clients after the server closes');
 
-    // Restart the HL7 server
+    // Restart the HL7 server on the same port
     const hl7Server2 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server2.start(57110);
+    await hl7Server2.start(port);
 
     // Send another transmit request — should succeed using the same pool
     state.transmitResponses = [];
-    state.mySocket.send(
+    socket.send(
       Buffer.from(
         JSON.stringify({
           type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body: hl7MessageBody.replace('MSG00001', 'MSG00002'),
-          remote: 'mllp://localhost:57110',
+          remote,
           callback: getReferenceString(agent) + '-' + randomUUID(),
         } satisfies AgentTransmitRequest)
       )
     );
 
-    while (state.transmitResponses.length < 1) {
-      await sleep(100);
-    }
+    await waitFor(() => state.transmitResponses.length >= 1, 5000, 'second transmit response');
 
     // Pool should still be the same one — not recreated
     expect(app.hl7Clients.size).toBe(1);
-    expect(app.hl7Clients.get('mllp://localhost:57110')).toBe(pool);
+    expect(app.hl7Clients.get(remote)).toBe(pool);
 
     // The second transmit should have succeeded
     expect(state.transmitResponses[0].statusCode).toBe(200);
 
     await app.stop();
-    await hl7Server2.stop();
+    await hl7Server2.stop({ forceDrainTimeoutMs: 0 });
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
     });
