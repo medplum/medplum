@@ -225,10 +225,7 @@ describe('User/$rescope', () => {
   });
 
   test('Super admin blocked by read-only User access policy returns 403', async () => {
-    // Exercises the canPerformInteraction(UPDATE, user) = false branch. Only super admins
-    // can reach this branch in practice: for project admins, accesspolicy.ts strips any
-    // user-provided User policy entries and re-adds defaults that grant User updates,
-    // so a project admin cannot be blocked here.
+    // Exercises the canPerformInteraction(UPDATE, user) = false branch.
     const user = await invitedUser('project');
 
     const { accessToken: restrictedSuperToken } = await createTestProject({

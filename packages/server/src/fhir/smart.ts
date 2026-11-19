@@ -290,19 +290,40 @@ function narrowEntry(
     // A scope with no permissions grants no access
     return undefined;
   }
-  const params = getEntryParams(entry);
-  if (!params) {
-    return undefined;
-  }
-  for (const [key, value] of scope.params ?? []) {
-    params.append(key, value);
-  }
+  const filters: [string, string][] = [...(scope.params ?? [])];
   if (scope.permissionType === 'patient') {
     if (!context) {
       // Should be unreachable: applySmartScopes rejects `patient/` scopes without a context
       throw new OperationOutcomeError(badRequest(missingPatientContext));
     }
-    params.append('_compartment', context);
+    filters.push(['_compartment', context]);
+  }
+  const granted = Object.entries(scopePermissionInteractions)
+    .filter(([letter]) => scope.scope.includes(letter))
+    .flatMap(([, interactions]) => interactions);
+  return restrictEntry(entry, resourceType, filters, granted);
+}
+
+/**
+ * Restricts an AccessPolicy resource entry by additional search filters and interactions.
+ * @param entry - The original AccessPolicy resource entry.
+ * @param resourceType - The resource type of the restricted entry.
+ * @param filters - Search filters the restricted entry must also satisfy.
+ * @param granted - Interactions the restricted entry may permit.
+ * @returns The restricted entry, or undefined if it grants no access.
+ */
+export function restrictEntry(
+  entry: AccessPolicyResource,
+  resourceType: string,
+  filters: Iterable<[string, string]>,
+  granted: readonly AccessPolicyInteraction[]
+): AccessPolicyResource | undefined {
+  const params = getEntryParams(entry);
+  if (!params) {
+    return undefined;
+  }
+  for (const [key, value] of filters) {
+    params.append(key, value);
   }
 
   const result = deepClone(entry);
@@ -314,16 +335,15 @@ function narrowEntry(
     delete result.criteria;
   }
 
-  // Restrict the entry to what it already permits and the scope's permission letters grant
-  const granted = Object.entries(scopePermissionInteractions)
-    .filter(([letter]) => scope.scope.includes(letter))
-    .flatMap(([, interactions]) => interactions);
-  const permitted = entry.interaction ?? (entry.readonly ? readInteractions : allInteractions);
-  result.interaction = permitted.filter((interaction) => granted.includes(interaction));
+  result.interaction = getPermittedInteractions(entry).filter((interaction) => granted.includes(interaction));
   if (result.interaction.length === 0) {
     return undefined;
   }
   return result;
+}
+
+export function getPermittedInteractions(entry: AccessPolicyResource): readonly AccessPolicyInteraction[] {
+  return entry.interaction ?? (entry.readonly ? readInteractions : allInteractions);
 }
 
 /**

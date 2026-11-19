@@ -6,6 +6,7 @@ import {
   createReference,
   EMPTY,
   getReferenceString,
+  isDefined,
   isNotFound,
   isResource,
   isString,
@@ -32,7 +33,7 @@ import { membershipProfileTypes, readMembershipReference } from './projectmember
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
-import { applySmartScopes, parseSmartScopes } from './smart';
+import { applySmartScopes, getPermittedInteractions, parseSmartScopes, restrictEntry } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
 
@@ -351,6 +352,115 @@ function ownProjectWriteConstraint(membership: ProjectMembership): Expression {
 }
 
 /**
+ * Returns the access a project admin gets to the project admin resource types when their policy does not narrow it.
+ * @param membership - The project admin's membership.
+ * @returns The project admin entries.
+ */
+function projectAdminRules(membership: ProjectMembership): AccessPolicyResource[] {
+  const projectId = resolveId(membership.project);
+  return [
+    {
+      resourceType: 'AccessPolicy',
+      criteria: `AccessPolicy?_project=${projectId}`,
+    },
+    {
+      // Project admins have full access to their own project, except for a few sensitive fields
+      resourceType: 'Project',
+      criteria: `Project?_id=${projectId}`,
+      readonlyFields: ['active', 'features', 'link', 'systemSetting'],
+      hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
+      interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
+    },
+    {
+      // Project admins have read-only access to linked projects, and cannot see sensitive fields
+      resourceType: 'Project',
+      hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode'],
+      interaction: ['read', 'vread', 'history', 'search'], // Read-only access to linked projects
+    },
+    {
+      resourceType: 'ProjectMembership',
+      criteria: `ProjectMembership?_project=${projectId}`,
+      readonlyFields: ['project', 'user'],
+      writeConstraint: [ownProjectWriteConstraint(membership)],
+    },
+    {
+      resourceType: 'UserSecurityRequest',
+      criteria: `UserSecurityRequest?_project=${projectId}`,
+      readonly: true,
+    },
+    {
+      resourceType: 'User',
+      criteria: `User?_project=${projectId}`,
+      hiddenFields: ['passwordHash', 'mfaSecret'],
+      readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      writeConstraint: [ownProjectWriteConstraint(membership)],
+    },
+    {
+      resourceType: 'Cron',
+      criteria: `Cron?_project=${projectId}`,
+    },
+    {
+      resourceType: 'Package',
+      readonly: true,
+    },
+    {
+      resourceType: 'PackageRelease',
+      readonly: true,
+    },
+    {
+      resourceType: 'PackageInstallation',
+      readonly: true,
+    },
+  ];
+}
+
+/**
+ * Narrows the admin entries by the policy's entries of the same type. Types with no policy entries are unchanged.
+ * @param adminRules - The project admin entries.
+ * @param policyRules - The admin's access policy entries for the project admin resource types.
+ * @returns The entries to grant.
+ */
+function limitProjectAdminRules(
+  adminRules: AccessPolicyResource[],
+  policyRules: AccessPolicyResource[]
+): AccessPolicyResource[] {
+  const narrowedTypes = new Set(policyRules.map((r) => r.resourceType));
+  return [
+    // Policy entries go first, so the policy's order decides which entry matches first
+    ...policyRules.flatMap((policyRule) =>
+      adminRules
+        .filter((adminRule) => adminRule.resourceType === policyRule.resourceType)
+        .map((adminRule) => intersectRules(policyRule, adminRule))
+        .filter(isDefined)
+    ),
+    ...adminRules.filter((r) => !narrowedTypes.has(r.resourceType)),
+  ];
+}
+
+function intersectRules(
+  policyRule: AccessPolicyResource,
+  adminRule: AccessPolicyResource
+): AccessPolicyResource | undefined {
+  const result = restrictEntry(
+    policyRule,
+    adminRule.resourceType,
+    new URLSearchParams(adminRule.criteria?.split('?')[1]),
+    getPermittedInteractions(adminRule)
+  );
+  if (result) {
+    result.readonlyFields = union(policyRule.readonlyFields, adminRule.readonlyFields);
+    result.hiddenFields = union(policyRule.hiddenFields, adminRule.hiddenFields);
+    result.writeConstraint = union(adminRule.writeConstraint, policyRule.writeConstraint);
+  }
+  return result;
+}
+
+function union<T>(a: T[] | undefined, b: T[] | undefined): T[] | undefined {
+  const merged = [...new Set([...(a ?? EMPTY), ...(b ?? EMPTY)])];
+  return merged.length ? merged : undefined;
+}
+
+/**
  * Updates the access policy to include project admin rules.
  * This includes ensuring no admin rights for non-admins and restricted access for admins.
  * @param project - The project.
@@ -371,64 +481,10 @@ function applyProjectAdminAccessPolicy(
     }
   } else if (membership.admin) {
     // If the user is a project admin,
-    // then grant limited access to the project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
-
-    // Project admins can edit their own project
-    accessPolicy.resource.push(
-      {
-        resourceType: 'AccessPolicy',
-        criteria: `AccessPolicy?_project=${resolveId(membership.project)}`,
-      },
-      {
-        // Project admins have full access to their own project, except for a few sensitive fields
-        resourceType: 'Project',
-        criteria: `Project?_id=${resolveId(membership.project)}`,
-        readonlyFields: ['active', 'features', 'link', 'systemSetting'],
-        hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
-        interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
-      },
-      {
-        // Project admins have read-only access to linked projects, and cannot see sensitive fields
-        resourceType: 'Project',
-        hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode'],
-        interaction: ['read', 'vread', 'history', 'search'], // Read-only access to linked projects
-      },
-      {
-        resourceType: 'ProjectMembership',
-        criteria: `ProjectMembership?_project=${resolveId(membership.project)}`,
-        readonlyFields: ['project', 'user'],
-        writeConstraint: [ownProjectWriteConstraint(membership)],
-      },
-      {
-        resourceType: 'UserSecurityRequest',
-        criteria: `UserSecurityRequest?_project=${resolveId(membership.project)}`,
-        readonly: true,
-      },
-      {
-        resourceType: 'User',
-        criteria: `User?_project=${resolveId(membership.project)}`,
-        hiddenFields: ['passwordHash', 'mfaSecret'],
-        readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
-        writeConstraint: [ownProjectWriteConstraint(membership)],
-      },
-      {
-        resourceType: 'Cron',
-        criteria: `Cron?_project=${resolveId(membership.project)}`,
-      },
-      {
-        resourceType: 'Package',
-        readonly: true,
-      },
-      {
-        resourceType: 'PackageRelease',
-        readonly: true,
-      },
-      {
-        resourceType: 'PackageInstallation',
-        readonly: true,
-      }
-    );
+    // then grant limited access to the project admin resource types, narrowed by their own policy
+    const policyRules = accessPolicy.resource.filter((r) => projectAdminResourceTypes.includes(r.resourceType));
+    accessPolicy.resource = accessPolicy.resource.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
+    accessPolicy.resource.push(...limitProjectAdminRules(projectAdminRules(membership), policyRules));
   } else {
     // Preserve policy reads, including wildcard grants, but never grant non-admins policy writes.
     const policyReadRules = accessPolicy.resource

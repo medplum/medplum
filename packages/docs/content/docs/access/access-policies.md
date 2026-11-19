@@ -755,6 +755,8 @@ Because the `ClientApplication` default makes `Bot` read-only, a client with tha
 
 The `admin` flag does **not** bypass a user's access policy — it only grants access to project administration resource types (such as [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) and [`User`](/docs/api/fhir/medplum/user)) on top of the existing policy. Changing the `admin` flag never changes the membership's `accessPolicy`.
 
+To narrow an admin's access to a project administration resource type, add entries for that type to the admin's access policy. Each entry is combined with the admin's built-in rules for that type, so it can only narrow access, never widen it. For example, `"criteria": "ProjectMembership?profile-type=Practitioner"` limits an admin to practitioner memberships, and `{ "resourceType": "AccessPolicy", "readonly": true }` makes access policies read-only. Types with no entries keep full admin access.
+
 When you promote a user to admin, also set their `accessPolicy` to the access they need, such as the project's `Admin` default. Otherwise they remain restricted by their current policy, for example the read-only rules of the `Practitioner` default. Likewise, when you demote an admin, replace the `Admin` default with a non-admin policy such as the `Practitioner` default.
 
 ## Related Resources

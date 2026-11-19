@@ -2532,6 +2532,88 @@ describe('AccessPolicy', () => {
       await expect(repo.createResource({ resourceType: 'Project', name: 'Test Project' })).rejects.toThrow('Forbidden');
     }));
 
+  test('Project admin ProjectMembership access respects the access policy', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({
+        withRepo: true,
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [
+            {
+              resourceType: 'ProjectMembership',
+              criteria: 'ProjectMembership?profile-type=Practitioner',
+              readonlyFields: ['admin'],
+            },
+          ],
+        },
+      });
+      const createMember = (profileType: string): Promise<WithId<ProjectMembership>> =>
+        systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(project),
+          user: { reference: 'User/' + randomUUID() },
+          profile: { reference: `${profileType}/${randomUUID()}` },
+        });
+      const practitionerMember = await createMember('Practitioner');
+      const patientMember = await createMember('Patient');
+
+      const results = await repo.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
+      expect(results.map((m) => m.id)).toStrictEqual([practitionerMember.id]);
+      await expect(repo.readResource('ProjectMembership', patientMember.id)).rejects.toThrow('Forbidden');
+
+      // Both the policy's readonly fields and the admin readonly fields are enforced
+      const updated = await repo.updateResource<ProjectMembership>({
+        ...practitionerMember,
+        admin: true,
+        project: { reference: 'Project/' + randomUUID() },
+      });
+      expect(updated.meta?.versionId).toStrictEqual(practitionerMember.meta?.versionId);
+    }));
+
+  test('Project admin access to other admin resource types respects the access policy', () =>
+    withTestContext(async () => {
+      const { project, membership, repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: { systemSecret: [{ name: 'mySecret', valueString: 'foo' }] },
+        membership: { admin: true },
+        accessPolicy: { resource: [{ resourceType: 'Project', readonly: true, hiddenFields: ['secret'] }] },
+      });
+
+      // Hidden fields from both the policy and the admin entry apply
+      const readProject = await repo.readResource<Project>('Project', project.id);
+      expect(readProject.secret).toBeUndefined();
+      expect(readProject.systemSecret).toBeUndefined();
+      await expect(repo.updateResource<Project>({ ...readProject, name: 'Updated' })).rejects.toThrow('Forbidden');
+
+      // A type with no policy entries keeps the default admin access
+      const readMembership = await repo.readResource<ProjectMembership>('ProjectMembership', membership.id);
+      const updatedMembership = await repo.updateResource<ProjectMembership>({ ...readMembership, externalId: 'x' });
+      expect(updatedMembership.externalId).toBe('x');
+    }));
+
+  test('Project admin ProjectMembership compartment entry stays limited to own project', () =>
+    withTestContext(async () => {
+      const linkedProject = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Linked' });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(linkedProject),
+        user: { reference: 'User/' + randomUUID() },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+      const { repo } = await createTestProject({
+        withRepo: true,
+        project: { link: [{ project: createReference(linkedProject) }] },
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [{ resourceType: 'ProjectMembership', compartment: createReference(linkedProject) }],
+        },
+      });
+
+      const results = await repo.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
+      expect(results).toHaveLength(0);
+    }));
+
   test.each([true, false])('Cron is admin-only (admin=%s)', (admin) =>
     withTestContext(async () => {
       const { project, login, membership } = await createTestProject({
