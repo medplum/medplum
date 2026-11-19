@@ -6,6 +6,8 @@ weight: 110
 
 A single Medplum Project can serve many ScriptSure practice locations. This guide describes the data model and how prescribing resolves the correct practice per request.
 
+ScriptSure practice locations describe prescribing affiliations. They may represent sites within one care operation or separate application tenants. Choose your boundaries in [Tenancy Design](/docs/decision-guides/tenancy-design), and enforce Medplum data access through policies.
+
 ## Data model
 
 ScriptSure's administrative hierarchy is **Organization → Business Unit → Practice → User**. Medplum maps it as follows:
@@ -60,7 +62,9 @@ Each prescriber must be associated with the practice(s) they prescribe from on t
 
 ## Sharing pharmacy Organizations
 
-A pharmacy directory record can be shared across practices while each patient's preference remains private to their practice. For example, Maya at Practice A and Noah at Practice B can both reference the same Example Pharmacy Organization. Practice A can read Maya and the pharmacy; it cannot read Noah. Practice B can read Noah and the pharmacy; it cannot read Maya.
+This example assumes practice-scoped Patient records. With a [shared Patient](/docs/tenancy-design/patient-records#shared-patient-records), a pharmacy preference stored on that Patient is shared with authorized readers too.
+
+A pharmacy directory record can be shared across practices while each practice-scoped Patient's preference remains private to that practice. For example, Maya at Practice A and Noah at Practice B can both reference the same Example Pharmacy Organization. Practice A can read Maya and the pharmacy; it cannot read Noah. Practice B can read Noah and the pharmacy; it cannot read Maya.
 
 Keep public directory data on the pharmacy Organization and the preference on each Patient. Give trusted clinical callers access to pharmacy Organizations independently of the practice filter used for Patients and other clinical resources. Do not store patient-specific or practice-private information on shared pharmacy records.
 
@@ -91,6 +95,6 @@ The pharmacy write permissions allow the add and sync bots, running as the calle
 
 Use resource-level tenant criteria for clinical resources rather than a blanket practice restriction that also hides the shared pharmacy directory. Review all effective policy grants and membership parameters when adapting this example. The example does not grant Patient creation or account reassignment; your patient-onboarding flow must continue assigning each patient to the correct tenant.
 
-The server can stamp the creator's top-level access-policy compartment into a new resource's `meta.accounts`. This is not the add bot copying the patient's practice. Adjust that policy before creating shared pharmacy records. Use the authorized [$set-accounts operation](/docs/api/fhir/operations/set-accounts) when existing account assignments need correction; clearing accounts alone does not grant access, and `meta.compartment` is not directly writable.
+The server can stamp the creator's effective `AccessPolicy.compartment` reference into a new resource's `meta.accounts`. This is not the add bot copying the patient's practice. Adjust that policy before creating shared pharmacy records. Use the authorized [$set-accounts operation](/docs/api/fhir/operations/set-accounts) when existing account assignments need correction; clearing accounts alone does not grant access, and `meta.compartment` is not directly writable.
 
 All directory writers must be able to find the same existing pharmacy. Conditional creation cannot reuse a record hidden by the caller's access policy. Consolidate existing duplicates and their references deliberately before relying on unique matching; the bots do not automatically merge them.

@@ -22,9 +22,16 @@ Choose account matching, identity providers, and token-flow architecture, includ
 - **[Decision Guide →](/docs/decision-guides/authentication)**
 - **Docs:** [Authentication](/docs/auth)
 
-### Access Control and Tenancy
+### Tenancy Design
 
-Scope your authorization model – user types and organizational structure, multi-tenancy and patient/practitioner sharing, role inventory and permission mechanics, admin structure, and optional patterns like SMART on FHIR and IP access rules.
+Decide whether your application needs tenant boundaries. If it does, choose shared or tenant-specific Patient records, clinical sharing, and the staff and patient account experience. Distinguish your tenant boundary from finer permissions within it, such as care-team access.
+
+- **[Decision Guide →](/docs/decision-guides/tenancy-design)**
+- **Docs:** [Tenancy Design](/docs/tenancy-design)
+
+### Access Control
+
+Define role scopes, resource and field permissions, administration, and patient or caregiver grants within the selected tenancy design. Include SMART scopes and network restrictions where needed.
 
 - **[Decision Guide →](/docs/decision-guides/access-control)**
 - **Docs:** [Authorization and Access Control](/docs/access)

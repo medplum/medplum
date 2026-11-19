@@ -15,7 +15,7 @@ This guide provides an overview of Medplum's Health Gorilla labs integration and
 
 Choose one ordering interface for your workflow: build a form with Medplum's [React components and `useHealthGorillaLabOrder` hook](/docs/integration/health-gorilla/sending-orders#creating-an-order-form-in-react), or embed Health Gorilla's hosted interface using the [`health-gorilla-iframe` bot](/docs/integration/health-gorilla/iframe). The iframe is optional; you do not need both approaches. Results arrive through the API integration with either approach.
 
-For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). To backfill or recover results that were not delivered by webhook, see [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
+For more information about the FHIR resources involved in the integration, see [Sending Orders](/docs/integration/health-gorilla/sending-orders) and [Receiving Results](/docs/integration/health-gorilla/receiving-results). Before displaying results to clinicians, review the [Results Display Requirements](/docs/integration/health-gorilla/results-display-requirements). To backfill or recover results that were not delivered by webhook, see [Sync Resources from Health Gorilla](/docs/integration/health-gorilla/sync-resources-from-health-gorilla). See our [Changelog](/docs/integration/health-gorilla/hg-changelog) for information about integration upgrades.
 
 ## Prerequisites
 

@@ -6,6 +6,8 @@ weight: 50
 
 This guide describes how to work with multiple locations in Health Gorilla. This is especially relevant for Management Services Organizations (MSOs) or practices with multiple clinic locations where different practitioners are assigned to different locations.
 
+Health Gorilla’s **subtenant** and **practice location** describe its integration hierarchy. Map them to your application’s organizations as needed, and configure Medplum access separately. Multiple locations alone do not require a multi-tenant application; see [Organizations and Locations](/docs/administration/locations-and-facilities#organizations-and-tenant-boundaries).
+
 ## Resource Overview
 
 The Medplum resources involved in multi-location lab ordering, and how they reference each other. In this example, each practitioner works at one location and orders from it:

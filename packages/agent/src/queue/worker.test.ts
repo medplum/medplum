@@ -167,6 +167,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck,
       responseTimeoutMs: 5000,
     });
@@ -202,6 +203,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
     });
     const dispatcher = startSlot(app, worker);
@@ -244,6 +246,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 60_000, // long — the heartbeat check, not the timeout, must end the wait
     });
@@ -276,6 +279,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       // Auto-retry defaults to ON (guaranteed); opt out so the transient failure
       // settles terminally as `failed` for this classification test.
@@ -309,6 +313,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       // Auto-retry off so the terminal classification is observed directly: a
       // transient 429 would otherwise be re-queued for retry, not left `failed`.
@@ -340,6 +345,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => false,
     });
     startSlot(app, worker);
@@ -366,6 +372,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck,
     });
     startSlot(app, worker);
@@ -388,6 +395,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => {
         if (throwOnce) {
           throwOnce = false;
@@ -426,6 +434,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log,
+      channelLog: createMockLogger(),
       sendAck: () => false,
     });
     startSlot(app, worker);
@@ -460,6 +469,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log,
+      channelLog: createMockLogger(),
       sendAck: () => {
         throw new Error('socket gone');
       },
@@ -511,6 +521,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log,
+      channelLog: createMockLogger(),
       sendAck: () => {
         if (!superseded) {
           superseded = true;
@@ -561,6 +572,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
       // Auto-retry off so the ambiguous timeout lands terminally in `failed`.
@@ -583,6 +595,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck,
       responseTimeoutMs: 50,
       // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
@@ -615,6 +628,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
       // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
@@ -646,6 +660,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck,
       responseTimeoutMs: 50,
       // Opt out of auto-retry so the ambiguous response timeout lands in `failed`
@@ -684,6 +699,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck,
     });
     startSlot(app, worker);
@@ -706,6 +722,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
     });
     expect(
@@ -728,6 +745,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
     });
     expect(worker.onServerResponse(makeResponse(buildDispatchCallback('Agent/test-agent-unknown-row', 1), 200))).toBe(
@@ -743,6 +761,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
     });
     startSlot(app, worker);
@@ -769,6 +788,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 100,
     });
@@ -799,6 +819,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 100,
     });
@@ -838,6 +859,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
       // Normal mode isolates the disconnect semantics under test: the worker must
@@ -870,6 +892,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
     });
     expect(() => worker.onWebSocketDisconnect()).not.toThrow();
@@ -887,6 +910,7 @@ describe('ChannelQueueWorker', () => {
       app,
       queue,
       log: createMockLogger(),
+      channelLog: createMockLogger(),
       sendAck: () => true,
       responseTimeoutMs: 50,
     });
@@ -925,6 +949,7 @@ describe('ChannelQueueWorker', () => {
         app,
         queue,
         log: createMockLogger(),
+        channelLog: createMockLogger(),
         sendAck,
         responseTimeoutMs: 5000,
         retryPolicy: { ...fastRetryPolicy, ...policy },
@@ -1014,6 +1039,7 @@ describe('ChannelQueueWorker', () => {
         app,
         queue,
         log: createMockLogger(),
+        channelLog: createMockLogger(),
         sendAck: () => true,
         responseTimeoutMs: 50,
         retryPolicy: fastRetryPolicy,
@@ -1044,6 +1070,7 @@ describe('ChannelQueueWorker', () => {
           app,
           queue,
           log: createMockLogger(),
+          channelLog: createMockLogger(),
           sendAck: () => true,
           responseTimeoutMs: 50,
           retryPolicy: guaranteedPolicy,
@@ -1237,6 +1264,59 @@ describe('ChannelQueueWorker', () => {
         expect(final?.lastError).toContain('2 attempts exhausted');
         await worker.stop();
       });
+
+      test('failure detail goes to the channel log, the main log gets a body-free line', async () => {
+        const log = createMockLogger();
+        const channelLog = createMockLogger();
+        const { app } = makeStubApp();
+        const worker = new ChannelQueueWorker({
+          channelName: 'ch1',
+          app,
+          queue,
+          log,
+          channelLog,
+          sendAck: () => true,
+          retryPolicy: guaranteedPolicy,
+        });
+        startSlot(app, worker);
+        const pid = 'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M';
+        const lines = (logger: ReturnType<typeof createMockLogger>): string[] =>
+          [logger.warn, logger.error].flatMap((fn) => vi.mocked(fn).mock.calls.map((c) => String(c[0])));
+
+        // Retry (warn), then a definitive reject (error)
+        const r1 = enqueueOne(queue, 'LOG1');
+        await waitFor(() => pendingRowId(worker) === r1.id, 1000, 'first dispatch');
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, `${makeAckBody('AE', 'LOG1')}\r${pid}`));
+        await waitFor(() => queue.getById(r1.id)?.state === MessageState.QUEUED, 1000, 'AE schedules a retry');
+        await waitFor(() => pendingRowId(worker) === r1.id, 2000, 'retry dispatch');
+        worker.onServerResponse(makeResponse(currentCallback(worker), 200, `${makeAckBody('AR', 'LOG1')}\r${pid}`));
+        await waitFor(() => queue.getById(r1.id)?.state === MessageState.REJECTED, 1000, 'AR rejects the row');
+
+        // Operator review (error)
+        worker.setRetryPolicy({ ...guaranteedPolicy, enabled: false, guaranteedDelivery: false });
+        const r2 = enqueueOne(queue, 'LOG2');
+        await waitFor(() => pendingRowId(worker) === r2.id, 1000, 'second row dispatch');
+        worker.onServerResponse(makeResponse(currentCallback(worker), 503, `Bot execution logs:\n${pid}`));
+        await waitFor(() => queue.getById(r2.id)?.state === MessageState.FAILED, 1000, '503 fails the row');
+        await worker.stop();
+
+        const mainLines = lines(log);
+        expect(mainLines).toEqual(
+          expect.arrayContaining([
+            expect.stringMatching(
+              new RegExp(
+                String.raw`^Row id=${r1.id} \(control id=LOG1\) failed \(${QueueErrorCode.UpstreamError}\), retrying in \d+ms \(attempt 2\) - check channel logs$`
+              )
+            ),
+            `Row id=${r1.id} (control id=LOG1) rejected (${QueueErrorCode.UpstreamRejected}) - check channel logs`,
+            `Row id=${r2.id} (control id=LOG2) failed (${QueueErrorCode.ServerError}, operator review) - check channel logs`,
+          ])
+        );
+        expect(mainLines.filter((line) => line.includes('PID|'))).toStrictEqual([]);
+
+        const channelLines = lines(channelLog);
+        expect(channelLines.filter((line) => line.includes(pid))).toHaveLength(3);
+      });
     });
 
     test('setRetryPolicy applies to subsequent failures', async () => {
@@ -1279,6 +1359,7 @@ describe('ChannelQueueWorker', () => {
         app,
         queue,
         log: createMockLogger(),
+        channelLog: createMockLogger(),
         sendAck: () => true,
         responseTimeoutMs: 5000,
         retryPolicy: NORMAL_POLICY,
@@ -1370,6 +1451,7 @@ describe('ChannelQueueWorker', () => {
         app,
         queue,
         log: createMockLogger(),
+        channelLog: createMockLogger(),
         sendAck: () => true,
       });
       // Stub the dispatcher's yield primitive with a queue released by hand: each step
@@ -1436,6 +1518,7 @@ describe('ChannelQueueWorker', () => {
         app,
         queue,
         log: createMockLogger(),
+        channelLog: createMockLogger(),
         sendAck: () => true,
       });
       startSlot(app, worker);

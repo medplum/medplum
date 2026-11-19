@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { DiagnosticReport, DocumentReference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -43,9 +42,7 @@ describe('LabResultDetails', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <LabResultDetails result={result} />
-          </MantineProvider>
+          <LabResultDetails result={result} />
         </MedplumProvider>
       </MemoryRouter>
     );

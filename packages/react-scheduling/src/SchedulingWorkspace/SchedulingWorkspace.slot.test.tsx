@@ -77,7 +77,7 @@ describe('SchedulingWorkspace blocked time details', () => {
 
     await userEvent.click(await screen.findByText('Blocked'));
     const pane = within(slotDetails() as HTMLElement);
-    expect(pane.getByText('busy-unavailable')).toBeInTheDocument();
+    expect(pane.getByText('Status').nextElementSibling).toHaveTextContent('busy-unavailable');
     expect(await pane.findByText('Dr. Maya Rivera')).toBeInTheDocument();
     expect(pane.getByText(formatWhen(BLOCKED_SLOT) as string)).toBeInTheDocument();
     expect(pane.getByText('Lunch')).toBeInTheDocument();
@@ -87,7 +87,9 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(screen.getByText('Miles Cooper'));
     expect(appointmentDetails()).toBeInTheDocument();
     expect(slotDetails()).not.toBeInTheDocument();
-    expect(screen.getByText('Miles Cooper').closest('.appointment')).toHaveClass('selected');
+    expect(screen.getByText('Miles Cooper', { selector: '.appointment *' }).closest('.appointment')).toHaveClass(
+      'selected'
+    );
     expect(screen.getByText('Blocked').closest('.slot')).not.toHaveClass('selected');
     await userEvent.click(screen.getByText('Blocked'));
     expect(slotDetails()).toBeInTheDocument();
@@ -161,7 +163,8 @@ describe('SchedulingWorkspace blocked time details', () => {
     // Cancelling leaves the slot as it was.
     await userEvent.click(pane.getByRole('button', { name: 'Edit' }));
     expect(save()).toBeDisabled();
-    await userEvent.click(pane.getByRole('button', { name: 'Cancel' }));
+    expect(pane.getByRole('heading', { name: 'Edit blocked time' })).toBeInTheDocument();
+    await userEvent.click(pane.getByRole('button', { name: 'Back to Blocked Time' }));
     expect(pane.queryByLabelText('Starts')).not.toBeInTheDocument();
     expect(pane.getByText(formatWhen(BLOCKED_SLOT) as string)).toBeInTheDocument();
 
@@ -230,7 +233,8 @@ describe('SchedulingWorkspace blocked time details', () => {
 
     // Backing out deletes nothing.
     await userEvent.click(pane.getByRole('button', { name: 'Delete' }));
-    await userEvent.click(pane.getByRole('button', { name: 'Back' }));
+    expect(pane.getByRole('heading', { name: 'Delete blocked time' })).toBeInTheDocument();
+    await userEvent.click(pane.getByRole('button', { name: 'Back to Blocked Time' }));
     expect(pane.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     expect(await medplum.readResource('Slot', BLOCKED_SLOT.id)).toBeDefined();
 
@@ -239,7 +243,7 @@ describe('SchedulingWorkspace blocked time details', () => {
     await userEvent.click(pane.getByRole('button', { name: 'Delete' }));
     await userEvent.click(pane.getByRole('button', { name: 'Confirm Delete' }));
     expect(await pane.findByText('Forbidden')).toBeInTheDocument();
-    await userEvent.click(pane.getByRole('button', { name: 'Back' }));
+    await userEvent.click(pane.getByRole('button', { name: 'Back to Blocked Time' }));
     expect(pane.queryByText('Forbidden')).not.toBeInTheDocument();
 
     await userEvent.click(pane.getByRole('button', { name: 'Delete' }));

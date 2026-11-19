@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Condition } from '@medplum/fhirtypes';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import ConditionItem from './ConditionItem';
 
 const mockCondition: Condition = {
@@ -33,9 +33,7 @@ async function expectNoWindowError(interaction: () => Promise<void>): Promise<vo
 describe('ConditionItem', () => {
   const setup = (props: Partial<Parameters<typeof ConditionItem>[0]> = {}): ReturnType<typeof render> => {
     return render(
-      <MantineProvider>
-        <ConditionItem condition={mockCondition} rank={1} total={3} onChange={vi.fn()} onRemove={vi.fn()} {...props} />
-      </MantineProvider>
+      <ConditionItem condition={mockCondition} rank={1} total={3} onChange={vi.fn()} onRemove={vi.fn()} {...props} />
     );
   };
 

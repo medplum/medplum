@@ -1,18 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { PlanDefinition } from '@medplum/fhirtypes';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { PlanDefinitionSummary } from './PlanDefinitionSummary';
 
 describe('PlanDefinitionSummary', () => {
   const setup = (planDefinition: PlanDefinition | undefined): ReturnType<typeof render> => {
-    return render(
-      <MantineProvider>
-        <PlanDefinitionSummary planDefinition={planDefinition} />
-      </MantineProvider>
-    );
+    return render(<PlanDefinitionSummary planDefinition={planDefinition} />);
   };
 
   test('renders nothing when planDefinition is undefined', () => {

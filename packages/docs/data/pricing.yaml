@@ -242,7 +242,7 @@ groups:
     values:
       free: false
       production: false
-      premium: true
+      premium: false
       enterprise: true
   - label: Security Incident Response
     description: Incident response assistance, scoped separately from the availability SLA.
