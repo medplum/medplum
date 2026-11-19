@@ -25,6 +25,10 @@ export function MfaPage(): JSX.Element | null {
   const [email, setEmail] = useState<string>();
   const [addingTotp, setAddingTotp] = useState(false);
   const [enrollingEmail, setEnrollingEmail] = useState(false);
+  // Adding a method to an enrolled account takes a code from each method. The emailed code is
+  // collected first because it outlives an authenticator code.
+  const [emailCode, setEmailCode] = useState<string>();
+  const [confirmingWithTotp, setConfirmingWithTotp] = useState(false);
   const [disabling, setDisabling] = useState(false);
   const [removingMethod, setRemovingMethod] = useState<MfaMethod>();
 
@@ -54,9 +58,10 @@ export function MfaPage(): JSX.Element | null {
   const enrollTotp = useCallback(
     (token: string) => {
       medplum
-        .post('auth/mfa/enroll', { method: 'totp', token })
+        .post('auth/mfa/enroll', { method: 'totp', token, enrolledFactorToken: emailCode })
         .then(() => {
           setAddingTotp(false);
+          setEmailCode(undefined);
           markEnrolled('totp');
           showNotification({ color: 'green', message: 'Authenticator app enabled' });
         })
@@ -74,7 +79,7 @@ export function MfaPage(): JSX.Element | null {
           fetchStatus();
         });
     },
-    [medplum, markEnrolled, fetchStatus]
+    [medplum, markEnrolled, fetchStatus, emailCode]
   );
 
   // Email a verification code to the current user so they can prove control of
@@ -94,10 +99,12 @@ export function MfaPage(): JSX.Element | null {
   }, [requestEmailChallenge]);
 
   const completeEnrollEmail = useCallback(
-    async (token: string): Promise<void> => {
+    async (token: string, enrolledFactorToken?: string): Promise<void> => {
       // This will throw if the emailed code is missing, invalid, or expired.
-      await medplum.post('auth/mfa/enroll', { method: 'email', token });
+      await medplum.post('auth/mfa/enroll', { method: 'email', token, enrolledFactorToken });
       setEnrollingEmail(false);
+      setConfirmingWithTotp(false);
+      setEmailCode(undefined);
       markEnrolled('email');
       showNotification({ color: 'green', message: 'Email-based MFA enabled' });
     },
@@ -132,6 +139,18 @@ export function MfaPage(): JSX.Element | null {
   const emailEnrolled = enrolledMethods.includes('email');
   const totpEnrolled = enrolledMethods.includes('totp');
 
+  // On an enrolled account, the emailed code either proves the enrolled email method (adding an
+  // authenticator) or confirms the new one (adding email). Either way, the authenticator code is next.
+  const continueAddingMethod = (code: string): void => {
+    setEmailCode(code);
+    setEnrollingEmail(false);
+    if (emailEnrolled) {
+      setAddingTotp(true);
+    } else {
+      setConfirmingWithTotp(true);
+    }
+  };
+
   // Shown in both the enrolled and not-yet-enrolled views: enrolling in email
   // MFA requires the user to reverify their email by entering an emailed code.
   const emailEnrollModal = (
@@ -141,8 +160,8 @@ export function MfaPage(): JSX.Element | null {
         email={email}
         initialEmailMode
         onRequestEmailCode={requestEmailChallenge}
-        onSubmit={completeEnrollEmail}
-        buttonText="Verify and enable"
+        onSubmit={enrolled ? continueAddingMethod : completeEnrollEmail}
+        buttonText={enrolled ? 'Continue' : 'Verify and enable'}
       />
     </Modal>
   );
@@ -218,7 +237,30 @@ export function MfaPage(): JSX.Element | null {
             />
           )}
         </Modal>
-        <Modal opened={addingTotp} onClose={() => setAddingTotp(false)}>
+        <Modal
+          title="Add email-based MFA"
+          opened={confirmingWithTotp}
+          onClose={() => {
+            setConfirmingWithTotp(false);
+            setEmailCode(undefined);
+          }}
+        >
+          {emailCode && (
+            <MfaVerificationForm
+              methods={enrolledMethods}
+              onRequestEmailCode={requestEmailChallenge}
+              onSubmit={(token) => completeEnrollEmail(emailCode, token)}
+              buttonText="Verify and enable"
+            />
+          )}
+        </Modal>
+        <Modal
+          opened={addingTotp}
+          onClose={() => {
+            setAddingTotp(false);
+            setEmailCode(undefined);
+          }}
+        >
           <MfaForm
             title="Add an authenticator app"
             description="Scan this QR code with your authenticator app, then enter the code it generates."
@@ -259,7 +301,7 @@ export function MfaPage(): JSX.Element | null {
                 </Button>
               )}
               {canAddTotp && (
-                <Button variant="default" onClick={() => setAddingTotp(true)}>
+                <Button variant="default" onClick={enrollEmail}>
                   Add an authenticator app
                 </Button>
               )}

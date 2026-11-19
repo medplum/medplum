@@ -77,14 +77,24 @@ describe('MfaPage', () => {
     expect(screen.getByText('Email')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add email-based MFA' })).not.toBeInTheDocument();
 
-    // Reveal the authenticator enrollment form
     await user.click(screen.getByRole('button', { name: 'Add an authenticator app' }));
 
-    // Enter a code and enroll
+    // Adding a method first proves the enrolled email method with an emailed code
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    // Then the authenticator enrollment form; enter a code and enroll
+    expect(await screen.findByText('Add an authenticator app', { selector: 'h3' })).toBeInTheDocument();
     await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'totp', token: '123456' });
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', {
+      method: 'totp',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
     await expect(screen.findByText('Authenticator app')).resolves.toBeInTheDocument();
 
     getSpy.mockRestore();
@@ -336,9 +346,19 @@ describe('MfaPage', () => {
     expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
     expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
     await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    // Then a code from the enrolled authenticator
+    expect(await screen.findByText('Enter MFA code')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Get a code by email instead' })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
     await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', {
+      method: 'email',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
     await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
     expect(screen.getByText('Email')).toBeInTheDocument();
 
