@@ -14,7 +14,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendValidationErrors } from '../util/validator';
-import { assertMfaLoginActive } from './mfalimit';
+import { assertMfaLoginActive, verifyTotpToken } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
   addMfaMethod,
@@ -54,18 +54,19 @@ function parseMfaMethod(value: unknown): MfaMethod {
  * @param token - The user supplied token.
  * @returns True if the token matches an enrolled factor.
  */
-export async function verifyConnectedFactor(user: User, login: Login, token: string | undefined): Promise<boolean> {
+export async function verifyConnectedFactor(
+  user: WithId<User>,
+  login: Login,
+  token: string | undefined
+): Promise<boolean> {
   if (!token) {
     return false;
   }
   const methods = getEnrolledMfaMethods(user);
 
   // Authenticator app
-  if (methods.includes('totp') && user.mfaSecret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    if (authenticator.verify({ token, secret: user.mfaSecret })) {
-      return true;
-    }
+  if (methods.includes('totp') && user.mfaSecret && (await verifyTotpToken(user.id, user.mfaSecret, token))) {
+    return true;
   }
 
   // Emailed code
@@ -213,6 +214,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
+  // Not consumed: confirming the authenticator grants nothing, and the user may sign in with this code
   const token = req.body.token as string;
   authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
   if (!authenticator.verify({ token, secret })) {

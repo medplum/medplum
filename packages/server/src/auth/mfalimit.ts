@@ -10,6 +10,8 @@ import {
   tooManyRequests,
 } from '@medplum/core';
 import type { Login } from '@medplum/fhirtypes';
+import { authenticator } from 'otplib';
+import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT, MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getRateLimitRedis } from '../redis';
 
@@ -88,13 +90,45 @@ export async function tryReleaseMfaAttempt(logger: ILogger, login: Login): Promi
   }
 }
 
+/**
+ * Verifies an authenticator (TOTP) code and consumes it, so that each code is accepted at most once
+ * per user (RFC 6238 section 5.2). An accepted code is remembered for as long as the authenticator
+ * window could still accept it.
+ * @param userId - The user that owns the secret.
+ * @param secret - The authenticator secret.
+ * @param token - The user supplied code.
+ * @returns True if the code is valid and has not been used before.
+ */
+export async function verifyTotpToken(userId: string, secret: string, token: string): Promise<boolean> {
+  const window = getConfig().mfaAuthenticatorWindow ?? 1;
+  authenticator.options = { window };
+  if (!authenticator.verify({ token, secret })) {
+    return false;
+  }
+  // A verified token equals the generated code exactly, so the code identifies its time step
+  const expirationMs = (2 * window + 1) * authenticator.allOptions().step * 1000;
+  const claimed = await getRateLimitRedis().set(
+    `${getMfaKeyPrefix(userId)}:totp:${token}`,
+    '1',
+    'PX',
+    expirationMs,
+    'NX'
+  );
+  return claimed === 'OK';
+}
+
 function getMfaAttemptKeys(login: Login): [string, string] {
   const userId = resolveId(login.user);
   if (!login.id || !userId) {
     throw new OperationOutcomeError(badRequest('Invalid login'));
   }
-  const prefix = `medplum:mfa:{${userId}}`;
+  const prefix = getMfaKeyPrefix(userId);
   return [`${prefix}:login:${login.id}`, `${prefix}:user`];
+}
+
+// The hash tag keeps all of a user's MFA keys in one cluster slot, as the attempt scripts require
+function getMfaKeyPrefix(userId: string): string {
+  return `medplum:mfa:{${userId}}`;
 }
 
 const configuredRedisClients = new WeakSet<object>();
