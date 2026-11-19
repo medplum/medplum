@@ -101,7 +101,7 @@ This lookup only runs on project-scoped URLs and is designed to fail closed:
 - Exactly one matching `ClientApplication` in the project is required. Zero or multiple matches are rejected.
 - The request authenticates as the client's existing `ProjectMembership`. A token never creates a membership or grants access by itself.
 
-Server-wide `externalAuthProviders` are checked first, as described in [Direct External Authentication](/docs/auth/direct-external-auth).
+Server-wide `externalAuthProviders` are checked first, as described in [Direct External Authentication](/docs/auth/direct-external-auth). If one matches the token issuer, it verifies the token instead of the client's `jwksUrl`, but the token's `aud` claim must still match the client's `audience`.
 
 ## What Project-Scoped URLs Do Not Do
 

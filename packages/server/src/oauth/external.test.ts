@@ -255,9 +255,23 @@ describe('External auth', () => {
         },
       },
     });
-    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
 
-    const jwt = createFakeJwt({ iss: 'https://external-auth.example.com', nonce: randomUUID() });
+    // The server-wide provider verifies the token, but only the client's audience binds it to this project
+    for (const aud of [undefined, 'https://other.example.com']) {
+      fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+      const jwt = createFakeJwt({ iss: 'https://external-auth.example.com', aud, nonce: randomUUID() });
+      const res = await request(app)
+        .get(`/projects/${project.id}/oauth2/userinfo`)
+        .set('Authorization', 'Bearer ' + jwt);
+      expect(res).toHaveStatus(401);
+    }
+
+    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      aud: ['https://other.example.com', 'https://api.example.com'],
+      nonce: randomUUID(),
+    });
     const res = await request(app)
       .get(`/projects/${project.id}/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
