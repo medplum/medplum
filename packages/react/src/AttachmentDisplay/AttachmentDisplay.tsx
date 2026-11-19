@@ -14,7 +14,8 @@ export interface AttachmentDisplayProps {
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
-  const { contentType, data, url: uncachedUrl, title } = props.value ?? {};
+  const { contentType, data, url: storedUrl, title } = props.value ?? {};
+  const uncachedUrl = toSafeUrl(storedUrl);
   const cachedUrl = useCachedBinaryUrl(uncachedUrl);
 
   if (!cachedUrl && !data) {
@@ -68,6 +69,27 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
       </div>
     </div>
   );
+}
+
+/**
+ * Returns the URL only when it cannot load a page of the current app.
+ * Same-origin and relative URLs are rejected, because the URL is rendered into an iframe and a link.
+ * @param url - The attachment URL.
+ * @returns The URL if it is a data, blob, or other-origin http(s) URL; otherwise undefined.
+ */
+function toSafeUrl(url: string | undefined): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  try {
+    const { protocol, origin } = new URL(url, window.location.href);
+    if (protocol === 'data:' || protocol === 'blob:') {
+      return url;
+    }
+    return (protocol === 'https:' || protocol === 'http:') && origin !== window.location.origin ? url : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function getDownloadName(title: string | undefined): string | undefined {

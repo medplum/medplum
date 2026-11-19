@@ -139,6 +139,14 @@ describe('AttachmentDisplay', () => {
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
+  test.each(['/Patient/123', `${window.location.origin}/Patient/123`, 'javascript:void(0)'])(
+    'Ignores URL %s',
+    async (url) => {
+      await setup({ value: { contentType: 'text/plain', url } });
+      expect(screen.queryByTestId('attachment-display')).not.toBeInTheDocument();
+    }
+  );
+
   test('Renders plain text', async () => {
     await setup({
       value: { contentType: 'text/plain', url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL' },
