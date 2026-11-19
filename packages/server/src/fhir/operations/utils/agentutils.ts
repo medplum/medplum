@@ -15,7 +15,15 @@ import {
   singularize,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type {
+  Agent,
+  Bundle,
+  BundleEntry,
+  Device,
+  OperationOutcome,
+  Parameters,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
@@ -84,7 +92,7 @@ export async function getAgentsForRequest(req: FhirRequest, repo: Repository): P
     return agent ? [agent] : undefined;
   }
   const searchRequest = parseSearchRequest<Agent>('Agent', req.query);
-  assertSingleTypeSearch(searchRequest);
+  assertSingleTypeSearch(searchRequest, 'Agent');
   const agents = await repo.searchResources(searchRequest);
   return agents.filter((agent) => agent.resourceType === 'Agent');
 }
@@ -100,7 +108,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
   }
   if (destination.startsWith('Device?')) {
     const searchRequest = parseSearchRequest<Device>(destination);
-    assertSingleTypeSearch(searchRequest);
+    assertSingleTypeSearch(searchRequest, 'Device');
     const device = await searchUnique(repo, searchRequest);
     return device?.resourceType === 'Device' ? device : undefined;
   }
@@ -111,16 +119,20 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
 }
 
 /**
- * Rejects a user-supplied search whose results could include resources other than `searchRequest.resourceType`:
- * `_type` replaces the searched type, and `_include`/`_revinclude` add resources of other types.
+ * Rejects a user-supplied search whose results could include resources other than `resourceType`:
+ * a search of another type, `_type` replacing the searched type, or `_include`/`_revinclude` adding other types.
  * Callers also check each result's type, so a parameter not covered here cannot swap in another resource.
  *
  * @param searchRequest - The parsed search request.
+ * @param resourceType - The only resource type the search may return.
  */
-function assertSingleTypeSearch(searchRequest: SearchRequest): void {
+function assertSingleTypeSearch(searchRequest: SearchRequest, resourceType: ResourceType): void {
+  if (searchRequest.resourceType !== resourceType) {
+    throw new OperationOutcomeError(badRequest(`Search must be for ${resourceType}`));
+  }
   if (searchRequest.types || searchRequest.include || searchRequest.revInclude) {
     throw new OperationOutcomeError(
-      badRequest(`_type, _include, and _revinclude are not supported when searching for ${searchRequest.resourceType}`)
+      badRequest(`_type, _include, and _revinclude are not supported when searching for ${resourceType}`)
     );
   }
 }
