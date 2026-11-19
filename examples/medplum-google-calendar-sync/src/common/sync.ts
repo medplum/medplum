@@ -18,7 +18,7 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { ceilingFromAllowEventDetails, readProjectCeiling } from './configuration';
+import { ceilingFromAllowEventDetails, projectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
 import type { EventDetailLevel } from './constants';
@@ -123,7 +123,7 @@ export class SyncSession {
 
   constructor(
     readonly medplum: MedplumClient,
-    secrets: BotEvent['secrets'],
+    private readonly secrets: BotEvent['secrets'],
     readonly projectId: string,
     private readonly deps: SyncDeps = DEFAULT_DEPS
   ) {
@@ -133,10 +133,8 @@ export class SyncSession {
     this.appointmentUrlTemplate = secrets?.[SECRET.appointmentUrl]?.valueString?.trim() || undefined;
   }
 
-  // The project secret is the authority: the stored setting can only lower the level, because a
-  // practitioner's own policy may let them edit that record.
-  private async ceiling(): Promise<EventDetailLevel> {
-    return this.detailCeiling === 'full' ? readProjectCeiling(this.medplum, 'full') : 'busy-only';
+  private ceiling(): Promise<EventDetailLevel> {
+    return projectCeiling(this.medplum, this.secrets);
   }
 
   async withConnection<T>(

@@ -131,6 +131,10 @@ test('status reports whether the project lets practitioners choose event details
   expect(before.parameter).toContainEqual({ name: 'detailsAllowed', valueBoolean: false });
 
   await writeProjectCeiling(medplum, 'full');
-  const after = await handler(medplum, event);
+  const storedOnly = await handler(medplum, event);
+  expect(storedOnly.parameter).toContainEqual({ name: 'detailsAllowed', valueBoolean: false });
+
+  const allowed = { GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS: { name: 'a', valueString: 'true' } };
+  const after = await handler(medplum, { ...event, secrets: { ...event.secrets, ...allowed } });
   expect(after.parameter).toContainEqual({ name: 'detailsAllowed', valueBoolean: true });
 });

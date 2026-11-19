@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { MedplumClient } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
 import { getExtensionValue } from '@medplum/core';
 import type { Basic } from '@medplum/fhirtypes';
 import type { EventDetailLevel } from './constants';
@@ -39,6 +39,19 @@ export async function readProjectCeiling(medplum: MedplumClient, fallback?: stri
   }
   const basic = matches[0];
   return resolveDetailLevel(basic ? (getExtensionValue(basic, LEVEL_URL) as string) : fallback);
+}
+
+/**
+ * The ceiling every Bot applies. The project secret is the authority: the stored setting can only
+ * lower the level, because a practitioner's own policy may let them edit that record.
+ * @param medplum - The Medplum client.
+ * @param secrets - The Bot's project secrets.
+ * @returns The effective ceiling.
+ */
+export async function projectCeiling(medplum: MedplumClient, secrets: BotEvent['secrets']): Promise<EventDetailLevel> {
+  const allow = secrets?.[SECRET.allowEventDetails];
+  const fromSecret = ceilingFromAllowEventDetails(allow?.valueString ?? allow?.valueBoolean?.toString());
+  return fromSecret === 'full' ? readProjectCeiling(medplum, 'full') : 'busy-only';
 }
 
 export async function writeProjectCeiling(medplum: MedplumClient, level: EventDetailLevel): Promise<void> {

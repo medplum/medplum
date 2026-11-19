@@ -3,7 +3,7 @@
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
-import { readProjectCeiling } from '../common/configuration';
+import { projectCeiling } from '../common/configuration';
 import { SECRET } from '../common/constants';
 import { operationHandler } from '../common/contracts';
 import { requirePractitionerRequester } from '../common/operations';
@@ -15,7 +15,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   if (`${profile?.resourceType}/${profile?.id}` !== practitioner) {
     throw new Error('Status must run as the caller');
   }
-  const status = await callerStatus(medplum, practitioner);
+  const status = await callerStatus(medplum, practitioner, event.secrets);
   // The public OAuth client ID lets the consuming app start Google consent without its own copy.
   // The client secret never leaves the project secrets.
   const clientId = event.secrets[SECRET.clientId]?.valueString?.trim();
@@ -23,7 +23,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
     status.parameter = [...(status.parameter ?? []), { name: 'clientId', valueString: clientId }];
   }
   // Whether the project lets practitioners choose more than Busy, so the app can offer the choice.
-  const detailsAllowed = (await readProjectCeiling(medplum)) !== 'busy-only';
+  const detailsAllowed = (await projectCeiling(medplum, event.secrets)) !== 'busy-only';
   status.parameter = [...(status.parameter ?? []), { name: 'detailsAllowed', valueBoolean: detailsAllowed }];
   return status;
 }

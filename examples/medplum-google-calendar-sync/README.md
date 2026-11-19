@@ -62,14 +62,14 @@ Run every command from the root of the Medplum repository. The steps use two CLI
 
 5. In the [Medplum App](https://app.medplum.com), open the customer project's admin page and the Secrets tab. Add these secrets:
 
-   | Secret Name                           | Description                                                 | Required |
-   | ------------------------------------- | ----------------------------------------------------------- | -------- |
-   | `GOOGLE_CALENDAR_CLIENT_ID`           | Google OAuth client ID                                      | Yes      |
-   | `GOOGLE_CALENDAR_CLIENT_SECRET`       | Google OAuth client secret                                  | Yes      |
-   | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` | `true` lets practitioners choose `initials` or `full`       | No       |
-   | `GOOGLE_CALENDAR_APPOINTMENT_URL`     | Link added to each event; `{id}` becomes the Appointment ID | No       |
+   | Secret Name                           | Description                                                   | Required |
+   | ------------------------------------- | ------------------------------------------------------------- | -------- |
+   | `GOOGLE_CALENDAR_CLIENT_ID`           | Google OAuth client ID                                        | Yes      |
+   | `GOOGLE_CALENDAR_CLIENT_SECRET`       | Google OAuth client secret                                    | Yes      |
+   | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` | `true` lets practitioners choose `initials` or `full`         | No       |
+   | `GOOGLE_CALENDAR_APPOINTMENT_URL`     | Link added to each Appointment's event; `{id}` becomes its ID | No       |
 
-   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level. Without `GOOGLE_CALENDAR_APPOINTMENT_URL`, events carry no link.
+   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level. Without `GOOGLE_CALENDAR_APPOINTMENT_URL`, events carry no link. Turning details off takes effect at once; turning them on needs the installer run again.
 
 6. Run the installer in the customer project as a project admin. Run it again each time you change a secret.
 
@@ -159,7 +159,7 @@ Then check a real calendar by hand, in a test project with a test Google account
 
 ## Limitations
 
-- Untested: linked projects, Google Workspace Internal consent, Google quota limits, recurrence exceptions.
+- Untested: Google Workspace Internal consent, Google quota limits, recurrence exceptions.
 - An outbound repair pass stops taking on new items after about seven minutes, and the minute Cron starts an unfinished pass again from the beginning. A calendar too large for one pass never completes its repair.
 - The refresh token is stored unencrypted in a `Basic` resource. AccessPolicy is the only protection: a project admin, or a user whose policy grants `Basic`, can read it.
 - Discovery and import cover 90 days from now. A change to an Appointment or block outside that window is still sent to Google when it happens, and existing mirrored events are checked whatever their date.

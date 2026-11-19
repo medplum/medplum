@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { MedplumClient, WithId } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
 import { getExtensionValue } from '@medplum/core';
 import type { Basic, Parameters } from '@medplum/fhirtypes';
-import { readProjectCeiling } from './configuration';
+import { projectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { CONNECTION_STATUSES, readCode, readConnection } from './connection';
 import { EVENT_DETAIL_LEVELS, GOOGLE_CALENDAR_NAMESPACE as N } from './constants';
@@ -61,7 +61,11 @@ export async function deletePublicStatus(medplum: MedplumClient, id: string): Pr
   }
 }
 
-export async function callerStatus(medplum: MedplumClient, practitionerRef: string): Promise<Parameters> {
+export async function callerStatus(
+  medplum: MedplumClient,
+  practitionerRef: string,
+  secrets: BotEvent['secrets']
+): Promise<Parameters> {
   const basic = await medplum.searchOne(
     'Basic',
     await projectQuery(medplum, `${PUBLIC_STATUS_SEARCH}&subject=${practitionerRef}`)
@@ -93,5 +97,5 @@ export async function callerStatus(medplum: MedplumClient, practitionerRef: stri
     eventDetailLevel,
     accountEmail: getExtensionValue(basic, `${N}/account-email`) as string | undefined,
   };
-  return connectionStatusParameters(connection, await readProjectCeiling(medplum));
+  return connectionStatusParameters(connection, await projectCeiling(medplum, secrets));
 }

@@ -4,7 +4,7 @@
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { requireOperationBot } from '../common/authorization';
-import { readProjectCeiling } from '../common/configuration';
+import { projectCeiling } from '../common/configuration';
 import { findConnection, updateConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
@@ -21,7 +21,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
   try {
     return mutationStatus(
       await updateConnection(medplum, connection, { eventDetailLevel: level }),
-      await readProjectCeiling(medplum)
+      await projectCeiling(medplum, event.secrets)
     );
   } catch (err) {
     if (err instanceof ConnectionBusyError) {

@@ -4,7 +4,7 @@
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import { requireOperationBot } from '../common/authorization';
-import { readProjectCeiling } from '../common/configuration';
+import { projectCeiling } from '../common/configuration';
 import { accountInUse, findConnection, saveConnection } from '../common/connection';
 import { BOT_IDENTIFIER_VALUE, GOOGLE_CALENDAR_METADATA_SCOPE, GOOGLE_CALENDAR_SCOPE } from '../common/constants';
 import { operationHandler } from '../common/contracts';
@@ -66,7 +66,7 @@ async function execute(medplum: MedplumClient, event: BotEvent<Parameters>): Pro
         throw new Error('Disconnect the existing Google account before switching accounts');
       }
 
-      const ceiling = await readProjectCeiling(medplum);
+      const ceiling = await projectCeiling(medplum, event.secrets);
       const connection = await saveConnection(
         medplum,
         {
