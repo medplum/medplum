@@ -2685,7 +2685,7 @@ describe('Subscription Worker', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
-    // ws/subscriptions.test.ts loads workers/subscription.ts first with its own mocked channel.
+    // ws/subscriptions.int.test.ts loads workers/subscription.ts first with its own mocked channel.
     const WS_SUBSCRIPTIONS_TEST_CHANNEL = wsSubscriptionTestChannels.ws;
 
     let subscriber: ReturnType<typeof getPubSubRedisSubscriber>;

@@ -11,7 +11,7 @@ import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
 
 // This isn't really a mocked value, but it must be named that way to appease jest
-// If we followed the same mocking pattern as `database.test.ts`, this wouldn't be necessary
+// If we followed the same mocking pattern as `database.int.test.ts`, this wouldn't be necessary
 const mockLatestVersion = getLatestPostDeployMigrationVersion();
 
 vi.mock('express', async (importOriginal) => {

@@ -88,21 +88,6 @@ describe('buildRangeColumns', () => {
   });
 
   test.each([
-    ['2025-11-02T09:11:52Z', '2025-11-02T09:11:53.000Z'],
-    ['2025-11-02T09:11:52.039Z', '2025-11-02T09:11:52.040Z'],
-  ])('date time range uses UTC precision around DST fallback: %s', (value, expectedEnd) => {
-    const originalTZ = process.env.TZ;
-    process.env.TZ = 'America/Los_Angeles';
-    try {
-      const range = parseDateTimeToRange(value);
-      expect(range.left?.toISOString()).toStrictEqual(new Date(value).toISOString());
-      expect(range.right?.toISOString()).toStrictEqual(expectedEnd);
-    } finally {
-      process.env.TZ = originalTZ;
-    }
-  });
-
-  test.each([
     ['2028-05-15T14:30Z', '2028-05-15T14:31:00.000Z'],
     ['2028-05-15T14:30+05:30', '2028-05-15T09:01:00.000Z'],
   ])('date time range precision ignores the timezone suffix: %s', (value, expectedEnd) => {

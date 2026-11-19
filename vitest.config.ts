@@ -11,6 +11,7 @@ export default defineConfig({
       'examples/*/vite{,st}.config.ts',
       // Nested projects aren't expanded here, so they are named for --merge-reports
       { test: { name: '@medplum/core-node', root: 'packages/core', include: [] } },
+      { test: { name: '@medplum/server-unit', root: 'packages/server', include: [] } },
       { test: { name: '@medplum/server-serial', root: 'packages/server', include: [] } },
     ],
     coverage: {
