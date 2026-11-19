@@ -41,7 +41,7 @@ async function validateReferences(
   }
 }
 
-const skippedReference = /^(?:%|#|https?:)/;
+const skippedReference = /^(?:%|#|https?:)/i;
 function isCheckableReference(propertyValue: TypedValue): boolean {
   const { type: valueType, value } = propertyValue;
   if (valueType !== PropertyType.Reference) {
@@ -155,7 +155,7 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             if (!isCheckableReference(propertyValue[i])) {
-              return;
+              continue;
             }
             const reference = propertyValue[i].value as Reference;
             const replacement = await resolveReplacementReference(repo, reference, path + '[' + i + ']');
@@ -164,7 +164,7 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
               parent.value[key][i] = replacement;
             }
           }
-        } else {
+        } else if (isCheckableReference(propertyValue)) {
           const reference = propertyValue.value as Reference;
           const replacement = await resolveReplacementReference(repo, reference, path);
 
