@@ -73,6 +73,17 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith(true, 'active');
   });
 
+  test('boolean property with explicit false overrides missing-means-true default', async () => {
+    await setup({
+      ...defaultProps,
+      path: 'Patient.active',
+      name: 'active',
+      property: { ...baseProperty, path: 'Patient.active', type: [{ code: 'boolean' }] },
+      defaultValue: false,
+    });
+    expect(screen.getByTestId<HTMLInputElement>('active').checked).toBe(false);
+  });
+
   test('Date property', async () => {
     const onChange = vi.fn();
 

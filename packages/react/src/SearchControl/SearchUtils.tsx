@@ -9,6 +9,7 @@ import {
   evalFhirPathTyped,
   formatDateTime,
   getDisplayString,
+  isEmpty,
   isProfileResource,
   Operator,
   PropertyType,
@@ -710,7 +711,7 @@ function ReferenceAvatarLink({ value }: { readonly value: Reference }): JSX.Elem
 function renderPropertyValue(resource: Resource, elementDefinition: InternalSchemaElement): JSX.Element | null {
   const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') ?? '';
   const [value, propertyType] = getValueAndType({ type: resource.resourceType, value: resource }, path);
-  if (!value) {
+  if (isEmpty(value)) {
     return null;
   }
 

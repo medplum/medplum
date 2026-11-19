@@ -42,6 +42,24 @@ import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 import type { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
+// Boolean elements whose `meaningWhenMissing` says a missing value means true.
+// Not every `active` qualifies: a missing `Cron.active` means inactive.
+const BOOLEAN_PATHS_MISSING_MEANS_TRUE = new Set([
+  'BodyStructure.active',
+  'Group.active',
+  'HealthcareService.active',
+  'Linkage.active',
+  'Organization.active',
+  'OrganizationAffiliation.active',
+  'Patient.active',
+  'Practitioner.active',
+  'PractitionerRole.active',
+  'Project.active',
+  'ProjectMembership.active',
+  'RelatedPerson.active',
+  'Schedule.active',
+]);
+
 export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
@@ -326,7 +344,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <Checkbox
           {...getPrimitiveInputProps()}
-          defaultChecked={Boolean(defaultValue)}
+          defaultChecked={defaultValue ?? BOOLEAN_PATHS_MISSING_MEANS_TRUE.has(path)}
           onChange={(e) => {
             if (onChange) {
               onChange(e.currentTarget.checked);
