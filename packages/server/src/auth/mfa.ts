@@ -181,10 +181,6 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  // `/disable` accepts any enrolled method as proof, including one added here. So when the user
-  // already has MFA, adding a method takes the same proof `/disable` does: a code from an
-  // enrolled method, in addition to the `token` that confirms the new one. It is checked after
-  // that `token`, because checking it consumes an authenticator code.
   const enrolledFactorToken =
     typeof req.body.enrolledFactorToken === 'string' ? req.body.enrolledFactorToken : undefined;
   if (user.mfaEnrolled && !enrolledFactorToken) {
