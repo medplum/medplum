@@ -22,6 +22,7 @@ import type { MockAgentResponseHandle } from './utils/agenttestutils';
 import {
   cleanupMockAgents,
   configMockAgents,
+  expectAgentOperationRequiresUpdate,
   expectBundleToContainOutcome,
   mockAgentResponse,
 } from './utils/agenttestutils';
@@ -226,5 +227,14 @@ describe('Agent/$reload-config', () => {
     for (const handle of handles) {
       handle.cleanup();
     }
+  });
+
+  test('Requires update access to each Agent', async () => {
+    await expectAgentOperationRequiresUpdate<AgentReloadConfigRequest, AgentReloadConfigResponse>(
+      app,
+      'reload-config',
+      'agent:reloadconfig:request',
+      { type: 'agent:reloadconfig:response', statusCode: 200 }
+    );
   });
 });
