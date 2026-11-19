@@ -101,13 +101,13 @@ function classify(value: unknown): z.infer<typeof schemas.classify> {
 export function review(agent = ask): void {
   const context = load<{ base: string; repository?: string }>('context.json');
   const repository = context.repository ?? process.env.GITHUB_REPOSITORY;
-  const citations = new Set<string>();
+  const citations = new Map<string, string>();
   function cite(entries: z.infer<typeof cites>, edits: string[] = []): void {
     for (const { path, line, note } of entries) {
       let label = `\`${path}:${line}\``;
       if (edits.includes(path)) label = 'Draft line ' + label;
       else if (repository) label = `[${label}](https://github.com/${repository}/blob/${context.base}/${path}#L${line})`;
-      citations.add(`${label} ${reportText(note)}`);
+      if (!citations.has(label)) citations.set(label, `${label} ${reportText(note)}`);
     }
   }
   const plan = existsSync(run + '/classification.json')
@@ -151,7 +151,8 @@ export function review(agent = ask): void {
   if (pages.length)
     lines.push(notes ? '### Pages drafted' : '### Planned pages', bullets(pages.map((p) => `\`${p}\``)));
   if (notes) lines.push('### Reviewer notes', reportText(notes));
-  if (citations.size) lines.push('<details><summary>Evidence</summary>', bullets([...citations]), '</details>');
+  if (citations.size)
+    lines.push('<details><summary>Evidence</summary>', bullets([...citations.values()]), '</details>');
   const report = lines.join('\n\n') + '\n';
   writeFileSync(run + '/review.md', report);
   append('GITHUB_STEP_SUMMARY', '\n' + report);

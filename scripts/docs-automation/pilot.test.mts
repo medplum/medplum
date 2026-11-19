@@ -36,11 +36,11 @@ afterEach(() => {
   fs.rmSync(work, { recursive: true, force: true });
 });
 
-function draft(sources: typeof evidence, findings: string[]): void {
+function draft(sources: typeof evidence, findings: string[], edited = added): void {
   review((stage) => {
     if (stage === 'classify') return plan;
     if (stage === 'verify') return { findings, evidence: sources };
-    fs.copyFileSync(docPath(page), docPath(added));
+    fs.writeFileSync(docPath(edited), read(docPath(page)) + '\nUpdated.\n');
     return { notes: 'Added example.', questions: ['Which release?'] };
   });
 }
@@ -54,31 +54,34 @@ function publication(existing = false): string {
   return calls.join('\n');
 }
 
-test('classify, partially draft, verify, and publish the reviewed tree on the first run or a retry', () => {
-  process.env.MODE = 'classify';
-  review(() => plan);
-  assert.match(report(), /Documentation update recommended\.[\s\S]+Planned pages/);
-  process.env.MODE = 'draft';
-  draft([citation(added), citation(page)], ['Check rollout.']);
-  const result = report();
-  assert.match(result, /Drafted 1 page\. 2 items need review\.[\s\S]+Address these items before merging\./);
-  assert(result.includes('### Pages drafted\n\n- `' + added + '`\n\n'));
-  assert(result.includes('/blob/' + base + '/' + page + '#L2'));
-  assert(result.includes('Draft line `' + added + ':2`'));
-  assert.match(read('outputs'), /tree=[0-9a-f]{40}\nneeds_input=true\n$/);
-  const tree = git('write-tree').trim();
-  Object.assign(process.env, { MODE: 'open-pr', BASE_BRANCH: 'main', BUILD: 'success', DOCS_TREE: tree });
-  git('init', '--bare', '-q', '../origin.git');
-  git('remote', 'add', 'origin', '../origin.git');
-  for (let attempt = 0; attempt < 2; attempt++) {
+for (const edited of [page, added]) {
+  test(`review and publish a partial draft of ${edited}, including retries`, () => {
+    process.env.MODE = 'classify';
+    review(() => plan);
+    assert.match(report(), /Documentation update recommended\.[\s\S]+Planned pages/);
+    process.env.MODE = 'draft';
+    draft([citation(edited), { ...citation(page), note: 'Duplicate.' }], ['Check rollout.'], edited);
+    const result = report();
+    assert.match(result, /Drafted 1 page\. 2 items need review\.[\s\S]+Address these items before merging\./);
+    assert(result.includes('### Pages drafted\n\n- `' + edited + '`\n\n'));
+    assert(result.includes('/blob/' + base + '/' + page + '#L2'));
+    assert(result.includes('Draft line `' + edited + ':2`'));
+    assert(!result.includes('Duplicate.'));
+    assert.match(read('outputs'), /tree=[0-9a-f]{40}\nneeds_input=true\n$/);
+    const tree = git('write-tree').trim();
+    Object.assign(process.env, { MODE: 'open-pr', BASE_BRANCH: 'main', BUILD: 'success', DOCS_TREE: tree });
+    git('init', '--bare', '-q', '../origin.git');
+    git('remote', 'add', 'origin', '../origin.git');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      git('checkout', '-q', '--detach', '-f', base);
+      assert.match(publication(), /pr create .*--assignee author .*org\/repo\/actions\/runs\/1/);
+      assert.equal(git('rev-parse', 'refs/remotes/origin/docs/automated-pr-42^{tree}').trim(), tree);
+    }
     git('checkout', '-q', '--detach', '-f', base);
-    assert.match(publication(), /pr create .*--assignee author .*org\/repo\/actions\/runs\/1/);
-    assert.equal(git('rev-parse', 'refs/remotes/origin/docs/automated-pr-42^{tree}').trim(), tree);
-  }
-  git('checkout', '-q', '--detach', '-f', base);
-  fs.appendFileSync(run + '/docs.patch', read(run + '/docs.patch').replaceAll('/new.md', '/other.md'));
-  assert.throws(() => publish(42, 'org/repo', () => '[]'), /Patch differs/);
-});
+    fs.writeFileSync(run + '/docs.patch', read(run + '/docs.patch').replace('+Updated.', '+Different.'));
+    assert.throws(() => publish(42, 'org/repo', () => '[]'), /Patch differs/);
+  });
+}
 
 test('invalid citations, unsafe paths, and unplanned edits', () => {
   fs.symlinkSync(process.cwd(), dirname(docPath(page)) + '/link');
