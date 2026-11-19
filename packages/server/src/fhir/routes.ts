@@ -60,6 +60,7 @@ import { expandOperator } from './operations/expand';
 import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
+import { assembleHandler } from './operations/assemble';
 import { extractHandler } from './operations/extract';
 import { appointmentFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
@@ -409,6 +410,11 @@ function initInternalFhirRouter(): FhirRouter {
   // SMART Health Links operations
   router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
   router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
+
+  // Questionnaire $assemble operation
+  router.add('GET', '/Questionnaire/:id/$assemble', assembleHandler);
+  router.add('POST', '/Questionnaire/:id/$assemble', assembleHandler);
+  router.add('POST', '/Questionnaire/$assemble', assembleHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
