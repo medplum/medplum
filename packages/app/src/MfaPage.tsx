@@ -15,6 +15,9 @@ const METHOD_LABELS: Record<MfaMethod, string> = {
   email: 'Email',
 };
 
+const EMAIL_CODE_REJECTED_MESSAGE =
+  'The code we emailed you was incorrect or has expired. Enter it again, or request a new code.';
+
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>();
@@ -55,6 +58,16 @@ export function MfaPage(): JSX.Element | null {
     setEnrolledMethods((prev) => (prev.includes(method) ? prev : [...prev, method]));
   }, []);
 
+  // The emailed code is checked only after the second code is entered. If the server rejects it,
+  // go back to the email step so the user can re-enter it or request a new one.
+  const restartEmailVerification = useCallback(() => {
+    setEmailCode(undefined);
+    setAddingTotp(false);
+    setConfirmingWithTotp(false);
+    setEnrollingEmail(true);
+    showNotification({ color: 'red', message: EMAIL_CODE_REJECTED_MESSAGE, autoClose: false });
+  }, []);
+
   const enrollTotp = useCallback(
     (token: string) => {
       medplum
@@ -67,6 +80,10 @@ export function MfaPage(): JSX.Element | null {
         })
         .catch((err) => {
           const message = normalizeErrorString(err);
+          if (emailCode && message === 'Invalid enrolled factor token') {
+            restartEmailVerification();
+            return;
+          }
           showNotification({
             color: 'red',
             // Enrollment offers expire. The app may still hold an entry for the old QR code, which will not work.
@@ -79,7 +96,7 @@ export function MfaPage(): JSX.Element | null {
           fetchStatus();
         });
     },
-    [medplum, markEnrolled, fetchStatus, emailCode]
+    [medplum, markEnrolled, fetchStatus, emailCode, restartEmailVerification]
   );
 
   // Email a verification code to the current user so they can prove control of
@@ -100,15 +117,23 @@ export function MfaPage(): JSX.Element | null {
 
   const completeEnrollEmail = useCallback(
     async (token: string, enrolledFactorToken?: string): Promise<void> => {
-      // This will throw if the emailed code is missing, invalid, or expired.
-      await medplum.post('auth/mfa/enroll', { method: 'email', token, enrolledFactorToken });
+      try {
+        await medplum.post('auth/mfa/enroll', { method: 'email', token, enrolledFactorToken });
+      } catch (err) {
+        // With an enrolled factor token, the emailed code was entered in an earlier step
+        if (enrolledFactorToken && normalizeErrorString(err) === 'Invalid token') {
+          restartEmailVerification();
+          return;
+        }
+        throw err;
+      }
       setEnrollingEmail(false);
       setConfirmingWithTotp(false);
       setEmailCode(undefined);
       markEnrolled('email');
       showNotification({ color: 'green', message: 'Email-based MFA enabled' });
     },
-    [medplum, markEnrolled]
+    [medplum, markEnrolled, restartEmailVerification]
   );
 
   const disableMfa = useCallback(
