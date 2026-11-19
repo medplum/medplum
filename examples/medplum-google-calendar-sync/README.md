@@ -122,6 +122,12 @@ Every operation takes a FHIR `Parameters` resource. The practitioner is always t
 | `POST /Practitioner/$google-calendar-settings`   | `eventDetailLevel`                                                 | Connection summary. Queues an update of all events. Fails while a sync is running; retry after a few minutes.                                                                                                                                                         |
 | `POST /Practitioner/$google-calendar-disconnect` | Optional `forgetRevoked`                                           | Queues removal of events, Slots and the credential, and revokes the access the Google account granted to every OAuth client in the Google Cloud project. If Google access was revoked, cleanup waits until `forgetRevoked` is `true`, and the Google events may stay. |
 
+Pass `eventDetailLevel` as a `valueString`:
+
+```json
+{ "resourceType": "Parameters", "parameter": [{ "name": "eventDetailLevel", "valueString": "initials" }] }
+```
+
 `$google-calendar-status` returns these parameters, among others:
 
 | Parameter                           | Meaning                                                                                                                                                                                               |
