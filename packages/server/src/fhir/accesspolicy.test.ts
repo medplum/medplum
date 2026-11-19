@@ -2592,6 +2592,45 @@ describe('AccessPolicy', () => {
       expect(updatedMembership.externalId).toBe('x');
     }));
 
+  test('Project admin Cron access is unaffected by a ProjectMembership entry', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({
+        withRepo: true,
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [
+            { resourceType: 'Bot' },
+            { resourceType: 'ProjectMembership', criteria: 'ProjectMembership?profile-type=Bot' },
+          ],
+        },
+      });
+      const bot = await systemRepo.createResource<Bot>({ resourceType: 'Bot', meta: { project: project.id } });
+      const botMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+      const practitionerMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: { reference: 'User/' + randomUUID() },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+
+      // No Cron entry in the policy, so the default admin access applies
+      const cron = await repo.createResource<Cron>({
+        resourceType: 'Cron',
+        active: true,
+        cronString: '* * * * *',
+        onBehalfOf: createReference(botMembership),
+        targetReference: createReference(bot),
+      });
+      await repo.deleteResource('Cron', cron.id);
+
+      await expect(repo.readResource('ProjectMembership', practitionerMembership.id)).rejects.toThrow('Forbidden');
+    }));
+
   test('Project admin ProjectMembership compartment entry stays limited to own project', () =>
     withTestContext(async () => {
       const linkedProject = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Linked' });
