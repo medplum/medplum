@@ -6,7 +6,7 @@ import { existsSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod/v4';
 import config from './config.json' with { type: 'json' };
-import { append, capturePatch, checkedPath, docPath, load, read, run, save } from './pilot.mts';
+import { append, capturePatch, checkedPath, docPath, draftLine, lineUrl, load, read, run, save } from './pilot.mts';
 
 const text = z.string().min(1).max(1600);
 const maxItems = 8;
@@ -55,7 +55,6 @@ function ask(stage: keyof typeof schemas, pages: string[] = []): unknown {
 }
 
 const relative = (ref: string): string => ref.replace(/^(?:\.\/)?repo\//, '');
-const cited = (c: z.infer<typeof cites>[number]): string => `\`${c.path}:${c.line}\` ${reportText(c.note)}`;
 
 function reportText(value: string): string {
   // Treat model-supplied HTML as text. Neutralize mentions in prose while preserving literal code.
@@ -112,17 +111,21 @@ function reviewReport(
   let headline = {
     'no-docs': 'No documentation update needed.',
     'already-covered': 'The docs already cover this change.',
-    'needs-human': 'The documentation decision needs review.',
+    'needs-human': 'Documentation decision needed.',
     'update-docs': 'Documentation update recommended.',
   }[plan.outcome];
   if (draft) {
     const count = draft.pages.length;
     headline = count ? `Drafted ${count} ${count === 1 ? 'page' : 'pages'}.` : 'No pages drafted.';
+    if (attention.length)
+      headline += ` ${attention.length} ${attention.length === 1 ? 'item needs' : 'items need'} review.`;
   }
-  if (attention.length)
-    headline += ` ${attention.length} ${attention.length === 1 ? 'item needs' : 'items need'} review.`;
   const lines = [`**${headline}**`];
-  if (attention.length) lines.push('### Needs attention', bullets(attention.map(reportText)));
+  if (attention.length) {
+    lines.push('### Needs attention');
+    if (draft?.pages.length) lines.push('Address these items before merging.');
+    lines.push(bullets(attention.map(reportText)));
+  }
   if (!attention.includes(plan.summary)) lines.push('### Summary', reportText(plan.summary));
   const pages = draft?.pages ?? plan.pages;
   if (pages.length)
@@ -134,11 +137,20 @@ function reviewReport(
 }
 
 export function review(agent = ask): void {
+  const { base, repository = process.env.GITHUB_REPOSITORY } = load<{ base: string; repository?: string }>(
+    'context.json'
+  );
+  function cited({ path, line, note }: z.infer<typeof cites>[number], edited = false): string {
+    let label = `\`${path}:${line}\``;
+    if (edited) label = draftLine(path, line);
+    else if (repository) label = `[${label}](${lineUrl(repository, base, path, line)})`;
+    return `${label} ${reportText(note)}`;
+  }
   const plan = existsSync(run + '/classification.json')
     ? schemas.classify.parse(load('classification.json'))
     : classify(agent('classify'));
   const questions = [...plan.questions];
-  const citations = plan.evidence.map(cited);
+  const citations = plan.evidence.map((c) => cited(c));
   let drafted: { pages: string[]; notes: string } | undefined;
   let tree = '';
   if (process.env.MODE !== 'classify' && plan.outcome === 'update-docs') {
@@ -158,7 +170,7 @@ export function review(agent = ask): void {
       }
       save('verification.json', check);
       questions.push(...check.findings);
-      citations.push(...check.evidence.map(cited));
+      citations.push(...check.evidence.map((c) => cited(c, patch.pages.includes(c.path))));
     }
   }
   const report = reviewReport(plan, [...new Set(questions)], citations, drafted);

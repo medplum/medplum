@@ -33,7 +33,12 @@ beforeEach(() => {
   git('add', '.');
   git('-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-qm', 'base');
   fs.mkdirSync(run);
-  save('context.json', { number: 42, assignee: 'source-author', base: git('rev-parse', 'HEAD').trim() });
+  save('context.json', {
+    number: 42,
+    repository: 'org/repo',
+    assignee: 'source-author',
+    base: git('rev-parse', 'HEAD').trim(),
+  });
 });
 afterEach(() => {
   process.env = env;
@@ -64,6 +69,9 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
   assert.equal(load<{ findings: string[] }>('verification.json').findings.length, 2);
   const report = read(run + '/review.md');
   assert(report.startsWith('**Drafted 1 page. 3 items need review.**\n\n### Needs attention'));
+  assert(report.includes('Address these items before merging.'));
+  assert(report.includes(`/blob/${git('rev-parse', 'HEAD').trim()}/${page}#L2`));
+  assert(report.includes(`[Draft line \`${page}:2\`]`));
   assert(report.includes(`### Pages drafted\n\n- \`${page}\``));
   assert(!report.includes(plan.pages[1]));
   assert(report.includes('<details><summary>Evidence</summary>'));
@@ -76,6 +84,46 @@ test('classify stops at the plan, drafts with open questions get reviewed, and q
   save('classification.json', { ...plan, outcome: 'needs-human', pages: [], questions: ['Which default?'] });
   review(() => assert.fail('Unexpected model call'));
   assert(read('outputs').endsWith('tree=\nneeds_input=true\n'));
+  assert(read(run + '/review.md').startsWith('**Documentation decision needed.**\n\n### Needs attention'));
+});
+
+test('publication links new pages to the draft commit, including when it reuses an existing branch', () => {
+  const added = plan.pages[1];
+  const base = git('rev-parse', 'HEAD').trim();
+  review((stage) => {
+    if (stage === 'classify') return { ...plan, pages: [added] };
+    if (stage === 'verify')
+      return { findings: [], evidence: [page, added].map((path) => ({ path, line: 1, note: 'Checked.' })) };
+    fs.copyFileSync(docPath(page), docPath(added));
+    return { notes: 'Added a page.', questions: [] };
+  });
+  const report = read(run + '/review.md');
+  const blob = 'https://github.com/org/repo/blob/';
+  assert(report.includes(`${blob}${base}/${page}#L1`));
+  assert(report.includes(`[Draft line \`${added}:1\`]`));
+  assert(!report.includes(`${blob}${base}/${added}`));
+  assert(!report.includes('Address these items'));
+  Object.assign(process.env, {
+    MODE: 'open-pr',
+    BASE_BRANCH: 'main',
+    BUILD: 'success',
+    DOCS_TREE: git('write-tree').trim(),
+  });
+  git('init', '--bare', '-q', '../origin.git');
+  git('remote', 'add', 'origin', '../origin.git');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    // Each publish job starts from the same clean checkout; the second finds the branch already pushed.
+    git('checkout', '-q', '--detach', '-f', base);
+    let body = '';
+    publish(42, 'org/repo', (args, input) => {
+      if (args[1].includes('/pulls?')) return '[]';
+      if (args[1] === 'create') body = input!;
+      return '';
+    });
+    const sha = git('rev-parse', 'refs/remotes/origin/docs/automated-pr-42').trim();
+    assert.notEqual(sha, base);
+    assert(body.includes(`[Draft line \`${added}:1\`]: ${blob}${sha}/${added}#L1`));
+  }
 });
 
 test('the report preserves inline and fenced code, and escapes HTML and mentions in prose', () => {
@@ -133,6 +181,11 @@ test('a failed build updates the comment and a retry recovers an unassigned PR',
   assert.match(calls.at(-1)!.join(' '), /PATCH[\s\S]+build failed/);
   process.env.BUILD = 'success';
   publish(42, 'org/repo', github);
-  assert.match(calls.at(-2)!.join(' '), /Existing documentation PR: existing-pr/);
+  assert(
+    calls
+      .at(-2)!
+      .at(-1)!
+      .includes('Existing documentation PR: existing-pr\n\n[Workflow run](https://github.com/org/repo/actions/runs/1)')
+  );
   assert.deepEqual(calls.at(-1), ['pr', 'edit', 'existing-pr', '--add-assignee', 'source-author']);
 });
