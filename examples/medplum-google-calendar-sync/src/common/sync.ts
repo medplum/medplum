@@ -21,6 +21,7 @@ import type {
 import { ceilingFromAllowEventDetails, readProjectCeiling } from './configuration';
 import type { CalendarConnection } from './connection';
 import { findConnection, readConnection, updateConnection } from './connection';
+import type { EventDetailLevel } from './constants';
 import { DEFAULT_EVENT_DETAIL_LEVEL, EVENT_PROPERTY, IMPORT_IDENTIFIER_SYSTEM, SECRET } from './constants';
 import { needsReconnect, readCredential } from './credentials';
 import type { UpsertOutcome } from './google-calendar';
@@ -132,6 +133,12 @@ export class SyncSession {
     this.appointmentUrlTemplate = secrets?.[SECRET.appointmentUrl]?.valueString?.trim() || undefined;
   }
 
+  // The project secret is the authority: the stored setting can only lower the level, because a
+  // practitioner's own policy may let them edit that record.
+  private async ceiling(): Promise<EventDetailLevel> {
+    return this.detailCeiling === 'full' ? readProjectCeiling(this.medplum, 'full') : 'busy-only';
+  }
+
   async withConnection<T>(
     connection: CalendarConnection,
     work: (current: CalendarConnection) => Promise<T>
@@ -150,7 +157,7 @@ export class SyncSession {
       this.lease = lease;
       try {
         this.outboundRequestAtStart = readState(await lease.read()).outboundRequest;
-        const level = await readProjectCeiling(this.medplum, this.detailCeiling);
+        const level = await this.ceiling();
         this.ceilingAtStart = level;
         await lease.mutate((basic) => withState(basic, { ...readState(basic), projectDetailLevel: level }));
         const current = readConnection(await lease.read());
@@ -193,7 +200,7 @@ export class SyncSession {
     if (!this.lease) {
       throw new Error('Outbound state requires a connection lease');
     }
-    const ceilingStillCurrent = this.ceilingAtStart === (await readProjectCeiling(this.medplum, this.detailCeiling));
+    const ceilingStillCurrent = this.ceilingAtStart === (await this.ceiling());
     await this.lease.mutate((basic) => {
       const state = readState(basic);
       state.outboundError = error;

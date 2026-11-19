@@ -32,7 +32,7 @@ The first five implement the [custom FHIR operations](#custom-fhir-operations). 
 2. The [Medplum CLI](https://www.medplum.com/docs/cli)
 3. Two Medplum projects: a Bots project that holds the Bots, and the customer project that uses them. Both need the `bots` feature, and the customer project also needs `cron`. To try the example in one project, use the same project for both and skip Setup step 4.
 4. A Google Cloud project used only for this integration and this Medplum project, with the Google Calendar API enabled. Disconnecting revokes the access the Google account granted to every OAuth client in that Google Cloud project.
-5. A Google OAuth client with these scopes: `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned` and `https://www.googleapis.com/auth/calendar.calendars.readonly`. Register your application's exact callback URL on it.
+5. A Google OAuth client with these scopes: `openid`, `email`, `https://www.googleapis.com/auth/calendar.events.owned` and `https://www.googleapis.com/auth/calendar.calendars.readonly`. Register your application's exact callback URL on it. While the OAuth app is External and in Testing status, add each Google account that will connect as a test user.
 
 ## Setup
 
@@ -69,7 +69,7 @@ Run every command from the root of the Medplum repository. The steps use two CLI
    | `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` | `true` lets practitioners choose `initials` or `full`       | No       |
    | `GOOGLE_CALENDAR_APPOINTMENT_URL`     | Link added to each event; `{id}` becomes the Appointment ID | No       |
 
-   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level.
+   Patient initials or a name next to an appointment time are protected health information. Set `GOOGLE_CALENDAR_ALLOW_EVENT_DETAILS` to `true` only for Google Workspace accounts covered by a business associate agreement. Every practitioner stays on `busy-only` until they choose another level. Without `GOOGLE_CALENDAR_APPOINTMENT_URL`, events carry no link.
 
 6. Run the installer in the customer project as a project admin. Run it again each time you change a secret.
 
@@ -78,7 +78,7 @@ Run every command from the root of the Medplum repository. The steps use two CLI
    medplum --profile gcal-customer post 'Project/$google-calendar-install' '{"resourceType":"Parameters"}'
    ```
 
-7. Add the AccessPolicy entries listed in the response's `outcome` to your practitioner policy. They let a practitioner read their own connection status and call the operations.
+7. Add the AccessPolicy entries listed in the response's `outcome` to your practitioner policy. They let a practitioner read their own connection status and call the operations. The policy must not grant `Basic` any other way: the default Practitioner policy allows every resource type, so a practitioner on it can read the stored refresh tokens. Use a policy that lists resource types, without `*` or an unrestricted `Basic` entry.
 
 8. Connect a practitioner. See [Connecting a Practitioner](#connecting-a-practitioner).
 

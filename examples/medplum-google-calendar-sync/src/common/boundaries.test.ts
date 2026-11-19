@@ -23,6 +23,7 @@ const args = { practitionerRef: 'Practitioner/doctor', accountSub: 'sub', refres
 
 test('practitioner and webhook policies deny credential and historical-token access', async () => {
   const connection = await saveConnection(medplum, args);
+  expect(JSON.stringify(connection.basic)).not.toContain(args.refreshToken);
   const [credential] = await medplum.searchResources('Basic', CREDENTIAL_CRITERIA.split('?')[1]);
   const practitionerPolicy = {
     resourceType: 'AccessPolicy' as const,

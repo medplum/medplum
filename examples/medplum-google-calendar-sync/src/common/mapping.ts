@@ -12,8 +12,6 @@ import { DEFAULT_EVENT_DETAIL_LEVEL, EVENT_DETAIL_LEVELS, EVENT_PROPERTY } from 
  * them in.
  */
 
-const DEFAULT_APPOINTMENT_URL_TEMPLATE = 'https://app.medplum.com/Appointment/{id}';
-
 /** The subset of a Google Calendar event this integration writes. */
 export interface GoogleCalendarEvent {
   id: string;
@@ -160,9 +158,13 @@ function appointmentSummary(appointment: Appointment, context: AppointmentEventC
   return serviceName ? `${fullName} · ${serviceName}` : fullName;
 }
 
-function appointmentDescription(appointment: Appointment, id: string, context: AppointmentEventContext): string {
-  const template = context.appointmentUrlTemplate || DEFAULT_APPOINTMENT_URL_TEMPLATE;
-  const lines = [template.replaceAll('{id}', id)];
+function appointmentDescription(
+  appointment: Appointment,
+  id: string,
+  context: AppointmentEventContext
+): string | undefined {
+  const template = context.appointmentUrlTemplate;
+  const lines = template ? [template.replaceAll('{id}', id)] : [];
   if (context.level === 'full') {
     const reason = appointment.reasonCode?.[0]?.text ?? appointment.reasonCode?.[0]?.coding?.[0]?.display;
     if (reason) {
@@ -172,7 +174,7 @@ function appointmentDescription(appointment: Appointment, id: string, context: A
       lines.push(`Notes: ${appointment.comment}`);
     }
   }
-  return lines.join('\n');
+  return lines.join('\n') || undefined;
 }
 
 // The skeleton both builders share; undefined when the resource has no usable ID or times.

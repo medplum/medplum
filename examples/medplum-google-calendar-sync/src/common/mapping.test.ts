@@ -158,7 +158,7 @@ describe('buildAppointmentEvent', () => {
       id: '6f1c2a9e4b7d4c0e9a3b5d7f1e2c4a6b',
       status: 'confirmed',
       summary: 'Appointment',
-      description: `https://app.medplum.com/Appointment/${APPOINTMENT_ID}`,
+      description: undefined,
       start: { dateTime: '2026-10-12T16:00:00.000Z' },
       end: { dateTime: '2026-10-12T16:30:00.000Z' },
       transparency: 'opaque',
@@ -189,7 +189,7 @@ describe('buildAppointmentEvent', () => {
   test('initials level has no reason, notes or site', () => {
     const event = mustBuild(booked, { projectId: PROJECT_ID, level: 'initials', patients: [jane] });
     expect(event.summary).toBe('Appointment · J.S.');
-    expect(event.description).toBe(`https://app.medplum.com/Appointment/${APPOINTMENT_ID}`);
+    expect(event.description).toBeUndefined();
     expect(event.location).toBeUndefined();
   });
 

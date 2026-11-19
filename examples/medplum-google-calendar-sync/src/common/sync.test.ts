@@ -14,6 +14,7 @@ import type {
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { secrets } from '../test-auth';
+import { writeProjectCeiling } from './configuration';
 import { findConnection, saveConnection } from './connection';
 import { GoogleOAuthError } from './google-oauth';
 import type { GoogleCalendarEvent } from './mapping';
@@ -196,6 +197,14 @@ describe('SyncSession', () => {
     }).syncSource({ resource: appt, deleted: false });
     expect(calendars.get('access-for-rt-rivera')?.upserts[0]?.summary).toBe('Appointment · J.S.');
     expect(calendars.get('access-for-rt-chen')?.upserts[0]?.summary).toBe('Appointment');
+  });
+
+  test('a stored setting cannot raise the level above the project secret', async () => {
+    await connect(rivera, 'rt-rivera', 'initials');
+    await writeProjectCeiling(medplum, 'full');
+    const appt = await appointment({ serviceType: [{ text: 'Follow-up' }] });
+    await session(fakeDeps(calendars)).syncSource({ resource: appt, deleted: false });
+    expect(calendars.get('access-for-rt-rivera')?.upserts[0]?.summary).toBe('Appointment');
   });
 
   test('mirrors blocked time to the schedule actor, but not buffers', async () => {

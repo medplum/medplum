@@ -77,6 +77,9 @@ describe('Google busy import', () => {
       })
     ).toMatchObject({ start: '2026-11-01T08:30:00.000Z', end: '2026-11-01T09:30:00.000Z' });
   });
+  test('skips a zero-length event instead of failing the import', () => {
+    expect(busyInterval({ ...BUSY, end: BUSY.start })).toBeUndefined();
+  });
   test('imports to every active direct and role Schedule, without private content or duplicate Slots', async () => {
     const role = await medplum.createResource({
       resourceType: 'PractitionerRole',

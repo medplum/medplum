@@ -74,8 +74,11 @@ export function busyInterval(event: RemoteCalendarEvent, projectId?: string): Bu
   }
   const start = Date.parse(event.start?.dateTime ?? '');
   const end = Date.parse(event.end?.dateTime ?? '');
-  if (!event.id || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+  if (!event.id || !Number.isFinite(start) || !Number.isFinite(end) || end < start) {
     throw new Error('Google returned a malformed timed event; imported blocks retained');
+  }
+  if (end === start) {
+    return undefined;
   }
   return { eventId: event.id, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
 }
