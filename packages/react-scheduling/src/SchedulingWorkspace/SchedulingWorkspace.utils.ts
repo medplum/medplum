@@ -87,8 +87,7 @@ export function groupAppointmentsByService(
  * matches only when no site is chosen.
  *
  * @param appointment - The appointment to check.
- * @param filters - The chosen sites and service types, either absent for all of them. An empty list of
- * service types is none of them, which no appointment matches.
+ * @param filters - The chosen sites and service types, either absent for all of them.
  * @returns Whether the appointment is at one of the chosen sites and for one of the chosen service types.
  */
 export function matchesCalendarFilters(appointment: Appointment, filters: CalendarFilterValues): boolean {
@@ -99,7 +98,7 @@ export function matchesCalendarFilters(appointment: Appointment, filters: Calend
       return false;
     }
   }
-  return !services || services.some((s) => serviceTypeIncludesService(appointment.serviceType, s));
+  return !services?.length || services.some((s) => serviceTypeIncludesService(appointment.serviceType, s));
 }
 
 /**

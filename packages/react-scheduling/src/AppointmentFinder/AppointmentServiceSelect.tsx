@@ -94,9 +94,6 @@ export interface AppointmentServiceMultiSelectProps {
   readonly serviceFacilities?: readonly (WithId<Location> | Reference<Location>)[];
   readonly label?: string;
   readonly placeholder?: string;
-  readonly description?: string;
-  /** The most that can be chosen. The search box goes once that many are. */
-  readonly maxValues?: number;
   /** Marks each visit type, offered or chosen, with its calendar color, for a field whose choices are drawn in them. */
   readonly showColors?: boolean;
 }
@@ -110,7 +107,7 @@ export interface AppointmentServiceMultiSelectProps {
  */
 export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSelectProps): JSX.Element {
   const { serviceFacilities, defaultValue, onChange, label = 'Visit types', placeholder } = props;
-  const { description, maxValues, showColors } = props;
+  const { showColors } = props;
   // ORed, as a search's comma-separated values are.
   const loadOptions = useServiceOptions(serviceFacilities?.map(getReferenceString).join(',') || undefined);
   return (
@@ -118,8 +115,6 @@ export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSele
       name="services"
       label={label}
       placeholder={placeholder}
-      description={description}
-      maxValues={maxValues}
       defaultValue={defaultValue && [...defaultValue]}
       toOption={toOption}
       loadOptions={loadOptions}
@@ -157,18 +152,8 @@ function ServiceColorItem(props: Readonly<AsyncAutocompleteOption<WithId<Healthc
   );
 }
 
-export interface ServiceColorDotProps {
-  readonly service: WithId<HealthcareService>;
-  /** The room to leave after the dot. */
-  readonly mr?: number;
-}
-
-/**
- * A dot in the color a visit type's appointments and availability are drawn in.
- * @param props - The React props.
- * @returns The dot.
- */
-export function ServiceColorDot(props: ServiceColorDotProps): JSX.Element {
+// A dot in the color a visit type's appointments and availability are drawn in.
+function ServiceColorDot(props: { readonly service: WithId<HealthcareService>; readonly mr?: number }): JSX.Element {
   const theme = useMantineTheme();
   const color = resolveThemeColor(
     theme,

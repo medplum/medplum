@@ -247,18 +247,13 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * browsing what is booked, as on main. Each has a toggle at its end of the toolbar. Opening one closes
  * the other, and closing the booking pane clears its answers, asking first if there are any. The site is
  * the one answer the panes share: the filters pane can hold several sites and several visit types, and
- * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold,
- * and clicking open time opens the booking pane. With the filters pane open, the click offers to instead.
+ * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold.
  *
- * The Visit Type filter narrows the appointments drawn and leaves the calendars listed alone, so that it
- * takes no availability away. It is a list of the visit types to include, with an "All visit types" checkbox that
- * starts ticked. Untick it with nothing chosen and no appointment is drawn, which leaves the availability
- * shading unobstructed.
- *
- * The filters pane also has an Availability field, apart from its filters, taking up to three visit
- * types. It filters nothing: it shades where a provider on show could take each, one lane of the day's
- * column per visit type. Try "Injections" and "Follow-up". A click on a lane starts a booking for that
- * visit type, and where only one provider is free at the time clicked, with that provider and time too.
+ * The filters pane shades no availability: that is the booking pane's. A click on the calendar while
+ * browsing opens the booking pane on what the filters were showing. Open the filters pane, choose the
+ * "Follow-up" visit type, hide Dr. Dalton, and click Tuesday morning: the form opens on Riverside and
+ * Follow-up, asking for any one of the providers left on show, with the time clicked picked if it is
+ * offered. All that is left is the patient.
  *
  * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
  * one provider at Riverside is free to take one. Hover a block to see who. Click one with nobody named
@@ -276,6 +271,10 @@ let findAndBookSite: string | undefined = getReferenceString(riverside);
  * visit type's own start times rather than the grid's half hours: try "Injections" with Dr. Chen, whose
  * 20 minute visits start every 10.
  *
+ * While a visit type is chosen, the pointer goes through the appointments to the shading behind them, as
+ * one provider's appointment is no bar to booking another provider then. Hovering one draws the offered
+ * time over it, and clicking picks it. The appointments open nothing meanwhile.
+ *
  * @returns The story.
  */
 export const FindAndBook = (): JSX.Element => (
@@ -290,28 +289,6 @@ FindAndBook.decorators = [
   withFindStub({ respectAvailability: true, getServiceFacility: () => findAndBookSite }),
   withFixtures(SHADING_WORKSPACE_FIXTURES),
 ];
-
-/**
- * Find And Book with one change, to compare the two: the filters pane lists its visit types once. Each
- * visit type added has its appointments and its availability to tick, where Find And Book has a Visit
- * Type filter and an Availability field that are picked from apart.
- *
- * Open the filters pane and add "Follow-up": its availability is shaded, and every appointment is still
- * drawn. Untick "All appointments" and only the listed visit types' appointments are. Add up to three
- * for availability; a fourth is listed with its availability off.
- *
- * @returns The story.
- */
-export const FindAndBookOneVisitTypeList = (): JSX.Element => (
-  <Workspace
-    defaultServiceFacility={riverside}
-    unifiedVisitTypes
-    onChangeServiceFacility={(site) => {
-      findAndBookSite = site && getReferenceString(site);
-    }}
-  />
-);
-FindAndBookOneVisitTypeList.decorators = FindAndBook.decorators;
 
 /**
  * The workspace as a host opens it on one site, such as the facility a user launched
@@ -336,7 +313,6 @@ AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
-  readonly unifiedVisitTypes?: boolean;
   readonly onChangeServiceFacility?: SchedulingWorkspaceProps['onChangeServiceFacility'];
   readonly appointmentCommentMaxLength?: number;
 }
@@ -355,7 +331,6 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultServiceFacility={props.defaultServiceFacility}
-        unifiedVisitTypes={props.unifiedVisitTypes}
         onChangeServiceFacility={props.onChangeServiceFacility}
         appointmentCommentMaxLength={props.appointmentCommentMaxLength}
         procedureBinding={PROCEDURE_VALUE_SET}

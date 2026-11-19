@@ -226,6 +226,11 @@ export interface CalendarBaseProps extends Omit<
    * pixel rather than to the grid's rows, and with undefined once it is off them or over an event.
    */
   onHoverAvailability?: (instant: Date | undefined, shadeId?: string) => void;
+  /**
+   * Prototype. Lets the pointer through the events to what is behind them, so that hovering or clicking
+   * one is hovering or clicking the availability or open time under it. The events open nothing meanwhile.
+   */
+  eventsPassThrough?: boolean;
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;
@@ -430,7 +435,11 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
   const shadeHover = useAvailabilityShadeHover(Boolean(availabilityShading?.length), onHoverAvailability);
 
   return (
-    <div data-testid="calendar" className={cx(classes.wrapper, className)} {...shadeHover.hoverProps}>
+    <div
+      data-testid="calendar"
+      className={cx(classes.wrapper, className, props.eventsPassThrough && classes.eventsPassThrough)}
+      {...shadeHover.hoverProps}
+    >
       <Group justify="space-between" pb="sm">
         <Group gap="md">
           {toolbarStart}
