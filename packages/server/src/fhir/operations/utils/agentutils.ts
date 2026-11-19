@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentError, AgentRequestMessage, AgentResponseMessage, WithId } from '@medplum/core';
+import type { AgentError, AgentRequestMessage, AgentResponseMessage, SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
   OperationOutcomeError,
@@ -15,7 +15,15 @@ import {
   singularize,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type {
+  Agent,
+  Bundle,
+  BundleEntry,
+  Device,
+  OperationOutcome,
+  Parameters,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
@@ -83,7 +91,9 @@ export async function getAgentsForRequest(req: FhirRequest, repo: Repository): P
     const agent = await getAgentForRequest(req, repo);
     return agent ? [agent] : undefined;
   }
-  return repo.searchResources(parseSearchRequest('Agent', req.query));
+  const searchRequest = parseSearchRequest<Agent>('Agent', req.query);
+  assertSingleTypeSearch(searchRequest, 'Agent');
+  return repo.searchResources(searchRequest);
 }
 
 export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
@@ -96,12 +106,32 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return searchUnique<Device>(repo, parseSearchRequest(destination));
+    const searchRequest = parseSearchRequest<Device>(destination);
+    assertSingleTypeSearch(searchRequest, 'Device');
+    return searchUnique(repo, searchRequest);
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
   }
   return undefined;
+}
+
+/**
+ * Rejects a user-supplied search whose results could include resources other than `resourceType`:
+ * a search of another type, `_type` replacing the searched type, or `_include`/`_revinclude` adding other types.
+ *
+ * @param searchRequest - The parsed search request.
+ * @param resourceType - The only resource type the search may return.
+ */
+function assertSingleTypeSearch(searchRequest: SearchRequest, resourceType: ResourceType): void {
+  if (searchRequest.resourceType !== resourceType) {
+    throw new OperationOutcomeError(badRequest(`Search must be for ${resourceType}`));
+  }
+  if (searchRequest.types || searchRequest.include || searchRequest.revInclude) {
+    throw new OperationOutcomeError(
+      badRequest(`_type, _include, and _revinclude are not supported when searching for ${resourceType}`)
+    );
+  }
 }
 
 export async function handleBulkAgentOperation(
