@@ -20,6 +20,10 @@ export interface AppointmentSlotGroupCardProps {
   readonly viewerTimezone?: string;
   readonly selected?: Appointment;
   readonly disabled?: boolean;
+  /** Prototype. Called with the time the pointer or focus is on, and with undefined once it leaves. */
+  readonly onHoverAppointment?: (appointment: Appointment | undefined) => void;
+  /** Prototype. An offered time to mark, such as the one under the pointer on a host's calendar. */
+  readonly highlighted?: Appointment;
 }
 
 function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Element {
@@ -42,13 +46,14 @@ function ActorLabel(props: { readonly actor: SchedulingActorValue }): JSX.Elemen
  * @returns The card.
  */
 export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): JSX.Element {
-  const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled } = props;
+  const { group, onSelectAppointment, timezone, viewerTimezone, selected, disabled, onHoverAppointment } = props;
 
   // Times are written with their zone only when that is not the zone the viewer is reading them in.
   const withTimezone = !isViewerTimezone(timezone, viewerTimezone);
   // Matched by value, since a refetch, as reopening the search makes, offers the same time
   // as a new object.
   const selectedKey = selected && getAppointmentKey(selected);
+  const highlightedKey = props.highlighted && getAppointmentKey(props.highlighted);
 
   return (
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
@@ -66,15 +71,22 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
       </Group>
       <Group gap="xs" className={classes.timeGrid}>
         {group.appointments.map((appointment) => {
-          const isSelected = getAppointmentKey(appointment) === selectedKey;
+          const key = getAppointmentKey(appointment);
+          const isSelected = key === selectedKey;
+          const restVariant = key === highlightedKey ? 'light' : 'outline';
           return (
             <Button
               key={appointment.start}
-              variant={isSelected ? 'filled' : 'outline'}
+              variant={isSelected ? 'filled' : restVariant}
               size="sm"
               px="sm"
               disabled={disabled}
+              data-selected-time={isSelected || undefined}
               onClick={() => onSelectAppointment(appointment)}
+              onMouseEnter={() => onHoverAppointment?.(appointment)}
+              onMouseLeave={() => onHoverAppointment?.(undefined)}
+              onFocus={() => onHoverAppointment?.(appointment)}
+              onBlur={() => onHoverAppointment?.(undefined)}
             >
               {appointment.start ? formatZonedTime(new Date(appointment.start), timezone, { withTimezone }) : ''}
             </Button>

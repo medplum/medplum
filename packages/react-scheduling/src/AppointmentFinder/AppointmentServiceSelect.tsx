@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { Box, Center, Group, Pill, useMantineTheme } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { formatCodeableConcept, getDisplayString, getReferenceString, hasSchedulingParameters } from '@medplum/core';
 import type { HealthcareService, Location, Reference } from '@medplum/fhirtypes';
@@ -8,6 +9,7 @@ import { AsyncAutocomplete } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
+import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { AppointmentOptionRow } from './AppointmentOptionRow';
 import { getServiceDurationMinutes } from './AppointmentServiceSelect.utils';
 
@@ -64,9 +66,107 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     error,
     disabled,
   } = props;
-  const medplum = useMedplum();
+  const loadOptions = useServiceOptions(serviceFacility && getReferenceString(serviceFacility));
+  const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);
 
-  const serviceFacilityReference = serviceFacility && getReferenceString(serviceFacility);
+  return (
+    <AsyncAutocomplete<WithId<HealthcareService>>
+      name="service"
+      label={label}
+      placeholder={placeholder}
+      required={required}
+      maxValues={1}
+      error={error}
+      disabled={disabled}
+      defaultValue={defaultValue}
+      toOption={toOption}
+      loadOptions={loadOptions}
+      itemComponent={ServiceItem}
+      onChange={handleChange}
+    />
+  );
+}
+
+export interface AppointmentServiceMultiSelectProps {
+  readonly defaultValue?: readonly WithId<HealthcareService>[];
+  readonly onChange: (services: WithId<HealthcareService>[]) => void;
+  /** The chosen sites, which narrow the services on offer to the ones held at any of them. */
+  readonly serviceFacilities?: readonly (WithId<Location> | Reference<Location>)[];
+  readonly label?: string;
+  readonly placeholder?: string;
+  /** Marks each visit type, offered or chosen, with its calendar color, for a field whose choices are drawn in them. */
+  readonly showColors?: boolean;
+}
+
+/**
+ * Prototype. Chooses any number of visit types, for a field that filters rather than books. Offers
+ * what {@link AppointmentServiceSelect} offers.
+ *
+ * @param props - The React props.
+ * @returns The field.
+ */
+export function AppointmentServiceMultiSelect(props: AppointmentServiceMultiSelectProps): JSX.Element {
+  const { serviceFacilities, defaultValue, onChange, label = 'Visit types', placeholder } = props;
+  const { showColors } = props;
+  // ORed, as a search's comma-separated values are.
+  const loadOptions = useServiceOptions(serviceFacilities?.map(getReferenceString).join(',') || undefined);
+  return (
+    <AsyncAutocomplete<WithId<HealthcareService>>
+      name="services"
+      label={label}
+      placeholder={placeholder}
+      defaultValue={defaultValue && [...defaultValue]}
+      toOption={toOption}
+      loadOptions={loadOptions}
+      itemComponent={showColors ? ServiceColorItem : ServiceItem}
+      pillComponent={showColors ? ServiceColorPill : undefined}
+      onChange={onChange}
+    />
+  );
+}
+
+function ServiceColorPill(props: {
+  readonly item: AsyncAutocompleteOption<WithId<HealthcareService>>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
+}): JSX.Element {
+  const { item, disabled, onRemove } = props;
+  return (
+    <Pill withRemoveButton={!disabled} onRemove={onRemove}>
+      <ServiceColorDot service={item.resource} mr={6} />
+      {item.label}
+    </Pill>
+  );
+}
+
+// The option as `ServiceItem` draws it, behind the dot its pill will carry once it is chosen.
+function ServiceColorItem(props: Readonly<AsyncAutocompleteOption<WithId<HealthcareService>>>): JSX.Element {
+  return (
+    <Group gap="xs" wrap="nowrap" align="flex-start">
+      {/* As tall as the label's line, so the dot sits beside the name rather than the detail. */}
+      <Center h="calc(var(--mantine-font-size-sm) * var(--mantine-line-height-sm))">
+        <ServiceColorDot service={props.resource} />
+      </Center>
+      <ServiceItem {...props} />
+    </Group>
+  );
+}
+
+// A dot in the color a visit type's appointments and availability are drawn in.
+function ServiceColorDot(props: { readonly service: WithId<HealthcareService>; readonly mr?: number }): JSX.Element {
+  const theme = useMantineTheme();
+  const color = resolveThemeColor(
+    theme,
+    getSchedulingColor(props.service),
+    fallbackColorIndex(getReferenceString(props.service))
+  );
+  return <Box component="span" display="inline-block" w={8} h={8} mr={props.mr} bg={`${color}.6`} bdrs="50%" />;
+}
+
+type LoadServiceOptions = (input: string, signal: AbortSignal) => Promise<WithId<HealthcareService>[]>;
+
+function useServiceOptions(serviceFacilityReference: string | undefined): LoadServiceOptions {
+  const medplum = useMedplum();
 
   // Resolves to undefined when the read failed, leaving search to the server.
   const readCatalogRef = useRef<() => Promise<ServiceSearchResult | undefined>>(undefined);
@@ -85,7 +185,7 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
     return () => controller.abort();
   }, [medplum, serviceFacilityReference]);
 
-  const loadOptions = useCallback(
+  return useCallback(
     async (input: string, signal: AbortSignal): Promise<WithId<HealthcareService>[]> => {
       // A site change while this waits replaces the reader, and makes this answer the old site's.
       const readCatalog = readCatalogRef.current;
@@ -109,25 +209,6 @@ export function AppointmentServiceSelect(props: AppointmentServiceSelectProps): 
       return readCatalogRef.current === readCatalog ? services.slice(0, SERVICE_PAGE_SIZE) : [];
     },
     [medplum, serviceFacilityReference]
-  );
-
-  const handleChange = useCallback((services: WithId<HealthcareService>[]) => onChange(services[0]), [onChange]);
-
-  return (
-    <AsyncAutocomplete<WithId<HealthcareService>>
-      name="service"
-      label={label}
-      placeholder={placeholder}
-      required={required}
-      maxValues={1}
-      error={error}
-      disabled={disabled}
-      defaultValue={defaultValue}
-      toOption={toOption}
-      loadOptions={loadOptions}
-      itemComponent={ServiceItem}
-      onChange={handleChange}
-    />
   );
 }
 

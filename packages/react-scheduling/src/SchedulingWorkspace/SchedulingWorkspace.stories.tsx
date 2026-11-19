@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import { SchedulingColorURI } from '@medplum/core';
+import { getReferenceString, SchedulingColorURI } from '@medplum/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { Meta } from '@storybook/react';
 import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { riverside, SHADING_WORKSPACE_FIXTURES } from '../stories/availabilityShading';
 import {
   withBookStub,
   withCancelStub,
@@ -232,6 +233,63 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
 export const BypassSchedulingRules = (): JSX.Element => <Workspace canBypassSchedulingRules />;
 BypassSchedulingRules.decorators = [withFixtures(LOCAL_FIXTURES)];
 
+// The site the Find and Book story's workspace is on, for its `$find` stub: the prototype's availability
+// windows are scoped to a site, which a real `$find` request does not carry.
+let findAndBookSite: string | undefined = getReferenceString(riverside);
+
+/**
+ * A prototype of booking from the form rather than from the grid, on the made-up clinic the availability
+ * shading stories use, in the week `MockDateWrapper` pins "today" to (Mon May 4 2020, just after noon).
+ *
+ * The workspace has two panes, at most one open, and the open one drives the calendar. The booking pane,
+ * on the right, is for finding a time and booking it. It is open from the start, on Riverside Clinic,
+ * with the time search beside it saying what it still needs. The filters pane, on the left, is for
+ * browsing what is booked, as on main. Each has a toggle at its end of the toolbar. Opening one closes
+ * the other, and closing the booking pane clears its answers, asking first if there are any. The site is
+ * the one answer the panes share: the filters pane can hold several sites and several visit types, and
+ * the booking form starts on the first of its sites. With both closed, the filters pane's answers hold.
+ *
+ * The filters pane shades no availability: that is the booking pane's. A click on the calendar while
+ * browsing opens the booking pane on what the filters were showing. Open the filters pane, choose the
+ * "Follow-up" visit type, hide Dr. Dalton, and click Tuesday morning: the form opens on Riverside and
+ * Follow-up, asking for any one of the providers left on show, with the time clicked picked if it is
+ * offered. All that is left is the patient.
+ *
+ * Choose "New Patient": the calendar shades, in the visit type's color, every stretch in which at least
+ * one provider at Riverside is free to take one. Hover a block to see who. Click one with nobody named
+ * yet: where a single provider is free the form names them and picks the time, as on Wednesday morning
+ * for "Procedures", and where several are a note says to choose one. Name Dr. Alvarez and the
+ * shading narrows to their open time, the calendar to their appointments, and time cards appear. Add
+ * Dr. Bennett to the same row for either of them; "Add another provider" asks for both at once, and
+ * shades only the time they share.
+ *
+ * Hover a time and the visit it would book is drawn on the calendar, moving as the pointer does. Click
+ * one and it stays, as the draft. "Next week" under the cards pages the calendar and the cards together.
+ *
+ * The shading works the other way round too. Moving the pointer over a shaded block draws the offered
+ * time under it and marks that time among the cards, and a click picks it. It follows the pointer to the
+ * visit type's own start times rather than the grid's half hours: try "Injections" with Dr. Chen, whose
+ * 20 minute visits start every 10.
+ *
+ * While a visit type is chosen, the pointer goes through the appointments to the shading behind them, as
+ * one provider's appointment is no bar to booking another provider then. Hovering one draws the offered
+ * time over it, and clicking picks it. The appointments open nothing meanwhile.
+ *
+ * @returns The story.
+ */
+export const FindAndBook = (): JSX.Element => (
+  <Workspace
+    defaultServiceFacility={riverside}
+    onChangeServiceFacility={(site) => {
+      findAndBookSite = site && getReferenceString(site);
+    }}
+  />
+);
+FindAndBook.decorators = [
+  withFindStub({ respectAvailability: true, getServiceFacility: () => findAndBookSite }),
+  withFixtures(SHADING_WORKSPACE_FIXTURES),
+];
+
 /**
  * The workspace as a host opens it on one site, such as the facility a user launched
  * scheduling from.
@@ -255,6 +313,7 @@ AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
+  readonly onChangeServiceFacility?: SchedulingWorkspaceProps['onChangeServiceFacility'];
   readonly appointmentCommentMaxLength?: number;
 }
 
@@ -272,6 +331,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultServiceFacility={props.defaultServiceFacility}
+        onChangeServiceFacility={props.onChangeServiceFacility}
         appointmentCommentMaxLength={props.appointmentCommentMaxLength}
         procedureBinding={PROCEDURE_VALUE_SET}
         diagnosisBinding={DIAGNOSIS_VALUE_SET}

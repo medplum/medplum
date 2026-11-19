@@ -33,9 +33,15 @@ function getSingleValue(availableTime: Extension, url: string): Extension | unde
   return matches[0];
 }
 
-// Convert a single `SchedulingParameters.availability.availableTime`
-// sub-sub-extension into a HealthcareServiceAvailableTime.
-function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTime {
+/**
+ * Converts one `SchedulingParameters.availability.availableTime` sub-extension into the shape
+ * `HealthcareService.availableTime` holds.
+ * @param availableTime - The `availableTime` sub-extension to read.
+ * @returns The days and hours it sets.
+ * @throws An `OperationOutcomeError` if it sets `allDay`, `availableStartTime`, or `availableEndTime` more
+ * than once, leaving its hours ambiguous.
+ */
+export function toAvailableTime(availableTime: Extension): HealthcareServiceAvailableTime {
   const daysOfWeek = getExtensions(availableTime, 'daysOfWeek')
     .map((subextension) => subextension.valueCode)
     .filter(isDayOfWeek);

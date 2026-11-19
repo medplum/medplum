@@ -11,6 +11,7 @@ import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
 import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
+import type { AvailabilityShade } from '../availabilityShading';
 import { getSchedulingColor, resolveThemeColor } from '../colors';
 import type { CalendarSelection, DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
@@ -29,6 +30,8 @@ export interface MultiCalendarSource {
    * hatched and outlined, apart from any appointment stored as proposed.
    */
   draft?: boolean;
+  /** Draws a draft fainter, as a time only being considered: the one under the pointer in a time search. */
+  ghost?: boolean;
   /** Names each of the source's appointments in place of its patient. */
   label?: string;
 }
@@ -44,6 +47,15 @@ export interface MultiCalendarProps {
   selectedId?: string;
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
+  /**
+   * Colored blocks drawn behind the events to say when visit types can be booked, as
+   * `computeAvailabilityShading` works them out for the days on show.
+   */
+  availabilityShading?: readonly AvailabilityShade[];
+  /** Prototype. See `CalendarBaseProps.onHoverAvailability`. */
+  onHoverAvailability?: (instant: Date | undefined, shadeId?: string) => void;
+  /** Prototype. See `CalendarBaseProps.eventsPassThrough`. */
+  eventsPassThrough?: boolean;
   loading?: boolean;
   /** Placed at the start of the toolbar, before the navigation buttons. */
   toolbarStart?: ReactNode;
@@ -70,14 +82,18 @@ export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(func
   const { sources, className, ...calendarBaseProps } = props;
 
   const eventSources = useMemo((): FhirEventSource[] => {
-    return sources.map(({ draft, ...source }, i) => {
+    return sources.map(({ draft, ghost, ...source }, i) => {
       let colorName = source.color && Object.hasOwn(theme.colors, source.color) ? source.color : undefined;
       colorName ||= getSchedulingColor(source.schedule);
 
       // Convert color name into a concrete color value we can pass to FullCalendar, and a class
       // that styles can pick the color out by.
       const resolved = resolveThemeColor(theme, colorName, i);
-      return { ...source, color: theme.colors[resolved][7], className: cx(`color-${resolved}`, draft && 'draft') };
+      return {
+        ...source,
+        color: theme.colors[resolved][7],
+        className: cx(`color-${resolved}`, draft && 'draft', ghost && 'ghost'),
+      };
     });
   }, [sources, theme]);
 
