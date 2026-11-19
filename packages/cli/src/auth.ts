@@ -10,6 +10,7 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import { exec } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
@@ -132,7 +133,7 @@ async function startLogin(medplum: MedplumClient, profile: Profile): Promise<voi
   }
 }
 
-async function startWebServer(medplum: MedplumClient): Promise<void> {
+async function startWebServer(medplum: MedplumClient, state: string): Promise<void> {
   const server = createServer(async (req, res) => {
     const url = new URL(req.url as string, 'http://localhost:9615');
     const code = url.searchParams.get('code');
@@ -145,6 +146,11 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
       return;
     }
     if (url.pathname === '/' && code) {
+      if (url.searchParams.get('state') !== state) {
+        res.writeHead(400, { 'Content-Type': ContentType.TEXT });
+        res.end('Error: Invalid state');
+        return;
+      }
       try {
         const profile = await medplum.processCode(code, { clientId, redirectUri });
         res.writeHead(200, { 'Content-Type': ContentType.TEXT });
@@ -204,12 +210,17 @@ function printMe(medplum: MedplumClient): void {
 }
 
 async function medplumAuthorizationCodeLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
-  await startWebServer(medplum);
+  const state = randomUUID();
+  const { codeChallenge, codeChallengeMethod } = await medplum.startPkce();
+  await startWebServer(medplum, state);
   const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
   loginUrl.searchParams.set('scope', profile.scope ?? 'openid offline_access');
   loginUrl.searchParams.set('response_type', 'code');
   loginUrl.searchParams.set('prompt', 'login');
+  loginUrl.searchParams.set('state', state);
+  loginUrl.searchParams.set('code_challenge', codeChallenge);
+  loginUrl.searchParams.set('code_challenge_method', codeChallengeMethod);
   await openBrowser(loginUrl.toString());
 }

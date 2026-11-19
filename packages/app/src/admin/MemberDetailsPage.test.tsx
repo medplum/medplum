@@ -79,7 +79,7 @@ describe('MemberDetailsPage', () => {
     renderAppRoutes(medplum, `/admin/users/${membership.id}`);
 
     expect(await screen.findByText('This User is server-scoped.')).toBeInTheDocument();
-    expect(screen.getByText('bob@example.com')).toBeInTheDocument();
+    expect(await screen.findByText('bob@example.com')).toBeInTheDocument();
     expect(screen.queryByText('Go to User (change login email)')).not.toBeInTheDocument();
   });
 

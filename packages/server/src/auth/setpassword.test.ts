@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference, Operator } from '@medplum/core';
-import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
+import { authenticator } from 'otplib';
 import request from 'supertest';
 import type { Mock } from 'vitest';
 import { vi } from 'vitest';
@@ -18,7 +20,7 @@ import { USER_SECURITY_REQUEST_EXPIRATION_MS } from '../constants';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { generateSecret } from '../oauth/keys';
-import { tryLogin } from '../oauth/utils';
+import { setLoginScope, tryLogin, verifyMfaToken } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { revokeUserLogins, setPassword } from './setpassword';
@@ -310,6 +312,132 @@ describe('Set Password', () => {
     const logins = await searchLogins();
     expect(logins).toHaveLength(before.length + 45);
     expect(logins.every((login) => login.revoked)).toBe(true);
+  });
+
+  test('Sign-in checked against a password replaced before its login was stored is rejected', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+
+    // Replace the password after the sign-in has read the user, while it checks the old password
+    const compareSpy = vi.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => {
+      await setPassword(systemRepo, user, 'my-new-password');
+      return true;
+    });
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ email, password: 'password!@#', scope: 'openid' });
+    compareSpy.mockRestore();
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Email or password is invalid'));
+
+    const logins = await systemRepo.searchResources<Login>({
+      resourceType: 'Login',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+    });
+    expect(logins).toHaveLength(2);
+    expect(logins.every((login) => login.revoked)).toBe(true);
+
+    const res2 = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ email, password: 'my-new-password', scope: 'openid' });
+    expect(res2).toHaveStatus(200);
+  });
+
+  test('Sign-in is rejected when the password is replaced just before its login is stored', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+
+    // The change's revocation runs before the login exists, so only the sign-in can catch it
+    const createResource = Repository.prototype.createResource;
+    let replaced = false;
+    const createSpy = vi.spyOn(Repository.prototype, 'createResource').mockImplementation(async function (
+      this: Repository,
+      resource,
+      options
+    ) {
+      if (resource.resourceType === 'Login' && !replaced) {
+        replaced = true;
+        await setPassword(systemRepo, user, 'my-new-password');
+      }
+      return createResource.call(this, resource, options);
+    });
+    try {
+      const res = await request(app)
+        .post('/auth/login')
+        .type('json')
+        .send({ email, password: 'password!@#', scope: 'openid' });
+      expect(replaced).toBe(true);
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Email or password is invalid'));
+    } finally {
+      createSpy.mockRestore();
+    }
+
+    const logins = await systemRepo.searchResources<Login>({
+      resourceType: 'Login',
+      filters: [{ code: 'user', operator: Operator.EQUALS, value: 'User/' + user.id }],
+    });
+    expect(logins).toHaveLength(2);
+    expect(logins.every((login) => login.revoked)).toBe(true);
+  });
+
+  test('Completing a sign-in keeps the revocation from a password change', async () => {
+    const email = `george${randomUUID()}@example.com`;
+    const { user } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email,
+        password: 'password!@#',
+      })
+    );
+    const systemRepo = getGlobalSystemRepo();
+    const secret = authenticator.generateSecret();
+    await systemRepo.patchResource<User>('User', user.id, [
+      { op: 'add', path: '/mfaEnrolled', value: true },
+      { op: 'add', path: '/mfaSecret', value: secret },
+    ]);
+
+    const loginRequest = {
+      authMethod: 'password',
+      email,
+      password: 'password!@#',
+      scope: 'openid profile',
+      nonce: 'nonce',
+    } as const;
+    const mfaLogin = await withTestContext(() => tryLogin(loginRequest));
+    const scopeLogin = await withTestContext(() => tryLogin(loginRequest));
+    expect(mfaLogin.membership).toBeDefined();
+    expect(scopeLogin.membership).toBeDefined();
+
+    // Both logins were read before the password change revoked them
+    await withTestContext(() => setPassword(systemRepo, user, 'my-new-password'));
+    await withTestContext(() => verifyMfaToken(mfaLogin, authenticator.generate(secret)));
+    await withTestContext(() => setLoginScope(systemRepo, scopeLogin, 'openid'));
+
+    expect((await systemRepo.readResource<Login>('Login', mfaLogin.id)).revoked).toBe(true);
+    expect((await systemRepo.readResource<Login>('Login', scopeLogin.id)).revoked).toBe(true);
   });
 
   test('Expired UserSecurityRequest', async () => {

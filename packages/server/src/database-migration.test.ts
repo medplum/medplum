@@ -31,7 +31,6 @@ import type {
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
 } from './migrations/data/types';
-import type * as MigrationDataV1 from './migrations/data/v1';
 import * as migrateModule from './migrations/migrate';
 import * as migrationUtils from './migrations/migration-utils';
 import {
@@ -46,7 +45,6 @@ import { generateAccessToken } from './oauth/keys';
 import { getSuperAdminTestProject, TEST_SHARD_ID, withTestContext } from './test.setup';
 import * as version from './util/version';
 import * as workers from './workers';
-import type * as PostDeployMigration from './workers/post-deploy-migration';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
 import type { ReindexJobData } from './workers/reindex';
 import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
@@ -77,27 +75,14 @@ const migrationMocks = vi.hoisted(() => ({
   customMigration: undefined as CustomPostDeployMigration | undefined,
 }));
 
-vi.mock('./migrations/data/v1', async () => {
-  const { prepareCustomMigrationJobData, runCustomMigration } = await vi.importActual<typeof PostDeployMigration>(
-    './workers/post-deploy-migration'
-  );
-  migrationMocks.customMigration = {
-    type: 'custom',
-    prepareJobData: prepareCustomMigrationJobData,
-    run: function (repo, job, jobData) {
-      return runCustomMigration(repo, job, jobData, async (_client, results) => {
-        results.push({ name: 'nothing', durationMs: 5 });
-      });
+// Read lazily: importing post-deploy-migration from a factory loads this mocked module again
+vi.mock('./migrations/data/index', () => ({
+  v1: {
+    get migration() {
+      return migrationMocks.customMigration;
     },
-  };
-
-  return { migration: migrationMocks.customMigration };
-});
-
-vi.mock('./migrations/data/index', async () => {
-  const v1 = await vi.importMock<typeof MigrationDataV1>('./migrations/data/v1');
-  return { v1 };
-});
+  },
+}));
 
 function mockQueueAddImplementation(queue: Queue | undefined): void {
   if (!queue) {

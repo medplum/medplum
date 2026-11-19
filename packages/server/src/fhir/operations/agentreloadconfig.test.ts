@@ -105,6 +105,17 @@ describe('Agent/$reload-config', () => {
     }
   });
 
+  test('Reload config rejects _type in the Agent search', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$reload-config')
+      .query({ _type: 'Device' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual(
+      '_type, _include, and _revinclude are not supported when searching for Agent'
+    );
+  });
+
   test('Reload config for Agent by ID', async () => {
     const { cleanup } = await mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse>(
       agents[0],
