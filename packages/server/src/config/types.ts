@@ -105,9 +105,18 @@ export interface MedplumServerConfig {
   defaultAuthRateLimit?: number;
   defaultLoginRateLimit?: number;
   defaultMfaRateLimit?: number;
+  /**
+   * IP addresses exempt from the login rate limit. Requests from these addresses to login endpoints count
+   * against the auth rate limit instead. Entries use `AccessPolicy.ipAccessRule` syntax: exact IP, dotted prefix, or `*`
+   * (`*` exempts every IP from the login rate limit).
+   */
+  loginRateLimitExemptIps?: string[];
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
-  /** Milliseconds of delay added per quota unit in async context, in lieu of consuming quota units. */
+  /**
+   * @deprecated Ignored. Async work no longer consumes FHIR quota or self-throttles; limit async load with
+   * `workers.bullmq.<workerName>.globalConcurrency` instead.
+   */
   asyncDelayScaling?: number;
   /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
   defaultMaxUserWebSocketSubscriptions?: number;

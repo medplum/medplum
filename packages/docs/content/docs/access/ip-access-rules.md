@@ -28,3 +28,5 @@ The rules are evaluated sequentially until a matching rule is found. To effectiv
 Once you have specified all the "allow" rules, add a wildcard "block" rule at the end to block all other IP addresses. To do this, use an asterisk (\*) as the value for the "block" rule.
 
 Please note that only IPv4 IP addresses are supported, and partial IP addresses can be used for matching. For example, specifying the value "8.8." would match "8.8.8.8" but would not match "8.7.8.8".
+
+Matching respects octet boundaries: "1.2.3" or "1.2.3." matches "1.2.3.44", but not "1.2.30.44". A complete address such as "1.2.3.4" matches only that address, not "1.2.3.44".

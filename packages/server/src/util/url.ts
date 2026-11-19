@@ -199,6 +199,17 @@ export function isUnsafeIpAddress(address: string): boolean {
   return parsedAddress.range() !== 'unicast';
 }
 
+/**
+ * Returns true if the remote address matches the rule value.
+ * @param remoteAddress - The login remote address.
+ * @param ruleValue - The IP Access Rule value.
+ * @returns True if the remote address matches the rule value; otherwise false.
+ */
+export function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
+  const prefix = ruleValue.endsWith('.') ? ruleValue : ruleValue + '.';
+  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(prefix);
+}
+
 function stripIpv6Brackets(hostname: string): string {
   return hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
 }

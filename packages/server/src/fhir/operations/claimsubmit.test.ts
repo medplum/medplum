@@ -7,7 +7,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { createBotMembership, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 
 const app = express();
@@ -70,6 +70,7 @@ async function setClaimSubmitOperation(
 
 // Creates a custom claim-submit OperationDefinition backed by a deployed Bot.
 async function deployClaimOperation(
+  project: WithId<Project>,
   accessToken: string,
   code = SUB_OPERATION_CODE,
   insurerDisplay = 'Test Payer'
@@ -81,6 +82,7 @@ async function deployClaimOperation(
     .send({ resourceType: 'Bot', name: 'Claim Submit Bot', runtimeVersion: 'vmcontext' });
   expect(res1).toHaveStatus(201);
   const bot = res1.body as WithId<Bot>;
+  await createBotMembership(project, bot);
 
   const res2 = await request(app)
     .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -174,7 +176,7 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken);
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -194,7 +196,7 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken);
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -213,8 +215,8 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken, SUB_OPERATION_CODE, 'Claim Payer');
-    await deployClaimOperation(accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
+    await deployClaimOperation(project, accessToken, SUB_OPERATION_CODE, 'Claim Payer');
+    await deployClaimOperation(project, accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
     await setClaimSubmitOperation(repo, project, PRIOR_AUTH_SUB_OPERATION_CODE, 'PRIOR_AUTH_SUBMIT_OPERATION');
 
@@ -235,8 +237,8 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken, SUB_OPERATION_CODE, 'Claim Payer');
-    await deployClaimOperation(accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
+    await deployClaimOperation(project, accessToken, SUB_OPERATION_CODE, 'Claim Payer');
+    await deployClaimOperation(project, accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
     await setClaimSubmitOperation(repo, project, PRIOR_AUTH_SUB_OPERATION_CODE, 'PRIOR_AUTH_SUBMIT_OPERATION');
 
@@ -265,7 +267,7 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken);
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -289,7 +291,7 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken);
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const createRes = await request(app)
@@ -316,7 +318,7 @@ describe('Claim $submit', () => {
       withRepo: true,
       membership: { admin: true },
     });
-    await deployClaimOperation(accessToken);
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)

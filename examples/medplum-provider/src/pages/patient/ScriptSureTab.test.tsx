@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
+import { render } from '../../test-utils/render';
 import { ScriptSureTab } from './ScriptSureTab';
 
 const mockIframeUrl = 'https://scriptsure.example.com/chart/123/prescriptions';
@@ -35,12 +35,10 @@ describe('ScriptSureTab', () => {
     return render(
       <MemoryRouter initialEntries={[url]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Patient/:patientId/scriptsure" element={<ScriptSureTab />} />
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Patient/:patientId/scriptsure" element={<ScriptSureTab />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

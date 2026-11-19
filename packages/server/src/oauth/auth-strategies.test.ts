@@ -215,7 +215,7 @@ describe('External/OIDC login', () => {
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
-    const callbackUrl = `/auth/external?code=${randomUUID()}&state=${encodeURIComponent(state)}`;
+    const callbackUrl = `/auth/external/${client.id}?code=${randomUUID()}&state=${encodeURIComponent(state)}`;
 
     // Mock the external identity provider's token endpoint response
     const idToken = 'header.' + Buffer.from(JSON.stringify({ email }), 'ascii').toString('base64url') + '.signature';

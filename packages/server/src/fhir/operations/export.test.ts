@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { assert, ContentType } from '@medplum/core';
+import { assert, ContentType, sleep } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
 import type {
   AsyncJob,
   Binary,
   BulkDataExportOutput,
+  Bundle,
   CodeableConcept,
   Encounter,
   Observation,
@@ -544,4 +545,74 @@ describe('Export', () => {
       const { project } = await createTestProject();
       await exporter.close(project);
     }));
+
+  async function exportPatientsSince(accessToken: string, since: string, extra = ''): Promise<Record<string, unknown>> {
+    const initRes = await request(app)
+      .get(`/fhir/R4/$export?_type=Patient&_since=${encodeURIComponent(since)}${extra}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(initRes).toHaveStatus(202);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+    const statusRes = await request(app)
+      .get(new URL(initRes.headers['content-location']).pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes).toHaveStatus(200);
+    return statusRes.body;
+  }
+
+  const readNdjson = <T>(url: string): T[] =>
+    (getBinaryStorage() as FileSystemStorage)
+      .readFileByUrlForTests(new URL(url))
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as T);
+
+  test('Admin _since export lists resources deleted since then in deleted, not output', async () => {
+    const { repo, accessToken } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    const deletedBefore = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    await repo.deleteResource('Patient', deletedBefore.id);
+    await sleep(5);
+    const kept = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const since = kept.meta?.lastUpdated as string;
+    const deletedAfter = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    await repo.deleteResource('Patient', deletedAfter.id);
+
+    const manifest = await exportPatientsSince(accessToken, since);
+    const output = manifest.output as BulkDataExportOutput[];
+    expect(readNdjson<Patient>(output[0].url).map((p) => p.id)).toStrictEqual([kept.id]);
+
+    const deleted = manifest.deleted as BulkDataExportOutput[];
+    expect(deleted.map((d) => d.type)).toStrictEqual(['Bundle']);
+    const bundles = readNdjson<Bundle>(deleted[0].url);
+    expect(bundles.map((b) => b.type)).toStrictEqual(['transaction']);
+    expect(bundles[0].entry).toStrictEqual([{ request: { method: 'DELETE', url: `Patient/${deletedAfter.id}` } }]);
+  });
+
+  test.each([
+    ['non-admins', {}, ''],
+    ['_typeFilter types', { membership: { admin: true } }, `&_typeFilter=${encodeURIComponent('Patient?active=true')}`],
+    [
+      'admins with a criteria access policy',
+      {
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [
+            { resourceType: 'AsyncJob' },
+            { resourceType: 'Patient' },
+            { resourceType: 'Observation', criteria: 'Observation?status=final' },
+          ],
+        },
+      },
+      '',
+    ],
+  ])('Omits deleted for %s', async (_label, options, extra) => {
+    const { repo, accessToken } = await createTestProject({ withAccessToken: true, withRepo: true, ...options });
+    const since = new Date().toISOString();
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', active: true });
+    await repo.deleteResource('Patient', patient.id);
+    expect(await exportPatientsSince(accessToken, since, extra)).not.toHaveProperty('deleted');
+  });
 });

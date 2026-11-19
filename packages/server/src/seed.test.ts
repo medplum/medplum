@@ -60,6 +60,9 @@ describe('Seed', () => {
   let config: ServerConfig;
   let loggerWriteSpy: Mock<typeof globalLogger.write>;
   let seedDatabaseSpy: Mock<(typeof seedModule)['seedDatabase']>;
+  // Captured in beforeAll, since mock call history may be cleared before each test
+  let seedDatabaseCallsDuringInit: number;
+  let logCallsDuringInit: unknown[][];
 
   beforeAll(async () => {
     loggerWriteSpy = vi.spyOn(globalLogger, 'write').mockImplementation(() => undefined);
@@ -100,6 +103,9 @@ describe('Seed', () => {
       const tables = ['Appointment', 'Appointment_References', 'Slot', 'Slot_References', 'User', 'User_References'];
       await configureGinIndexes(pool, actions, tables, { fastUpdate: false });
     }
+
+    seedDatabaseCallsDuringInit = seedDatabaseSpy.mock.calls.length;
+    logCallsDuringInit = [...loggerWriteSpy.mock.calls];
   });
 
   afterAll(async () => {
@@ -110,8 +116,8 @@ describe('Seed', () => {
 
   test('Seeder completes successfully', () =>
     withTestContext(async () => {
-      // // seedDatabase executed in beforeAll via initAppServices
-      expect(seedDatabaseSpy).toHaveBeenCalledTimes(1);
+      // seedDatabase executed in beforeAll via initAppServices
+      expect(seedDatabaseCallsDuringInit).toBe(1);
 
       for (const shardConfig of getAllShards()) {
         const pool = getDatabasePool(DatabaseMode.WRITER, shardConfig.id);
@@ -129,7 +135,7 @@ describe('Seed', () => {
 
         // only show log messages if post-deploy migrations did not run successfully
         if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-          loggerWriteSpy.mock.calls.forEach((call: unknown[]) => console.log(...call));
+          logCallsDuringInit.forEach((call) => console.log(...call));
           expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
         }
       }

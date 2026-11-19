@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications, Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -16,12 +15,10 @@ async function setup(): Promise<UserEvent> {
   await act(async () => {
     render(
       <MemoryRouter initialEntries={['/mfa']} initialIndex={0}>
-        <MantineProvider>
-          <MedplumProvider medplum={medplum}>
-            <AppRoutes />
-            <Notifications />
-          </MedplumProvider>
-        </MantineProvider>
+        <MedplumProvider medplum={medplum}>
+          <AppRoutes />
+          <Notifications />
+        </MedplumProvider>
       </MemoryRouter>
     );
   });

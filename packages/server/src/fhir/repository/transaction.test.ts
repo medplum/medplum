@@ -22,13 +22,16 @@ import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
 import { createTestProject, spyOnQuery, waitFor, withTestContext } from '../../test.setup';
 import * as workersModule from '../../workers';
-import type { Repository, SystemRepository } from '../repo';
-import { getShardSystemRepo } from '../repo';
+import type { SystemRepository } from '../repo';
+import { getShardSystemRepo, Repository } from '../repo';
 import { RepositoryConnection } from '../repository/repository-connection';
 import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from '../sharding';
 import type { PgQueryable } from '../sql';
 import { PostgresError } from '../sql';
 import { repoAccess } from './access-tracker';
+import type { CacheEntry } from './resource-cache';
+import * as resourceCacheModule from './resource-cache';
+import { getResourceCacheEntry, getResourceCacheKey } from './resource-cache';
 
 const TRANSACTION_SCOPE_ERROR =
   'Repository is in an active transaction; use the transaction-scoped repository passed to the callback';
@@ -596,6 +599,120 @@ describe('FHIR Repo Transactions', () => {
 
       expect(cacheReadDuringTransaction).toBe(false);
       await expect(systemRepo.readResource('Patient', patient.id, { checkCacheOnly: true })).resolves.toBeDefined();
+    }));
+
+  test('Cache writes are applied in one batch after COMMIT, before post-commit callbacks', () =>
+    withTestContext(async () => {
+      const cacheSpy = vi.spyOn(resourceCacheModule, 'writeResourceCache');
+      let querySpy: MockInstance | undefined;
+      let ids: string[] = [];
+      let observed: CacheEntry | undefined;
+      try {
+        await repo.withTransaction(
+          async (txRepo) => {
+            querySpy = spyOnQuery(txRepo.getDatabaseClient(repoAccess.sqlWriteConfig('Patient')));
+            await txRepo.postCommit(async () => {
+              observed = await getResourceCacheEntry('Patient', ids[0]);
+            });
+            const p1 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+            const p2 = await txRepo.createResource<Patient>({ resourceType: 'Patient' });
+            ids = [p1.id, p2.id];
+            expect(cacheSpy).not.toHaveBeenCalled();
+          },
+          { resourceTypes: ['Patient'], source: 'test.cacheWriteBatch' }
+        );
+
+        assert(querySpy);
+        expect(cacheSpy).toHaveBeenCalledTimes(1);
+        expect(cacheSpy.mock.calls[0][0].map((write) => write.kind === 'set' && write.key)).toStrictEqual(
+          ids.map((id) => getResourceCacheKey('Patient', id))
+        );
+        const commitIndex = querySpy.mock.calls.findIndex(([text]) => text === 'COMMIT');
+        expect(commitIndex).toBeGreaterThanOrEqual(0);
+        expect(querySpy.mock.invocationCallOrder[commitIndex]).toBeLessThan(cacheSpy.mock.invocationCallOrder[0]);
+        expect(observed?.resource.id).toStrictEqual(ids[0]);
+      } finally {
+        cacheSpy.mockRestore();
+        querySpy?.mockRestore();
+      }
+    }));
+
+  test('Delete evicts the cache entry before the transaction and again after COMMIT', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      let cachedDuringTransaction: CacheEntry | undefined;
+      // deleteFromLookupTables is private; this view exposes it to the spy
+      const proto = Repository.prototype as unknown as {
+        deleteFromLookupTables: (this: Repository, ...args: unknown[]) => Promise<void>;
+      };
+      const original = proto.deleteFromLookupTables;
+      const spy = vi.spyOn(proto, 'deleteFromLookupTables').mockImplementation(async function (
+        this: Repository,
+        ...args: unknown[]
+      ) {
+        cachedDuringTransaction = await getResourceCacheEntry('Patient', patient.id);
+        // Simulates a concurrent read refilling the cache with the pre-delete version
+        await resourceCacheModule.writeResourceCache([
+          resourceCacheModule.buildResourceCacheSet(patient, GLOBAL_SHARD_ID, { force: true }),
+        ]);
+        return original.apply(this, args);
+      });
+      try {
+        await systemRepo.deleteResource('Patient', patient.id);
+      } finally {
+        spy.mockRestore();
+      }
+
+      expect(cachedDuringTransaction).toBeUndefined();
+      await expect(getResourceCacheEntry('Patient', patient.id)).resolves.toBeUndefined();
+    }));
+
+  test('Rolled-back savepoint discards its queued cache writes', () =>
+    withTestContext(async () => {
+      let rolledBackId: string | undefined;
+      const kept = await repo.withTransaction(
+        async (txRepo) => {
+          await expect(
+            txRepo.withTransaction(
+              async (nestedRepo) => {
+                rolledBackId = (await nestedRepo.createResource<Patient>({ resourceType: 'Patient' })).id;
+                throw new Error('roll back savepoint');
+              },
+              { resourceTypes: ['Patient'], source: 'test.savepointCacheWrites.nested' }
+            )
+          ).rejects.toThrow('roll back savepoint');
+          return txRepo.createResource<Patient>({ resourceType: 'Patient' });
+        },
+        { resourceTypes: ['Patient'], source: 'test.savepointCacheWrites' }
+      );
+
+      assert(rolledBackId);
+      await expect(getResourceCacheEntry('Patient', rolledBackId)).resolves.toBeUndefined();
+      await expect(getResourceCacheEntry('Patient', kept.id)).resolves.toMatchObject({ resource: { id: kept.id } });
+    }));
+
+  test('A failed cache flush after COMMIT is logged and does not fail the write', () =>
+    withTestContext(async () => {
+      const v1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const cacheSpy = vi
+        .spyOn(resourceCacheModule, 'writeResourceCache')
+        .mockRejectedValueOnce(new Error('Redis unavailable'));
+      const errorSpy = vi.spyOn(getLogger(), 'error').mockImplementation(() => undefined);
+      try {
+        const v2 = await systemRepo.updateResource<Patient>({ ...v1, active: true });
+        expect(v2.active).toBe(true);
+        expect(errorSpy).toHaveBeenCalledWith('Error writing resource cache after commit', expect.any(Error));
+
+        // Reads inside a transaction bypass the cache, so this sees the committed row
+        const committed = await systemRepo.withTransaction((txRepo) => txRepo.readResource<Patient>('Patient', v1.id), {
+          resourceTypes: ['Patient'],
+          source: 'test.failedCacheFlush',
+        });
+        expect(committed.meta?.versionId).toStrictEqual(v2.meta?.versionId);
+      } finally {
+        cacheSpy.mockRestore();
+        errorSpy.mockRestore();
+      }
     }));
 
   test('clone() does NOT share parent transaction state', () =>

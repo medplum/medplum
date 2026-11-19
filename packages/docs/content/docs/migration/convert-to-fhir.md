@@ -142,6 +142,18 @@ Let's amend the previous example to use a conditional reference to link our [`Co
 
 With this modification, we no longer have to look up the [`Patient's`][patient] `id` value in Medplum before writing the [`Condition`][condition]. The server resolves `identifier=http://your-source-system.com/patientId|P001` to the existing Patient during the write.
 
+The query must match exactly one resource visible to the migration identity. Zero or multiple matches fail the write. Conditional references are resolved at write time; they cannot be saved unresolved for a target that will arrive later.
+
+## Preserving Links to Resources That Arrive Later
+
+When a referenced resource is not available yet, a [FHIR logical reference](https://hl7.org/fhir/R4/references.html#logical) can preserve its source identifier in `Reference.identifier`. This example links a Condition to the saved Patient while preserving an Encounter identifier for a later import:
+
+{{< code-example file="packages/examples/src/migration/convert-to-fhir.ts" language="ts" blocks="logical-reference-example" >}}
+
+Use this only when the applicable profiles and workflows permit the relationship to remain unresolved temporarily. Keep the Condition's `subject` linked to its actual Patient so patient-compartment access is established independently of the missing Encounter.
+
+Medplum preserves this identifier-only reference without automatically converting it when the target arrives. Follow [Two-Pass Backfill with Logical References](/docs/migration/migration-pipelines#two-pass-backfill-with-logical-references) to track and complete these links, including an option to automate reconciliation with a Subscription-triggered Bot.
+
 ## Next Steps
 
 Continue with patient `P001` in [Building Migration Pipelines](/docs/migration/migration-pipelines), which applies these mapping, identifier, coding, and reference patterns to batches and staged conditional upserts.

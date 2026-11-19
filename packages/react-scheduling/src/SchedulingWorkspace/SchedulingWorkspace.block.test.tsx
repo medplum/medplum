@@ -116,7 +116,7 @@ describe('SchedulingWorkspace blocking', () => {
       fireEvent.change(screen.getByLabelText(/^Comment/), { target: { value: 'Lunch' } });
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Block Time on 1 Calendar' }));
     });
 
     const bundle = vi.mocked(medplum.executeBatch).mock.calls[0][0] as Bundle<Slot>;
@@ -150,7 +150,7 @@ describe('SchedulingWorkspace blocking', () => {
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
     await chooseActor(/Room/, 'exam', 'Exam Room A');
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Block Time on 2 Calendars' }));
     });
 
     // Dr. Rivera's calendar is hidden, so the room's Slot opens, the one drawn.
@@ -178,7 +178,7 @@ describe('SchedulingWorkspace blocking', () => {
     });
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Block Time on 1 Calendar' }));
     });
 
     expect(screen.getByRole('region', { name: 'Blocked time details' })).toBeInTheDocument();
@@ -192,7 +192,7 @@ describe('SchedulingWorkspace blocking', () => {
     await chooseTab('Block Time');
     await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Block time' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Block Time on 1 Calendar' }));
     });
 
     // No appointment holds it, so the filter leaves it on its calendar.
@@ -225,6 +225,6 @@ describe('SchedulingWorkspace blocking', () => {
     expect(screen.getByRole('tab', { name: 'Block Time' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByLabelText(/^End/)).toHaveValue('2026-08-18T13:00');
     expect(markedTime()).toBe(`${TUESDAY_NOON.start.toISOString()}/${TUESDAY_NOON.end.toISOString()}`);
-    expect(screen.getByRole('button', { name: 'Block time' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Block Time on 1 Calendar' })).toBeEnabled();
   });
 });
