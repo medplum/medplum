@@ -18,6 +18,7 @@ import { loadTestConfig } from '../config/loader';
 import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
+import { getRateLimitRedis } from '../redis';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
@@ -460,7 +461,7 @@ describe('MFA', () => {
   test('Authenticator code is single-use', async () => {
     const email = `replay-mfa${randomUUID()}@example.com`;
     const password = 'password!@#';
-    const { accessToken } = await withTestContext(() =>
+    const { accessToken, user } = await withTestContext(() =>
       registerNew({ firstName: 'Replay', lastName: 'MFA', projectName: `Replay ${randomUUID()}`, email, password })
     );
     const secret = await enrollTotpMfa(accessToken);
@@ -481,6 +482,11 @@ describe('MFA', () => {
     const verify2 = await request(app).post('/auth/mfa/verify').type('json').send({ login: login2.body.login, token });
     expect(verify2).toHaveStatus(400);
     expect(verify2.body).toMatchObject(badRequest('Invalid MFA token'));
+
+    // Remembered for longer than the 3 steps the default window accepts it, to allow for clock skew
+    const ttl = await getRateLimitRedis().pttl(`medplum:mfa:{${user.id}}:totp:${token}`);
+    expect(ttl).toBeGreaterThan(3 * 30_000);
+    expect(ttl).toBeLessThanOrEqual(4 * 30_000);
 
     const disable = await request(app)
       .post('/auth/mfa/disable')

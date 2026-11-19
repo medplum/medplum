@@ -105,8 +105,10 @@ export async function verifyTotpToken(userId: string, secret: string, token: str
   if (!authenticator.verify({ token, secret })) {
     return false;
   }
-  // A verified token equals the generated code exactly, so the code identifies its time step
-  const expirationMs = (2 * window + 1) * authenticator.allOptions().step * 1000;
+  // A verified token equals the generated code exactly, so the code identifies its time step.
+  // The window accepts it for 2 * window + 1 steps of the verifying server's clock. One more step
+  // covers clock skew between servers, since the key expires on the Redis clock.
+  const expirationMs = (2 * window + 2) * authenticator.allOptions().step * 1000;
   const claimed = await getRateLimitRedis().set(
     `${getMfaKeyPrefix(userId)}:totp:${token}`,
     '1',
