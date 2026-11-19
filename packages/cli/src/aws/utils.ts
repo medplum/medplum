@@ -31,6 +31,18 @@ export interface MedplumStackDetails {
   storageOriginAccessIdentity?: StackResource;
 }
 
+type AwsClientWithConfig = { config: object };
+
+/**
+ * Resolves the region the client will use, honoring env vars and AWS config profiles.
+ * The `region` property is typed out of the resolved client config under TypeScript 7, so it is accessed explicitly.
+ * @param client - The AWS SDK client.
+ * @returns The resolved AWS region.
+ */
+function getClientRegion(client: AwsClientWithConfig): Promise<string> {
+  return (client.config as { region: () => Promise<string> }).region();
+}
+
 export const cloudFormationClient = new CloudFormationClient({});
 export const cloudFrontClient = new CloudFrontClient({ region: 'us-east-1' });
 export const ecsClient = new ECSClient({});
@@ -107,7 +119,7 @@ export async function getStackByTag(tag: string): Promise<MedplumStackDetails | 
 export async function getStackDetails(stackName: string): Promise<MedplumStackDetails | undefined> {
   const result = {} as Partial<MedplumStackDetails>;
   await buildStackDetails(cloudFormationClient, stackName, result);
-  if ((await cloudFormationClient.config.region()) !== 'us-east-1') {
+  if ((await getClientRegion(cloudFormationClient)) !== 'us-east-1') {
     try {
       await buildStackDetails(new CloudFormationClient({ region: 'us-east-1' }), stackName + '-us-east-1', result);
     } catch {
@@ -380,7 +392,7 @@ export async function printStackNotFound(tagName: string): Promise<void> {
     const client = new STSClient();
     const command = new GetCallerIdentityCommand({});
     const response = await client.send(command);
-    const region = await client.config.region();
+    const region = await getClientRegion(client);
     console.log('AWS Region:        ', region);
     console.log('AWS Account ID:    ', response.Account);
     console.log('AWS Account ARN:   ', response.Arn);

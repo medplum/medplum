@@ -9,14 +9,13 @@ import {
   ResourceConflictException,
   ResourceNotFoundException,
 } from '@aws-sdk/client-lambda';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import type { Job } from 'bullmq';
 import assert from 'node:assert';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { createTestProject } from '../test.setup';
 import { getAsyncJobTracking } from './base';
 import type { LambdaCleanerJobData } from './lambda-cleaner';
@@ -24,7 +23,7 @@ import { execLambdaCleanerJob, initLambdaCleanerWorker, lambdaCleanerJobProcesso
 import * as workerUtils from './utils';
 
 describe('Lambda version cleanup worker', () => {
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
   let config: ServerConfig;
 
   beforeAll(async () => {
@@ -36,7 +35,7 @@ describe('Lambda version cleanup worker', () => {
   });
 
   beforeEach(() => {
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
   });
 
   afterEach(() => {

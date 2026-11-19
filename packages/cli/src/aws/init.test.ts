@@ -8,12 +8,12 @@ import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
 import type { Mock } from 'vitest';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 import { mockReadline } from './test.utils';
 
 vi.mock('node:readline');
@@ -36,9 +36,9 @@ describe('init command', () => {
   }
 
   beforeAll(() => {
-    mockClient(CloudFormationClient);
-    mockClient(ECSClient);
-    mockClient(S3Client);
+    mockAwsClient(CloudFormationClient);
+    mockAwsClient(ECSClient);
+    mockAwsClient(S3Client);
   });
 
   afterAll(() => {
@@ -55,11 +55,11 @@ describe('init command', () => {
       json: vi.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
     });
 
-    const cloudFrontClient = mockClient(CloudFrontClient);
+    const cloudFrontClient = mockAwsClient(CloudFrontClient);
 
     cloudFrontClient.on(CreatePublicKeyCommand).resolves({ PublicKey: { Id: 'K1234' } as PublicKey });
 
-    const acmClient = mockClient(ACMClient);
+    const acmClient = mockAwsClient(ACMClient);
 
     acmClient.on(ListCertificatesCommand).resolves({
       CertificateSummaryList: [
@@ -77,13 +77,13 @@ describe('init command', () => {
       CertificateArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     });
 
-    const ssmClient = mockClient(SSMClient);
+    const ssmClient = mockAwsClient(SSMClient);
 
     ssmClient.on(GetParameterCommand).rejects({ name: 'ParameterNotFound' });
 
     ssmClient.on(PutParameterCommand).resolves({});
 
-    const stsClient = mockClient(STSClient);
+    const stsClient = mockAwsClient(STSClient);
 
     stsClient.on(GetCallerIdentityCommand).resolves({
       Account: '123456789012',
@@ -215,10 +215,10 @@ describe('init command', () => {
   });
 
   test('Invalid AWS credentials', async () => {
-    const stsClient = mockClient(STSClient);
+    const stsClient = mockAwsClient(STSClient);
     stsClient.on(GetCallerIdentityCommand).rejects(new Error('Invalid region'));
 
-    const acmClient = mockClient(ACMClient);
+    const acmClient = mockAwsClient(ACMClient);
     acmClient.on(ListCertificatesCommand).rejects(new Error('Invalid region'));
     acmClient.on(RequestCertificateCommand).rejects(new Error('Invalid region'));
 
@@ -528,7 +528,7 @@ describe('init command', () => {
   });
 
   test('Existing parameter values', async () => {
-    const ssmClient = mockClient(SSMClient);
+    const ssmClient = mockAwsClient(SSMClient);
     ssmClient.on(GetParameterCommand).resolves({
       Parameter: {
         Value: 'existing-value',
@@ -606,10 +606,10 @@ describe('init command', () => {
   });
 
   test('No AWS credentials', async () => {
-    const stsClient = mockClient(STSClient);
+    const stsClient = mockAwsClient(STSClient);
     stsClient.on(GetCallerIdentityCommand).rejects('GetCallerIdentityCommand failed');
 
-    const cloudFrontClient = mockClient(CloudFrontClient);
+    const cloudFrontClient = mockAwsClient(CloudFrontClient);
     cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
 
     const filename = refConfigFile(`test-${randomUUID()}.json`);

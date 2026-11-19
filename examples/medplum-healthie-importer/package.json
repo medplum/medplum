@@ -37,7 +37,7 @@
     "esbuild": "0.28.2",
     "fast-glob": "3.3.3",
     "tsx": "4.23.15",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.12"
   }
 }

@@ -1,36 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  CloudFormationClientResolvedConfig,
-  ServiceInputTypes as CloudFormationServiceInputTypes,
-  ServiceOutputTypes as CloudFormationServiceOutputTypes,
-} from '@aws-sdk/client-cloudformation';
 import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import type {
-  CloudFrontClientResolvedConfig,
-  ServiceInputTypes as CloudFrontServiceInputTypes,
-  ServiceOutputTypes as CloudFrontServiceOutputTypes,
-} from '@aws-sdk/client-cloudfront';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
-import type {
-  S3ClientResolvedConfig,
-  ServiceInputTypes as S3ServiceInputTypes,
-  ServiceOutputTypes as S3ServiceOutputTypes,
-} from '@aws-sdk/client-s3';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import type { AwsStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
 import fs from 'node:fs';
 import { Writable } from 'node:stream';
 import * as tar from 'tar';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 
 vi.mock('fast-glob', () => {
   const mock = { sync: vi.fn(() => []) };
@@ -70,13 +54,9 @@ function emptyResponse(): ReadableStream<Uint8Array> {
   });
 }
 
-let cfMock: AwsStub<
-  CloudFormationServiceInputTypes,
-  CloudFormationServiceOutputTypes,
-  CloudFormationClientResolvedConfig
->;
-let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedConfig>;
-let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
+let cfMock: ReturnType<typeof mockAwsClient>;
+let s3Mock: ReturnType<typeof mockAwsClient>;
+let cloudFrontMock: ReturnType<typeof mockAwsClient>;
 
 describe('update-app command', () => {
   let processError: MockInstance;
@@ -92,7 +72,7 @@ describe('update-app command', () => {
     vi.clearAllMocks();
     (fs.existsSync as Mock).mockReset();
     (fs.readFileSync as Mock).mockReset();
-    cfMock = mockClient(CloudFormationClient);
+    cfMock = mockAwsClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [
@@ -168,10 +148,10 @@ describe('update-app command', () => {
       StackResources: [],
     });
 
-    s3Mock = mockClient(S3Client);
+    s3Mock = mockAwsClient(S3Client);
     s3Mock.on(PutObjectCommand).resolves({});
 
-    cloudFrontMock = mockClient(CloudFrontClient);
+    cloudFrontMock = mockAwsClient(CloudFrontClient);
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 

@@ -9,8 +9,6 @@ import {
 import type { WithId } from '@medplum/core';
 import { badRequest, ContentType } from '@medplum/core';
 import type { Bot, Project } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -18,6 +16,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../storage/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { createBotMembership, createTestProject } from '../../test.setup';
 import { getLambdaFunctionName, normalizeLambdaExecutionError } from './execute';
 
@@ -27,10 +26,10 @@ let project: WithId<Project>;
 let bot: WithId<Bot>;
 
 describe('Execute', () => {
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
 
   beforeEach(() => {
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
 
     mockLambdaClient.on(ListLayerVersionsCommand).resolves({
       LayerVersions: [

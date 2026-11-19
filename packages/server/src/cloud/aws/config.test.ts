@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { getConfig, loadConfig } from '../../config/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 
 describe('Config', () => {
-  let mockSSMClient: AwsClientStub<SSMClient>;
-  let mockSecretsManagerClient: AwsClientStub<SecretsManagerClient>;
+  let mockSSMClient: ReturnType<typeof mockAwsClient>;
+  let mockSecretsManagerClient: ReturnType<typeof mockAwsClient>;
 
   beforeEach(() => {
-    mockSSMClient = mockClient(SSMClient);
-    mockSecretsManagerClient = mockClient(SecretsManagerClient);
+    mockSSMClient = mockAwsClient(SSMClient);
+    mockSecretsManagerClient = mockAwsClient(SecretsManagerClient);
 
     mockSecretsManagerClient.on(GetSecretValueCommand).resolves({
       SecretString: JSON.stringify({ host: 'host', port: 123 }),

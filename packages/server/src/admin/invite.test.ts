@@ -22,8 +22,6 @@ import type {
   RelatedPerson,
   User,
 } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { simpleParser } from 'mailparser';
@@ -39,6 +37,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { SelectQuery } from '../fhir/sql';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import {
   addTestUser,
   createTestProject,
@@ -62,7 +61,7 @@ async function addAllowedEmailDomain(project: WithId<Project>, domain: string): 
 }
 
 describe('Admin Invite', () => {
-  let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let mockSESv2Client: ReturnType<typeof mockAwsClient>;
   let globalPool: Pool;
 
   beforeAll(async () => {
@@ -77,7 +76,7 @@ describe('Admin Invite', () => {
   });
 
   beforeEach(() => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
     fetchMock.mockClear();

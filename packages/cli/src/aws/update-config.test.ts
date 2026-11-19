@@ -1,20 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import readline from 'node:readline';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { getConfigFileName } from '../utils';
+import { mockAwsClient } from './mockAwsClient';
 import { mockReadline } from './test.utils';
 
 vi.mock('node:readline');
 
 describe('update-config command', () => {
-  let ssmClient: AwsClientStub<SSMClient>;
+  let ssmClient: ReturnType<typeof mockAwsClient>;
   let processError: MockInstance;
 
   beforeAll(() => {
@@ -25,7 +24,7 @@ describe('update-config command', () => {
   });
 
   beforeEach(() => {
-    ssmClient = mockClient(SSMClient);
+    ssmClient = mockAwsClient(SSMClient);
     ssmClient.on(GetParameterCommand).rejects({ name: 'ParameterNotFound' });
     ssmClient.on(PutParameterCommand).resolves({});
   });

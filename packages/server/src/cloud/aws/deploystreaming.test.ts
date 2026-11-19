@@ -14,13 +14,12 @@ import {
 } from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import JSZip from 'jszip';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { initTestAuth } from '../../test.setup';
 import { DEFAULT_LAMBDA_TIMEOUT } from './deploy';
 
@@ -29,7 +28,7 @@ const TEST_LAYER_ARN = 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1
 describe('Deploy Streaming', () => {
   const app = express();
   let accessToken: string;
-  let mockLambdaClient: AwsClientStub<LambdaClient>;
+  let mockLambdaClient: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -44,7 +43,7 @@ describe('Deploy Streaming', () => {
   beforeEach(() => {
     const lambdaMap = new Map<string, Record<string, any>>();
 
-    mockLambdaClient = mockClient(LambdaClient);
+    mockLambdaClient = mockAwsClient(LambdaClient);
 
     mockLambdaClient.on(CreateFunctionCommand).callsFake(({ FunctionName, Timeout }) => {
       const lambdaConfig = {

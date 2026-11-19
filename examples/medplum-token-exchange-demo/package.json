@@ -23,7 +23,7 @@
     "@medplum/eslint-config": "5.2.17",
     "@types/node": "22.20.5",
     "tsx": "4.23.15",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "packageManager": "npm@11.21.2",
   "engines": {

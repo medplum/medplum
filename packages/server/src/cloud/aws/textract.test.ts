@@ -9,19 +9,18 @@ import {
 } from '@aws-sdk/client-textract';
 import { ContentType } from '@medplum/core';
 import type { Binary, Media } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { initTestAuth } from '../../test.setup';
 
 describe('AWS Textract', () => {
   const app = express();
-  let mockS3Client: AwsClientStub<S3Client>;
-  let mockTextractClient: AwsClientStub<TextractClient>;
-  let mockComprehendClient: AwsClientStub<ComprehendMedicalClient>;
+  let mockS3Client: ReturnType<typeof mockAwsClient>;
+  let mockTextractClient: ReturnType<typeof mockAwsClient>;
+  let mockComprehendClient: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -34,9 +33,9 @@ describe('AWS Textract', () => {
   });
 
   beforeEach(() => {
-    mockS3Client = mockClient(S3Client);
+    mockS3Client = mockAwsClient(S3Client);
 
-    mockTextractClient = mockClient(TextractClient);
+    mockTextractClient = mockAwsClient(TextractClient);
 
     mockTextractClient.on(StartDocumentTextDetectionCommand).resolves({
       JobId: 'job-1',
@@ -47,7 +46,7 @@ describe('AWS Textract', () => {
       .resolvesOnce({ JobStatus: 'IN_PROGRESS' })
       .resolvesOnce({ JobStatus: 'SUCCEEDED', Blocks: [{ BlockType: 'PAGE' }] });
 
-    mockComprehendClient = mockClient(ComprehendMedicalClient);
+    mockComprehendClient = mockAwsClient(ComprehendMedicalClient);
     mockComprehendClient.on(DetectEntitiesV2Command).resolvesOnce({});
   });
 

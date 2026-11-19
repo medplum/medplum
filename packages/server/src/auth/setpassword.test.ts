@@ -3,8 +3,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference, Operator } from '@medplum/core';
 import type { Login, UserSecurityRequest } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -19,6 +17,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/r
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { generateSecret } from '../oauth/keys';
 import { tryLogin } from '../oauth/utils';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { revokeUserLogins, setPassword } from './setpassword';
@@ -27,7 +26,7 @@ const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 describe('Set Password', () => {
-  let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -40,7 +39,7 @@ describe('Set Password', () => {
   });
 
   beforeEach(() => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
     fetchMock.mockClear();

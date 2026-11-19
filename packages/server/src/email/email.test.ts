@@ -4,8 +4,6 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
 import type { Project, ProjectSetting } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
 import { Readable } from 'stream';
@@ -15,6 +13,7 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
 import { PROJECT_SMTP_SOCKET_TIMEOUT_MS, PROJECT_SMTP_TIMEOUT_MS } from './utils';
@@ -32,7 +31,7 @@ vi.mock('nodemailer', () => ({
 
 describe('Email', () => {
   const systemRepo = getTestProjectSystemRepo();
-  let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -46,7 +45,7 @@ describe('Email', () => {
   });
 
   beforeEach(() => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
   });
 

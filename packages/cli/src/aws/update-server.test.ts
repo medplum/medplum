@@ -8,13 +8,13 @@ import {
 } from '@aws-sdk/client-cloudformation';
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import type { MedplumClient } from '@medplum/core';
-import { mockClient } from 'aws-sdk-client-mock';
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import type { Mock, MockInstance } from 'vitest';
 import { main } from '../index';
 import { createMedplumClient } from '../util/client';
+import { mockAwsClient } from './mockAwsClient';
 
 vi.mock('node:child_process');
 vi.mock('../util/client');
@@ -27,12 +27,12 @@ describe('update-server command', () => {
   const nextVersion = '2.5.0';
   const finalVersion = '2.6.0';
 
-  const cfMock = mockClient(CloudFormationClient);
+  const cfMock = mockAwsClient(CloudFormationClient);
   let medplum: MedplumClient;
   let processError: MockInstance;
 
   beforeAll(() => {
-    const ecsMock = mockClient(ECSClient);
+    const ecsMock = mockAwsClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
     process.exit = vi.fn<(exitCode?: number) => never>().mockImplementation(function exit(exitCode?: number) {
       throw new Error(`Process exited with exit code ${exitCode}`);

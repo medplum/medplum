@@ -6,9 +6,9 @@ import {
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import { mockClient } from 'aws-sdk-client-mock';
 import type { MockInstance } from 'vitest';
 import { main } from '../index';
+import { mockAwsClient } from './mockAwsClient';
 
 describe('describe command', () => {
   let processError: MockInstance;
@@ -19,7 +19,7 @@ describe('describe command', () => {
     });
     processError = vi.spyOn(process.stderr, 'write').mockImplementation(vi.fn());
 
-    const cfMock = mockClient(CloudFormationClient);
+    const cfMock = mockAwsClient(CloudFormationClient);
 
     cfMock.on(ListStacksCommand).resolves({
       StackSummaries: [

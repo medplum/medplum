@@ -12,8 +12,6 @@ import type {
   User,
   UserSecurityRequest,
 } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -21,6 +19,7 @@ import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { createTestProject, getSuperAdminTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 
@@ -29,7 +28,7 @@ describe('User/$update-email', () => {
   let repo: Repository;
   let project: WithId<Project>;
   let accessToken: string;
-  let mockSESv2Client: AwsClientStub<SESv2Client>;
+  let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -49,7 +48,7 @@ describe('User/$update-email', () => {
   });
 
   beforeEach(() => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
   });
 

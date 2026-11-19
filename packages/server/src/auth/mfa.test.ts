@@ -4,8 +4,6 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, getReferenceString, OAuthGrantType } from '@medplum/core';
 import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { ParsedMail } from 'mailparser';
@@ -18,6 +16,7 @@ import { loadTestConfig } from '../config/loader';
 import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
+import { mockAwsClient } from '../test-utils/mockAwsClient';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
@@ -31,7 +30,7 @@ import {
 
 const app = express();
 
-let mockSESv2Client: AwsClientStub<SESv2Client>;
+let mockSESv2Client: ReturnType<typeof mockAwsClient>;
 
 /**
  * Sets a string entry in `Project.setting`, replacing any existing entry of the same name.
@@ -139,7 +138,7 @@ async function enrollTotpMfa(accessToken: string): Promise<string> {
 
 describe('MFA', () => {
   beforeAll(async () => {
-    mockSESv2Client = mockClient(SESv2Client);
+    mockSESv2Client = mockAwsClient(SESv2Client);
     mockSESv2Client.on(SendEmailCommand).resolves({ MessageId: 'ID_TEST_123' });
 
     const config = await loadTestConfig();

@@ -5,14 +5,13 @@ import { GetObjectTaggingCommand, NoSuchKey, PutObjectTaggingCommand, S3Client }
 import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { AsyncJob, Binary, OperationOutcome } from '@medplum/fhirtypes';
-import type { AwsClientStub } from 'aws-sdk-client-mock';
-import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorageKey } from '../../storage/base';
 import { initBinaryStorage } from '../../storage/loader';
+import { mockAwsClient } from '../../test-utils/mockAwsClient';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import {
   MALWARE_SCAN_PENDING_MS,
@@ -28,8 +27,8 @@ const app = express();
 const bucket = 'scan-test';
 
 describe('Binary/$scan', () => {
-  let mockS3Client: AwsClientStub<S3Client>;
-  let mockGuardDutyClient: AwsClientStub<GuardDutyClient>;
+  let mockS3Client: ReturnType<typeof mockAwsClient>;
+  let mockGuardDutyClient: ReturnType<typeof mockAwsClient>;
   let accessToken: string;
   let binary: WithId<Binary>;
   let key: string;
@@ -48,8 +47,8 @@ describe('Binary/$scan', () => {
   });
 
   beforeEach(async () => {
-    mockS3Client = mockClient(S3Client);
-    mockGuardDutyClient = mockClient(GuardDutyClient);
+    mockS3Client = mockAwsClient(S3Client);
+    mockGuardDutyClient = mockAwsClient(GuardDutyClient);
     mockGuardDutyClient.on(SendObjectMalwareScanCommand).resolves({});
 
     accessToken = await initTestAuth();
