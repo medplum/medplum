@@ -52,7 +52,7 @@ Imported Questionnaires can import other Questionnaires. A Questionnaire that im
 
 ### Prefixing linkIds
 
-To import the same Questionnaire more than once, declare a `linkIdPrefix` variable on the group that contains the import. The prefix is added to each imported item's `linkId`, including items from nested imports, and to `enableWhen` conditions that refer to imported items.
+To import the same Questionnaire more than once, declare a `linkIdPrefix` variable on the group that contains the import. The prefix is added to each imported item's `linkId`, including items from nested imports, and to `enableWhen` conditions that refer to imported items. Prefixes declared on nested groups, or at the root of an imported Questionnaire, are combined with the outer prefix, for example `home.contact.given`.
 
 ```json
 {
@@ -84,7 +84,7 @@ To import the same Questionnaire more than once, declare a `linkIdPrefix` variab
 The operation returns the assembled `Questionnaire`. It does not persist the result or modify the source Questionnaire. The assembled Questionnaire:
 
 - Has no `id`, so it can be saved as a new resource
-- Keeps the source `url`, with `-assembled` appended to its `version`
+- Keeps the source `url`, with `-assembled` appended to its `version`, or a random UUID as its `version` when the source has none. A distinct version keeps a saved assembled Questionnaire from sharing a canonical with its source, so a `QuestionnaireResponse.questionnaire` reference, for example in [`$extract`](/docs/api/fhir/operations/extract), resolves to the assembled form
 - Includes an [`assembledFrom`](https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-assembledFrom.html) extension pointing to the source `url|version`, when the source has a `url`
 - Drops the `assemble-expectation` extension, since it no longer needs assembly
 
@@ -93,9 +93,9 @@ The operation fails with a `400 Bad Request` and an `OperationOutcome` describin
 - An imported Questionnaire cannot be found, or an unversioned URL matches more than one version
 - A Questionnaire imports itself, directly or indirectly
 - The assembled Questionnaire has duplicate linkIds, for example a Questionnaire imported twice without a `linkIdPrefix`
-- An import item has `enableWhen`; put the condition on a group that contains the import instead
+- An import item has `enableWhen` or `enableWhenExpression`; put the condition on a group that contains the import instead
 - A `linkIdPrefix` is not a FHIRPath expression that evaluates to a string
-- An imported Questionnaire has contained resources, or root-level variables, launch contexts, or libraries, which its items may depend on but which are not carried over
+- An imported Questionnaire has contained resources, or root-level variables other than `linkIdPrefix`, launch contexts, or libraries, which its items may depend on but which are not carried over
 
 **Request**:
 
@@ -135,6 +135,7 @@ curl 'https://api.medplum.com/fhir/R4/Questionnaire/f80e508b-9aaa-41e3-aa8e-0e48
 - `item.definition` references are not expanded
 - FHIRPath expressions that refer to linkIds, such as `enableWhenExpression` or `calculatedExpression`, are not updated when a `linkIdPrefix` is applied
 - `linkIdPrefix` must be a string literal, such as `'home.'`
+- The `assemble-expectation` of imported Questionnaires is not checked
 
 ## Related
 

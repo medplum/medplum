@@ -38,6 +38,8 @@ export const expectationExtension =
   'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-assemble-expectation';
 export const assembledFromExtension = 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-assembledFrom';
 export const variableExtension = 'http://hl7.org/fhir/StructureDefinition/variable';
+export const enableWhenExpressionExtension =
+  'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression';
 
 // Root-level extensions of a subQuestionnaire that its items may depend on, and which are not carried over
 const unsupportedModuleExtensions = [
@@ -95,9 +97,11 @@ async function expandItems(
   for (const item of items) {
     const canonical = getExtension(item, subQuestionnaireExtension)?.valueCanonical;
     if (canonical) {
-      if (item.enableWhen?.length) {
+      if (item.enableWhen?.length || getExtension(item, enableWhenExpressionExtension)) {
         throw new OperationOutcomeError(
-          badRequest(`Item '${item.linkId}': put enableWhen on a group that contains the subQuestionnaire`)
+          badRequest(
+            `Item '${item.linkId}': put enableWhen or enableWhenExpression on a group that contains the subQuestionnaire`
+          )
         );
       }
       const subQuestionnaire = await resolveSubQuestionnaire(repo, canonical);
@@ -107,14 +111,21 @@ async function expandItems(
       }
       checkSupported(subQuestionnaire, canonical);
       // Expand nested imports before prefixing, so conditions between nested modules are prefixed consistently
-      const subItems = await expandItems(repo, deepClone(subQuestionnaire.item ?? []), undefined, [...stack, key]);
+      const subItems = await expandItems(
+        repo,
+        deepClone(subQuestionnaire.item ?? []),
+        getLinkIdPrefix(subQuestionnaire),
+        [...stack, key]
+      );
       if (prefix) {
         prefixItems(subItems, prefix);
       }
       result.push(...subItems);
     } else {
       if (item.item) {
-        item.item = await expandItems(repo, item.item, getLinkIdPrefix(item) ?? prefix, stack);
+        const itemPrefix = getLinkIdPrefix(item);
+        const childPrefix = itemPrefix ? (prefix ?? '') + itemPrefix : prefix;
+        item.item = await expandItems(repo, item.item, childPrefix, stack);
       }
       result.push(item);
     }
@@ -150,7 +161,9 @@ function checkSupported(subQuestionnaire: Questionnaire, canonical: string): voi
       badRequest(`SubQuestionnaire ${canonical} has contained resources, which are not supported`)
     );
   }
-  const extension = subQuestionnaire.extension?.find((ext) => unsupportedModuleExtensions.includes(ext.url));
+  const extension = subQuestionnaire.extension?.find(
+    (ext) => unsupportedModuleExtensions.includes(ext.url) && ext.valueExpression?.name !== 'linkIdPrefix'
+  );
   if (extension) {
     throw new OperationOutcomeError(
       badRequest(`SubQuestionnaire ${canonical} has extension ${extension.url}, which is not supported`)

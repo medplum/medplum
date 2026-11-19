@@ -14,7 +14,13 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
-import { assembledFromExtension, expectationExtension, subQuestionnaireExtension, variableExtension } from './assemble';
+import {
+  assembledFromExtension,
+  enableWhenExpressionExtension,
+  expectationExtension,
+  subQuestionnaireExtension,
+  variableExtension,
+} from './assemble';
 
 describe('Questionnaire/$assemble', () => {
   const app = express();
@@ -368,6 +374,133 @@ describe('Questionnaire/$assemble', () => {
     ]);
   });
 
+  test('Combines linkIdPrefixes of nested groups', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Questionnaire/$assemble`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: `https://example.com/root-${randomUUID()}`,
+        version: '1',
+        item: [
+          {
+            linkId: 'home',
+            type: 'group',
+            extension: [
+              {
+                url: variableExtension,
+                valueExpression: { name: 'linkIdPrefix', language: 'text/fhirpath', expression: "'home.'" },
+              },
+            ],
+            item: [
+              {
+                linkId: 'home-contact',
+                type: 'group',
+                extension: [
+                  {
+                    url: variableExtension,
+                    valueExpression: { name: 'linkIdPrefix', language: 'text/fhirpath', expression: "'contact.'" },
+                  },
+                ],
+                item: [
+                  {
+                    linkId: 'name-import',
+                    type: 'display',
+                    extension: [{ url: subQuestionnaireExtension, valueCanonical: `${nameModule.url}|1` }],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            linkId: 'work',
+            type: 'group',
+            extension: [
+              {
+                url: variableExtension,
+                valueExpression: { name: 'linkIdPrefix', language: 'text/fhirpath', expression: "'work.'" },
+              },
+            ],
+            item: [
+              {
+                linkId: 'work-contact',
+                type: 'group',
+                extension: [
+                  {
+                    url: variableExtension,
+                    valueExpression: { name: 'linkIdPrefix', language: 'text/fhirpath', expression: "'contact.'" },
+                  },
+                ],
+                item: [
+                  {
+                    linkId: 'name-import',
+                    type: 'display',
+                    extension: [{ url: subQuestionnaireExtension, valueCanonical: `${nameModule.url}|1` }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } satisfies Questionnaire);
+    expect(res).toHaveStatus(200);
+    expect(res.body.item[0].item[0].item).toStrictEqual([
+      { linkId: 'home.contact.given', type: 'string', text: 'Given name' },
+      { linkId: 'home.contact.family', type: 'string', text: 'Family name' },
+    ]);
+    expect(res.body.item[1].item[0].item).toStrictEqual([
+      { linkId: 'work.contact.given', type: 'string', text: 'Given name' },
+      { linkId: 'work.contact.family', type: 'string', text: 'Family name' },
+    ]);
+  });
+
+  test('Applies a linkIdPrefix declared at the root of a subQuestionnaire', async () => {
+    const contactModule = await repo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: `https://example.com/contact-${randomUUID()}`,
+      version: '1',
+      extension: [
+        {
+          url: variableExtension,
+          valueExpression: { name: 'linkIdPrefix', language: 'text/fhirpath', expression: "'contact.'" },
+        },
+      ],
+      item: [
+        { linkId: 'relationship', type: 'string' },
+        {
+          linkId: 'name-import',
+          type: 'display',
+          extension: [{ url: subQuestionnaireExtension, valueCanonical: `${nameModule.url}|1` }],
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/Questionnaire/$assemble`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: `https://example.com/root-${randomUUID()}`,
+        version: '1',
+        item: [
+          {
+            linkId: 'contact-import',
+            type: 'display',
+            extension: [{ url: subQuestionnaireExtension, valueCanonical: `${contactModule.url}|1` }],
+          },
+        ],
+      } satisfies Questionnaire);
+    expect(res).toHaveStatus(200);
+    expect(res.body.item).toStrictEqual([
+      { linkId: 'relationship', type: 'string' },
+      { linkId: 'contact.given', type: 'string', text: 'Given name' },
+      { linkId: 'contact.family', type: 'string', text: 'Family name' },
+    ]);
+  });
+
   test('Imports the pinned version of a subQuestionnaire', async () => {
     const url = `https://example.com/versioned-${randomUUID()}`;
     await repo.createResource<Questionnaire>({
@@ -654,6 +787,45 @@ describe('Questionnaire/$assemble', () => {
           severity: 'error',
           code: 'invalid',
           details: { text: expect.stringContaining('enableWhen') },
+        }),
+      ],
+    });
+
+    // The expression form of enableWhen is rejected too
+    const res2 = await request(app)
+      .post(`/fhir/R4/Questionnaire/$assemble`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        url: `https://example.com/root-${randomUUID()}`,
+        version: '1',
+        item: [
+          { linkId: 'add-name', type: 'boolean' },
+          {
+            linkId: 'name-import',
+            type: 'display',
+            extension: [
+              { url: subQuestionnaireExtension, valueCanonical: `${nameModule.url}|1` },
+              {
+                url: enableWhenExpressionExtension,
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: "%resource.item.where(linkId='add-name').answer.value",
+                },
+              },
+            ],
+          },
+        ],
+      } satisfies Questionnaire);
+    expect(res2).toHaveStatus(400);
+    expect(res2.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining('enableWhenExpression') },
         }),
       ],
     });
