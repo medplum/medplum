@@ -43,6 +43,11 @@ export interface FhirEventSource {
   interactive?: boolean;
   /** Names each of the source's appointments in place of its patient. */
   label?: string;
+  /**
+   * Passed to each appointment's event content, for a host drawing its own, as MultiCalendar does, to draw it
+   * as there for the time it takes. The content drawn here by default ignores it.
+   */
+  muted?: boolean;
 }
 
 export type ExtendedEvent = (
@@ -51,6 +56,7 @@ export type ExtendedEvent = (
       appointment: Appointment;
       schedule?: WithId<Schedule>;
       label?: string;
+      muted?: boolean;
     }
   | {
       type: 'slot';
@@ -65,7 +71,7 @@ function appointmentsToEvents(
   appointments: Appointment[],
   schedule: WithId<Schedule> | undefined,
   extra?: Partial<EventInput>,
-  details?: { interactive?: boolean; label?: string }
+  details?: { interactive?: boolean; label?: string; muted?: boolean }
 ): EventInput[] {
   return appointments
     .filter((appointment) => appointment.start && appointment.end)
@@ -265,7 +271,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
   const eventSources = useMemo(
     () =>
       props.eventSources.map((fhirSource): EventSourceInput => {
-        const { schedule, slots, appointments, interactive, label, ...source } = fhirSource;
+        const { schedule, slots, appointments, interactive, label, muted, ...source } = fhirSource;
         const filteredSlots = filterBookedSlots(slots, appointments);
 
         const appointmentExtra = {
@@ -280,7 +286,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
         return {
           ...source,
           events: [
-            ...appointmentsToEvents(appointments, schedule, appointmentExtra, { interactive, label }),
+            ...appointmentsToEvents(appointments, schedule, appointmentExtra, { interactive, label, muted }),
             ...slotsToEvents(filteredSlots, schedule, slotExtra, interactive),
           ],
         };
