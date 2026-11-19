@@ -200,7 +200,7 @@ describe('AsyncJob/$cancel', () => {
       send: (id: string) => request(app).delete(`/fhir/R4/job/${id}/status`),
       okStatus: 202,
     },
-  ])('Requester or admin only: $route', ({ send, okStatus }) => {
+  ])('Write access required, other users logged: $route', ({ send, okStatus }) => {
     let project: WithId<Project>;
     let adminToken: string;
     let requester: Awaited<ReturnType<typeof addTestUser>>;
@@ -242,8 +242,32 @@ describe('AsyncJob/$cancel', () => {
       });
     }
 
-    async function cancel(token: string, job: WithId<AsyncJob>): Promise<request.Response> {
-      return send(job.id).set('Authorization', 'Bearer ' + token);
+    // Each request logs with its own Logger instance, so spy on the prototype
+    async function cancel(
+      token: string,
+      job: WithId<AsyncJob>
+    ): Promise<{ res: request.Response; warnings: Parameters<Logger['warn']>[] }> {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+      try {
+        const res = await send(job.id).set('Authorization', 'Bearer ' + token);
+        return { res, warnings: warnSpy.mock.calls.filter(([msg]) => msg.startsWith('AsyncJob')) };
+      } finally {
+        warnSpy.mockRestore();
+      }
+    }
+
+    function cancelWarning(job: WithId<AsyncJob>, reader: string): Parameters<Logger['warn']> {
+      return [
+        'AsyncJob cancelled by a user other than the requester',
+        {
+          asyncJobId: job.id,
+          projectId: project.id,
+          requester: job.requester?.reference,
+          reader,
+          action: 'cancel',
+          suppressed: 0,
+        },
+      ];
     }
 
     async function expectStatus(job: WithId<AsyncJob>, status: AsyncJob['status']): Promise<void> {
@@ -253,49 +277,67 @@ describe('AsyncJob/$cancel', () => {
 
     test('Requester can cancel', async () => {
       const job = await createJob(createReference(requester.profile));
-      expect(await cancel(requester.accessToken, job)).toHaveStatus(okStatus);
+      const { res, warnings } = await cancel(requester.accessToken, job);
+      expect(res).toHaveStatus(okStatus);
+      expect(warnings).toStrictEqual([]);
       await expectStatus(job, 'cancelled');
     });
 
     test('Project admin can cancel the job of another member', async () => {
       const job = await createJob(createReference(requester.profile));
-      expect(await cancel(adminToken, job)).toHaveStatus(okStatus);
+      const { res, warnings } = await cancel(adminToken, job);
+      expect(res).toHaveStatus(okStatus);
+      expect(warnings).toStrictEqual([]);
       await expectStatus(job, 'cancelled');
     });
 
     test('Super admin can cancel', async () => {
       const { accessToken: superAdminToken } = await getSuperAdminTestProject();
       const job = await createJob(createReference(requester.profile));
-      expect(await cancel(superAdminToken, job)).toHaveStatus(okStatus);
+      const { res, warnings } = await cancel(superAdminToken, job);
+      expect(res).toHaveStatus(okStatus);
+      expect(warnings).toStrictEqual([]);
       await expectStatus(job, 'cancelled');
     });
 
-    test.each(['accepted', 'completed'] as const)(
-      'Forbidden for a non-admin member who is not the requester, job status %s',
-      async (status) => {
-        const job = await createJob(createReference(requester.profile), status);
-        const warnSpy = vi.spyOn(Logger.prototype, 'warn');
-        try {
-          const res = await cancel(otherMember.accessToken, job);
-          expect(res).toHaveStatus(403);
-          expect(res.body).toMatchObject(forbidden);
-          expect(warnSpy).toHaveBeenCalledWith('AsyncJob accessed by another user', {
-            asyncJobId: job.id,
-            projectId: project.id,
-            requester: getReferenceString(requester.profile),
-            reader: getReferenceString(otherMember.profile),
-            suppressed: 0,
-          });
-        } finally {
-          warnSpy.mockRestore();
-        }
-        await expectStatus(job, status);
-      }
-    );
+    test('Non-admin member who is not the requester can cancel, and is logged', async () => {
+      const job = await createJob(createReference(requester.profile));
+      const { res, warnings } = await cancel(otherMember.accessToken, job);
+      expect(res).toHaveStatus(okStatus);
+      expect(warnings).toStrictEqual([cancelWarning(job, getReferenceString(otherMember.profile))]);
+      await expectStatus(job, 'cancelled');
+    });
+
+    test('Job without requester can be cancelled by a non-admin, and is logged', async () => {
+      const job = await createJob(undefined);
+      const { res, warnings } = await cancel(otherMember.accessToken, job);
+      expect(res).toHaveStatus(okStatus);
+      expect(warnings).toStrictEqual([cancelWarning(job, getReferenceString(otherMember.profile))]);
+      await expectStatus(job, 'cancelled');
+
+      const adminJob = await createJob(undefined);
+      const adminCancel = await cancel(adminToken, adminJob);
+      expect(adminCancel.res).toHaveStatus(okStatus);
+      expect(adminCancel.warnings).toStrictEqual([]);
+      await expectStatus(adminJob, 'cancelled');
+    });
+
+    test('Completed job of another user fails, and is logged as a read', async () => {
+      const job = await createJob(createReference(requester.profile), 'completed');
+      const { res, warnings } = await cancel(otherMember.accessToken, job);
+      expect(res).toHaveStatus(400);
+      expect(warnings).toStrictEqual([
+        [
+          'AsyncJob accessed by another user',
+          expect.objectContaining({ action: 'read', reader: getReferenceString(otherMember.profile) }),
+        ],
+      ]);
+      await expectStatus(job, 'completed');
+    });
 
     test('Forbidden with read-only AsyncJob access, even for the requester', async () => {
       const job = await createJob(createReference(readOnlyMember.profile));
-      const res = await cancel(readOnlyMember.accessToken, job);
+      const { res } = await cancel(readOnlyMember.accessToken, job);
       expect(res).toHaveStatus(403);
       expect(res.body).toMatchObject(forbidden);
       await expectStatus(job, 'accepted');
@@ -308,21 +350,13 @@ describe('AsyncJob/$cancel', () => {
         .set('Authorization', 'Bearer ' + linkedToken);
       expect(read).toHaveStatus(200);
 
-      const res = await cancel(linkedToken, job);
+      const { res, warnings } = await cancel(linkedToken, job);
       expect(res).toHaveStatus(403);
       expect(res.body).toMatchObject(forbidden);
+      expect(warnings).toStrictEqual([
+        ['AsyncJob accessed by another user', expect.objectContaining({ action: 'read' })],
+      ]);
       await expectStatus(job, 'accepted');
-    });
-
-    test('Job without requester can be cancelled by an admin only', async () => {
-      const job = await createJob(undefined);
-      const res = await cancel(otherMember.accessToken, job);
-      expect(res).toHaveStatus(403);
-      expect(res.body).toMatchObject(forbidden);
-      await expectStatus(job, 'accepted');
-
-      expect(await cancel(adminToken, job)).toHaveStatus(okStatus);
-      await expectStatus(job, 'cancelled');
     });
   });
 });

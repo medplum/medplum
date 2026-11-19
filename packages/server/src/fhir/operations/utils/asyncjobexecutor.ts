@@ -239,23 +239,36 @@ export function isAsyncJobRequesterOrAdmin(repo: Repository, asyncJob: AsyncJob)
   return requester !== undefined && requester === getAsyncJobRequester()?.reference;
 }
 
+export type AsyncJobAccessAction = 'read' | 'cancel';
+
+const asyncJobAccessLogMessages: Record<AsyncJobAccessAction, string> = {
+  read: 'AsyncJob accessed by another user',
+  cancel: 'AsyncJob cancelled by a user other than the requester',
+};
+
 /**
  * Diagnostic logging for access to an AsyncJob by users other than its requester and admins of its project.
  * @param repo - The repository of the access.
  * @param asyncJob - The AsyncJob, including `meta.project`.
+ * @param action - What the user did with the job.
  */
-export function logAsyncJobAccess(repo: Repository, asyncJob: WithId<AsyncJob>): void {
+export function logAsyncJobAccess(
+  repo: Repository,
+  asyncJob: WithId<AsyncJob>,
+  action: AsyncJobAccessAction = 'read'
+): void {
   if (isAsyncJobRequesterOrAdmin(repo, asyncJob)) {
     return;
   }
   const projectId = asyncJob.meta?.project;
   const reader = getAsyncJobRequester()?.reference;
-  asyncJobAccessLogThrottle.maybeLog([projectId, asyncJob.id, reader].join('|'), (suppressed) => {
-    getLogger().warn('AsyncJob accessed by another user', {
+  asyncJobAccessLogThrottle.maybeLog([action, projectId, asyncJob.id, reader].join('|'), (suppressed) => {
+    getLogger().warn(asyncJobAccessLogMessages[action], {
       asyncJobId: asyncJob.id,
       projectId,
       requester: asyncJob.requester?.reference,
       reader,
+      action,
       suppressed,
     });
   });
@@ -265,13 +278,17 @@ export function logAsyncJobAccess(repo: Repository, asyncJob: WithId<AsyncJob>):
  * Reads an AsyncJob for the current user, logging access by users other than its requester and admins of its
  * project (see `logAsyncJobAccess`).
  * @param id - The AsyncJob ID.
+ * @param options - Read options.
+ * @param options.logAccess - False if the caller logs the access itself. Defaults to true.
  * @returns The AsyncJob.
  */
-export async function readAsyncJob(id: string): Promise<WithId<AsyncJob>> {
+export async function readAsyncJob(id: string, options?: { logAccess?: boolean }): Promise<WithId<AsyncJob>> {
   const { repo } = getAuthenticatedContext();
   // Extended mode for meta.project
   const asyncJob = await repo.withOverrideConfig({ extendedMode: true }).readResource<AsyncJob>('AsyncJob', id);
-  logAsyncJobAccess(repo, asyncJob);
+  if (options?.logAccess !== false) {
+    logAsyncJobAccess(repo, asyncJob);
+  }
   return repo.removeHiddenFields(asyncJob);
 }
 

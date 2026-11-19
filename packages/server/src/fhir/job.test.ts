@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString, Logger } from '@medplum/core';
 import type { AsyncJob, Binary } from '@medplum/fhirtypes';
 import express from 'express';
@@ -9,7 +8,6 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAuthenticatedContext } from '../context';
-import type { AuthState } from '../oauth/middleware';
 import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { getProjectSystemRepo } from './repo';
@@ -18,7 +16,6 @@ const app = express();
 
 describe('Job status', () => {
   let accessToken: string;
-  let authState: AuthState;
   let asyncJobManager: AsyncJobExecutor;
 
   beforeAll(async () => {
@@ -31,28 +28,10 @@ describe('Job status', () => {
   });
 
   beforeEach(async () => {
-    const {
-      project,
-      login,
-      membership,
-      repo,
-      accessToken: token,
-    } = await createTestProject({
-      withClient: true,
-      withAccessToken: true,
-      withRepo: true,
-    });
-    accessToken = token;
-    authState = { login, project, membership, userConfig: { resourceType: 'UserConfiguration' } };
-    asyncJobManager = new AsyncJobExecutor(repo);
+    const testProject = await createTestProject({ withAccessToken: true, withRepo: true });
+    accessToken = testProject.accessToken;
+    asyncJobManager = new AsyncJobExecutor(testProject.repo);
   });
-
-  // Starts the job as the access token's client, which makes it the requester
-  async function initJobAsRequester(): Promise<WithId<AsyncJob>> {
-    return runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
-      asyncJobManager.init('http://example.com')
-    );
-  }
 
   test('in progress', () =>
     withTestContext(async () => {
@@ -93,7 +72,7 @@ describe('Job status', () => {
 
   test('Cancel -- Happy path', () =>
     withTestContext(async () => {
-      const job = await initJobAsRequester();
+      const job = await asyncJobManager.init('http://example.com');
 
       const res1 = await request(app)
         .get(`/fhir/R4/job/${job.id}/status`)
@@ -149,7 +128,7 @@ describe('Job status', () => {
 
   test('Cancel -- error (job already completed)', () =>
     withTestContext(async () => {
-      const job = await initJobAsRequester();
+      const job = await asyncJobManager.init('http://example.com');
       const callback = vi.fn();
 
       asyncJobManager.start(async () => {
@@ -238,6 +217,7 @@ describe('Job status', () => {
           projectId: project.id,
           requester: getReferenceString(client),
           reader: getReferenceString(member.profile),
+          action: 'read',
           suppressed: 0,
         }))
       );
