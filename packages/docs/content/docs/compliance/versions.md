@@ -100,9 +100,9 @@ All Medplum components are released in lockstep with the same version number:
 
 #### Node.js
 
-- Supports current "Active" and "Maintenance" [LTS Node.js versions](https://nodejs.org/en/about/previous-releases)
-- All unit and integration tests are run against supported versions
-- Follows Node.js even-numbered LTS release schedule (22.x, 24.x, etc.)
+- Supports [Node.js 24.x](https://nodejs.org/en/about/previous-releases)
+- All unit and integration tests are run against Node.js 24
+- Follows Node.js even-numbered LTS releases; 24.x is the supported release
 
 #### PostgreSQL
 
