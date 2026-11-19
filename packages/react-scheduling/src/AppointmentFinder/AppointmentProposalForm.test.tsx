@@ -896,6 +896,7 @@ describe('AppointmentProposalForm', () => {
       await chooseImagingService();
 
       expect(finderButton()).toHaveTextContent('Find a time');
+      expect(finderButton()).toHaveAccessibleDescription('Date & Time');
       expect(chosenTimeField()).not.toBeInTheDocument();
       expect(screen.queryByRole('textbox', { name: /date|time/i })).not.toBeInTheDocument();
     });
