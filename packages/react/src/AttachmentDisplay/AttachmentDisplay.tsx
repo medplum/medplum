@@ -3,7 +3,8 @@
 import { Anchor } from '@mantine/core';
 import { ContentType } from '@medplum/core';
 import type { Attachment } from '@medplum/fhirtypes';
-import { useCachedBinaryUrl, useMedplum } from '@medplum/react-hooks';
+import type { MedplumContext } from '@medplum/react-hooks';
+import { useCachedBinaryUrl, useMedplumContext } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 import { ScannedImage } from './ScannedImage';
@@ -14,9 +15,10 @@ export interface AttachmentDisplayProps {
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
-  const medplum = useMedplum();
+  // Optional context: AttachmentDisplay does not require a MedplumProvider
+  const baseUrl = (useMedplumContext() as MedplumContext | undefined)?.medplum.getBaseUrl();
   const { contentType, data, url: storedUrl, title } = props.value ?? {};
-  const uncachedUrl = toSafeUrl(storedUrl, medplum.getBaseUrl());
+  const uncachedUrl = toSafeUrl(storedUrl, baseUrl);
   const cachedUrl = useCachedBinaryUrl(uncachedUrl);
 
   if (!cachedUrl && !data) {
@@ -77,10 +79,10 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
  * Same-origin URLs are rejected unless they are under the Medplum server base URL (single-origin deployments),
  * because the URL is rendered into an iframe and a link.
  * @param url - The attachment URL.
- * @param baseUrl - The Medplum server base URL.
+ * @param baseUrl - The Medplum server base URL, if available.
  * @returns The URL if it is a data, blob, other-origin http(s), or Medplum server URL; otherwise undefined.
  */
-function toSafeUrl(url: string | undefined, baseUrl: string): string | undefined {
+function toSafeUrl(url: string | undefined, baseUrl: string | undefined): string | undefined {
   if (!url) {
     return undefined;
   }
@@ -94,6 +96,9 @@ function toSafeUrl(url: string | undefined, baseUrl: string): string | undefined
     }
     if (parsed.origin !== window.location.origin) {
       return parsed.href;
+    }
+    if (!baseUrl) {
+      return undefined;
     }
     // Return the parsed href so the browser loads exactly the path that was checked
     const server = new URL(baseUrl, window.location.href);
