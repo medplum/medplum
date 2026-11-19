@@ -614,7 +614,9 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const filterCount =
     (filters.serviceFacility ? 1 : 0) +
     (filters.service ? 1 : 0) +
-    BOOKABLE_ACTOR_TYPES.reduce((count, actorType) => count + deselectedIds[actorType].size, 0);
+    Object.values(panelItems)
+      .flat()
+      .filter((item) => !item.selected).length;
   const appliedFiltersLabel = filterCount > 0 ? `${filterCount} Applied` : undefined;
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already

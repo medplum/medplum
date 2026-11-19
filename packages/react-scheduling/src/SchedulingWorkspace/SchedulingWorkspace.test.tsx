@@ -190,6 +190,16 @@ describe('SchedulingWorkspace', () => {
     await userEvent.click(calendarRow('Exam Room A'));
     expect(dot()).toBeNull();
     expect(toggle).not.toHaveAccessibleDescription();
+
+    // An unchecked calendar a site takes off the list stops counting until it is listed again.
+    await userEvent.click(calendarRow('Exam Room A'));
+    await chooseFilter('All service facilities', 'Uro Associates - Satellite');
+    await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
+    expect(toggle).toHaveAccessibleDescription('1 Applied');
+
+    await clearFilter('Uro Associates - Satellite');
+    await waitFor(() => expect(calendarRow('Exam Room A')).toHaveAttribute('aria-pressed', 'false'));
+    expect(toggle).toHaveAccessibleDescription('1 Applied');
   });
 
   test('shows the empty state for sections with no schedules', async () => {
