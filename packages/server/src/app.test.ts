@@ -618,6 +618,54 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test.each([
+    { name: 'prefix with trailing dot', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/login', allowed: 2 },
+    {
+      name: 'prefix without trailing dot',
+      exemptIps: ['203.0.113'],
+      ip: '203.0.113.7',
+      path: '/auth/login',
+      allowed: 2,
+    },
+    { name: 'exact IP', exemptIps: ['203.0.113.7'], ip: '203.0.113.7', path: '/auth/login', allowed: 2 },
+    { name: 'wildcard', exemptIps: ['*'], ip: '203.0.113.7', path: '/auth/login', allowed: 2 },
+    {
+      name: 'any listed entry',
+      exemptIps: ['198.51.100.', '203.0.113.7'],
+      ip: '203.0.113.7',
+      path: '/auth/login',
+      allowed: 2,
+    },
+    { name: 'newuser path', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/newuser', allowed: 2 },
+    { name: 'newproject path', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/newproject', allowed: 2 },
+    { name: 'non-matching prefix', exemptIps: ['203.0.113.'], ip: '198.51.100.7', path: '/auth/login', allowed: 1 },
+    { name: 'partial octet prefix', exemptIps: ['203.0.11'], ip: '203.0.113.7', path: '/auth/login', allowed: 1 },
+    { name: 'different exact IP', exemptIps: ['203.0.113.7'], ip: '203.0.113.70', path: '/auth/login', allowed: 1 },
+    { name: 'no exemptions configured', exemptIps: undefined, ip: '203.0.113.7', path: '/auth/login', allowed: 1 },
+    { name: 'MFA path', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/mfa/verify', allowed: 1 },
+  ])('Login rate limit exemption: $name', async ({ exemptIps, ip, path, allowed }) => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultLoginRateLimit = 1;
+    config.defaultMfaRateLimit = 1;
+    config.defaultAuthRateLimit = 2;
+    config.loginRateLimitExemptIps = exemptIps;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'login-exempt-rate-limit:';
+    await initApp(app, config);
+
+    for (let i = 0; i < allowed; i++) {
+      const res = await request(app).post(path).set('X-Forwarded-For', ip).send({});
+      expect(res.status).not.toBe(429);
+    }
+    expect(await request(app).post(path).set('X-Forwarded-For', ip).send({})).toHaveStatus(429);
+
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('Server rate limit disabled', async () => {
     const app = express();
     const config = await loadTestConfig();
