@@ -9,7 +9,7 @@ import { AppointmentServiceMultiSelect } from '../AppointmentFinder/AppointmentS
 import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServiceSelect.utils';
 import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { ServiceFacilitiesInput } from '../ServiceFacilityInput';
-import { keepServicesAtSites } from './CalendarFilters.utils';
+import { keepServicesAtSites, MAX_AVAILABILITY_SERVICES } from './CalendarFilters.utils';
 import { PanelSection } from './CalendarsPanel/PanelSection';
 
 const NONE: readonly WithId<HealthcareService>[] = [];
@@ -35,9 +35,6 @@ export interface CalendarFilterValues {
    */
   readonly availabilityServices?: readonly WithId<HealthcareService>[];
 }
-
-/** How many visit types' availability can be shaded at once, each in a lane of the day's column. */
-const MAX_AVAILABILITY_SERVICES = 3;
 
 export interface CalendarFiltersProps {
   /**

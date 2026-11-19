@@ -292,6 +292,28 @@ FindAndBook.decorators = [
 ];
 
 /**
+ * Find And Book with one change, to compare the two: the filters pane lists its visit types once. Each
+ * visit type added has its appointments and its availability to tick, where Find And Book has a Visit
+ * Type filter and an Availability field that are picked from apart.
+ *
+ * Open the filters pane and add "Follow-up": its availability is shaded, and every appointment is still
+ * drawn. Untick "All appointments" and only the listed visit types' appointments are. Add up to three
+ * for availability; a fourth is listed with its availability off.
+ *
+ * @returns The story.
+ */
+export const FindAndBookOneVisitTypeList = (): JSX.Element => (
+  <Workspace
+    defaultServiceFacility={riverside}
+    unifiedVisitTypes
+    onChangeServiceFacility={(site) => {
+      findAndBookSite = site && getReferenceString(site);
+    }}
+  />
+);
+FindAndBookOneVisitTypeList.decorators = FindAndBook.decorators;
+
+/**
  * The workspace as a host opens it on one site, such as the facility a user launched
  * scheduling from.
  *
@@ -314,6 +336,7 @@ AtASite.decorators = [withFixtures(LOCAL_FIXTURES)];
 interface WorkspaceProps {
   readonly canBypassSchedulingRules?: boolean;
   readonly defaultServiceFacility?: SchedulingWorkspaceProps['defaultServiceFacility'];
+  readonly unifiedVisitTypes?: boolean;
   readonly onChangeServiceFacility?: SchedulingWorkspaceProps['onChangeServiceFacility'];
   readonly appointmentCommentMaxLength?: number;
 }
@@ -332,6 +355,7 @@ function Workspace(props: WorkspaceProps): JSX.Element {
       <SchedulingWorkspace
         canBypassSchedulingRules={props.canBypassSchedulingRules}
         defaultServiceFacility={props.defaultServiceFacility}
+        unifiedVisitTypes={props.unifiedVisitTypes}
         onChangeServiceFacility={props.onChangeServiceFacility}
         appointmentCommentMaxLength={props.appointmentCommentMaxLength}
         procedureBinding={PROCEDURE_VALUE_SET}
