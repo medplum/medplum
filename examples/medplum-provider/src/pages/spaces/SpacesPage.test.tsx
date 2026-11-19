@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { mockTopic } from '../../test-utils/spaces';
 import { SpacesPage } from './SpacesPage';
 
@@ -33,15 +33,13 @@ describe('SpacesPage', () => {
     return render(
       <MemoryRouter initialEntries={initialEntries}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/Spaces" element={<SpacesPage />}>
-                <Route index element={<SpacesPage />} />
-                <Route path="Communication" element={<SpacesPage />} />
-                <Route path="Communication/:topicId" element={<SpacesPage />} />
-              </Route>
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/Spaces" element={<SpacesPage />}>
+              <Route index element={<SpacesPage />} />
+              <Route path="Communication" element={<SpacesPage />} />
+              <Route path="Communication/:topicId" element={<SpacesPage />} />
+            </Route>
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

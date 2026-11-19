@@ -367,14 +367,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     setConflicts([]);
   }, []);
 
-  // A proposal carries the Slots it was found for, so it cannot outlive the days it was
-  // offered from. A typed time carries none: dropping it here would take the proposal
-  // away while its fields, and their warnings, stayed on screen saying otherwise.
-  const clearChosen = useCallback(
-    (): void => setChosen((current) => (current === manualChoice ? current : undefined)),
-    [manualChoice]
-  );
-
   // All actor resources, keyed by their reference.
   const actorResources = useMemo(() => getSelectedActorResources(selections), [selections]);
 
@@ -386,7 +378,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     actorResources,
     ignoreAppointment,
     occurrenceCount: effectiveOccurrenceCount,
-    onResultsReplaced: clearChosen,
   });
   const { reset: resetDaySearch } = daySearch;
 
@@ -762,6 +753,15 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
+        {takesDetails && (
+          <AppointmentPatientInput
+            defaultValue={defaultPatient}
+            mrnSystem={mrnSystem}
+            required
+            onChange={choosePatient}
+          />
+        )}
+
         <AppointmentActorSelections
           key={`actors-${actorFieldsKey}`}
           value={selections}
@@ -794,15 +794,6 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           // every keystroke, with the search still open.
           flashKey={manual ? 0 : pickCount}
         />
-
-        {takesDetails && (
-          <AppointmentPatientInput
-            defaultValue={defaultPatient}
-            mrnSystem={mrnSystem}
-            required
-            onChange={choosePatient}
-          />
-        )}
 
         {takesDetails && (
           <AppointmentNotesInput

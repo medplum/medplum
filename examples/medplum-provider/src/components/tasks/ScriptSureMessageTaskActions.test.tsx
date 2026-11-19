@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { MedicationRequest, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import type { Mock } from 'vitest';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { DEFAULT_POLL_MS } from '../../hooks/useMedicationRequestSyncPolling';
+import { render } from '../../test-utils/render';
 import { ScriptSureMessageTaskActions } from './ScriptSureMessageTaskActions';
 import {
   SCRIPTSURE_REPLACEMENT_OUTPUT_CODE,
@@ -69,9 +69,7 @@ function setup(
   const result = render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <ScriptSureMessageTaskActions task={task} onTaskChange={onTaskChange} />
-        </MantineProvider>
+        <ScriptSureMessageTaskActions task={task} onTaskChange={onTaskChange} />
       </MedplumProvider>
     </MemoryRouter>
   );

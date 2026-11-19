@@ -46,6 +46,18 @@ Scopes grant read, write, search and update access to specific resources, here a
 - `scope=[array of individual scopes]`
 - `patient=123`: the user is allowed access to resources in the Patient/123 [compartment](http://hl7.org/fhir/R4B/compartmentdefinition.html).
 
+Each permission letter grants exactly its FHIR interactions, within what the user's access policy already permits:
+
+| Letter | Interactions         |
+| ------ | -------------------- |
+| `c`    | create               |
+| `r`    | read, vread, history |
+| `u`    | update               |
+| `d`    | delete               |
+| `s`    | search               |
+
+`write` is equivalent to `cud`, and `read` to `rs`. Without `r`, write and delete responses omit fields copied from the stored version and internal `meta` fields, even with `X-Medplum: extended`. `PATCH` also requires `r`, because its response and failing JSON Patch `test` operations disclose the stored resource. Conditional create, update and delete search for the target, so they also require `s`.
+
 Wildcard scopes such as `user/*.rs` do not include the [project admin resource types](/docs/access/admin), such as `Project`, `ProjectMembership`, `User` and `AccessPolicy`. A project admin's token reaches those types only through scopes that name them, such as `user/ProjectMembership.rs`. Super admin logins cannot use `patient/`, `user/` or `system/` scopes or a SMART App Launch.
 
 ## Authorization UI

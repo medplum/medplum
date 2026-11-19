@@ -3,7 +3,7 @@ id: binary-security-context
 title: Binary Security Context
 ---
 
-FHIR Binary resources require special attention when implementing access controls in Medplum. Unlike other FHIR resources, Binary resources cannot use standard compartment-based access policies and must rely on the `securityContext` element for proper access control.
+FHIR Binary resources require special attention when implementing access controls in Medplum. Binary resources use the `securityContext` element for access checks; policy criteria based on `meta.compartment` do not apply to Binary resources.
 
 **Critical Point**: Binary resources without a `securityContext` fall back to project-level access controls, potentially exposing sensitive data to any authenticated user with Binary resource permissions.
 
@@ -11,7 +11,7 @@ FHIR Binary resources require special attention when implementing access control
 
 ### Standard FHIR Resources
 
-Most FHIR resources (Patient, Observation, DiagnosticReport, etc.) can be secured using compartment-based access policies:
+Most FHIR resources (Patient, Observation, DiagnosticReport, etc.) can be secured using access policies that match references in `meta.compartment`:
 
 ```json
 {
@@ -27,7 +27,7 @@ Most FHIR resources (Patient, Observation, DiagnosticReport, etc.) can be secure
 
 ### Binary Resources - Special Case
 
-Binary resources **cannot** use compartment-based access controls. They require explicit `securityContext` declaration:
+Binary resources require an explicit `securityContext` to restrict access according to a related resource's permissions:
 
 ```json
 {
@@ -62,6 +62,8 @@ Binary resources **cannot** use compartment-based access controls. They require 
 - **Exposure**: Only users with access to the referenced resource (e.g., Patient) can access the Binary
 
 ## Implementation Best Practices
+
+Choose a `securityContext` whose permitted readers match the file's intended audience. If a Patient is shared across practices but a file is practice-specific, pointing at the shared Patient can expose the file too broadly. Use a context with the required clinical or care-team restrictions; see [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
 ### 1. HTTP API Binary Upload (Most Common)
 
@@ -99,7 +101,7 @@ Benefits of using `createMedia`:
 
 - Automatically creates both Media and Binary resources
 - Binary gets `securityContext` pointing to the Media resource
-- Media resource inherits compartment-based access controls
+- Media resources support access policies that match references in `meta.compartment`
 - Provides better metadata and searchability than standalone Binary
 
 ### 3. Medplum React Components

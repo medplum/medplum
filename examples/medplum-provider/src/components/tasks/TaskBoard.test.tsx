@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { ReadablePromise } from '@medplum/core';
 import type { Bundle, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TaskBoard } from './TaskBoard';
 
 describe('TaskBoard', () => {
@@ -29,19 +29,17 @@ describe('TaskBoard', () => {
     return (
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskBoard
-              query={query}
-              selectedTaskId={undefined}
-              onDelete={vi.fn()}
-              onNew={vi.fn()}
-              onChange={vi.fn()}
-              getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
-              myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
-              allTasksUri="/Task?_sort=-_lastUpdated"
-              {...props}
-            />
-          </MantineProvider>
+          <TaskBoard
+            query={query}
+            selectedTaskId={undefined}
+            onDelete={vi.fn()}
+            onNew={vi.fn()}
+            onChange={vi.fn()}
+            getTaskUri={vi.fn((task: Task) => `/Task/${task.id}`)}
+            myTasksUri="/Task?owner=Patient/123&_sort=-_lastUpdated"
+            allTasksUri="/Task?_sort=-_lastUpdated"
+            {...props}
+          />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -819,7 +817,9 @@ describe('TaskBoard', () => {
     vi.spyOn(medplum, 'search').mockResolvedValue(
       searchBundle([typedTask('cardio', 'Cardiology'), typedTask('nurse', 'Nursing')])
     );
-    setup('owner=Practitioner/p1&status=in-progress&priority=urgent&_offset=20', { onChange });
+    const profile = medplum.getProfile();
+    const profileRef = `${profile?.resourceType}/${profile?.id}`;
+    setup(`owner=${profileRef}&status=in-progress&priority=urgent&_offset=20`, { onChange });
 
     expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
     await user.click(screen.getByLabelText('Filter tasks'));
@@ -836,8 +836,51 @@ describe('TaskBoard', () => {
     expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
     expect(screen.getByText('Cardiology Task')).toBeInTheDocument();
     expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ filters: [{ code: 'owner', operator: 'eq', value: 'Practitioner/p1' }], offset: 0 })
+      expect.objectContaining({ filters: [{ code: 'owner', operator: 'eq', value: profileRef }], offset: 0 })
     );
+  });
+
+  test('removes the assignee filter when Clear All Filters is clicked on All Tasks', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    setup('owner=Practitioner/p1&status=in-progress&_offset=20', { onChange });
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.click(await screen.findByText('Clear All Filters'));
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ filters: [], offset: 0 }));
+  });
+
+  test('clears only the assignee filter from the assignee modal', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    setup('owner=Practitioner/p1&status=in-progress&_offset=20', { onChange });
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+    await user.click(await screen.findByText('Assigned'));
+    await user.click(await screen.findByRole('button', { name: 'Clear' }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ filters: [{ code: 'status', operator: 'eq', value: 'in-progress' }], offset: 0 })
+    );
+  });
+
+  test('does not show the Assigned submenu when the owner filter matches the logged-in profile', async () => {
+    const user = userEvent.setup();
+    const profile = medplum.getProfile();
+    const profileRef = `${profile?.resourceType}/${profile?.id}`;
+    vi.spyOn(medplum, 'search').mockResolvedValue(searchBundle([typedTask('nurse', 'Nursing')]));
+    setup(`owner=${profileRef}`);
+
+    expect(await screen.findByText('Nursing Task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Filter tasks'));
+
+    await waitFor(() => expect(screen.getByText('Status')).toBeInTheDocument());
+    expect(screen.queryByText('Assigned')).not.toBeInTheDocument();
   });
 
   test('falls back to reading the selected task when it is not in the current page', async () => {

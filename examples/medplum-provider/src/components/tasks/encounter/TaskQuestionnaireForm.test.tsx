@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type {
   Encounter,
@@ -12,10 +11,11 @@ import type {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../../test-utils/render';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 
 const mockQuestionnaire: Questionnaire = {
@@ -130,9 +130,7 @@ describe('TaskQuestionnaireForm', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <TaskQuestionnaireForm task={task} onChangeResponse={onChangeResponse} />
-          </MantineProvider>
+          <TaskQuestionnaireForm task={task} onChangeResponse={onChangeResponse} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -331,9 +329,7 @@ describe('TaskQuestionnaireForm', () => {
       rerender(
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <TaskQuestionnaireForm task={mockCompletedTask} />
-            </MantineProvider>
+            <TaskQuestionnaireForm task={mockCompletedTask} />
           </MedplumProvider>
         </MemoryRouter>
       );

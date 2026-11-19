@@ -76,6 +76,43 @@ describe('AsyncAutocomplete', () => {
     expect(screen.getByPlaceholderText('Search fruit')).toBeInTheDocument();
   });
 
+  test('aria-label names the search field and a group around the whole field without drawing a label', async () => {
+    const { unmount } = render(
+      <AsyncAutocomplete<TestOption>
+        aria-label="Fruit"
+        maxValues={1}
+        clearable
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(document.querySelector('label')).toBeNull();
+    await selectAutocompleteOption(screen.getByRole('searchbox', { name: 'Fruit' }), 'Apple', 'Apple');
+
+    // At maxValues the search box is gone, but the pill and clear button are still named by the group
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    const group = within(screen.getByRole('group', { name: 'Fruit' }));
+    expect(group.getByText('Apple')).toBeInTheDocument();
+    expect(group.getByTitle('Clear all')).toBeInTheDocument();
+    unmount();
+
+    // Disabled hides the search box too, and the pill keeps its group name
+    render(
+      <AsyncAutocomplete<TestOption>
+        aria-label="Fruit"
+        disabled
+        defaultValue={banana}
+        toOption={toOption}
+        loadOptions={defaultLoadOptions}
+        onChange={vi.fn()}
+      />
+    );
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(within(screen.getByRole('group', { name: 'Fruit' })).getByText('Banana')).toBeInTheDocument();
+  });
+
   test('renders a single defaultValue as a pill', () => {
     render(
       <AsyncAutocomplete<TestOption>
