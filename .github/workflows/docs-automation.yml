@@ -3,23 +3,15 @@ name: Documentation assistant (manual pilot)
 on:
   workflow_dispatch:
     inputs:
-      pr_number:
-        description: Merged PR number
-        required: true
-        type: string
+      pr_number: { description: Merged PR number, required: true, type: string }
       mode:
         description: Classify, save a draft, or publish it for review
         type: choice
         options: [classify, draft, open-pr]
         default: draft
 
-concurrency:
-  group: docs-automation-${{ inputs.pr_number }}
-  cancel-in-progress: false
-
-permissions:
-  contents: read
-  pull-requests: read
+concurrency: docs-automation-${{ inputs.pr_number }}
+permissions: { contents: read, pull-requests: read }
 
 env:
   PR_NUMBER: ${{ inputs.pr_number }}
@@ -43,28 +35,19 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: repo/package-lock.json
+        with: { node-version: '22', cache: npm, cache-dependency-path: repo/package-lock.json }
       - id: source
         run: node repo/scripts/docs-automation/pilot.mts source
-        env:
-          GH_TOKEN: ${{ github.token }}
+        env: { GH_TOKEN: '${{ github.token }}' }
       - name: Install pilot tools
         run: |
-          tools=(@anthropic-ai/claude-code@2.1.310)
-          for name in zod mdast-util-from-markdown mdast-util-to-markdown; do
-            version=$(node -p "require('./repo/package.json').devDependencies['$name']")
-            tools+=("$name@$version")
-          done
-          npm install --prefix "$GITHUB_WORKSPACE" --no-save --package-lock=false "${tools[@]}"
+          jq '{dependencies: (.devDependencies | {zod, "mdast-util-from-markdown", "mdast-util-to-markdown"})}' repo/package.json > package.json
+          npm install --no-save --package-lock=false @anthropic-ai/claude-code@2.1.310
           echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Classify, draft, and verify
         id: review
         run: node repo/scripts/docs-automation/analyze.mts
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        env: { ANTHROPIC_API_KEY: '${{ secrets.ANTHROPIC_API_KEY }}' }
       - name: Build drafted documentation
         id: build
         if: steps.review.outputs.tree != ''
@@ -93,20 +76,12 @@ jobs:
            needs.analyze.outputs.build == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-      actions: read
+    permissions: { contents: write, pull-requests: write, issues: write, actions: read }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.analyze.outputs.base }}
-          path: repo
+        with: { ref: '${{ needs.analyze.outputs.base }}', path: repo }
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          package-manager-cache: false
+        with: { node-version: '22', package-manager-cache: false }
       - name: Publish draft or source PR comment
         env:
           GH_TOKEN: ${{ github.token }}

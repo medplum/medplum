@@ -11,11 +11,8 @@ export const save = (name: string, value: unknown): void =>
   writeFileSync(`${run}/${name}`, JSON.stringify(value, null, 2) + '\n');
 export const append = (key: 'GITHUB_OUTPUT' | 'GITHUB_STEP_SUMMARY', text: string): void =>
   appendFileSync(process.env[key]!, text + '\n');
-const git = (...args: string[]): string =>
+export const git = (...args: string[]): string =>
   execFileSync('git', args, { cwd: 'repo', encoding: 'utf8', maxBuffer: Infinity });
-export const lineUrl = (repository: string, sha: string, path: string, line: number): string =>
-  `https://github.com/${repository}/blob/${sha}/${path}#L${line}`;
-export const draftLine = (path: string, line: number): string => `[Draft line \`${path}:${line}\`]`;
 
 export function checkedPath(name: string): string {
   let path = resolve('repo');
@@ -39,9 +36,8 @@ export function docPath(name: string): string {
 }
 
 export function capturePatch(pages: string[], partial: boolean): { tree: string; pages: string[] } {
-  const status = git('status', '--porcelain', '--no-renames', '--untracked-files=all', '-z');
-  const entries = status.split('\0').filter(Boolean);
-  const changed = entries.map((entry) => entry.slice(3));
+  const entries = git('status', '--porcelain', '--no-renames', '--untracked-files=all', '-z').split('\0');
+  const changed = entries.filter(Boolean).map((entry) => entry.slice(3));
   const planned = changed.every((name) => pages.includes(name));
   assert(planned && (partial || changed.length === pages.length), 'Edits do not match the plan');
   let bytes = 0;
@@ -50,14 +46,11 @@ export function capturePatch(pages: string[], partial: boolean): { tree: string;
     const stat = statSync(path);
     bytes += stat.size;
     assert(stat.isFile() && !(stat.mode & 0o111) && bytes <= config.maxDraftBytes, `Invalid file: ${name}`);
-    const content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
-      .decode(readFileSync(path))
-      .replaceAll('\r\n', '\n');
+    const content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(readFileSync(path));
     assert(!/\0|<\s*(script|iframe)\b/i.test(content), `Unsupported content: ${name}`);
     if (name.startsWith('packages/docs/content/')) {
-      const header = content.split(/^---$/m, 3);
-      const hasTitle = header.length === 3 && header[0] === '' && /^title:[ \t]*\S/m.test(header[1]);
-      assert(hasTitle, `Missing front matter: ${name}`);
+      const [prefix, header, body] = content.replaceAll('\r\n', '\n').split(/^---$/m, 3);
+      assert(prefix === '' && body !== undefined && /^title:[ \t]*\S/m.test(header), `Missing front matter: ${name}`);
     }
   }
   if (!changed.length) return { tree: '', pages: changed };
@@ -78,8 +71,8 @@ type SourcePR = {
   changed_files: number;
   merge_commit_sha: string;
 };
-const gh = (args: string[], input?: string): string =>
-  execFileSync('gh', args, { cwd: 'repo', encoding: 'utf8', input, maxBuffer: 32 * 1024 * 1024 });
+const gh = (args: string[]): string =>
+  execFileSync('gh', args, { cwd: 'repo', encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
 function api<T>(endpoint: string, query = '.'): T {
   return JSON.parse(gh(['api', endpoint, '--jq', query]));
 }
@@ -130,18 +123,18 @@ export function publish(number: number, repository: string, github = gh): void {
   assert.equal(git('rev-parse', 'HEAD').trim(), context.base, 'Wrong docs revision');
   const root = `repos/${repository}`;
   const workflow = `[Workflow run](https://github.com/${repository}/actions/runs/${GITHUB_RUN_ID})`;
-  const report = `${read(run + '/review.md')}\n${workflow}`;
   function comment(text: string): void {
     const issue = `${root}/issues/${number}/comments`;
     const marker = `<!-- docs-automation: ${repository}#${number} -->`;
     const query = `.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("${marker}"))) | .id`;
-    const ids = github(['api', '--paginate', issue + '?per_page=100', '--jq', query]);
-    const [id] = ids.trim().split('\n');
+    const [id] = github(['api', '--paginate', issue + '?per_page=100', '--jq', query])
+      .trim()
+      .split('\n');
     const endpoint = id ? `${root}/issues/comments/${id}` : issue;
-    github(['api', '--silent', '-X', id ? 'PATCH' : 'POST', endpoint, '-f', `body=${marker}\n${text}`]);
+    github(['api', '--silent', '-X', id ? 'PATCH' : 'POST', endpoint, '-f', `body=${marker}\n${text}\n\n${workflow}`]);
   }
-  if (BUILD === 'failure') return comment('Dependency installation or the docs build failed.\n\n' + report);
-  if (!DOCS_TREE && NEEDS_INPUT === 'true') return comment(report);
+  if (BUILD === 'failure') return comment('Dependency installation or the docs build failed.');
+  if (!DOCS_TREE && NEEDS_INPUT === 'true') return comment('Documentation decision needed.');
   assert(BUILD === 'success' && DOCS_TREE && /^[0-9a-f]{40}$/.test(DOCS_TREE), 'Expected a built docs tree');
   const branch = `docs/automated-pr-${number}`;
   const endpoint = `${root}/pulls?state=all&head=${repository.split('/')[0]}:${branch}`;
@@ -149,7 +142,7 @@ export function publish(number: number, repository: string, github = gh): void {
   const { assignee } = context;
   assert(!assignee || /^[\w-]+$/.test(assignee), 'Invalid assignee');
   if (existing) {
-    comment(`Existing documentation PR: ${existing.html_url}\n\n${workflow}`);
+    comment('Existing documentation PR: ' + existing.html_url);
     if (existing.state === 'open' && !existing.assignees.length) {
       assert(assignee, 'Assign a human reviewer to ' + existing.html_url);
       github(['pr', 'edit', existing.html_url, '--add-assignee', assignee]);
@@ -161,8 +154,7 @@ export function publish(number: number, repository: string, github = gh): void {
   assert.equal(git('write-tree').trim(), DOCS_TREE, 'Patch differs from the reviewed docs tree');
   const ref = 'refs/heads/' + branch;
   const title = `docs: follow up on #${number}`;
-  const existingBranch = git('ls-remote', '--heads', 'origin', ref);
-  if (existingBranch) {
+  if (git('ls-remote', '--heads', 'origin', ref)) {
     git('fetch', 'origin', ref);
     assert.equal(git('rev-parse', 'FETCH_HEAD^{tree}').trim(), DOCS_TREE, 'Existing branch has different edits');
   } else {
@@ -174,15 +166,8 @@ export function publish(number: number, repository: string, github = gh): void {
   const prTitle = title + (NEEDS_INPUT === 'true' ? ' (needs input)' : '');
   const target = ['--head', branch, '--base', BASE_BRANCH!];
   if (assignee) target.push('--assignee', assignee);
-  const sha = git('rev-parse', existingBranch ? 'FETCH_HEAD' : 'HEAD').trim();
-  const edited = git('diff', '--name-only', '-z', context.base, sha).split('\0');
-  const { evidence } = load<{ evidence: { path: string; line: number }[] }>('verification.json');
-  const links = new Set<string>();
-  for (const { path, line } of evidence) {
-    if (edited.includes(path)) links.add(`${draftLine(path, line)}: ${lineUrl(repository, sha, path, line)}`);
-  }
-  const body = [`Documentation follow-up for #${number}.`, report, ...links].join('\n\n');
-  const url = github(['pr', 'create', '--draft', ...target, '--title', prTitle, '--body-file', '-'], body).trim();
+  const body = `Documentation follow-up for #${number}. See the findings and evidence in the ${workflow}.`;
+  const url = github(['pr', 'create', '--draft', ...target, '--title', prTitle, '--body', body]).trim();
   append('GITHUB_STEP_SUMMARY', url);
   comment('Documentation follow-up: ' + url);
   assert(assignee, 'Assign a human reviewer to ' + url);
