@@ -348,7 +348,9 @@ describe('OrderLabsModal', () => {
   describe('Submitting from an encounter task', () => {
     const diagnosis = { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] };
 
-    async function submitFromTask(): Promise<string> {
+    async function setupTaskSubmission(
+      createOrderBundle = vi.fn().mockResolvedValue(orderBundle('order-123'))
+    ): Promise<string> {
       const encounter = await medplum.createResource<Encounter>({
         resourceType: 'Encounter',
         status: 'in-progress',
@@ -368,17 +370,37 @@ describe('OrderLabsModal', () => {
         context: { reference: `Encounter/${encounter.id}` },
         supportingInformation: [{ reference: 'ServiceRequest/draft-sr-1' }],
       });
-      mockLabOrderReturn.createOrderBundle = vi.fn().mockResolvedValue({
-        serviceRequest: { resourceType: 'ServiceRequest', id: 'order-123', status: 'draft', reasonCode: [diagnosis] },
-      });
+      mockLabOrderReturn.createOrderBundle = createOrderBundle;
       vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
 
       setup({ encounter, task });
+      return chargeItem.id;
+    }
+
+    function orderBundle(id: string): { serviceRequest: ServiceRequest } {
+      return {
+        serviceRequest: {
+          resourceType: 'ServiceRequest',
+          id,
+          status: 'draft',
+          intent: 'order',
+          subject: { reference: `Patient/${HomerSimpson.id}` },
+          reasonCode: [diagnosis],
+        },
+      };
+    }
+
+    async function clickSubmit(): Promise<void> {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Submit Order' }));
       });
+    }
+
+    async function submitFromTask(): Promise<string> {
+      const chargeItemId = await setupTaskSubmission();
+      await clickSubmit();
       await waitFor(() => expect(mockOnSubmitLabOrder).toHaveBeenCalled());
-      return chargeItem.id;
+      return chargeItemId;
     }
 
     test('links the charge item to the submitted order and its diagnoses', async () => {
@@ -387,6 +409,21 @@ describe('OrderLabsModal', () => {
       const chargeItem = await medplum.readResource('ChargeItem', chargeItemId, { cache: 'no-cache' });
       expect(chargeItem.supportingInformation).toEqual([{ reference: 'ServiceRequest/order-123' }]);
       expect(chargeItem.reason).toEqual([diagnosis]);
+    });
+
+    test('links the charge item to the retried order after a failed send', async () => {
+      vi.spyOn(medplum, 'executeBot').mockRejectedValueOnce(new Error('Send failed')).mockResolvedValue({});
+      const chargeItemId = await setupTaskSubmission(
+        vi.fn().mockResolvedValueOnce(orderBundle('order-1')).mockResolvedValueOnce(orderBundle('order-2'))
+      );
+
+      await clickSubmit();
+      await waitFor(() => expect(notifications.showErrorNotification).toHaveBeenCalled());
+      await clickSubmit();
+      await waitFor(() => expect(mockOnSubmitLabOrder).toHaveBeenCalled());
+
+      const chargeItem = await medplum.readResource('ChargeItem', chargeItemId, { cache: 'no-cache' });
+      expect(chargeItem.supportingInformation).toEqual([{ reference: 'ServiceRequest/order-2' }]);
     });
 
     test('still submits the order when linking the charge item fails', async () => {

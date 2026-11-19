@@ -80,7 +80,9 @@ export async function relinkChargeItemToLabOrder(
   if (!previousServiceRequestRef || !labOrder.id) {
     return undefined;
   }
-  const chargeItems = await medplum.searchResources('ChargeItem', `context=${encounter.reference}`);
+  const chargeItems = await medplum.searchResources('ChargeItem', `context=${encounter.reference}`, {
+    cache: 'no-cache',
+  });
   const chargeItem = chargeItems.find((item) =>
     item.supportingInformation?.some((ref) => ref.reference === previousServiceRequestRef)
   );

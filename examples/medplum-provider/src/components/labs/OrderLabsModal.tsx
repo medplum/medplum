@@ -253,16 +253,17 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
           ],
           focus: createReference(serviceRequest),
         });
-        if (encounterResource) {
-          await relinkChargeItemToLabOrder(
-            medplum,
-            createReference(encounterResource),
-            taskResource.focus?.reference,
-            serviceRequest
-          ).catch(showErrorNotification);
-        }
       }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
+
+      if (taskResource && encounterResource) {
+        await relinkChargeItemToLabOrder(
+          medplum,
+          createReference(encounterResource),
+          taskResource.focus?.reference,
+          serviceRequest
+        ).catch(showErrorNotification);
+      }
 
       if (draftOrder?.id) {
         // The resumed draft has been superseded by the order that was just sent.
