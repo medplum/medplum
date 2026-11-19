@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { TimezoneExtensionURI } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { formatZonedTime, isViewerTimezone } from '../AppointmentFinder/AppointmentFinder.times';
+import { formatZonedTime, isViewerTimezone } from '../timezones';
 import {
   filterSlotsByDrawnAppointments,
   formatWhen,

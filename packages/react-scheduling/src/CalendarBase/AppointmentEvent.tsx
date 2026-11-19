@@ -10,11 +10,10 @@ import cx from 'clsx';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { getNonPatientActors } from '../actors';
-import { formatZonedTimeRange } from '../AppointmentFinder/AppointmentFinder.times';
 import { AppointmentStatusBadge } from '../AppointmentStatusBadge';
 import { ServiceTypeDisplay } from '../ServiceTypeDisplay';
 import { partitionServiceTypes } from '../serviceTypes';
-import { getOwnTimezone } from '../timezones';
+import { formatZonedTimeRange, getOwnTimezone } from '../timezones';
 // Its own sheet: importing CalendarBase's here would load it ahead of FullCalendar's theme,
 // which its rules are written to override.
 import classes from './AppointmentEvent.module.css';

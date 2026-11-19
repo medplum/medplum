@@ -14,8 +14,8 @@ import {
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { formatZonedTimeRange } from '../AppointmentFinder/AppointmentFinder.times';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { formatZonedTimeRange } from '../timezones';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
 
