@@ -196,6 +196,13 @@ export interface ReadResourceOptions extends InteractionOptions {
   checkCacheOnly?: boolean;
 }
 
+export interface RepositoryUpdateOptions extends UpdateResourceOptions {
+  /** If true, writes a new version even when the resource content is unchanged. */
+  forceNewVersion?: boolean;
+  /** If true, a Binary's previous content is not copied to the new version, because the caller writes new content. */
+  skipBinaryCopy?: boolean;
+}
+
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
   subscription?: string;
@@ -1044,7 +1051,7 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+  async updateResource<T extends Resource>(resource: T, options?: RepositoryUpdateOptions): Promise<WithId<T>> {
     await this.recordFhirQuota(FhirQuotaCost.WRITE);
 
     const startTime = Date.now();
@@ -1103,7 +1110,7 @@ export class Repository extends FhirRepository implements Disposable {
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
-    options?: UpdateResourceOptions
+    options?: RepositoryUpdateOptions
   ): Promise<WithId<T>> {
     // Promote before pre-commit validation and existing-resource reads.
     this.setMode(RepositoryMode.WRITER);
@@ -1186,7 +1193,7 @@ export class Repository extends FhirRepository implements Disposable {
       });
     }
 
-    if (this.isNotModified(existing, result)) {
+    if (!options?.forceNewVersion && this.isNotModified(existing, result)) {
       return this.redactWriteResult(existing, interaction, restoredFields);
     }
 
@@ -1202,7 +1209,9 @@ export class Repository extends FhirRepository implements Disposable {
     this.logAccountsChange(existing, updated, accounts, result);
 
     await this.handleStorage(result, create);
-    await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
+    // Without the previous version, handleBinaryUpdate still stores inline data but has nothing to copy
+    const copySource = options?.skipBinaryCopy ? undefined : existing;
+    await this.postCommit(async () => this.handleBinaryUpdate(copySource, result));
     if (this.shouldAddBackgroundJobs(result)) {
       await this.postCommit(async () => {
         const project = await this.getProjectById(projectId);

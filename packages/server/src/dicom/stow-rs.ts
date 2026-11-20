@@ -8,7 +8,7 @@ import DicomwebMultipartParser from 'dicomweb-multipart-parser';
 import type { Request, Response } from 'express';
 import { PassThrough } from 'node:stream';
 import { getAuthenticatedContext } from '../context';
-import { uploadBinaryData } from '../fhir/binary';
+import { writeBinaryContent } from '../fhir/binary-content';
 import { getLogger } from '../logger';
 import {
   cleanDicomJsonDict,
@@ -200,10 +200,11 @@ export async function handleStoreInstances(req: Request, res: Response): Promise
     // Overlapping parts cannot share a repository, since creating the Binary opens a transaction.
     // A clone is safe here, unlike in `processInstance`: each part inserts its own new row.
     const binaryRepo = repo.clone({ checkReferencesOnWrite: false });
-    const uploadPromise = uploadBinaryData(binaryRepo, uploadStream, {
-      contentType: 'application/dicom',
+    const uploadPromise = writeBinaryContent(binaryRepo, {
+      kind: 'create',
+      fields: { contentType: 'application/dicom', securityContext: { reference: `DicomInstance/${instanceId}` } },
+      source: uploadStream,
       filename: 'instance.dcm',
-      securityContext: `DicomInstance/${instanceId}`,
     }).finally(() => binaryRepo[Symbol.dispose]());
 
     const parsePromise = parseDicomMetadata(parseStream);

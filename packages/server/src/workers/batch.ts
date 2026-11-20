@@ -18,7 +18,7 @@ import { DelayedError, Queue, Worker } from 'bullmq';
 import { getAuthenticatedContext } from '../context';
 import { addBatchTelemetryListeners } from '../fhir/batch-telemetry';
 import { BatchCheckpointStore } from '../fhir/batch/checkpoint-store';
-import { uploadBinaryData } from '../fhir/binary';
+import { writeBinaryContent } from '../fhir/binary-content';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
@@ -493,9 +493,10 @@ async function assembleResultBundle(
   Object.assign(results, initialState.preprocessResults);
   const entryCount = initialState.bundle.entry?.length ?? 0;
   const bundle = buildBatchResponseBundle(initialState.bundle.type, entryCount, results);
-  const binary = await uploadBinaryData(repo, JSON.stringify(bundle), {
-    contentType: ContentType.FHIR_JSON,
-    securityContext: getReferenceString(asyncJob),
+  const binary = await writeBinaryContent(repo, {
+    kind: 'create',
+    fields: { contentType: ContentType.FHIR_JSON, securityContext: { reference: getReferenceString(asyncJob) } },
+    source: JSON.stringify(bundle),
   });
   return { binary, bundle };
 }

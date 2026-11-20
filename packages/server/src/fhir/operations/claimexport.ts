@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Binary, Claim, Media } from '@medplum/fhirtypes';
+import type { Claim, Media } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { getAuthenticatedContext } from '../../context';
-import { getBinaryStorage } from '../../storage/loader';
 import { createPdf } from '../../util/pdf';
+import { writeBinaryContent } from '../binary-content';
 import { makeOperationDefinition } from './definitions';
 import { getClaimPDFDocDefinition, getCms1500ClaimTypeError } from './utils/cms1500pdf';
 import { parseInputParameters } from './utils/parameters';
@@ -64,18 +64,13 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
     const docDefinition = await getClaimPDFDocDefinition(claim);
     const pdfBuffer = await createPdf(docDefinition);
 
-    // Create Binary resource
-    const binary = await repo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType: 'application/pdf',
-      securityContext: claim.patient,
+    // Create Binary resource with the PDF content
+    const binary = await writeBinaryContent(repo, {
+      kind: 'create',
+      fields: { contentType: 'application/pdf', securityContext: claim.patient },
+      source: Readable.from(pdfBuffer),
+      filename: 'cms-1500.pdf',
     });
-
-    // Write PDF to binary storage
-    const readableStream = new Readable();
-    readableStream.push(pdfBuffer);
-    readableStream.push(null);
-    await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', readableStream);
 
     // Create Media resource
     const media: Media = {

@@ -12,6 +12,7 @@ import type { Binary, DocumentReference, Media, Reference, Resource } from '@med
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
+import { writeBinaryContent } from '../../fhir/binary-content';
 import type { Repository } from '../../fhir/repo';
 import { getLogger } from '../../logger';
 import { getBinaryStorage } from '../../storage/loader';
@@ -159,13 +160,12 @@ async function createBinaryAndMedia(
   mediaProps: Partial<Media>,
   securityContext: Reference
 ): Promise<Media> {
-  const binary = await repo.createResource<Binary>({
-    resourceType: 'Binary',
-    contentType,
-    securityContext,
+  const binary = await writeBinaryContent(repo, {
+    kind: 'create',
+    fields: { contentType, securityContext },
+    source: Readable.from(content),
+    filename,
   });
-
-  await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(content));
 
   const media = await repo.createResource({
     resourceType: 'Media',
