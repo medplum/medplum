@@ -1,18 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, WithId } from '@medplum/core';
+import type { ProfileResource, Token, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
   EMPTY,
+  escapeSearchValue,
   getReferenceString,
   isNotFound,
+  isObject,
   isResource,
+  isResourceType,
   isString,
   OperationOutcomeError,
   projectAdminResourceTypes,
   readInteractions,
   resolveId,
+  Tokenizer,
 } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -24,17 +28,25 @@ import type {
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
+  ProjectMembershipAccessParameter,
   Reference,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { membershipProfileTypes, readMembershipReference } from './projectmembership';
+import { escapeRegexString } from '../util/text';
+import { membershipProfileTypes, readMembershipReference, readMembershipReferences } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
 import { applySmartScopes, parseSmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
+
+const invalidAccessPolicyConfiguration = badRequest(
+  'Cannot authenticate: Invalid access policy configuration. Please contact your administrator to update your project membership.'
+);
+
+export type ParameterValues = Map<string, string | undefined>;
 
 /**
  * Creates a repository object for the user auth state.
@@ -217,6 +229,8 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   }
 
   const systemRepo = await getProjectSystemRepo(membership.project);
+  // Resolved once for all entries, since entries often share parameters
+  const allowedReferences = await resolveReferenceParameters(systemRepo, membership, access);
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
@@ -227,7 +241,8 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
       membership,
       entry,
       membership.profile as Reference<ProfileResource>,
-      accessPolicyMap
+      accessPolicyMap,
+      allowedReferences
     );
     if (replaced.compartment) {
       compartment = replaced.compartment;
@@ -267,6 +282,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
  * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
+ * @param allowedReferences - The reference parameters that resolve, as from `resolveReferenceParameters`.
  * @returns The AccessPolicy with variables resolved.
  */
 async function buildAccessPolicyResources(
@@ -274,7 +290,8 @@ async function buildAccessPolicyResources(
   membership: ProjectMembership,
   access: ProjectMembershipAccess,
   profile: Reference<ProfileResource>,
-  accessPolicyMap: Map<string, AccessPolicy>
+  accessPolicyMap: Map<string, AccessPolicy>,
+  allowedReferences: Set<string>
 ): Promise<AccessPolicy> {
   const accessPolicyReference = access.policy;
   const policyReferenceString = getReferenceString(accessPolicyReference);
@@ -292,29 +309,251 @@ async function buildAccessPolicyResources(
     } catch {
       // Intentionally catch and rethrow with a generic error message for security
       // (don't expose access policy details during login)
-      throw new OperationOutcomeError(
-        badRequest(
-          'Cannot authenticate: Invalid access policy configuration. Please contact your administrator to update your project membership.'
-        )
-      );
+      throw new OperationOutcomeError(invalidAccessPolicyConfiguration);
     }
   }
 
-  const params = access.parameter || [];
-  params.push({ name: 'profile', valueReference: profile });
-  if (!params.some((p) => p.name === 'patient')) {
-    params.push({ name: 'patient', valueReference: profile });
-  }
-  let json = JSON.stringify(original);
-  for (const param of params) {
-    if (param.valueString) {
-      json = json.replaceAll(`%${param.name}`, param.valueString);
-    } else if (param.valueReference) {
-      json = json.replaceAll(`%${param.name}.id`, resolveId(param.valueReference) as string);
-      json = json.replaceAll(`%${param.name}`, param.valueReference.reference as string);
+  const values = getParameterValues(profile, access.parameter, (reference) => allowedReferences.has(reference));
+  return substituteAccessPolicyParameters(original, values);
+}
+
+async function resolveReferenceParameters(
+  systemRepo: SystemRepository,
+  membership: ProjectMembership,
+  access: ProjectMembershipAccess[]
+): Promise<Set<string>> {
+  const candidates = new Set<string>();
+  for (const entry of access) {
+    for (const param of entry.parameter ?? EMPTY) {
+      const parsed = parseReferenceParameter(param.valueReference?.reference);
+      // Every resource in a project is in the project's compartment
+      if (parsed && !parsed.reference.startsWith('Project/')) {
+        candidates.add(parsed.reference);
+      }
     }
   }
-  return JSON.parse(json) as AccessPolicy;
+  const resolved = new Set<string>();
+  if (candidates.size === 0) {
+    return resolved;
+  }
+  const references = Array.from(candidates);
+  const results = await readMembershipReferences(
+    systemRepo,
+    membership,
+    references.map((reference) => ({ reference })),
+    { allowLinkedProjects: true }
+  );
+  for (let i = 0; i < results.length; i++) {
+    if (isResource(results[i])) {
+      resolved.add(references[i]);
+    }
+  }
+  return resolved;
+}
+
+/**
+ * Returns the values of the membership and built-in parameters. The first parameter with a given name wins.
+ * @param profile - The membership profile.
+ * @param parameters - The membership access parameters.
+ * @param isAllowedReference - Returns true if a membership reference parameter may refer to the resource, given as
+ * `ResourceType/id`. The built-in parameters, which come from the membership profile, are not checked.
+ * @returns The parameter values by variable.
+ */
+export function getParameterValues(
+  profile: Reference,
+  parameters: ProjectMembershipAccessParameter[] | undefined,
+  isAllowedReference: (reference: string) => boolean
+): ParameterValues {
+  const values: ParameterValues = new Map();
+  for (const param of parameters ?? EMPTY) {
+    addParameter(values, param, isAllowedReference);
+  }
+  addParameter(values, { name: 'profile', valueReference: profile }, allowAnyReference);
+  if (!parameters?.some((p) => p.name === 'patient')) {
+    addParameter(values, { name: 'patient', valueReference: profile }, allowAnyReference);
+  }
+  return values;
+}
+
+const allowAnyReference = (): boolean => true;
+
+function addParameter(
+  values: ParameterValues,
+  param: ProjectMembershipAccessParameter,
+  isAllowedReference: (reference: string) => boolean
+): void {
+  const variable = `%${param.name}`;
+  if (values.has(variable)) {
+    return;
+  }
+  if (param.valueString) {
+    values.set(variable, param.valueString);
+  } else if (param.valueReference) {
+    const parsed = parseReferenceParameter(param.valueReference.reference);
+    const valid = parsed && isAllowedReference(parsed.reference) ? parsed : undefined;
+    values.set(variable, valid?.reference);
+    // An earlier parameter named `name.id` takes precedence
+    if (!values.has(`${variable}.id`)) {
+      values.set(`${variable}.id`, valid?.id);
+    }
+  }
+}
+
+const referenceIdPattern = /^[A-Za-z0-9-]{1,64}$/;
+function parseReferenceParameter(reference: string | undefined): { reference: string; id: string } | undefined {
+  const [resourceType, id, ...rest] = (reference ?? '').split('/');
+  const isVersioned = rest.length === 2 && rest[0] === '_history';
+  if ((rest.length === 0 || isVersioned) && isResourceType(resourceType) && id && referenceIdPattern.test(id)) {
+    return { reference: `${resourceType}/${id}`, id };
+  }
+  return undefined;
+}
+
+interface Substitution {
+  pattern: RegExp;
+  values: ParameterValues;
+}
+
+function getVariablePattern(variables: Iterable<string>): RegExp {
+  // Longest first, so that `%org.id` is matched before `%org`. Escaping keeps a prefix a prefix.
+  const names = Array.from(variables, (variable) => escapeRegexString(variable.slice(1)));
+  names.sort((a, b) => b.length - a.length);
+  return new RegExp(`%(?:${names.join('|')})`, 'g');
+}
+
+/**
+ * Fields of an element that are not replaced as plain strings, by key. Each applies only at the level of its
+ * element, so that e.g. an `expression` in an extension or a `compartment` in a contained resource is plain.
+ */
+type FieldSubstitution<T extends object> = {
+  readonly [K in keyof T]?: (value: Exclude<T[K], undefined>, substitution: Substitution) => T[K];
+};
+
+const plainFields: FieldSubstitution<Record<string, unknown>> = {};
+const expressionFields: FieldSubstitution<Expression> = { expression: substituteFhirPath };
+const resourcePolicyFields: FieldSubstitution<AccessPolicyResource> = {
+  compartment: substituteCompartment,
+  criteria: substituteCriteria,
+  writeConstraint: (constraints, substitution) =>
+    constraints.map((constraint) => substituteFields(constraint, substitution, expressionFields)),
+};
+const accessPolicyFields: FieldSubstitution<AccessPolicy> = {
+  compartment: substituteCompartment,
+  resource: (resource, substitution) =>
+    resource.map((resourcePolicy) => substituteFields(resourcePolicy, substitution, resourcePolicyFields)),
+};
+
+/**
+ * Replaces the parameter variables in an access policy.
+ * Search criteria values are escaped, and compartments must be relative references once replaced.
+ * @param policy - The access policy, which is not modified. Returned as is if there are no parameter values.
+ * @param values - The parameter values by variable. Every variable must start with `%`.
+ * @returns A copy of the access policy with the variables replaced.
+ */
+export function substituteAccessPolicyParameters(policy: AccessPolicy, values: ParameterValues): AccessPolicy {
+  if (values.size === 0) {
+    return policy;
+  }
+  return substituteFields(policy, { pattern: getVariablePattern(values.keys()), values }, accessPolicyFields);
+}
+
+function substituteFields<T extends object>(value: T, substitution: Substitution, fields: FieldSubstitution<T>): T {
+  const substituters = fields as Readonly<Record<string, (value: unknown, substitution: Substitution) => unknown>>;
+  const entries = Object.entries(value);
+  for (const entry of entries) {
+    // Own keys only, so that a stored key such as `constructor` is not looked up on the prototype
+    const substitute =
+      entry[1] !== undefined && Object.hasOwn(substituters, entry[0]) ? substituters[entry[0]] : substituteValue;
+    entry[1] = substitute(entry[1], substitution);
+  }
+  // Object.fromEntries defines own properties, so a stored `__proto__` key cannot set the prototype
+  return Object.fromEntries(entries) as T;
+}
+
+function substituteValue(value: unknown, substitution: Substitution): unknown {
+  if (typeof value === 'string') {
+    // Function replacer so that `$` patterns in the value are inserted literally
+    return value.includes('%')
+      ? value.replace(substitution.pattern, (variable) => getValue(substitution, variable))
+      : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => substituteValue(v, substitution));
+  }
+  if (isObject(value)) {
+    return substituteFields(value, substitution, plainFields);
+  }
+  return value;
+}
+
+function substituteCompartment(compartment: Reference, substitution: Substitution): Reference {
+  const result = substituteValue(compartment, substitution) as Reference;
+  if (!result.reference || parseReferenceParameter(result.reference)?.reference !== result.reference) {
+    throw new OperationOutcomeError(invalidAccessPolicyConfiguration);
+  }
+  return result;
+}
+
+function substituteCriteria(criteria: string, substitution: Substitution): string {
+  const queryStart = criteria.indexOf('?') + 1;
+  // Values are inserted after splitting, so only the policy as written separates the search parameters
+  const query = criteria
+    .slice(queryStart)
+    .split('&')
+    .map((param) => {
+      if (!param.includes('%')) {
+        return param;
+      }
+      const valueStart = param.indexOf('=') + 1;
+      const isFilter = valueStart > 0 && new URLSearchParams(param.slice(0, valueStart)).has('_filter');
+      return param.replace(substitution.pattern, (variable) => {
+        const value = getValue(substitution, variable);
+        return encodeURIComponent(isFilter ? value : escapeSearchValue(value));
+      });
+    })
+    .join('&');
+  return criteria.slice(0, queryStart) + query;
+}
+
+function substituteFhirPath(expression: string, substitution: Substitution): string {
+  // Tokenized on the first match, since most `%` variables are built-ins such as `%resource`
+  let tokens: Token[] | null | undefined;
+  return expression.replace(substitution.pattern, (variable: string, offset: number) => {
+    if (tokens === undefined) {
+      try {
+        // Keywords and operators do not affect where strings, symbols, and comments start
+        tokens = new Tokenizer(expression, [], []).tokenize();
+      } catch {
+        // The expression is invalid as written, so it will fail when evaluated
+        tokens = null;
+      }
+    }
+    if (tokens === null) {
+      return variable;
+    }
+    const token = tokens.findLast((t) => t.index <= offset);
+    // The tokenizer includes the quoted unit of a quantity, such as `4 'mg'`, in its token
+    if (token?.id === 'String' || token?.id === 'Quantity' || (token && expression[token.index] === '`')) {
+      return escapeFhirPathString(getValue(substitution, variable));
+    }
+    const end = offset + variable.length;
+    if (token?.id === 'Symbol' && token.index === offset && !/[$\w%]/.test(expression.charAt(end))) {
+      return `'${escapeFhirPathString(getValue(substitution, variable))}'`;
+    }
+    return variable;
+  });
+}
+
+function escapeFhirPathString(value: string): string {
+  return value.replaceAll(/[\\'"`]/g, String.raw`\$&`);
+}
+
+function getValue(substitution: Substitution, variable: string): string {
+  const value = substitution.values.get(variable);
+  if (value === undefined) {
+    throw new OperationOutcomeError(invalidAccessPolicyConfiguration);
+  }
+  return value;
 }
 
 /**

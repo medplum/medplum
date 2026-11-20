@@ -11,6 +11,7 @@ import {
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { NIL, v5 } from 'uuid';
 import type { ArrayColumnPaddingConfig } from '../config/types';
+import { escapeRegexString } from '../util/text';
 import { shouldSearchParameterExist } from './presence';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
@@ -372,22 +373,6 @@ function buildTokenColumnsWhereConditionEqualsAndExact(
     'UUID[]'
   );
   return condition;
-}
-
-export function escapeRegexString(str: string): string {
-  // Escape the following special regex characters:
-  // . - matches any single character except newline
-  // ^ - matches the start of a string
-  // $ - matches the end of a string
-  // * - matches 0 or more of the preceding character
-  // + - matches 1 or more of the preceding character
-  // ? - matches 0 or 1 of the preceding character
-  // ( ) - define capturing groups
-  // [ ] - define character classes
-  // { } - define quantifiers
-  // \ - escapes a special character
-  // | - alternation (OR operator)
-  return str.replaceAll(/[.^$*+?()[\]{}\\|]/g, String.raw`\$&`);
 }
 
 // Not a v5 UUID, so will not collide with hashed token values

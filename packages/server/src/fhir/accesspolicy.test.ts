@@ -5,18 +5,22 @@ import {
   AccessPolicyInteraction,
   createReference,
   encodeBase64,
+  evalFhirPath,
   getReferenceString,
+  indexStructureDefinitionBundle,
   LOINC,
   normalizeErrorString,
   Operator,
   parseSearchRequest,
 } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import type {
   AccessPolicy,
   AccessPolicyResource,
   AuditEvent,
   Binary,
   Bot,
+  Bundle,
   ClientApplication,
   Communication,
   Condition,
@@ -29,8 +33,10 @@ import type {
   Practitioner,
   Project,
   ProjectMembership,
+  ProjectMembershipAccessParameter,
   Quantity,
   Questionnaire,
+  Reference,
   RelatedPerson,
   ServiceRequest,
   SmartAppLaunch,
@@ -50,7 +56,13 @@ import { globalLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import type { TestProjectOptions } from '../test.setup';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { buildAccessPolicy, getRepoForLogin, getRepoForProject } from './accesspolicy';
+import {
+  buildAccessPolicy,
+  getParameterValues,
+  getRepoForLogin,
+  getRepoForProject,
+  substituteAccessPolicyParameters,
+} from './accesspolicy';
 import { DEFAULT_ACCESS_POLICIES } from './default-access-policies';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
@@ -63,6 +75,15 @@ function getRepository(repoContext: Partial<RepositoryContext>): Repository {
     ...repoContext,
     author: repoContext.author ?? { reference: 'Practitioner/123' },
     routing: repoContext.routing ?? { kind: 'project-shard', shardId: PLACEHOLDER_SHARD_ID },
+  });
+}
+
+function loginAs(membership: WithId<ProjectMembership>, project: WithId<Project>): Promise<Repository> {
+  return getRepoForLogin({
+    login: { resourceType: 'Login' } as Login,
+    membership,
+    project,
+    userConfig: {} as UserConfiguration,
   });
 }
 
@@ -2036,12 +2057,7 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership,
-        project: testProject,
-        userConfig: {} as UserConfiguration,
-      });
+      const repo2 = await loginAs(membership, testProject);
 
       await expect(repo2.readResource<Patient>('Patient', p1.id)).resolves.toBeDefined();
       await expect(repo2.readResource<Patient>('Patient', p2.id)).resolves.toBeDefined();
@@ -2076,12 +2092,7 @@ describe('AccessPolicy', () => {
           },
         ],
       });
-      const repo = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership,
-        project: testProject,
-        userConfig: {} as UserConfiguration,
-      });
+      const repo = await loginAs(membership, testProject);
 
       const updated = await repo.updateResource({ ...self, active: false });
       expect(updated.active).toBe(false);
@@ -2127,16 +2138,129 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership,
-        project: testProject,
-        userConfig: {} as UserConfiguration,
-      });
+      const repo2 = await loginAs(membership, testProject);
 
       await expect(repo2.readResource('Task', t1.id)).resolves.toBeDefined();
       await expect(repo2.readResource('Task', t2.id)).rejects.toThrow('Not found');
     }));
+
+  test('Search is denied for a compartment without an ID', () =>
+    withTestContext(async () => {
+      const repo = getRepository({
+        projects: [testProject],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Observation', compartment: { reference: 'x' } }],
+        },
+      });
+      await expect(repo.searchResources({ resourceType: 'Observation' })).rejects.toThrow('Forbidden');
+    }));
+
+  describe('Reference parameters', () => {
+    let project: WithId<Project>;
+    let projectRepo: SystemRepository;
+    let ownOrg: WithId<Organization>;
+    let linkedOrg: WithId<Organization>;
+    let otherOrg: WithId<Organization>;
+    let observation: WithId<Observation>;
+    let observationPolicy: WithId<AccessPolicy>;
+    let reportPolicy: WithId<AccessPolicy>;
+
+    beforeAll(async () => {
+      const { project: linkedProject } = await createTestProject();
+      const { project: otherProject } = await createTestProject();
+      project = (await createTestProject({ project: { link: [{ project: createReference(linkedProject) }] } })).project;
+      projectRepo = await getProjectSystemRepo(project);
+      const createOrg = (projectId: string): Promise<WithId<Organization>> =>
+        projectRepo.createResource<Organization>({ resourceType: 'Organization', meta: { project: projectId } });
+      ownOrg = await createOrg(project.id);
+      linkedOrg = await createOrg(linkedProject.id);
+      otherOrg = await createOrg(otherProject.id);
+      observation = await projectRepo.createResource<Observation>({
+        resourceType: 'Observation',
+        meta: { project: project.id, accounts: [createReference(ownOrg)] },
+        status: 'final',
+        code: { text: 'test' },
+      });
+      const createPolicy = (criteria: string): Promise<WithId<AccessPolicy>> =>
+        projectRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          meta: { project: project.id },
+          resource: [{ resourceType: criteria.split('?')[0], criteria }],
+        });
+      observationPolicy = await createPolicy('Observation?_compartment=%org');
+      reportPolicy = await createPolicy('DiagnosticReport?_compartment=%org&performer=%site');
+    });
+
+    function membershipWith(org: string): ProjectMembership {
+      return {
+        resourceType: 'ProjectMembership',
+        meta: { project: project.id },
+        project: createReference(project),
+        user: { reference: 'User/' + randomUUID() },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        access: [
+          {
+            policy: createReference(observationPolicy),
+            parameter: [{ name: 'org', valueReference: { reference: org } }],
+          },
+          {
+            policy: createReference(reportPolicy),
+            parameter: [
+              { name: 'org', valueReference: { reference: org } },
+              // The version is dropped, and an absolute reference is not read
+              { name: 'site', valueReference: { reference: `Organization/${ownOrg.id}/_history/1` } },
+              { name: 'unused', valueReference: { reference: `https://example.com/fhir/Organization/${ownOrg.id}` } },
+            ],
+          },
+        ],
+      };
+    }
+
+    test('Reference parameter limits search to its compartment', () =>
+      withTestContext(async () => {
+        const membership = await projectRepo.createResource(membershipWith(getReferenceString(ownOrg)));
+        const repo = await loginAs(membership, project);
+        const results = await repo.searchResources({ resourceType: 'Observation' });
+        expect(results.map((r) => r.id)).toStrictEqual([observation.id]);
+      }));
+
+    test('Reference parameters in linked projects are resolved once for all entries', () =>
+      withTestContext(async () => {
+        const readSpy = vi.spyOn(Repository.prototype, 'readReferences');
+        try {
+          const accessPolicy = await buildAccessPolicy(membershipWith(getReferenceString(linkedOrg)));
+          expect(accessPolicy.resource.slice(0, 2)).toMatchObject([
+            { criteria: `Observation?_compartment=Organization%2F${linkedOrg.id}` },
+            {
+              criteria: `DiagnosticReport?_compartment=Organization%2F${linkedOrg.id}&performer=Organization%2F${ownOrg.id}`,
+            },
+          ]);
+          // Both entries' parameters are read in one batch, without repeating the shared `org` parameter
+          const parameterReads = readSpy.mock.calls.filter(([refs]) =>
+            refs.some((r) => r.reference?.startsWith('Organization/'))
+          );
+          expect(parameterReads).toStrictEqual([[[createReference(linkedOrg), createReference(ownOrg)]]]);
+        } finally {
+          readSpy.mockRestore();
+        }
+      }));
+
+    // Every resource is in its project's compartment, and compartment search matches on ID alone,
+    // so a reference to the project or to an ID of another type would match other resources
+    test.each<[string, () => string]>([
+      ['project', () => getReferenceString(project)],
+      ['project ID as another type', () => `Patient/${project.id}`],
+      ['ID of another type', () => `Patient/${ownOrg.id}`],
+      ['resource in a project that is not linked', () => getReferenceString(otherOrg)],
+    ])('Reference parameter that does not resolve is rejected: %s', (_name, reference) =>
+      withTestContext(async () => {
+        await expect(buildAccessPolicy(membershipWith(reference()))).rejects.toThrow(
+          'Invalid access policy configuration'
+        );
+      })
+    );
+  });
 
   test('Project admin with access policy', () =>
     withTestContext(async () => {
@@ -2186,12 +2310,7 @@ describe('AccessPolicy', () => {
         sendEmail: false,
       });
 
-      const repo2 = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership,
-        project,
-        userConfig: {} as UserConfiguration,
-      });
+      const repo2 = await loginAs(membership, project);
 
       // Read Patient - allowed by AccessPolicy
       const check1 = await repo2.readResource<Patient>('Patient', patient.id);
@@ -2240,12 +2359,7 @@ describe('AccessPolicy', () => {
         admin,
         accessPolicy: grant === 'unassigned' ? undefined : createReference(policy),
       });
-      const repo = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership,
-        project: testProject,
-        userConfig: {} as UserConfiguration,
-      });
+      const repo = await loginAs(membership, testProject);
       const broadened: AccessPolicy = { ...policy, resource: [{ resourceType: '*' }] };
 
       await expect(repo.readResource('AccessPolicy', policy.id)).resolves.toBeDefined();
@@ -2851,12 +2965,7 @@ describe('AccessPolicy', () => {
       });
 
       const miniAdminMembership = adminInviteResult.membership;
-      const miniAdminRepo = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership: miniAdminMembership,
-        project,
-        userConfig: {} as UserConfiguration,
-      });
+      const miniAdminRepo = await loginAs(miniAdminMembership, project);
 
       // Read Patient - explicitly allowed by AccessPolicy
       const check1 = await miniAdminRepo.readResource<Patient>('Patient', patient.id);
@@ -3659,12 +3768,7 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({
-        login: { resourceType: 'Login' } as Login,
-        membership,
-        project: testProject,
-        userConfig: {} as UserConfiguration,
-      });
+      const repo2 = await loginAs(membership, testProject);
 
       await expect(repo2.readResource<Device>('Device', globalDevice.id)).resolves.toBeDefined();
       await expect(repo2.readResource<Device>('Device', scopedDevice.id)).resolves.toBeDefined();
@@ -4102,5 +4206,209 @@ describe('AccessPolicy', () => {
           );
         }));
     });
+  });
+});
+
+describe('Access policy parameters', () => {
+  const profile = 'RelatedPerson/rp1';
+  const allowAll = (): boolean => true;
+  const allowNone = (): boolean => false;
+  const patientCompartment: AccessPolicyResource = {
+    resourceType: 'Observation',
+    criteria: 'Observation?_compartment=%patient',
+  };
+
+  function substitute(
+    resource: AccessPolicyResource[],
+    parameter: ProjectMembershipAccessParameter[],
+    isAllowedReference = allowAll
+  ): AccessPolicyResource[] {
+    const values = getParameterValues({ reference: profile }, parameter, isAllowedReference);
+    return substituteAccessPolicyParameters({ resourceType: 'AccessPolicy', resource }, values).resource ?? [];
+  }
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  });
+
+  test.each<[string, string, AccessPolicyResource]>([
+    ['comma-separated references', 'Patient/p1,Patient/p2', patientCompartment],
+    [
+      'comma-separated references in ID',
+      'Patient/p1,Patient/p2',
+      { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
+    ],
+    ['JSON structure', 'Patient/x"},{"resourceType":"*","x":"', patientCompartment],
+    ['search parameter', 'Patient/p1&_id:missing=false', patientCompartment],
+    ['missing ID', 'Patient', patientCompartment],
+    ['dot segment', 'Patient/..', patientCompartment],
+    ['period in ID', 'Patient/p1.1', patientCompartment],
+    ['extra path segment', 'Patient/p1/x', patientCompartment],
+    ['unknown resource type', 'Foo/p1', patientCompartment],
+    ['absolute URL', 'https://example.com/fhir/Patient/p1', patientCompartment],
+  ])('Invalid reference parameter is rejected when used: %s', (_name, reference, resourcePolicy) => {
+    expect(() => substitute([resourcePolicy], [{ name: 'patient', valueReference: { reference } }])).toThrow(
+      /Invalid access policy configuration/
+    );
+  });
+
+  test('Only membership reference parameters are checked', () => {
+    const parameter = [{ name: 'patient', valueReference: { reference: 'Patient/p1' } }];
+    expect(substitute([{ resourceType: 'Task', criteria: 'Task?owner=%profile' }], parameter, allowNone)).toStrictEqual(
+      [{ resourceType: 'Task', criteria: 'Task?owner=RelatedPerson%2Frp1' }]
+    );
+    expect(() => substitute([patientCompartment], parameter, allowNone)).toThrow(/Invalid access policy configuration/);
+  });
+
+  test.each<[string, AccessPolicyResource, ProjectMembershipAccessParameter[], string]>([
+    [
+      'unused invalid references are ignored',
+      { resourceType: 'Task', criteria: 'Task?owner=%profile' },
+      [
+        { name: 'org', valueReference: { display: 'Org' } },
+        { name: 'patient', valueReference: { reference: 'https://example.com/fhir/Patient/p1' } },
+      ],
+      'Task?owner=RelatedPerson%2Frp1',
+    ],
+    [
+      'versioned reference resolves to the resource',
+      { resourceType: 'Patient', criteria: 'Patient?organization=%org&_id=%org.id' },
+      [{ name: 'org', valueReference: { reference: 'Organization/o1/_history/2' } }],
+      'Patient?organization=Organization%2Fo1&_id=o1',
+    ],
+    [
+      'string cannot alter policy structure or use replacement patterns',
+      { resourceType: 'Task', criteria: 'Task?status=%status' },
+      [{ name: 'status', valueString: `accepted"},{"resourceType":"*","x":"$&$'` }],
+      'Task?status=' + encodeURIComponent(`accepted"}\\,{"resourceType":"*"\\,"x":"$&$'`),
+    ],
+    [
+      'single pass, longest name first',
+      { resourceType: 'Task', criteria: 'Task?status=%stat&business-status=%status&owner=%profile' },
+      [
+        { name: 'stat', valueString: 'accepted' },
+        { name: 'status', valueString: '%profile' },
+      ],
+      'Task?status=accepted&business-status=%25profile&owner=RelatedPerson%2Frp1',
+    ],
+    [
+      'string in _filter is percent-encoded, without escaping commas',
+      { resourceType: 'Observation', criteria: 'Observation?_filter=code eq "%c"&code=%c' },
+      [{ name: 'c', valueString: 'a"b\\c,d&e' }],
+      `Observation?_filter=code eq "${encodeURIComponent('a"b\\c,d&e')}"&code=${encodeURIComponent('a"b\\\\c\\,d&e')}`,
+    ],
+    [
+      'first parameter with a name wins, including for its ID',
+      { resourceType: 'Patient', criteria: 'Patient?general-practitioner=%org&organization=%org.id' },
+      [
+        { name: 'org', valueString: 'Practitioner/1' },
+        { name: 'org', valueReference: { reference: 'Organization/o1' } },
+      ],
+      'Patient?general-practitioner=Practitioner%2F1&organization=Practitioner%2F1.id',
+    ],
+  ])('Valid parameters are substituted in criteria: %s', (_name, resourcePolicy, parameter, criteria) => {
+    expect(substitute([resourcePolicy], parameter)).toStrictEqual([{ ...resourcePolicy, criteria }]);
+  });
+
+  test('Parameters are replaced in every field, without modifying the policy', () => {
+    const policy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      name: '%org',
+      compartment: { reference: '%org', display: '%org' },
+      resource: [
+        {
+          resourceType: 'Task',
+          compartment: { reference: '%org' },
+          criteria: 'Task?owner=%org',
+          hiddenFields: ['%org'],
+          writeConstraint: [{ language: 'text/fhirpath', expression: "%after.owner.reference = '%org'" }],
+        },
+      ],
+    };
+    const original = structuredClone(policy);
+    const values = getParameterValues(
+      { reference: profile },
+      [{ name: 'org', valueReference: { reference: 'Organization/o1' } }],
+      allowAll
+    );
+
+    expect(substituteAccessPolicyParameters(policy, values)).toStrictEqual({
+      resourceType: 'AccessPolicy',
+      name: 'Organization/o1',
+      compartment: { reference: 'Organization/o1', display: 'Organization/o1' },
+      resource: [
+        {
+          resourceType: 'Task',
+          compartment: { reference: 'Organization/o1' },
+          criteria: 'Task?owner=Organization%2Fo1',
+          hiddenFields: ['Organization/o1'],
+          writeConstraint: [{ language: 'text/fhirpath', expression: "%after.owner.reference = 'Organization/o1'" }],
+        },
+      ],
+    });
+    expect(policy).toStrictEqual(original);
+  });
+
+  test.each<[string, string, string, string, Reference?]>([
+    [
+      'in a single-quoted string',
+      "owner.display = '%v'",
+      "x' or true or '",
+      String.raw`owner.display = 'x\' or true or \''`,
+    ],
+    [
+      'in a double-quoted string',
+      'owner.display = "%v"',
+      'x" or true or "',
+      String.raw`owner.display = "x\" or true or \""`,
+    ],
+    [
+      'with a backslash',
+      "owner.display = '%v'",
+      String.raw`x\' or true or '`,
+      String.raw`owner.display = 'x\\\' or true or \''`,
+    ],
+    ['outside a string', 'owner.display = %v', 'x or true', "owner.display = 'x or true'"],
+    ['ID outside a string', 'owner.reference = %r.id', 'o1', "owner.reference = 'o1'", { reference: 'o1' }],
+  ])('Parameter in a write constraint is a string value: %s', (_name, expression, value, expected, owner) => {
+    const parameter: ProjectMembershipAccessParameter[] = [
+      { name: 'v', valueString: value },
+      { name: 'r', valueReference: { reference: 'Organization/o1' } },
+    ];
+    const [{ writeConstraint }] = substitute(
+      [{ resourceType: 'Task', writeConstraint: [{ language: 'text/fhirpath', expression }] }],
+      parameter
+    );
+    const substituted = writeConstraint?.[0].expression as string;
+    expect(substituted).toBe(expected);
+
+    const task = (owner: Reference): Task =>
+      ({ resourceType: 'Task', status: 'ready', intent: 'order', owner }) as Task;
+    expect(evalFhirPath(substituted, task({ display: 'other', reference: 'Organization/o2' }))).toStrictEqual([false]);
+    expect(evalFhirPath(substituted, task(owner ?? { display: value }))).toStrictEqual([true]);
+  });
+
+  test.each<[string, string]>([
+    ['before a longer symbol', 'owner.display = x%v'],
+    ['within a longer symbol', 'owner.display = %vx'],
+    ['in a comment', "owner.display = 'x' // %v"],
+  ])('Parameter in a write constraint is left as written: %s', (_name, expression) => {
+    const parameter = [{ name: 'v', valueString: '\nor true' }];
+    expect(
+      substitute([{ resourceType: 'Task', writeConstraint: [{ language: 'text/fhirpath', expression }] }], parameter)
+    ).toStrictEqual([{ resourceType: 'Task', writeConstraint: [{ language: 'text/fhirpath', expression }] }]);
+  });
+
+  test.each<[string, string, ProjectMembershipAccessParameter[]]>([
+    ['parameter is missing', '%org', []],
+    ['reference parameter has no reference', '%org', [{ name: 'org', valueReference: { display: 'Org' } }]],
+    ['value has no type', '%org', [{ name: 'org', valueString: 'o1' }]],
+    ['value has an empty ID', '%org', [{ name: 'org', valueString: 'Organization/' }]],
+    ['extra path segment', 'Organization/%org/x', [{ name: 'org', valueString: 'o1' }]],
+  ])('Compartment that is not a relative reference is rejected: %s', (_name, reference, parameter) => {
+    const values = getParameterValues({ reference: profile }, parameter, allowAll);
+    expect(() =>
+      substituteAccessPolicyParameters({ resourceType: 'AccessPolicy', compartment: { reference } }, values)
+    ).toThrow(/Invalid access policy configuration/);
   });
 });
