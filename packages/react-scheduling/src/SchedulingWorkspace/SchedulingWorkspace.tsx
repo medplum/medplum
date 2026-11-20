@@ -59,7 +59,6 @@ import { isServiceKeptAtAnyLocation } from '../AppointmentFinder/AppointmentServ
 import { COMBINATION_WAVE } from '../AppointmentFinder/useDaySearch';
 import type { AvailabilityShade, AvailabilityShadingCalendar } from '../availabilityShading';
 import { computeBookingShading } from '../availabilityShading';
-import { resolveBookingGeometry } from '../bookingGeometry';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
 import { DiscardChangesModal } from '../ConfirmModal/DiscardChangesModal';
@@ -563,7 +562,6 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         getSchedulingColor(formService),
         fallbackColorIndex(getReferenceString(formService))
       ),
-      minMinutes: resolveBookingGeometry(formService).duration,
       from: new Date(),
     });
   }, [formService, formSelections, formServiceFacility, range, toShadingCalendar, candidatesByActorType, theme]);

@@ -30,6 +30,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import { toAvailableTime } from './availability';
+import { resolveBookingGeometry } from './bookingGeometry';
 import type { DateTimeRange } from './types';
 
 /** The `availableTime` sub-extension naming the one service facility a window holds at. Prototype only. */
@@ -479,13 +480,17 @@ export interface BookingShadingInput {
   /** The days on show. */
   readonly range: DateTimeRange;
   readonly color: string;
-  /** The visit's length. A stretch shorter than this is left out: the visit would not fit in it. */
-  readonly minMinutes?: number;
   /** Time before this is left out, as it can no longer be booked. */
   readonly from?: Date;
 }
 
-// The stretches two lists of intervals, each in order and free of overlaps, both cover.
+function clip<T extends Interval>(interval: T, bounds: Interval): T | undefined {
+  const start = Math.max(interval.start, bounds.start);
+  const end = Math.min(interval.end, bounds.end);
+  return start < end ? { ...interval, start, end } : undefined;
+}
+
+// What two lists of intervals, each in order and free of overlaps, both cover, down to a single instant.
 function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
   const both: Interval[] = [];
   let i = 0;
@@ -493,7 +498,7 @@ function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
   while (i < a.length && j < b.length) {
     const start = Math.max(a[i].start, b[j].start);
     const end = Math.min(a[i].end, b[j].end);
-    if (start < end) {
+    if (start <= end) {
       both.push({ start, end });
     }
     if (a[i].end < b[j].end) {
@@ -505,76 +510,137 @@ function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
   return both;
 }
 
+function horizonTime(value: string | undefined, fallback: number): number {
+  const time = value ? new Date(value).getTime() : Number.NaN;
+  return Number.isNaN(time) ? fallback : time;
+}
+
+interface BookableCalendar {
+  readonly row: number;
+  readonly hours: readonly DayWindow[];
+  readonly durationMs: number;
+  /** When a visit could start, each stretch running to its last such instant. In order. */
+  readonly starts: readonly Interval[];
+}
+
+// A calendar's hours for the visit type and when a visit could start in them, worked out in the order
+// `Appointment/$find` does: hours inside the planning horizon, less what is held, less the visit's own
+// buffers at each end of what is left, less anything then too short for the visit.
+function toBookableCalendar(
+  calendar: AvailabilityShadingCalendar,
+  row: number,
+  input: BookingShadingInput,
+  facilities: ReadonlySet<string | undefined>
+): BookableCalendar {
+  const { schedule } = calendar;
+  const { duration, bufferBefore, bufferAfter } = resolveBookingGeometry(input.service, schedule);
+  const durationMs = (duration ?? 0) * MINUTE_MS;
+  const bounds = {
+    start: Math.max(
+      input.range.start.getTime(),
+      input.from?.getTime() ?? -Infinity,
+      horizonTime(schedule.planningHorizon?.start, -Infinity)
+    ),
+    end: Math.min(input.range.end.getTime(), horizonTime(schedule.planningHorizon?.end, Infinity)),
+  };
+  const windows = getScheduleAvailabilityWindows(schedule, input.service).filter(
+    (window) =>
+      facilities.size === 0 || !window.serviceFacility || facilities.has(window.serviceFacility.reference ?? '')
+  );
+  const hours = eachDay(input.range).flatMap((day) =>
+    windows.flatMap((window): DayWindow[] => {
+      const interval = intervalOn(day, window.availableTime);
+      const open = interval && clip(interval, bounds);
+      return open ? [{ ...open, window, schedule }] : [];
+    })
+  );
+  const busy = busyIntervals(calendar);
+  const starts = merge(hours)
+    .flatMap((open) => subtract(open, busy))
+    .map((free) => ({
+      start: free.start + bufferBefore * MINUTE_MS,
+      end: free.end - bufferAfter * MINUTE_MS - durationMs,
+    }))
+    .filter((stretch) => stretch.start <= stretch.end);
+  return { row, hours, durationMs, starts };
+}
+
+// A block is drawn in one day's column, so one running past midnight in the viewer's zone is cut there.
+function splitByDay(interval: Interval): Interval[] {
+  const pieces: Interval[] = [];
+  let start = interval.start;
+  while (start < interval.end) {
+    const day = new Date(start);
+    const midnight = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+    const end = Math.min(interval.end, midnight);
+    pieces.push({ start, end });
+    start = end;
+  }
+  return pieces;
+}
+
 /**
- * Works out where a visit the booking form describes could go: the open time of the calendars in each row
- * joined together, then narrowed to the time every row has open at once.
+ * Works out where a visit the booking form describes could go: wherever some one calendar from each row
+ * is open, all at once, for as long as the visit takes.
  *
- * A prototype, alongside {@link computeAvailabilityShading}. Open time is a calendar's windows for the
- * visit type with its appointments and blocked time taken out.
+ * A prototype, alongside {@link computeAvailabilityShading}. A calendar's open time follows
+ * `Appointment/$find`: its windows for the visit type inside its Schedule's planning horizon, less its
+ * appointments and blocked time, less the visit's buffers at each end of what is left. Calendars are not
+ * joined before the visit's length is asked of them, so two that are each free for half a visit, one after
+ * the other, shade nothing. Only calendars resolving the same length for the visit are combined.
  * @param input - The rows, the visit type and the days on show.
- * @returns The blocks, unlabeled, each listing the calendars open through it.
+ * @returns The blocks, unlabeled, each listing the calendars that could take the visit in it.
  */
 export function computeBookingShading(input: BookingShadingInput): AvailabilityShade[] {
-  const { rows, service, range, color } = input;
   const facilities = new Set(
     [input.serviceFacility]
       .flat()
       .filter(isDefined)
       .map((site) => getReferenceString(site))
   );
-  const minMs = (input.minMinutes ?? 0) * MINUTE_MS;
-  const from = input.from?.getTime() ?? -Infinity;
-
-  const sources = rows
-    .filter((row) => row.length > 0)
-    .map((row) =>
-      row.map((calendar) => ({
-        schedule: calendar.schedule,
-        busy: busyIntervals(calendar),
-        windows: getScheduleAvailabilityWindows(calendar.schedule, service).filter(
-          (window) =>
-            facilities.size === 0 || !window.serviceFacility || facilities.has(window.serviceFacility.reference ?? '')
-        ),
-      }))
-    );
-  if (sources.length === 0) {
+  const rows = input.rows.filter((row) => row.length > 0);
+  if (rows.length === 0) {
     return [];
   }
+  const calendars = rows.flatMap((row, index) =>
+    row.map((calendar) => toBookableCalendar(calendar, index, input, facilities))
+  );
 
-  const shades: AvailabilityShade[] = [];
-  for (const day of eachDay(range)) {
-    const rowPieces = sources.map((row) =>
-      row.flatMap(({ schedule, busy, windows }) =>
-        windows.flatMap((window): DayWindow[] => {
-          const interval = intervalOn(day, window.availableTime);
-          return interval ? subtract(interval, busy).map((piece) => ({ ...piece, window, schedule })) : [];
-        })
+  // A visit can start where every row has a calendar it can start on, and runs its length from there. So
+  // each row's starts are joined, the rows' are narrowed to the ones they share, and each calendar is
+  // open from the shared starts that are its own. That is every combination of one calendar from each
+  // row, without walking them.
+  const stretches = unique(calendars.map((calendar) => calendar.durationMs)).flatMap((durationMs) => {
+    const sameLength = calendars.filter((calendar) => calendar.durationMs === durationMs);
+    const shared = rows
+      .map((_, row): Interval[] =>
+        merge(sameLength.filter((calendar) => calendar.row === row).flatMap((calendar) => calendar.starts))
       )
+      .reduce(intersect);
+    return sameLength.flatMap((calendar) =>
+      intersect(calendar.starts, shared)
+        .map((starts) => ({ start: starts.start, end: starts.end + durationMs, calendar }))
+        .filter((stretch) => stretch.start < stretch.end)
     );
-    const open = rowPieces
-      .map((pieces): Interval[] => merge(pieces))
-      .reduce(intersect)
-      .map((block) => ({ start: Math.max(block.start, from), end: block.end }))
-      .filter((block) => block.end > block.start && block.end - block.start >= minMs);
+  });
 
-    open.forEach((block, index) => {
-      const details = rowPieces
-        .flat()
-        .filter((piece) => piece.start < block.end && piece.end > block.start)
-        .map((piece) =>
-          toDetail({ ...piece, start: Math.max(piece.start, block.start), end: Math.min(piece.end, block.end) })
-        );
-      shades.push({
-        id: `booking-availability-${day.getTime()}-${index}`,
-        start: new Date(block.start),
-        end: new Date(block.end),
-        kind: 'service',
-        color,
-        left: 0,
-        width: 1,
-        details,
-      });
-    });
-  }
-  return shades;
+  return merge(stretches).flatMap((block) =>
+    splitByDay(block).map((piece) => ({
+      id: `booking-availability-${piece.start}`,
+      start: new Date(piece.start),
+      end: new Date(piece.end),
+      kind: 'service' as const,
+      color: input.color,
+      left: 0,
+      width: 1,
+      details: block.parts.flatMap((stretch) =>
+        stretch.calendar.hours
+          .map((open) =>
+            clip(open, { start: Math.max(stretch.start, piece.start), end: Math.min(stretch.end, piece.end) })
+          )
+          .filter(isDefined)
+          .map(toDetail)
+      ),
+    }))
+  );
 }

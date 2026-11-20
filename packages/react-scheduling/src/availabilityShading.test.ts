@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   allServiceTypesCodeableConcept,
+  SchedulingParametersURI,
   setScheduleSchedulingParameter,
   toServiceTypeCodeableConcepts,
 } from '@medplum/core';
@@ -16,7 +17,11 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import type { AvailabilityShade, AvailabilityShadingCalendar } from './availabilityShading';
-import { AVAILABILITY_SERVICE_FACILITY_URL, computeAvailabilityShading } from './availabilityShading';
+import {
+  AVAILABILITY_SERVICE_FACILITY_URL,
+  computeAvailabilityShading,
+  computeBookingShading,
+} from './availabilityShading';
 
 // Monday 4 May 2020, read in the runner's zone throughout.
 const MONDAY = new Date(2020, 4, 4);
@@ -259,5 +264,77 @@ describe('computeAvailabilityShading', () => {
     expect(offered.shades.map(drawn)).toEqual(['green 9:00-17:00']);
     expect(offered.shades[0].tag).toBe('Any facility · default hours');
     expect(notOffered.shades).toEqual([]);
+  });
+});
+
+describe('computeBookingShading', () => {
+  function visit(parameters: Record<string, number>): WithId<HealthcareService> {
+    return {
+      ...service('visit', 'Visit'),
+      extension: [
+        {
+          url: SchedulingParametersURI,
+          extension: Object.entries(parameters).map(([url, value]) => ({
+            url,
+            valueDuration: { value, unit: 'min' },
+          })),
+        },
+      ],
+    };
+  }
+
+  const halfHour = visit({ duration: 30 });
+
+  function shade(s: WithId<HealthcareService>, ...rows: AvailabilityShadingCalendar[][]): AvailabilityShade[] {
+    return computeBookingShading({ rows, service: s, range, color: 'green' });
+  }
+
+  function listed(block: AvailabilityShade): string[] {
+    return block.details.map((detail) => detail.schedule.id);
+  }
+
+  test('keeps each calendar inside its own planning horizon', () => {
+    const alvarez: WithId<Schedule> = {
+      ...schedule('alvarez', [[halfHour, window('09:00:00', '12:00:00')]]),
+      planningHorizon: { start: at(10).toISOString(), end: at(11).toISOString() },
+    };
+    const bennett = schedule('bennett', [[halfHour, window('13:00:00', '14:00:00')]]);
+
+    const shades = shade(halfHour, [calendar(alvarez), calendar(bennett)]);
+
+    expect(shades.map(drawn)).toEqual(['green 10:00-11:00', 'green 13:00-14:00']);
+  });
+
+  test('does not join two calendars each free for less than the visit', () => {
+    const alvarez = schedule('alvarez', [[halfHour, window('09:00:00', '09:20:00'), window('10:00:00', '11:00:00')]]);
+    const bennett = schedule('bennett', [[halfHour, window('09:20:00', '09:40:00')]]);
+
+    const shades = shade(halfHour, [calendar(alvarez), calendar(bennett)]);
+
+    expect(shades.map(drawn)).toEqual(['green 10:00-11:00']);
+    expect(listed(shades[0])).toEqual(['alvarez']);
+  });
+
+  test('takes the visit’s buffers off each end of a gap before asking whether the visit fits', () => {
+    const buffered = visit({ duration: 30, bufferBefore: 10, bufferAfter: 5 });
+    const alvarez = schedule('alvarez', [[buffered, window('09:00:00', '12:00:00')]]);
+    // Leaves 9:00 to 9:40, which holds the visit but not the visit and its buffers.
+    const held = appointment(buffered, at(9, 40), at(10, 30));
+
+    const shades = shade(buffered, [calendar(alvarez, { appointments: [held] })]);
+
+    expect(shades.map(drawn)).toEqual(['green 10:40-11:55']);
+  });
+
+  test('asks the visit’s length of one calendar from each row at a time', () => {
+    // Together the providers cover 9:15 to 9:45 of the room's morning, but neither for a whole visit.
+    const alvarez = schedule('alvarez', [[halfHour, window('09:00:00', '09:30:00'), window('11:00:00', '12:00:00')]]);
+    const bennett = schedule('bennett', [[halfHour, window('09:30:00', '10:00:00')]]);
+    const room = schedule('room', [[halfHour, window('09:15:00', '09:45:00'), window('11:15:00', '12:00:00')]]);
+
+    const shades = shade(halfHour, [calendar(alvarez), calendar(bennett)], [calendar(room)]);
+
+    expect(shades.map(drawn)).toEqual(['green 11:15-12:00']);
+    expect(listed(shades[0])).toEqual(['alvarez', 'room']);
   });
 });
