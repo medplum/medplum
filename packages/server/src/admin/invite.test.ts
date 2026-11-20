@@ -10,6 +10,7 @@ import {
   getReferenceString,
   Logger,
   normalizeErrorString,
+  Operator,
 } from '@medplum/core';
 import type {
   AccessPolicy,
@@ -26,11 +27,13 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import { authenticator } from 'otplib';
 import type { Pool } from 'pg';
 import { Readable } from 'stream';
 import request from 'supertest';
+import type { Mock } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -43,6 +46,7 @@ import {
   addTestUser,
   createTestProject,
   getSuperAdminAccessToken,
+  setupPwnedPasswordMock,
   setupRecaptchaMock,
   withTestContext,
 } from '../test.setup';
@@ -93,6 +97,7 @@ describe('Admin Invite', () => {
 
     fetchMock.mockClear();
     setupRecaptchaMock(true);
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 0);
     getConfig().blockedEmailDomains = undefined;
   });
 
@@ -2496,5 +2501,40 @@ describe('Admin Invite', () => {
 
     expect(res).toHaveStatus(400);
     expect(res.body).toMatchObject(badRequest('Email domain is not allowed for this project', 'email'));
+  });
+
+  test('Invite with a password found in breach database', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const email = `breach${randomUUID()}@example.com`;
+    setupPwnedPasswordMock(pwnedPassword as unknown as Mock, 1);
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Breach',
+        lastName: 'Check',
+        email,
+        password: 'password123',
+        sendEmail: false,
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Password found in breach database', 'password'));
+
+    // No User should have been created for the rejected invite
+    const users = await getGlobalSystemRepo().searchResources({
+      resourceType: 'User',
+      filters: [{ code: 'email', operator: Operator.EXACT, value: email }],
+    });
+    expect(users).toHaveLength(0);
   });
 });
