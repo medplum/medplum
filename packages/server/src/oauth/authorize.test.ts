@@ -24,6 +24,7 @@ describe('OAuth Authorize', () => {
   const password = randomUUID();
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let userRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -35,7 +36,7 @@ describe('OAuth Authorize', () => {
     systemRepo = repo.getSystemRepo();
 
     // Create a test user
-    const { user } = await inviteUser({
+    const { user, membership } = await inviteUser({
       project,
       resourceType: 'Practitioner',
       firstName: 'Test',
@@ -45,6 +46,7 @@ describe('OAuth Authorize', () => {
 
     // Set the test user password
     await setPassword(systemRepo, user, password);
+    userRepo = systemRepo.withOverrideConfig({ author: membership.profile });
   });
 
   afterAll(async () => {
@@ -469,7 +471,10 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
 
-    const launch = await systemRepo.createResource<SmartAppLaunch>({ resourceType: 'SmartAppLaunch' });
+    const launch = await userRepo.createResource<SmartAppLaunch>({
+      resourceType: 'SmartAppLaunch',
+      meta: { project: project.id },
+    });
 
     const res3 = await request(app)
       .get(`/oauth2/authorize?launch=${launch.id}&${params.toString()}&prompt=none`)
@@ -526,6 +531,48 @@ describe('OAuth Authorize', () => {
       refresh_token: res2.body.refresh_token,
     });
     expect(res6).toHaveStatus(200);
+  });
+
+  test('Subsequent authorization with launch from another user', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1).toHaveStatus(200);
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2).toHaveStatus(200);
+    const cookie = parseSetCookie(res1.headers['set-cookie'])[0];
+
+    const launch = await systemRepo.createResource<SmartAppLaunch>({
+      resourceType: 'SmartAppLaunch',
+      meta: { project: project.id },
+    });
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id,
+      redirect_uri: client.redirectUris?.[0] as string,
+      scope: 'openid',
+      code_challenge: 'abc',
+      code_challenge_method: 'plain',
+      launch: launch.id,
+      prompt: 'none',
+    });
+    const res3 = await request(app)
+      .get('/oauth2/authorize?' + params.toString())
+      .set('Cookie', cookie.name + '=' + cookie.value);
+    expect(res3).toHaveStatus(302);
+    const location = new URL(res3.headers.location);
+    expect(location.searchParams.get('code')).toBeNull();
+    expect(location.searchParams.get('error_description')).toBe('Invalid launch');
   });
 
   test('Using id_token_hint', async () => {

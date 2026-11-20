@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, getDateProperty, Operator } from '@medplum/core';
-import type { ClientApplication, Login } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, SmartAppLaunch } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { URL } from 'node:url';
 import { getConfig } from '../config/loader';
@@ -12,7 +12,7 @@ import { getProjectScopedUrl } from '../util/url';
 import { getClientRedirectUri } from './clients';
 import type { MedplumIdTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
-import { getClientApplication } from './utils';
+import { getClientApplication, isValidLaunchForMembership } from './utils';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -121,6 +121,11 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   if (prompt !== 'login' && existingLogin) {
+    if (params.launch && !(await isValidLaunchForLogin(params.launch, existingLogin))) {
+      sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid launch', state);
+      return false;
+    }
+
     // Each authorization is its own grant, so create a new Login rather than overwriting per-request
     // state (code, nonce, PKCE, refresh secret) that the existing session still depends on.
     const systemRepo = getGlobalSystemRepo();
@@ -200,6 +205,26 @@ async function isValidLaunch(launch: string): Promise<boolean> {
   try {
     await systemRepo.readResource('SmartAppLaunch', launch);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns true if the launch parameter is valid for the user of an existing login.
+ * @param launch - The launch parameter (which is a SmartAppLaunch ID).
+ * @param login - The existing login.
+ * @returns True if the launch is valid; false otherwise.
+ */
+async function isValidLaunchForLogin(launch: string, login: Login): Promise<boolean> {
+  if (!login.membership) {
+    return false;
+  }
+  const systemRepo = getGlobalSystemRepo();
+  try {
+    const smartAppLaunch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', launch);
+    const membership = await systemRepo.readReference(login.membership);
+    return isValidLaunchForMembership(smartAppLaunch, membership);
   } catch {
     return false;
   }
