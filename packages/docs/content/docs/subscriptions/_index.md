@@ -7,7 +7,7 @@ docs_tags:
 
 {{< tip title="Choose a notification destination" >}}
 
-Start with a Medplum Bot to handle FHIR event notifications. Use [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic#decision-2-where-should-this-subscription-send-notifications) to choose the destination and matching resource changes for each Subscription, then follow [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications) for setup.
+Start with a Medplum Bot to handle FHIR event notifications. Use [Running Server Side Code: Bots and Subscriptions](/docs/decision-guides/running-server-side-code#decision-2-where-should-this-subscription-send-notifications) to choose the destination and matching resource changes for each Subscription, then follow [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications) for setup.
 
 {{< /tip >}}
 

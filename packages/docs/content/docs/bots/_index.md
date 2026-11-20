@@ -4,9 +4,9 @@ title: Bots
 weight: 10
 ---
 
-{{< tip title="Running backend logic" >}}
+{{< tip title="Running server side code" >}}
 
-Use [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic) to choose each Bot's trigger and each Subscription's destination. Bots are the recommended starting point for handling FHIR event notifications.
+Use [Running Server Side Code: Bots and Subscriptions](/docs/decision-guides/running-server-side-code) to choose a trigger for each use case and a destination for each Subscription. Bots are the recommended starting point for handling FHIR event notifications.
 
 {{< /tip >}}
 

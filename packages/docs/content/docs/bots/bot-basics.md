@@ -172,7 +172,7 @@ Choose the trigger for each Bot according to what should start its work:
 - **Recurring time:** Configure a [Cron schedule](/docs/bots/bot-cron-job).
 - **External service event:** Configure an [incoming webhook](/docs/bots/consuming-webhooks).
 
-A Bot can support multiple triggers when its handler accepts their input formats and its permissions are appropriate for each entry point. See [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic) for examples, tradeoffs, and selection guidance.
+A Bot can support multiple triggers when its handler accepts their input formats and its permissions are appropriate for each entry point. See [Running Server Side Code: Bots and Subscriptions](/docs/decision-guides/running-server-side-code) for examples, tradeoffs, and selection guidance.
 
 You can also execute the deployed Bot manually from the **Bot Code Editor** using the steps below.
 

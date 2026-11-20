@@ -1,9 +1,9 @@
 ---
-id: running-backend-logic
-title: 'Running Backend Logic: Bots and Subscriptions'
-sidebar_label: Running Backend Logic
+id: running-server-side-code
+title: 'Running Server Side Code: Bots and Subscriptions'
+sidebar_label: Running Server Side Code
 weight: 140
-download_slug: running-backend-logic
+download_slug: running-server-side-code
 aliases:
   - /docs/decision-guides/event-processing-and-automation
   - /docs/decision-guides/fhir-event-notifications
@@ -26,11 +26,11 @@ For example, a Subscription can detect a newly created Patient and invoke a Bot 
 
 ## Decision 1: What should start the work?
 
-**Choose the trigger separately for each Bot**, according to the source of work. Different Bots in the same application can use different triggers. A Bot can support multiple triggers when its handler accepts each input format and runs with appropriate permissions. If two triggers can start the same action, ensure they do not perform it twice.
+**Choose the trigger separately for each use case**, according to the source of work. The code can run in a Medplum Bot or your own service. A handler can support multiple triggers when it accepts each input format and runs with appropriate permissions. If two triggers can start the same action, ensure they do not perform it twice.
 
 ### Option A: FHIR resource change → Subscription
 
-Use a Subscription when the action should follow matching FHIR resource changes, including changes made by other applications or integrations.
+Use a Subscription when the same action should follow a matching resource change regardless of which application screen, integration, or background process made the change. The Subscription can invoke a Bot or send an HTTPS notification to your service.
 
 - **Example:** Start a registration integration when a Patient is created.
 - **Best fit:** The saved resource change is what should start the action.
@@ -40,39 +40,41 @@ Continue to Decisions 2 and 3 to choose the destination and matching changes. Fo
 
 ### Option B: Application request → direct invocation
 
-Call a Bot when an application explicitly requests a calculation or action. Use the Bot's `$execute` endpoint, or expose the Bot as a custom FHIR operation.
+Have the application call server side code when it explicitly requests a calculation or action. For a Bot, use its `$execute` endpoint or expose it as a custom FHIR operation. For your own service, call its API.
 
 - **Example:** Calculate a score when a user requests it in the application.
-- **Best fit:** The application chooses when to run the code and supplies its input. When it waits for the response, the Bot can return a result or validation error.
-- **Tradeoff:** The application owns the call and handles its response or failure. Bot execution limits still apply.
+- **Best fit:** The application chooses when to run the code and supplies its input. When it waits for the response, the handler can return a result or validation error.
+- **Tradeoff:** The application owns the call and handles its response or failure. The handler must fit its runtime's execution limits.
 
-If the Bot validates an action, call it before saving that action and ensure callers use that path. Calling a Bot does not automatically add validation to ordinary FHIR writes.
+If the handler validates an action, call it before saving that action and ensure callers use that path. Ordinary FHIR writes only use this validation when callers explicitly invoke it.
 
-Implementation: [Bot $execute](/docs/api/fhir/operations/bot-execute), [Custom FHIR Operations](/docs/bots/custom-fhir-operations).
+Bot implementation: [Bot $execute](/docs/api/fhir/operations/bot-execute), [Custom FHIR Operations](/docs/bots/custom-fhir-operations).
 
 ### Option C: Recurring time → schedule
 
-Configure a Bot to run on a recurring schedule.
+Use a Bot's cron configuration or your service's scheduler to run code at a recurring time.
 
 - **Example:** Reconcile records with another system each night.
 - **Best fit:** Periodic checks or work that should run at a regular interval.
 - **Tradeoff:** Work waits until the next scheduled run. The handler must select the records to act on and handle repeated or overlapping runs safely.
 
-Implementation: [Cron Jobs for Bots](/docs/bots/bot-cron-job).
+Bot implementation: [Cron Jobs for Bots](/docs/bots/bot-cron-job).
 
 ### Option D: External service event → incoming webhook
 
-An external service sends an HTTP request, called a webhook, to your Bot when an event occurs in that service.
+An external provider sends an HTTP request, called a webhook, to a Bot or an HTTPS endpoint in your service when an event occurs in the provider's system.
 
 - **Example:** Update a communication record when a messaging provider reports delivery.
 - **Best fit:** The event originates outside Medplum and the service supports webhook delivery.
 - **Tradeoff:** The handler must verify the sender, validate its payload, and handle the provider's repeated deliveries safely.
 
-Implementation: [Consuming Webhooks](/docs/bots/consuming-webhooks).
+Bot implementation: [Consuming Webhooks](/docs/bots/consuming-webhooks).
 
-**Next:** Decisions 2 and 3 apply to Subscriptions. For other triggers, follow the linked implementation docs and the production checks at the end of this guide.
+**Next:** If you chose Option A, continue to Decisions 2 and 3. For other triggers, use the linked Bot docs or configure your own service, then follow the production checks at the end of this guide.
 
 ## Decision 2: Where should this Subscription send notifications?
+
+Complete this decision if you chose **Option A: FHIR resource change** in Decision 1.
 
 For each Subscription, start with a Medplum Bot. Use your own endpoint when a specific service or runtime requirement justifies operating the receiver yourself.
 
@@ -110,6 +112,8 @@ Implementation: [Configure an HTTPS destination](/docs/subscriptions/fhir-event-
 **Next for either option:** For each Subscription, choose which resource changes should start its handler.
 
 ## Decision 3: Which changes should trigger this Subscription?
+
+Complete this decision if you chose **Option A: FHIR resource change** in Decision 1.
 
 **Choose this separately for each Subscription**, based on its handler's purpose. An application can use different Subscriptions for Patient creation, demographic updates, and QuestionnaireResponse completion. A state transition is an additional filter on creation or updates. Combine the options as needed.
 

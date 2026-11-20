@@ -11,7 +11,7 @@ aliases:
 
 Configure a Subscription to notify a Medplum Bot or your own HTTPS endpoint when a matching FHIR resource changes. This example sends a notification when a Patient is created. The same event criteria work for either destination.
 
-Use [Running Backend Logic: Bots and Subscriptions](/docs/decision-guides/running-backend-logic#decision-2-where-should-this-subscription-send-notifications) to choose the destination and matching resource changes for each Subscription.
+Use [Running Server Side Code: Bots and Subscriptions](/docs/decision-guides/running-server-side-code#decision-2-where-should-this-subscription-send-notifications) to choose the destination and matching resource changes for each Subscription.
 
 ## Select the resource change
 
@@ -47,7 +47,7 @@ Scope the criteria so writes made by your handler do not trigger an unintended l
 
 ### Filter for a status transition
 
-To react when a QuestionnaireResponse changes to `completed`, use a Bot whose handler accepts QuestionnaireResponse input. Replace the example's `reason`, `criteria`, and `extension` fields with:
+To react when a QuestionnaireResponse changes to `completed`, use a Bot or HTTPS endpoint whose handler accepts QuestionnaireResponse input. Replace the example's `reason`, `criteria`, and `extension` fields with:
 
 ```json
 {
@@ -94,9 +94,13 @@ Medplum sends an HTTP POST containing the created Patient as FHIR JSON. Add the 
 
 If the service needs to call the Medplum API, use a `ClientApplication` with [client credentials](/docs/auth/client-credentials) and an AccessPolicy limited to the required resources and actions. Keep credentials on the server.
 
+Failed HTTPS deliveries can be retried according to the [Subscription retry policy](/docs/subscriptions/subscription-extensions#retry-policy). Configure the retry limit for your receiver and keep notification handling safe to repeat.
+
 Return a successful response after handling the notification. If you use a queue, durably save the event or work reference before acknowledging it, then track worker failures in your service. A successful HTTP response tells Medplum that delivery succeeded; your service remains responsible for any queued action.
 
 ## Handle repeated and delayed notifications
+
+HTTPS delivery retries and manual resends can repeat a notification. For Bot destinations, setup errors can retry, but failed handler logic does not automatically trigger a Subscription retry. Use [monitoring and recovery](#monitor-failures-and-recover) to recover failed actions.
 
 1. **Identify the intended action.** Give it a stable identifier so a repeated notification or manual resend can reuse the result. For example, an integration that registers each Patient once can use that Patient's resource ID as part of the action's identity.
 2. **Prevent duplicate effects.** For generated FHIR resources, use identifier-based [conditional creation](/docs/fhir-datastore/working-with-fhir#creating-patient). Protect external actions separately with the destination API's idempotency mechanism, and reconcile uncertain outcomes before retrying.
