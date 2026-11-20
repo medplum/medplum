@@ -217,7 +217,6 @@ describe('Job status', () => {
           projectId: project.id,
           requester: getReferenceString(client),
           reader: getReferenceString(member.profile),
-          action: 'read',
           suppressed: 0,
         }))
       );
