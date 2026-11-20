@@ -306,10 +306,10 @@ export async function initAppServices(config: ServerConfig): Promise<void> {
   loadStructureDefinitions(config);
   initRedis(config);
   await initDatabase(config);
-  await initWorkers(config);
   await seedDatabase(config);
   await initKeys(config);
   initBinaryStorage(config.binaryStorage);
+  await initWorkers(config);
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();
