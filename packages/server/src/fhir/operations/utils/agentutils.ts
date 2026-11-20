@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentError, AgentRequestMessage, AgentResponseMessage, SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   ContentType,
   OperationOutcomeError,
   Operator,
   allOk,
   badRequest,
+  forbidden,
   getReferenceString,
   isOk,
   isValidHostname,
@@ -134,11 +136,28 @@ function assertSingleTypeSearch(searchRequest: SearchRequest, resourceType: Reso
   }
 }
 
+/**
+ * Runs an operation on each Agent selected by the request: the one in the path, or the results of an Agent search.
+ *
+ * Finding the Agents only proves read access. When `interaction` is stronger than read, each Agent is checked for it
+ * before `handler` runs; an Agent that fails the check gets a forbidden outcome and is never sent a message.
+ *
+ * @param req - The FHIR request.
+ * @param interaction - The interaction the caller needs on each Agent, e.g. update for operations that change the agent host.
+ * @param handler - The operation to run on each Agent.
+ * @returns The handler's response for an instance request, or a Bundle with one result entry per Agent.
+ */
 export async function handleBulkAgentOperation(
   req: FhirRequest,
+  interaction: AccessPolicyInteraction,
   handler: (agent: WithId<Agent>) => Promise<FhirResponse>
 ): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
+  const checkEachAgent = interaction !== AccessPolicyInteraction.READ;
+
+  if (checkEachAgent && !repo.supportsInteraction(interaction, 'Agent')) {
+    return [forbidden];
+  }
 
   const count = singularize(req.query._count);
   if (count && Number.parseInt(count, 10) > MAX_AGENTS_PER_PAGE) {
@@ -150,11 +169,19 @@ export async function handleBulkAgentOperation(
     return [badRequest('No agent(s) for given query')];
   }
 
+  // The Agents found above are read copies, which may lack meta.project and hidden fields, so check the stored version
+  const runIfPermitted = async (agent: WithId<Agent>): Promise<FhirResponse> => {
+    if (checkEachAgent && !(await repo.canPerformInteractionById(interaction, 'Agent', agent.id))) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    return handler(agent);
+  };
+
   if (req.params.id) {
-    return handler(agents[0]);
+    return runIfPermitted(agents[0]);
   }
 
-  const promises = agents.map((agent) => handler(agent));
+  const promises = agents.map(runIfPermitted);
   const results = await Promise.allSettled(promises);
   const entries: BundleEntry<Parameters>[] = [];
 
