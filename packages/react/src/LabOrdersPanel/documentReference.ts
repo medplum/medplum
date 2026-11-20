@@ -14,63 +14,50 @@ export const LAB_ORDER_SPECIMEN_LABEL_CATEGORY = 'SpecimenLabel';
 /** DocumentReference.category code for a Medicare Advance Beneficiary Notice PDF. */
 export const LAB_ORDER_ABN_CATEGORY = 'ABN';
 
-async function fetchHealthGorillaOrderDocuments(
+/** The PDFs attached to a lab order, grouped by DocumentReference.category. */
+export interface LabOrderDocuments {
+  readonly requisition: DocumentReference[];
+  readonly specimenLabel: DocumentReference[];
+  /** Advance Beneficiary Notice. Only present for Medicare orders once one has been generated. */
+  readonly abn: DocumentReference[];
+}
+
+export const EMPTY_LAB_ORDER_DOCUMENTS: LabOrderDocuments = { requisition: [], specimenLabel: [], abn: [] };
+
+function hasCategory(doc: DocumentReference, code: string): boolean {
+  return !!doc.category?.some((category) => category.coding?.some((coding) => coding.code === code));
+}
+
+/**
+ * Fetches the requisition, specimen label, and ABN DocumentReferences that match a ServiceRequest's
+ * requisition ID in a single search, grouped by category.
+ * @param medplum - The Medplum client
+ * @param serviceRequest - The ServiceRequest to fetch the DocumentReferences for
+ * @returns The DocumentReferences grouped by category, each sorted most recently updated first
+ */
+export async function fetchLabOrderDocuments(
   medplum: MedplumClient,
-  serviceRequest: ServiceRequest,
-  category: string
-): Promise<DocumentReference[]> {
+  serviceRequest: ServiceRequest
+): Promise<LabOrderDocuments> {
   const healthGorillaRequisitionId = getHealthGorillaRequisitionId(serviceRequest);
 
   if (!healthGorillaRequisitionId) {
-    return [];
+    return EMPTY_LAB_ORDER_DOCUMENTS;
   }
 
   const searchParams = new URLSearchParams({
-    category,
+    category: [LAB_ORDER_REQUISITION_CATEGORY, LAB_ORDER_SPECIMEN_LABEL_CATEGORY, LAB_ORDER_ABN_CATEGORY].join(','),
     identifier: `${HEALTH_GORILLA_REQUEST_SYSTEM}|${healthGorillaRequisitionId}`,
     _sort: '-_lastUpdated',
   });
 
-  return medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
-}
+  const docs = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
 
-/**
- * Fetches DocumentReference resources with LabOrderRequisition category that match a ServiceRequest's Health Gorilla Requisition ID
- * @param medplum - The Medplum client
- * @param serviceRequest - The ServiceRequest to fetch the DocumentReference for
- * @returns The DocumentReference resources
- */
-export async function fetchLabOrderRequisitionDocuments(
-  medplum: MedplumClient,
-  serviceRequest: ServiceRequest
-): Promise<DocumentReference[]> {
-  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, LAB_ORDER_REQUISITION_CATEGORY);
-}
-
-/**
- * Fetches DocumentReference resources with SpecimenLabel category that match a ServiceRequest's Health Gorilla Requisition ID
- * @param medplum - The Medplum client
- * @param serviceRequest - The ServiceRequest to fetch the DocumentReference for
- * @returns The DocumentReference resources
- */
-export async function fetchLabOrderSpecimenLabelDocuments(
-  medplum: MedplumClient,
-  serviceRequest: ServiceRequest
-): Promise<DocumentReference[]> {
-  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, LAB_ORDER_SPECIMEN_LABEL_CATEGORY);
-}
-
-/**
- * Fetches the Advance Beneficiary Notice PDFs Health Gorilla generates for a Medicare lab order.
- * @param medplum - The Medplum client
- * @param serviceRequest - The ServiceRequest to fetch the DocumentReference for
- * @returns The ABN DocumentReference resources. Empty when the order has no ABN.
- */
-export async function fetchLabOrderAbnDocuments(
-  medplum: MedplumClient,
-  serviceRequest: ServiceRequest
-): Promise<DocumentReference[]> {
-  return fetchHealthGorillaOrderDocuments(medplum, serviceRequest, LAB_ORDER_ABN_CATEGORY);
+  return {
+    requisition: docs.filter((doc) => hasCategory(doc, LAB_ORDER_REQUISITION_CATEGORY)),
+    specimenLabel: docs.filter((doc) => hasCategory(doc, LAB_ORDER_SPECIMEN_LABEL_CATEGORY)),
+    abn: docs.filter((doc) => hasCategory(doc, LAB_ORDER_ABN_CATEGORY)),
+  };
 }
 
 /**

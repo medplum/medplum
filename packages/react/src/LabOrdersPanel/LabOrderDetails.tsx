@@ -7,7 +7,6 @@ import { formatDate, formatHumanName, normalizeErrorString } from '@medplum/core
 import type {
   CarePlan,
   DiagnosticReport,
-  DocumentReference,
   MedicationRequest,
   QuestionnaireResponse,
   Reference,
@@ -18,11 +17,8 @@ import { IconCheck, IconChevronDown, IconClipboardCheck, IconFlask, IconSend } f
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import classes from '../ListWithDetailPane/ListWithDetailPane.module.css';
-import {
-  fetchLabOrderAbnDocuments,
-  fetchLabOrderRequisitionDocuments,
-  fetchLabOrderSpecimenLabelDocuments,
-} from './documentReference';
+import type { LabOrderDocuments } from './documentReference';
+import { EMPTY_LAB_ORDER_DOCUMENTS, fetchLabOrderDocuments } from './documentReference';
 import { LabDetailLayout } from './LabDetailLayout';
 import { LabDocumentSection } from './LabDocumentSection';
 import {
@@ -57,11 +53,9 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const selectedReportResource = useResource(selectedReport);
   const [diagnosticReports, setDiagnosticReports] = useState<DiagnosticReport[]>([]);
   const [reportsFetched, setReportsFetched] = useState(false);
-  const [labOrderRequisitionDocs, setLabOrderRequisitionDocs] = useState<DocumentReference[]>([]);
+  const [orderDocs, setOrderDocs] = useState<LabOrderDocuments>(EMPTY_LAB_ORDER_DOCUMENTS);
   const [loadingDocs, setLoadingDocs] = useState(false);
-  const [specimenLabelDocs, setSpecimenLabelDocs] = useState<DocumentReference[]>([]);
-  const [loadingSpecimenDocs, setLoadingSpecimenDocs] = useState(false);
-  const [abnDocs, setAbnDocs] = useState<DocumentReference[]>([]);
+  const { requisition: labOrderRequisitionDocs, specimenLabel: specimenLabelDocs, abn: abnDocs } = orderDocs;
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState(false);
   // Default to the Report tab whenever the caller explicitly selected a report (e.g. clicked one
@@ -220,28 +214,23 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     return 'gray.2';
   };
 
-  // Fetch Lab Order Requisition documents when order changes
+  // Fetch the order's requisition, specimen label, and ABN documents when order changes
   useEffect(() => {
     let cancelled = false;
 
     const fetchDocuments = async (): Promise<void> => {
       if (!order.id) {
-        setLabOrderRequisitionDocs([]);
         return;
       }
       setLoadingDocs(true);
-      setLabOrderRequisitionDocs([]); // Clear previous documents immediately
 
       try {
-        const docs = await fetchLabOrderRequisitionDocuments(medplum, order);
+        const docs = await fetchLabOrderDocuments(medplum, order);
         if (!cancelled) {
-          setLabOrderRequisitionDocs(docs);
+          setOrderDocs(docs);
         }
       } catch (error) {
-        console.error('Error fetching lab order requisition documents:', error);
-        if (!cancelled) {
-          setLabOrderRequisitionDocs([]);
-        }
+        console.error('Error fetching lab order documents:', error);
       } finally {
         if (!cancelled) {
           setLoadingDocs(false);
@@ -252,83 +241,11 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
     fetchDocuments().catch(console.error);
 
     // `cancelled` guards against a response for a previous order overwriting the current one's state.
+    // This matters most for the ABN, a signed Medicare document tied to one specific order.
     return () => {
       cancelled = true;
-      setLabOrderRequisitionDocs([]);
+      setOrderDocs(EMPTY_LAB_ORDER_DOCUMENTS);
       setLoadingDocs(false);
-    };
-  }, [medplum, order]);
-
-  // Fetch Specimen Label documents when order changes
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchSpecimenLabelDocuments = async (): Promise<void> => {
-      if (!order.id) {
-        setSpecimenLabelDocs([]);
-        return;
-      }
-      setLoadingSpecimenDocs(true);
-      setSpecimenLabelDocs([]); // Clear previous documents immediately
-
-      try {
-        const docs = await fetchLabOrderSpecimenLabelDocuments(medplum, order);
-        if (!cancelled) {
-          setSpecimenLabelDocs(docs);
-        }
-      } catch (error) {
-        console.error('Error fetching specimen label documents:', error);
-        if (!cancelled) {
-          setSpecimenLabelDocs([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingSpecimenDocs(false);
-        }
-      }
-    };
-
-    fetchSpecimenLabelDocuments().catch(console.error);
-
-    return () => {
-      cancelled = true;
-      setSpecimenLabelDocs([]);
-      setLoadingSpecimenDocs(false);
-    };
-  }, [medplum, order]);
-
-  // Fetch the ABN (Advance Beneficiary Notice) when order changes - only present for Medicare
-  // orders once Health Gorilla has generated one
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchAbnDocuments = async (): Promise<void> => {
-      if (!order.id) {
-        setAbnDocs([]);
-        return;
-      }
-      setAbnDocs([]); // Clear previous documents immediately
-
-      try {
-        const docs = await fetchLabOrderAbnDocuments(medplum, order);
-        if (!cancelled) {
-          setAbnDocs(docs);
-        }
-      } catch (error) {
-        console.error('Error fetching ABN documents:', error);
-        if (!cancelled) {
-          setAbnDocs([]);
-        }
-      }
-    };
-
-    fetchAbnDocuments().catch(console.error);
-
-    // An ABN is a signed Medicare document tied to one specific order, so a stale response
-    // showing the wrong order's ABN is a compliance concern, not just a cosmetic one.
-    return () => {
-      cancelled = true;
-      setAbnDocs([]);
     };
   }, [medplum, order]);
 
@@ -639,7 +556,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
           <Divider />
           <LabDocumentSection
             title="Specimen Label"
-            loading={loadingSpecimenDocs}
+            loading={loadingDocs}
             loadingText="Loading specimen label documents..."
             emptyText="No specimen label documents found."
             docs={specimenLabelDocs}

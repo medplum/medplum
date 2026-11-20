@@ -17,13 +17,20 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render } from '../test-utils/render';
+import type { LabOrderDocuments } from './documentReference';
 import { LabOrderDetails } from './LabOrderDetails';
+
+const orderDocs = (docs: Partial<LabOrderDocuments>): LabOrderDocuments => ({
+  requisition: [],
+  specimenLabel: [],
+  abn: [],
+  ...docs,
+});
 
 // Mock the documentReference utility
 vi.mock('./documentReference', () => ({
-  fetchLabOrderRequisitionDocuments: vi.fn(),
-  fetchLabOrderSpecimenLabelDocuments: vi.fn(),
-  fetchLabOrderAbnDocuments: vi.fn(),
+  EMPTY_LAB_ORDER_DOCUMENTS: { requisition: [], specimenLabel: [], abn: [] },
+  fetchLabOrderDocuments: vi.fn(),
   resolvePresentedFormAttachments: vi.fn(),
   resolveDerivedFromAttachments: vi.fn(),
 }));
@@ -284,9 +291,7 @@ const mockQuestionnaireResponse: QuestionnaireResponse = {
 
 describe('LabOrderDetails', () => {
   let medplum: MockClient;
-  let fetchLabOrderRequisitionDocumentsMock: any;
-  let fetchLabOrderSpecimenLabelDocumentsMock: any;
-  let fetchLabOrderAbnDocumentsMock: any;
+  let fetchLabOrderDocumentsMock: any;
   let resolvePresentedFormAttachmentsMock: any;
   let resolveDerivedFromAttachmentsMock: any;
 
@@ -295,16 +300,12 @@ describe('LabOrderDetails', () => {
     vi.clearAllMocks();
 
     const documentReferenceUtils = await import('./documentReference');
-    fetchLabOrderRequisitionDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderRequisitionDocuments);
-    fetchLabOrderSpecimenLabelDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderSpecimenLabelDocuments);
-    fetchLabOrderAbnDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderAbnDocuments);
+    fetchLabOrderDocumentsMock = vi.mocked(documentReferenceUtils.fetchLabOrderDocuments);
     resolvePresentedFormAttachmentsMock = vi.mocked(documentReferenceUtils.resolvePresentedFormAttachments);
     resolveDerivedFromAttachmentsMock = vi.mocked(documentReferenceUtils.resolveDerivedFromAttachments);
 
     // Setup default mocks
-    fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([]);
-    fetchLabOrderSpecimenLabelDocumentsMock.mockResolvedValue([]);
-    fetchLabOrderAbnDocumentsMock.mockResolvedValue([]);
+    fetchLabOrderDocumentsMock.mockResolvedValue(orderDocs({}));
     resolvePresentedFormAttachmentsMock.mockImplementation(async (_medplum: unknown, forms: unknown) => forms ?? []);
     resolveDerivedFromAttachmentsMock.mockResolvedValue([]);
     medplum.searchResources = vi.fn().mockResolvedValue([]);
@@ -554,7 +555,7 @@ describe('LabOrderDetails', () => {
     });
 
     test('marks steps as completed based on available data', async () => {
-      fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([mockLabOrderRequisitionDoc]);
+      fetchLabOrderDocumentsMock.mockResolvedValue(orderDocs({ requisition: [mockLabOrderRequisitionDoc] }));
       medplum.searchResources = vi.fn().mockResolvedValue([mockDiagnosticReport]);
 
       await act(async () => {
@@ -781,7 +782,7 @@ describe('LabOrderDetails', () => {
   describe('Document references', () => {
     test('fetches and displays lab order requisition documents', async () => {
       const user = userEvent.setup();
-      fetchLabOrderRequisitionDocumentsMock.mockResolvedValue([mockLabOrderRequisitionDoc]);
+      fetchLabOrderDocumentsMock.mockResolvedValue(orderDocs({ requisition: [mockLabOrderRequisitionDoc] }));
 
       await act(async () => {
         setup();
@@ -791,14 +792,14 @@ describe('LabOrderDetails', () => {
       await user.click(orderDetailsTab);
 
       await waitFor(() => {
-        expect(fetchLabOrderRequisitionDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
         expect(screen.getByText('Requisition Document')).toBeInTheDocument();
       });
     });
 
     test('fetches and displays specimen label documents', async () => {
       const user = userEvent.setup();
-      fetchLabOrderSpecimenLabelDocumentsMock.mockResolvedValue([mockSpecimenLabelDoc]);
+      fetchLabOrderDocumentsMock.mockResolvedValue(orderDocs({ specimenLabel: [mockSpecimenLabelDoc] }));
 
       await act(async () => {
         setup();
@@ -808,7 +809,7 @@ describe('LabOrderDetails', () => {
       await user.click(orderDetailsTab);
 
       await waitFor(() => {
-        expect(fetchLabOrderSpecimenLabelDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
         const specimenLabels = screen.getAllByText('Specimen Label');
         expect(specimenLabels.length).toBeGreaterThan(0);
       });
@@ -816,7 +817,7 @@ describe('LabOrderDetails', () => {
 
     test('displays the ABN when Health Gorilla has generated one', async () => {
       const user = userEvent.setup();
-      fetchLabOrderAbnDocumentsMock.mockResolvedValue([mockAbnDoc]);
+      fetchLabOrderDocumentsMock.mockResolvedValue(orderDocs({ abn: [mockAbnDoc] }));
 
       await act(async () => {
         setup();
@@ -826,7 +827,7 @@ describe('LabOrderDetails', () => {
       await user.click(orderDetailsTab);
 
       await waitFor(() => {
-        expect(fetchLabOrderAbnDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalledWith(medplum, mockActiveServiceRequest);
         expect(screen.getByText('Advance Beneficiary Notice (ABN)')).toBeInTheDocument();
       });
     });
@@ -842,7 +843,7 @@ describe('LabOrderDetails', () => {
       await user.click(orderDetailsTab);
 
       await waitFor(() => {
-        expect(fetchLabOrderAbnDocumentsMock).toHaveBeenCalled();
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalled();
       });
       expect(screen.queryByText('Advance Beneficiary Notice (ABN)')).not.toBeInTheDocument();
     });
@@ -1086,9 +1087,9 @@ describe('LabOrderDetails', () => {
   });
 
   describe('Error handling', () => {
-    test('handles error when fetching requisition documents fails', async () => {
+    test('handles error when fetching order documents fails', async () => {
       const user = userEvent.setup();
-      fetchLabOrderRequisitionDocumentsMock.mockRejectedValue(new Error('Fetch failed'));
+      fetchLabOrderDocumentsMock.mockRejectedValue(new Error('Fetch failed'));
 
       await act(async () => {
         setup();
@@ -1099,38 +1100,7 @@ describe('LabOrderDetails', () => {
 
       await waitFor(() => {
         expect(screen.getByText('No lab order requisition documents found.')).toBeInTheDocument();
-      });
-    });
-
-    test('handles error when fetching specimen label documents fails', async () => {
-      const user = userEvent.setup();
-      fetchLabOrderSpecimenLabelDocumentsMock.mockRejectedValue(new Error('Fetch failed'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
-      await user.click(orderDetailsTab);
-
-      await waitFor(() => {
         expect(screen.getByText('No specimen label documents found.')).toBeInTheDocument();
-      });
-    });
-
-    test('handles error when fetching ABN documents fails', async () => {
-      const user = userEvent.setup();
-      fetchLabOrderAbnDocumentsMock.mockRejectedValue(new Error('Fetch failed'));
-
-      await act(async () => {
-        setup();
-      });
-
-      const orderDetailsTab = screen.getByRole('tab', { name: 'Order Details' });
-      await user.click(orderDetailsTab);
-
-      await waitFor(() => {
-        expect(fetchLabOrderAbnDocumentsMock).toHaveBeenCalled();
       });
       expect(screen.queryByText('Advance Beneficiary Notice (ABN)')).not.toBeInTheDocument();
     });
@@ -1143,7 +1113,7 @@ describe('LabOrderDetails', () => {
       });
 
       await waitFor(() => {
-        expect(fetchLabOrderRequisitionDocumentsMock).toHaveBeenCalledTimes(1);
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalledTimes(1);
       });
 
       const newOrder: ServiceRequest = {
@@ -1162,76 +1132,65 @@ describe('LabOrderDetails', () => {
       });
 
       await waitFor(() => {
-        expect(fetchLabOrderRequisitionDocumentsMock).toHaveBeenCalledWith(medplum, newOrder);
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalledWith(medplum, newOrder);
       });
     });
 
-    test.each([
-      {
-        name: 'ABN',
-        getMock: () => fetchLabOrderAbnDocumentsMock,
-        staleDoc: () => mockAbnDoc,
-        expectNotShown: () => expect(screen.queryByText('Advance Beneficiary Notice (ABN)')).not.toBeInTheDocument(),
-      },
-      {
-        name: 'requisition document',
-        getMock: () => fetchLabOrderRequisitionDocumentsMock,
-        staleDoc: () => mockLabOrderRequisitionDoc,
-        expectNotShown: () => expect(screen.getByText('No lab order requisition documents found.')).toBeInTheDocument(),
-      },
-      {
-        name: 'specimen label document',
-        getMock: () => fetchLabOrderSpecimenLabelDocumentsMock,
-        staleDoc: () => mockSpecimenLabelDoc,
-        expectNotShown: () => expect(screen.getByText('No specimen label documents found.')).toBeInTheDocument(),
-      },
-    ])(
-      "does not resurrect a previous order's $name after switching orders while its fetch is still pending",
-      async ({ getMock, staleDoc, expectNotShown }) => {
-        const user = userEvent.setup();
-        let resolveOrderA: (docs: DocumentReference[]) => void = () => {};
-        const orderAPromise = new Promise<DocumentReference[]>((resolve) => {
-          resolveOrderA = resolve;
-        });
+    test("does not resurrect a previous order's documents after switching orders while its fetch is still pending", async () => {
+      const user = userEvent.setup();
+      let resolveOrderA: (docs: LabOrderDocuments) => void = () => {};
+      const orderAPromise = new Promise<LabOrderDocuments>((resolve) => {
+        resolveOrderA = resolve;
+      });
 
-        const fetchMock = getMock();
-        fetchMock.mockImplementation(async (_medplum: unknown, order: ServiceRequest) => {
-          if (order.id === mockActiveServiceRequest.id) {
-            return orderAPromise;
-          }
-          return [];
-        });
+      fetchLabOrderDocumentsMock.mockImplementation(async (_medplum: unknown, order: ServiceRequest) => {
+        if (order.id === mockActiveServiceRequest.id) {
+          return orderAPromise;
+        }
+        return orderDocs({});
+      });
 
-        const { rerender } = await act(async () => setup());
+      const { rerender } = await act(async () => setup());
 
-        await user.click(screen.getByRole('tab', { name: 'Order Details' }));
+      await user.click(screen.getByRole('tab', { name: 'Order Details' }));
 
-        const newOrder: ServiceRequest = {
-          ...mockActiveServiceRequest,
-          id: 'new-order-456',
-        };
+      const newOrder: ServiceRequest = {
+        ...mockActiveServiceRequest,
+        id: 'new-order-456',
+      };
 
-        await act(async () => {
-          rerender(
-            <MemoryRouter>
-              <MedplumProvider medplum={medplum}>
-                <LabOrderDetails order={newOrder} />
-              </MedplumProvider>
-            </MemoryRouter>
-          );
-        });
+      await act(async () => {
+        rerender(
+          <MemoryRouter>
+            <MedplumProvider medplum={medplum}>
+              <LabOrderDetails order={newOrder} />
+            </MedplumProvider>
+          </MemoryRouter>
+        );
+      });
 
-        await waitFor(() => {
-          expect(fetchMock).toHaveBeenCalledWith(medplum, newOrder);
-          expectNotShown();
-        });
+      const expectNoStaleDocs = (): void => {
+        expect(screen.queryByText('Advance Beneficiary Notice (ABN)')).not.toBeInTheDocument();
+        expect(screen.getByText('No lab order requisition documents found.')).toBeInTheDocument();
+        expect(screen.getByText('No specimen label documents found.')).toBeInTheDocument();
+      };
 
-        await act(async () => {
-          resolveOrderA([staleDoc()]);
-        });
+      await waitFor(() => {
+        expect(fetchLabOrderDocumentsMock).toHaveBeenCalledWith(medplum, newOrder);
+        expectNoStaleDocs();
+      });
 
-        expectNotShown();
-      }
-    );
+      await act(async () => {
+        resolveOrderA(
+          orderDocs({
+            requisition: [mockLabOrderRequisitionDoc],
+            specimenLabel: [mockSpecimenLabelDoc],
+            abn: [mockAbnDoc],
+          })
+        );
+      });
+
+      expectNoStaleDocs();
+    });
   });
 });
