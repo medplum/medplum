@@ -20,7 +20,7 @@ import { useChanged } from '../../hooks/useChanged';
 import type { DateTimeRange } from '../../types';
 import classes from './BlockTimeForm.module.css';
 
-type CandidatesByActorType = Readonly<Record<BookableActorType, readonly ScheduleCandidate[]>>;
+export type CandidatesByActorType = Readonly<Record<BookableActorType, readonly ScheduleCandidate[]>>;
 
 const NONE_CHOSEN: CandidatesByActorType = { Practitioner: [], Location: [], Device: [] };
 
@@ -29,6 +29,8 @@ export interface BlockTimeFormProps {
   readonly candidatesByActorType: CandidatesByActorType;
   /** The time the form opens on. A new one resets the times but keeps the calendars and comment. */
   readonly defaultRange: DateTimeRange;
+  /** Prototype. The calendars the form opens with chosen. Read once on mount. None by default. */
+  readonly defaultCalendars?: CandidatesByActorType;
   /** Called when the time typed changes, with undefined while it is not a whole range. */
   readonly onChangeTime?: (range: DateTimeRange | undefined) => void;
   /** Called whenever the form starts or stops holding anything beyond the time it opened on. */
@@ -56,7 +58,8 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
 
   const [startValue, setStartValue] = useState(() => formatZonedDateTimeInput(defaultRange.start));
   const [endValue, setEndValue] = useState(() => formatZonedDateTimeInput(defaultRange.end));
-  const [chosen, setChosen] = useState<CandidatesByActorType>(NONE_CHOSEN);
+  const [opened] = useState<CandidatesByActorType>(props.defaultCalendars ?? NONE_CHOSEN);
+  const [chosen, setChosen] = useState(opened);
   const [comment, setComment] = useState('');
   const [writing, setWriting] = useState(false);
   const [written, setWritten] = useState(false);
@@ -72,7 +75,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   const dirty =
     startValue !== formatZonedDateTimeInput(defaultRange.start) ||
     endValue !== formatZonedDateTimeInput(defaultRange.end) ||
-    chosen !== NONE_CHOSEN ||
+    chosen !== opened ||
     comment !== '';
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
@@ -166,6 +169,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
           actorType={actorType}
           service={undefined}
           candidates={candidatesByActorType[actorType]}
+          defaultValue={opened[actorType]}
           required={false}
           onChange={(candidates) => choose(actorType, candidates)}
         />

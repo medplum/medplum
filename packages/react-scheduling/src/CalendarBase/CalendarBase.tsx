@@ -24,7 +24,7 @@ import { assertNever } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX, ReactNode } from 'react';
+import type { JSX, MouseEvent, ReactNode } from 'react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { getPatientParticipant } from '../actors';
 import type { AvailabilityShade } from '../availabilityShading';
@@ -285,6 +285,7 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
     availableTime,
     availabilityShading,
     onHoverAvailability,
+    eventsPassThrough,
     onSelectAppointment,
     onSelectSlot,
     onDoubleClickAppointment,
@@ -434,11 +435,30 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
 
   const shadeHover = useAvailabilityShadeHover(Boolean(availabilityShading?.length), onHoverAvailability);
 
+  // With the pointer let through the events, a double click reaches the grid rather than the appointment
+  // under it, and nothing the document can be asked about the point names one, so each is measured.
+  const openAppointmentUnder = (event: MouseEvent<HTMLElement>): void => {
+    const under = [...event.currentTarget.querySelectorAll('.appointment')].find((element) => {
+      const rect = element.getBoundingClientRect();
+      return (
+        rect.left <= event.clientX &&
+        event.clientX <= rect.right &&
+        rect.top <= event.clientY &&
+        event.clientY <= rect.bottom
+      );
+    });
+    const ext = under && (eventDataRef.current.get(under)?.extendedProps as ExtendedEvent | undefined);
+    if (ext?.type === 'appointment' && ext.interactive !== false) {
+      onSelectAppointment?.(ext.appointment, ext.schedule);
+    }
+  };
+
   return (
     <div
       data-testid="calendar"
-      className={cx(classes.wrapper, className, props.eventsPassThrough && classes.eventsPassThrough)}
+      className={cx(classes.wrapper, className, eventsPassThrough && classes.eventsPassThrough)}
       {...shadeHover.hoverProps}
+      onDoubleClick={eventsPassThrough ? openAppointmentUnder : undefined}
     >
       <Group justify="space-between" pb="sm">
         <Group gap="md">
@@ -545,8 +565,8 @@ export const CalendarBase = forwardRef<CalendarHandle, CalendarBaseProps>(functi
           datesSet={(info) => onRangeChange?.({ start: info.start, end: info.end })}
           className={cx(classes.calendar, controller.view?.type)}
           eventDidMount={(info) => {
+            eventDataRef.current.set(info.el, info.event);
             if (hasDoubleClickHandler && (info.event.extendedProps as ExtendedEvent).interactive !== false) {
-              eventDataRef.current.set(info.el, info.event);
               info.el.addEventListener('dblclick', handleDblClick);
             }
           }}

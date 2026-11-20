@@ -67,6 +67,7 @@ import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/Multi
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
 import type { CalendarSelection, DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
+import type { CandidatesByActorType as BlockCalendars } from './BlockTimeForm/BlockTimeForm';
 import { BlockTimeForm } from './BlockTimeForm/BlockTimeForm';
 import type { CalendarFilterValues } from './CalendarFilters';
 import { CalendarFilters } from './CalendarFilters';
@@ -313,6 +314,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // What was selected
   const [blockRange, setBlockRange] = useState<DateTimeRange>(getNextHalfHour);
   const [blockSeed, setBlockSeed] = useState(0);
+  const [blockCalendars, setBlockCalendars] = useState<BlockCalendars>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlot, setSelectedSlot] = useState<WithId<Slot>>();
   // The Slots of a block just written, one per calendar, listed beside whichever is open.
@@ -649,9 +651,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   // start on is given when a click on the calendar opens it.
   const openBooking = useCallback(
     (start?: BookingStart): void => {
-      const nextHalfHour = getNextHalfHour();
-      setBlockRange(nextHalfHour);
-      setBlockHighlight(nextHalfHour);
+      const blockTime = start?.range ?? getNextHalfHour();
+      setBlockRange(blockTime);
+      setBlockHighlight(blockTime);
+      setBlockCalendars(start?.calendars);
       setCalendarsOpen(false);
       setSelectedAppointment(undefined);
       setSelectedSlot(undefined);
@@ -829,7 +832,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         // No more than the form searches at once, so that the time clicked is looked for on every one of
         // them. With more on show, the form opens on the visit type and shades when any provider is open.
         const providers = service && onShow.length > 0 && onShow.length <= COMBINATION_WAVE ? onShow : undefined;
-        openBooking({ service, providers, instant: interval.allDay ? undefined : interval.start });
+        // A block is written to every calendar it names, so the Block Time tab takes only the ones the
+        // viewer narrowed to by hand.
+        const narrowedTo = (actorType: BookableActorType): readonly ScheduleCandidate[] => {
+          const hidden = deselectedIds[actorType];
+          const listed = candidatesByActorType[actorType];
+          return listed.some((candidate) => hidden.has(candidate.schedule.id))
+            ? listed.filter((candidate) => !hidden.has(candidate.schedule.id))
+            : [];
+        };
+        openBooking({
+          service,
+          providers,
+          instant: interval.allDay ? undefined : interval.start,
+          range: interval.allDay ? undefined : { start: interval.start, end: interval.end },
+          calendars: {
+            Practitioner: narrowedTo('Practitioner'),
+            Location: narrowedTo('Location'),
+            Device: narrowedTo('Device'),
+          },
+        });
         return;
       }
       if (paneTab === 'block') {
@@ -1184,6 +1206,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 key={blockSeed}
                 candidatesByActorType={candidatesByActorType}
                 defaultRange={blockRange}
+                defaultCalendars={blockCalendars}
                 onChangeTime={setBlockHighlight}
                 onDirtyChange={discard.onBlockDirtyChange}
                 onBlocked={finishBlock}
@@ -1207,6 +1230,10 @@ interface BookingStart {
   readonly providers?: readonly ScheduleCandidate[];
   /** The time clicked, to pick if it is offered. */
   readonly instant?: Date;
+  /** The stretch clicked, for the Block Time tab to open on. */
+  readonly range?: DateTimeRange;
+  /** The calendars the viewer narrowed the filters pane to, for the Block Time tab to open with. */
+  readonly calendars?: BlockCalendars;
 }
 
 /** A point on the calendar, from the top left of the box around it. */
