@@ -55,6 +55,21 @@ This app should run on `http://localhost:3000/`
 
 Log into the app on localhost using the same credentials you created on [foomedical.com](https://foomedical.com/) and you are ready to start customizing.
 
+### Customizing the logo
+
+To use your own PNG, SVG, or other image in both app headers, place it in
+`public/logo.png` and add the following to `.env`:
+
+```dotenv
+MEDPLUM_LOGO_URL=/logo.png
+MEDPLUM_LOGO_ALT=Your practice name
+```
+
+Restart the development server or rebuild the app after changing these values.
+The image keeps its original aspect ratio. If `MEDPLUM_LOGO_URL` is unset or empty,
+the default Foo Medical logo is used. Individual `Logo` components can also override
+the image and accessible label using the `src` and `alt` props.
+
 ### Deploying your app
 
 To get started deploying your app we recommend making an account on [Vercel](https://vercel.com/), free accounts are available.
