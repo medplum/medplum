@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { CPT, EMPTY, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
-import type { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
+import type { AllergyIntolerance, CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ASSESSMENT_SCALE_OBSERVATION,
@@ -612,6 +612,49 @@ export const ALLERGY_CATEGORY_MAPPER = new EnumMapper<string, string>(
     },
   ]
 );
+
+type AllergyCategory = NonNullable<AllergyIntolerance['category']>[number];
+
+// C-CDA Allergy and Intolerance Type value set: https://vsac.nlm.nih.gov/valueset/2.16.840.1.113883.3.88.12.3221.6.2/expansion
+// Each SNOMED CT code states a category, a type, both, or neither.
+// ALLERGY_CATEGORY_MAPPER stays the FHIR to C-CDA direction.
+const ALLERGY_INTOLERANCE_TYPE_CODES: Record<
+  string,
+  { category?: AllergyCategory; type?: AllergyIntolerance['type'] }
+> = {
+  '416098002': { category: 'medication', type: 'allergy' }, // Allergy to drug
+  '59037007': { category: 'medication', type: 'intolerance' }, // Intolerance to drug
+  '419511003': { category: 'medication' }, // Propensity to adverse reactions to drug
+  '414285001': { category: 'food', type: 'allergy' }, // Allergy to food
+  '235719002': { category: 'food', type: 'intolerance' }, // Intolerance to food
+  '418471000': { category: 'food' }, // Propensity to adverse reactions to food
+  '426232007': { category: 'environment', type: 'allergy' }, // Environmental allergy
+  '444316004': { category: 'environment', type: 'allergy' }, // Seasonal allergy
+  '12481000132103': { category: 'biologic', type: 'allergy' }, // History of biological substance allergy
+  '419199007': { type: 'allergy' }, // Allergy to substance
+  '609328004': { type: 'allergy' }, // Allergic disposition
+  '418038007': {}, // Propensity to adverse reactions to substance
+  '420134006': {}, // Propensity to adverse reaction
+};
+
+/**
+ * Maps the value of a C-CDA Allergy - Intolerance Observation to the FHIR AllergyIntolerance category and type.
+ * @param value - The observation value, a code from the Allergy and Intolerance Type value set.
+ * @returns The category and type the code states; a field the code does not state is undefined.
+ */
+export function mapCcdaAllergyCategoryAndType(
+  value: CcdaValue | undefined
+): Pick<AllergyIntolerance, 'category' | 'type'> {
+  const code = value as CcdaCode | undefined;
+  if (code?.['@_codeSystem'] !== OID_SNOMED_CT_CODE_SYSTEM || !code['@_code']) {
+    return {};
+  }
+  const mapped = ALLERGY_INTOLERANCE_TYPE_CODES[code['@_code']];
+  return {
+    category: mapped?.category ? [mapped.category] : undefined,
+    type: mapped?.type,
+  };
+}
 
 export const ALLERGY_SEVERITY_MAPPER = new EnumMapper<'mild' | 'moderate' | 'severe', string>(
   {
