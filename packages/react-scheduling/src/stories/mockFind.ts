@@ -151,7 +151,6 @@ async function enumerateOpenTimes(medplum: MedplumClient, input: OpenTimesInput)
     serviceFacility: facility ? { reference: facility } : undefined,
     range: { start, end },
     color: 'gray',
-    minMinutes: durationMinutes,
     from: start,
   });
 
