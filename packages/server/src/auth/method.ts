@@ -40,7 +40,8 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
  * @returns External auth url if available. Otherwise undefined.
  */
 export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
-  const domain = email.split('@')[1];
+  // The local part of an email address can contain a quoted "@", so the domain starts after the last one
+  const domain = email.slice(email.lastIndexOf('@') + 1);
   const domainConfig = await getDomainConfiguration(domain);
   if (!domainConfig) {
     return undefined;

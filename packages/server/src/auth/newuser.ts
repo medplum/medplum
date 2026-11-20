@@ -15,6 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { isExternalAuth } from './method';
 import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
@@ -66,6 +67,13 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   // If the user is a practitioner, then projectId should be undefined
   // If the user is a patient, then projectId must be set
   const email = req.body.email.toLowerCase();
+
+  // Domain-level identity providers apply to all logins from the domain,
+  // so do not create a password that could never be used
+  if (await isExternalAuth(email)) {
+    sendOutcome(res, badRequest('Cannot register with password for external auth. Contact your system administrator.'));
+    return;
+  }
 
   if (projectId && projectId !== 'new') {
     let project: Project;
