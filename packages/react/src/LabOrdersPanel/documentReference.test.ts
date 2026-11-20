@@ -4,7 +4,8 @@ import type { DocumentReference, Observation, ServiceRequest } from '@medplum/fh
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
-  fetchLabOrderRequisitionDocuments,
+  EMPTY_LAB_ORDER_DOCUMENTS,
+  fetchLabOrderDocuments,
   getHealthGorillaRequisitionId,
   resolveDerivedFromAttachments,
 } from './documentReference';
@@ -58,8 +59,16 @@ describe('documentReference utils', () => {
     });
   });
 
-  describe('fetchLabOrderRequisitionDocuments', () => {
-    test('returns empty array when requisition id missing', async () => {
+  describe('fetchLabOrderDocuments', () => {
+    const docWithCategory = (id: string, code: string): DocumentReference => ({
+      resourceType: 'DocumentReference',
+      id,
+      status: 'current',
+      category: [{ coding: [{ code }] }],
+      content: [],
+    });
+
+    test('returns empty documents when requisition id missing', async () => {
       const request: ServiceRequest = {
         resourceType: 'ServiceRequest',
         status: 'active',
@@ -68,13 +77,13 @@ describe('documentReference utils', () => {
       };
       const searchSpy = vi.spyOn(medplum, 'searchResources');
 
-      const result = await fetchLabOrderRequisitionDocuments(medplum, request);
+      const result = await fetchLabOrderDocuments(medplum, request);
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(EMPTY_LAB_ORDER_DOCUMENTS);
       expect(searchSpy).not.toHaveBeenCalled();
     });
 
-    test('fetches requisition documents', async () => {
+    test('fetches all order documents in one search and groups them by category', async () => {
       const request: ServiceRequest = {
         resourceType: 'ServiceRequest',
         requisition: { system: 'https://www.healthgorilla.com', value: 'req-42' },
@@ -82,25 +91,40 @@ describe('documentReference utils', () => {
         intent: 'order',
         subject: { reference: 'Patient/patient-1' },
       };
-      const documents: DocumentReference[] = [
-        { resourceType: 'DocumentReference', id: 'doc-1', status: 'current', content: [] },
-      ];
-      const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue(documents as any);
+      const requisition = docWithCategory('req-doc-1', 'LabOrderRequisition');
+      const specimenLabel = docWithCategory('specimen-label-1', 'SpecimenLabel');
+      const abn = docWithCategory('abn-1', 'ABN');
+      const searchSpy = vi
+        .spyOn(medplum, 'searchResources')
+        .mockResolvedValue([abn, requisition, specimenLabel] as any);
 
-      const result = await fetchLabOrderRequisitionDocuments(medplum, request);
+      const result = await fetchLabOrderDocuments(medplum, request);
 
-      expect(searchSpy).toHaveBeenCalledWith(
-        'DocumentReference',
-        expect.objectContaining({
-          toString: expect.any(Function),
-        }),
-        { cache: 'no-cache' }
-      );
-      const searchParams = (searchSpy.mock.calls[0][1] as URLSearchParams).toString();
-      expect(searchParams).toContain('category=LabOrderRequisition');
-      expect(searchParams).toContain('identifier=https%3A%2F%2Fwww.healthgorilla.com%7Creq-42');
-      expect(searchParams).toContain('_sort=-_lastUpdated');
-      expect(result).toEqual(documents);
+      expect(searchSpy).toHaveBeenCalledTimes(1);
+      expect(searchSpy).toHaveBeenCalledWith('DocumentReference', expect.any(URLSearchParams), {
+        cache: 'no-cache',
+      });
+      const searchParams = searchSpy.mock.calls[0][1] as URLSearchParams;
+      expect(searchParams.get('category')).toBe('LabOrderRequisition,SpecimenLabel,ABN');
+      expect(searchParams.get('identifier')).toBe('https://www.healthgorilla.com|req-42');
+      expect(searchParams.get('_sort')).toBe('-_lastUpdated');
+      expect(result).toEqual({ requisition: [requisition], specimenLabel: [specimenLabel], abn: [abn] });
+    });
+
+    test('returns an empty ABN list when the order has no ABN', async () => {
+      const request: ServiceRequest = {
+        resourceType: 'ServiceRequest',
+        requisition: { system: 'https://www.healthgorilla.com', value: 'req-42' },
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/patient-1' },
+      };
+      const requisition = docWithCategory('req-doc-1', 'LabOrderRequisition');
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue([requisition] as any);
+
+      const result = await fetchLabOrderDocuments(medplum, request);
+
+      expect(result).toEqual({ requisition: [requisition], specimenLabel: [], abn: [] });
     });
   });
 

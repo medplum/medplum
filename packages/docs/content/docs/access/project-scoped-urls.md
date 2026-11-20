@@ -90,17 +90,18 @@ A subscription WebSocket opened on a project-scoped URL must bind to a subscript
 
 ### External JWTs can be scoped to a project
 
-Some external systems issue JWTs that identify the issuer but carry no Medplum project, user, or profile. On a project-scoped URL, Medplum can accept these tokens directly as bearer tokens by matching the token issuer to a `ClientApplication` in that project.
+Some external systems issue JWTs that identify the issuer but carry no Medplum project, user, or profile. On a project-scoped URL, Medplum can accept these tokens directly as bearer tokens by matching the token issuer to a `ClientApplication` in that project. Use a dedicated `ClientApplication` whose `identityProvider` sets only `issuer`, `jwksUrl`, and `audience`.
 
 This lookup only runs on project-scoped URLs and is designed to fail closed:
 
+- Only clients whose identity provider sets exactly `issuer`, `jwksUrl`, and `audience` are matched. Clients with other identity provider settings are not used for bearer tokens.
 - The JWT signature is verified against the `jwksUrl` configured on the client's identity provider.
-- The JWT `iss` claim must match the identity provider's configured `issuer`.
+- The JWT `iss` claim must match the identity provider's configured `issuer`, and the `aud` claim must match its `audience`.
 - The client lookup is constrained to the project named in the URL.
-- Exactly one `ClientApplication` in the project must match the issuer. Zero or multiple matches are rejected.
+- Exactly one matching `ClientApplication` in the project is required. Zero or multiple matches are rejected.
 - The request authenticates as the client's existing `ProjectMembership`. A token never creates a membership or grants access by itself.
 
-Server-wide `externalAuthProviders` are checked first, as described in [Direct External Authentication](/docs/auth/direct-external-auth).
+Server-wide `externalAuthProviders` are checked first, as described in [Direct External Authentication](/docs/auth/direct-external-auth). If one matches the token issuer, it verifies the token instead of the client's `jwksUrl`, but the token's `aud` claim must still match the client's `audience`.
 
 ## What Project-Scoped URLs Do Not Do
 
