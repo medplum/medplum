@@ -176,7 +176,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   // Upsert profile Resource (e.g. Patient or Practitioner)
-  const profile = await upsertProfileResource(systemRepo, request);
+  const profile = await upsertProfileResource(systemRepo, request, user);
 
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
   const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
@@ -251,7 +251,8 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
 
 async function upsertProfileResource(
   systemRepo: SystemRepository,
-  request: ServerInviteRequest
+  request: ServerInviteRequest,
+  user: WithId<User>
 ): Promise<WithId<ProfileResource>> {
   if (request.membership?.profile) {
     const profile = await systemRepo.readReference(request.membership.profile);
@@ -313,35 +314,41 @@ async function upsertProfileResource(
         },
       ];
 
+      // Match RelatedPerson for the requested patient
+      if (resourceType === 'RelatedPerson' && patient) {
+        filters.push({ code: 'patient', operator: Operator.EQUALS, value: patient.reference as string });
+      }
+
       // Inviting by email may match an existing profile (e.g. a previously
       // created RelatedPerson), in which case no patient is required. Only
       // enforce the patient requirement when a new RelatedPerson would be created.
-      if (resourceType === 'RelatedPerson' && !patient) {
-        // Search for up to 2 matches so duplicates are detected deterministically
-        // rather than arbitrarily picking one (mirrors conditionalCreate).
-        const matches = await systemRepo.searchResources<RelatedPerson>({ resourceType, filters, count: 2 });
-        if (matches.length > 1) {
-          throw new OperationOutcomeError(multipleMatches);
+      return systemRepo.withTransaction(
+        async (txRepo) => {
+          const matches = await searchAvailableProfiles(txRepo, { resourceType, filters }, project, user);
+          if (matches.length > 1) {
+            // Duplicates are rejected rather than arbitrarily picking one (mirrors conditionalCreate).
+            throw new OperationOutcomeError(multipleMatches);
+          }
+          if (matches.length === 1) {
+            return matches[0];
+          }
+          if (resourceType === 'RelatedPerson' && !patient) {
+            throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
+          }
+          const profile = await txRepo.createResource(resource);
+          getLogger().info('Profile created', {
+            reference: getReferenceString(profile),
+            project: getReferenceString(project),
+            email,
+          });
+          return profile;
+        },
+        {
+          resourceTypes: [resourceType, 'ProjectMembership'],
+          source: 'upsertProfileResource',
+          serializable: true, // serializable to ensure unique resource creation
         }
-        if (matches.length === 0) {
-          throw new OperationOutcomeError(badRequest('Patient is required to create a RelatedPerson'));
-        }
-        return matches[0];
-      }
-
-      const { resource: result, outcome } = await systemRepo.conditionalCreate(resource, {
-        resourceType,
-        filters,
-      });
-
-      if (isCreated(outcome)) {
-        getLogger().info('Profile created', {
-          reference: getReferenceString(result),
-          project: getReferenceString(project),
-          email,
-        });
-      }
-      return result;
+      );
     } else {
       // Without an email there is nothing to match against, so a new resource is
       // always created and the RelatedPerson patient requirement applies.
@@ -357,6 +364,38 @@ async function upsertProfileResource(
       return profile;
     }
   }
+}
+
+/**
+ * Searches for existing profile resources for the invited user.
+ * @param systemRepo - The system repository.
+ * @param searchRequest - The profile search criteria.
+ * @param project - The project.
+ * @param user - The invited user.
+ * @returns The matching profiles.
+ */
+async function searchAvailableProfiles(
+  systemRepo: SystemRepository,
+  searchRequest: SearchRequest<ProfileResource>,
+  project: WithId<Project>,
+  user: WithId<User>
+): Promise<WithId<ProfileResource>[]> {
+  const profiles = await systemRepo.searchResources(searchRequest);
+  if (profiles.length === 0) {
+    return profiles;
+  }
+  const memberships = await systemRepo.searchResources<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [
+      { code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) },
+      { code: 'profile', operator: Operator.EQUALS, value: profiles.map(getReferenceString).join(',') },
+    ],
+  });
+  const userRef = getReferenceString(user);
+  const assigned = new Set(
+    memberships.filter((m) => m.user?.reference !== userRef).map((m) => m.profile?.reference as string)
+  );
+  return profiles.filter((profile) => !assigned.has(getReferenceString(profile)));
 }
 
 /**

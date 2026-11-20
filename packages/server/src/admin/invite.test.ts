@@ -292,6 +292,51 @@ describe('Admin Invite', () => {
     expect(user.meta?.project).toStrictEqual(undefined);
   });
 
+  test('Invite patient by email with existing member', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const email = `bob${randomUUID()}@example.com`;
+    const existing = await withTestContext(async () => {
+      const member = await addTestUser(project, { resourceType: 'Patient' });
+      const systemRepo = await getProjectSystemRepo(project);
+      return systemRepo.updateResource({
+        ...member.profile,
+        telecom: [...(member.profile.telecom ?? []), { system: 'email', value: email }],
+      });
+    });
+
+    const bobInvite = {
+      resourceType: 'Patient',
+      firstName: 'Bob',
+      lastName: 'Jones',
+      email: email,
+      sendEmail: false,
+    };
+    const res1 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(bobInvite);
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.profile.reference).not.toStrictEqual(getReferenceString(existing));
+    expect(res1.body.profile.display).toStrictEqual('Bob Jones');
+
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ ...bobInvite, upsert: true });
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.id).toStrictEqual(res1.body.id);
+    expect(res2.body.profile.reference).toStrictEqual(res1.body.profile.reference);
+  });
+
   test('Specified practitioner to project', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
@@ -1919,6 +1964,80 @@ describe('Admin Invite', () => {
     expect(res).toHaveStatus(200);
     expect(res.body.profile).toMatchObject(createReference(relatedPerson));
   });
+
+  test('Invite RelatedPerson by email with existing member', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Carol'], family: 'Patient' }],
+      });
+
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const dave = await inviteUser({
+        project,
+        resourceType: 'RelatedPerson',
+        firstName: 'Dave',
+        lastName: 'Smith',
+        email: `dave${randomUUID()}@example.com`,
+        patient: createReference(patient),
+        sendEmail: false,
+      });
+      await systemRepo.updateResource({
+        ...dave.profile,
+        telecom: [...(dave.profile.telecom ?? []), { system: 'email', value: bobEmail }],
+      });
+
+      await expect(
+        inviteUser({
+          project,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+          sendEmail: false,
+        })
+      ).rejects.toThrow('Patient is required to create a RelatedPerson');
+    }));
+
+  test('Invite RelatedPerson by email with patient', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const carol = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Carol'], family: 'Patient' }],
+      });
+      const dave = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Dave'], family: 'Patient' }],
+      });
+
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const existing = await systemRepo.createResource<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        meta: { project: project.id },
+        patient: createReference(dave),
+        name: [{ given: ['Bob'], family: 'Jones' }],
+        telecom: [{ system: 'email', use: 'work', value: bobEmail }],
+      });
+
+      const { profile } = await inviteUser({
+        project,
+        resourceType: 'RelatedPerson',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        patient: createReference(carol),
+        sendEmail: false,
+      });
+      expect(profile.id).not.toStrictEqual(existing.id);
+      expect((profile as RelatedPerson).patient.reference).toStrictEqual(getReferenceString(carol));
+    }));
 
   test('Invite RelatedPerson by email with duplicate matches throws', async () => {
     const { project, accessToken } = await withTestContext(() =>
