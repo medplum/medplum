@@ -10,6 +10,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import type { ParsedMail } from 'mailparser';
 import { simpleParser } from 'mailparser';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { authenticator } from 'otplib';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
@@ -135,10 +136,16 @@ async function enrollEmailMfa(accessToken: string, enrolledFactorToken?: string)
 /**
  * Returns an authenticator code for the previous time step. The default window still accepts it,
  * and spending it leaves the current code free for a later step of the test.
+ * The code leaves the window when the next step starts, so near the end of a step this waits for
+ * the next one, leaving the caller time to use the code.
  * @param secret - The authenticator secret.
  * @returns The authenticator code.
  */
-function previousTotpCode(secret: string): string {
+async function previousTotpCode(secret: string): Promise<string> {
+  const remainingMs = 30_000 - (Date.now() % 30_000);
+  if (remainingMs < 2_000) {
+    await sleep(remainingMs);
+  }
   return authenticator.clone({ epoch: Date.now() - 30_000 }).generate(secret);
 }
 
@@ -1077,7 +1084,7 @@ describe('MFA', () => {
     expect(enrollTotp).toHaveStatus(200);
 
     // Add email as a second method (reverifying the email via a code)
-    await enrollEmailMfa(accessToken, previousTotpCode(totpSecret));
+    await enrollEmailMfa(accessToken, await previousTotpCode(totpSecret));
 
     const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status2.body.enrolledMethods).toEqual(expect.arrayContaining(['totp', 'email']));
@@ -1122,7 +1129,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(totpSecret) });
-    await enrollEmailMfa(accessToken, previousTotpCode(totpSecret));
+    await enrollEmailMfa(accessToken, await previousTotpCode(totpSecret));
 
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaRequired).toBe(true);
@@ -1380,7 +1387,7 @@ describe('MFA', () => {
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(secret) });
 
-    await enrollEmailMfa(accessToken, previousTotpCode(secret));
+    await enrollEmailMfa(accessToken, await previousTotpCode(secret));
 
     return secret;
   }
