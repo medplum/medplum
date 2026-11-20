@@ -15,7 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { isExternalAuth } from './method';
+import { hasExternalAuth } from './method';
 import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
@@ -70,7 +70,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 
   // Domain-level identity providers apply to all logins from the domain,
   // so do not create a password that could never be used
-  if (await isExternalAuth(email)) {
+  if (await hasExternalAuth(email)) {
     sendOutcome(res, badRequest('Cannot register with password for external auth. Contact your system administrator.'));
     return;
   }

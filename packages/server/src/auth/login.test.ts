@@ -516,6 +516,15 @@ describe('Login', () => {
     );
     expect(res2.body.login).toBeUndefined();
     expect(res2.body.code).toBeUndefined();
+
+    // A wrong password gets the same response, so it cannot be used to test guesses
+    const res3 = await request(app).post('/auth/login').type('json').send({
+      email: externalEmail,
+      password: 'wrong-password',
+      scope: 'openid',
+    });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue).toStrictEqual(res2.body.issue);
   });
 
   test('Case insensitive email', async () => {

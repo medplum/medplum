@@ -29,6 +29,7 @@ import type {
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
+import { hasExternalAuth } from '../auth/method';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -171,7 +172,8 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   logger.info('User created', { id: user.id, email });
-  if (!existingUser) {
+  // Users on a domain with an external identity provider cannot set a password, so they get no link
+  if (!existingUser && !(email && (await hasExternalAuth(email)))) {
     passwordResetUrl = await resetPassword(systemRepo, user, 'invite');
   }
 
@@ -581,8 +583,8 @@ async function sendInviteEmail(
   resetPasswordUrl: string | undefined
 ): Promise<void> {
   const options: Mail.Options = { to: user.email };
-  if (existing) {
-    // Existing user
+  if (existing || !resetPasswordUrl) {
+    // Existing user, or a user who signs in through an external identity provider
     options.subject = `Medplum: Welcome to ${request.project.name}`;
     options.text = [
       `You were invited to ${request.project.name}`,

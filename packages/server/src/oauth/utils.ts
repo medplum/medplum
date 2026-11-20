@@ -43,7 +43,7 @@ import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { getUserConfiguration } from '../auth/me';
-import { isExternalAuth } from '../auth/method';
+import { hasExternalAuth } from '../auth/method';
 import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
 import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -176,6 +176,14 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   let launch: SmartAppLaunch | undefined;
   if (request.launchId) {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
+  }
+
+  // Domain-level identity providers apply to every sign-in from the domain, not only clients that call /auth/method.
+  // Checked before the user lookup and password check, so the response reveals neither.
+  if (request.password && request.email && (await hasExternalAuth(request.email))) {
+    throw new OperationOutcomeError(
+      badRequest('Cannot sign in with password for external auth. Use your identity provider.')
+    );
   }
 
   let user: WithId<User> | undefined = undefined;
@@ -318,12 +326,6 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
   if (request.password) {
     if (!(await verifyPassword(request.password, user.passwordHash))) {
       throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
-    }
-    // Domain-level identity providers apply to every sign-in from the domain, not only clients that call /auth/method
-    if (user.email && (await isExternalAuth(user.email))) {
-      throw new OperationOutcomeError(
-        badRequest('Cannot sign in with password for external auth. Use your identity provider.')
-      );
     }
     return;
   }

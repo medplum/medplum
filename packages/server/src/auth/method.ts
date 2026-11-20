@@ -40,8 +40,7 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
  * @returns External auth url if available. Otherwise undefined.
  */
 export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
-  // The local part of an email address can contain a quoted "@", so the domain starts after the last one
-  const domain = email.slice(email.lastIndexOf('@') + 1);
+  const domain = getEmailDomain(email);
   const domainConfig = await getDomainConfiguration(domain);
   if (!domainConfig) {
     return undefined;
@@ -63,6 +62,22 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
     globalLogger.error(`Error constructing URL for domain ${domain}: ${err}`);
     throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));
   }
+}
+
+/**
+ * Returns true if the email address's domain signs in through an external identity provider.
+ * Unlike isExternalAuth, this does not build the authorize URL, so a malformed URL does not throw.
+ * @param email - The user email address.
+ * @returns True if password sign-in is not allowed for the email address.
+ */
+export async function hasExternalAuth(email: string): Promise<boolean> {
+  const idp = (await getDomainConfiguration(getEmailDomain(email)))?.identityProvider;
+  return Boolean(idp?.authorizeUrl && idp.clientId);
+}
+
+function getEmailDomain(email: string): string {
+  // The local part of an email address can contain a quoted "@", so the domain starts after the last one
+  return email.slice(email.lastIndexOf('@') + 1);
 }
 
 /**
