@@ -12,6 +12,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -676,5 +677,84 @@ describe('New user', () => {
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
     expect(res.body.emailVerificationRequired).toBe(true);
+  });
+
+  test('Client cannot mark its own email as verified', async () => {
+    const email = `alex${randomUUID()}@example.com`;
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+      email,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      projectId: 'new',
+      emailVerified: true,
+    });
+
+    expect(res).toHaveStatus(200);
+    // `/auth/newproject` trusts User.emailVerified for requireVerifiedEmailForProjectCreation
+    expect((await getUserByEmailWithoutProject(email))?.emailVerified).not.toBe(true);
+  });
+
+  test('Blocked email domain is rejected for server-scoped users', async () => {
+    const { project, client } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Owner',
+        lastName: 'Owner',
+        projectName: 'Blocked Domain Test',
+        email: `owner${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    await enableOpenRegistration(project);
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    // A clientId without projectId still creates a server-scoped User
+    for (const scope of [{}, { projectId: 'new' }, { clientId: client.id }]) {
+      const email = `alex${randomUUID()}@Blocked.Example.com`;
+      const res = await request(app)
+        .post('/auth/newuser')
+        .type('json')
+        .send({
+          ...scope,
+          firstName: 'Alexander',
+          lastName: 'Hamilton',
+          email,
+          password: 'password!@#',
+          recaptchaToken: 'xyz',
+        });
+
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Email domain is not allowed', 'email'));
+      expect(await getUserByEmailWithoutProject(email.toLowerCase())).toBeUndefined();
+    }
+  });
+
+  test('Blocked email domain is allowed for project-scoped patient registration', async () => {
+    const { project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Owner',
+        lastName: 'Owner',
+        projectName: 'Blocked Domain Patient Test',
+        email: `owner${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    await enableOpenRegistration(project);
+    getConfig().blockedEmailDomains = ['blocked.example.com'];
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: project.id,
+        firstName: 'Patient',
+        lastName: 'One',
+        email: `patient${randomUUID()}@blocked.example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res).toHaveStatus(200);
   });
 });

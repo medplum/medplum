@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { NewUserRequest, WithId } from '@medplum/core';
-import { badRequest, concatUrls, normalizeOperationOutcome } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { badRequest, concatUrls, normalizeOperationOutcome, OperationOutcomeError } from '@medplum/core';
 import type { ClientApplication, Login, Project, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -15,7 +15,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
+import { bcryptHashPassword, isEmailDomainBlocked, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
@@ -94,7 +94,13 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 
   try {
-    const user = await createUser({ ...req.body, email } as NewUserRequest);
+    const user = await createUser({
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email,
+      password: req.body.password,
+      projectId: req.body.projectId,
+    });
 
     const login = await tryLogin({
       authMethod: 'password',
@@ -123,26 +129,62 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 }
 
-export async function createUser(request: NewUserRequest): Promise<WithId<User>> {
-  const { firstName, lastName, email, password, projectId } = request;
+export interface CreateUserRequest {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  /** Omit for users who sign in only with an external identity provider. */
+  readonly password?: string;
+  /** Creates a project-scoped User; omit or use 'new' for a server-scoped User. */
+  readonly projectId?: string;
+}
 
-  const numPwns = await pwnedPassword(password);
-  if (numPwns > 0) {
-    throw badRequest('Password found in breach database', 'password');
+/** Trusted settings that must never be populated from client input. */
+export interface CreateUserOptions {
+  /** Set only when the email address has been verified, e.g. by a trusted identity provider. */
+  readonly emailVerified?: boolean;
+  /** Skips the server-wide `blockedEmailDomains` check; for super admin operations only. */
+  readonly skipEmailDomainCheck?: boolean;
+}
+
+/**
+ * Creates a new User.
+ *
+ * Server-scoped Users are rejected if their email domain is in the server-wide
+ * `blockedEmailDomains` config setting, unless `options.skipEmailDomainCheck` is set.
+ * @param request - The new user details.
+ * @param options - Trusted settings that must never come from client input.
+ * @returns The new User.
+ */
+export async function createUser(request: CreateUserRequest, options: CreateUserOptions = {}): Promise<WithId<User>> {
+  const { firstName, lastName, email, password } = request;
+  // 'new' means the User will create a new project, so it is server-scoped
+  const userProjectId = request.projectId === 'new' ? undefined : request.projectId;
+
+  if (!userProjectId && !options.skipEmailDomainCheck && isEmailDomainBlocked(email, getConfig().blockedEmailDomains)) {
+    throw new OperationOutcomeError(badRequest('Email domain is not allowed', 'email'));
+  }
+
+  let passwordHash: string | undefined;
+  if (password) {
+    const numPwns = await pwnedPassword(password);
+    if (numPwns > 0) {
+      throw badRequest('Password found in breach database', 'password');
+    }
+    passwordHash = await bcryptHashPassword(password);
   }
 
   globalLogger.info('User creation request received', { email });
-  const passwordHash = await bcryptHashPassword(password);
-
   const systemRepo = getGlobalSystemRepo();
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
-    meta: projectId && projectId !== 'new' ? { project: projectId } : undefined,
+    meta: userProjectId ? { project: userProjectId } : undefined,
     firstName,
     lastName,
     email,
+    emailVerified: options.emailVerified,
     passwordHash,
-    project: projectId && projectId !== 'new' ? { reference: `Project/${projectId}` } : undefined,
+    project: userProjectId ? { reference: `Project/${userProjectId}` } : undefined,
   });
 
   globalLogger.info('User created', { id: result.id, email });

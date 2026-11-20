@@ -242,6 +242,21 @@ describe('Project $init', () => {
     warnSpy.mockRestore();
   });
 
+  test('Super admin creates owner User with blocked email domain', async () => {
+    config.blockedEmailDomains = ['blocked.example.com'];
+    try {
+      const ownerEmail = randomUUID() + '@blocked.example.com';
+      const res = await initProject(superAdminAccessToken, [
+        { name: 'name', valueString: 'Test Init Project ' + randomUUID() },
+        { name: 'ownerEmail', valueString: ownerEmail },
+      ]);
+      expect(res).toHaveStatus(201);
+      expect(await getUserByEmailWithoutProject(ownerEmail)).toBeDefined();
+    } finally {
+      config.blockedEmailDomains = undefined;
+    }
+  });
+
   test('Defaults to no owner and applies defaultProjectSystemSetting', async () => {
     const { project: superAdminProject } = await createTestProject({ superAdmin: true });
     const { accessToken } = await withTestContext(() => addTestUser(superAdminProject));
