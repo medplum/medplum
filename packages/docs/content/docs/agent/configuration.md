@@ -129,6 +129,7 @@ The **main logger** records general agent activity, including:
 - Configuration warnings and errors
 - General system exceptions
 - Agent lifecycle events
+- Identifiers of messages sent with [`$push`](/docs/agent/push) (control ID, message type, ACK code) and summaries of failed deliveries, without message content
 
 **Important:** The main logger does **not** contain Protected Health Information (PHI).
 
@@ -136,7 +137,8 @@ The **main logger** records general agent activity, including:
 
 The **channel logger** records activity specific to individual communication channels, including:
 
-- HL7 message content and processing
+- HL7 message content and processing, including messages sent with `$push` and their responses
+- Error details for failed deliveries, which can echo message content
 - DICOM study transfers
 - ASTM result messages
 - Channel-specific errors and warnings

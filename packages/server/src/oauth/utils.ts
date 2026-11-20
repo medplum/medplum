@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, JWTPayload, ProfileResource, SearchRequest, WithId } from '@medplum/core';
+import type { Filter, JWTPayload, Operation, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
@@ -41,9 +41,8 @@ import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
-import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
 import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
@@ -63,7 +62,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
+import { getProjectIdFromUrl, getProjectScopedUrl, matchesIpAccessRule, safeFetch } from '../util/url';
 import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -177,7 +176,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
   }
 
-  let user: User | undefined = undefined;
+  let user: WithId<User> | undefined = undefined;
   if (request.externalId) {
     user = await getUserByExternalId(systemRepo, request.externalId, request.projectId as string);
   } else if (request.email) {
@@ -218,6 +217,23 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     userAgent: request.userAgent,
     pictureUrl: request.pictureUrl,
   });
+
+  if (request.password) {
+    // The password was checked against `user` as read above. A password change commits the new hash
+    // and then revokes the logins it finds (see setPassword). This re-read must come after the login
+    // is stored, so that either the change is visible here or this login is visible to its
+    // revocation; checked before, a change committing in between would be seen by neither.
+    // Until it is revoked below, the login is unusable: its code, cookie and refresh secret are only
+    // returned on success. Searched rather than read, so it comes from the database, not the cache.
+    const current = await systemRepo.searchOne<User>({
+      resourceType: 'User',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: user.id }],
+    });
+    if (current?.passwordHash !== user.passwordHash) {
+      await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
+    }
+  }
 
   // Try to get user memberships
   // If they only have one membership, set it now
@@ -364,8 +380,7 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
 
   // TOTP authenticator application
   if (!verified && secret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    verified = authenticator.verify({ token, secret });
+    verified = await verifyTotpToken(user.id, secret, token);
   }
 
   if (!verified) {
@@ -386,11 +401,13 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
     await enrollTotp(login, user, enrollSecret);
   }
 
-  const result = await systemRepo.updateResource<Login>({
-    ...login,
-    mfaVerified: true,
-    emailMfa: emailCodeVerified ? undefined : login.emailMfa, // clear emailMfa on successful verification
-  });
+  // Patched rather than written from `login`, so that a revocation since it was read is kept
+  const patch: Operation[] = [{ op: 'add', path: '/mfaVerified', value: true }];
+  if (emailCodeVerified) {
+    // The emailed code is single-use
+    patch.push({ op: 'remove', path: '/emailMfa' });
+  }
+  const result = await systemRepo.patchResource<Login>('Login', login.id as string, patch);
   await tryReleaseMfaAttempt(getLogger(), login);
   return result;
 }
@@ -624,17 +641,6 @@ export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolic
   }
 }
 
-/**
- * Returns true if the remote address matches the rule value.
- * @param remoteAddress - The login remote address.
- * @param ruleValue - The IP Access Rule value.
- * @returns True if the remote address matches the rule value; otherwise false.
- */
-function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
-  const prefix = ruleValue.endsWith('.') ? ruleValue : ruleValue + '.';
-  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(prefix);
-}
-
 function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {
   if (!matchesPermissionType(existing.permissionType, candidate.permissionType, hasPatientContext)) {
     return false;
@@ -760,8 +766,8 @@ export async function setLoginScope(systemRepo: SystemRepository, login: Login, 
     }
   }
 
-  // Otherwise update scope
-  return systemRepo.updateResource<Login>({ ...login, scope });
+  // Patched rather than written from `login`, so that a revocation since it was read is kept
+  return systemRepo.patchResource<Login>('Login', login.id as string, [{ op: 'add', path: '/scope', value: scope }]);
 }
 
 export async function getAuthTokens(
@@ -855,7 +861,7 @@ export async function getUserByExternalId(
   systemRepo: SystemRepository,
   externalId: string,
   projectId: string
-): Promise<User | undefined> {
+): Promise<WithId<User> | undefined> {
   const membership = await systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [

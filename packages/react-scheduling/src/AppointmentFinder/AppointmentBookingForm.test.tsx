@@ -8,7 +8,13 @@ import type { JSX } from 'react';
 import type { MockInstance } from 'vitest';
 import { installBookStub } from '../stories/mockBook';
 import { installFindStub } from '../stories/mockFind';
-import { DrOkaforPractitioner, DrOkaforSchedule, DrRiveraSchedule, ElderJordanPatient } from '../stories/scheduling';
+import {
+  DrOkaforPractitioner,
+  DrOkaforSchedule,
+  DrRiveraSchedule,
+  ElderJordanPatient,
+  UltrasoundImagingService,
+} from '../stories/scheduling';
 import { installAutocompleteTimers, settleAutocomplete } from '../test-utils/asyncAutocomplete';
 import {
   bookButton,
@@ -19,18 +25,23 @@ import {
   chooseRepeat,
   chosenTimeField,
   clickBook,
+  durationEditorButton,
+  durationField,
   field,
   fillBooking,
   MONDAY_MORNING,
+  openDurationEditor,
   openTimeFinder,
   patientDetail,
   setupBookingClient,
   typedTimeField,
+  typeDuration,
 } from '../test-utils/bookingForm';
-import { fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
+import { act, fireEvent, renderWithMedplum, screen, within } from '../test-utils/render';
 import type { AppointmentBooking, AppointmentBookingFormProps } from './AppointmentBookingForm';
 import { AppointmentBookingForm } from './AppointmentBookingForm';
-import { formatZonedDateTimeInput } from './AppointmentFinder.times';
+import { createActorRequirement, MAX_ACTOR_COMBINATIONS } from './AppointmentFinder.schedules';
+import { formatZonedDateTimeInput, getDurationMinutes } from './AppointmentFinder.times';
 
 installAutocompleteTimers();
 
@@ -222,35 +233,79 @@ describe('AppointmentBookingForm', () => {
     });
   });
 
-  /**
-   * Answers everything but the time, then opens the finder, which is where a time is
-   * chosen by either means: picked from what is offered, or typed above them.
-   */
+  /** Answers everything but the time, leaving the finder closed. */
   async function fillWithoutTime(): Promise<void> {
     await chooseImagingService();
     await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
     await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
-    await openTimeFinder();
   }
 
-  function typeTime(dateTime: string, minutes: string): void {
-    fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: dateTime } });
-    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: minutes } });
+  async function typeTime(dateTime: string, minutes: string): Promise<void> {
+    fireEvent.change(typedTimeField(), { target: { value: dateTime } });
+    await typeDuration(minutes);
   }
 
   describe('When the host permits a typed time', () => {
     test('Offers nothing to type without the prop', async () => {
       setup(medplum);
       await fillWithoutTime();
+      await openTimeFinder();
 
       // The times on offer are there; the way past them is not.
-      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
+      expect(durationEditorButton()).not.toBeInTheDocument();
     });
 
-    test('Offers the fields above the times on offer', async () => {
+    test('Fills the fields from a searched time, and books an edit of it as a typed time', async () => {
+      const executeBatch = vi
+        .spyOn(medplum, 'executeBatch')
+        .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
       setup(medplum, { canBypassSchedulingRules: true });
+      // No visit type, no length to show yet.
+      expect(screen.queryByText(/min visit/i)).not.toBeInTheDocument();
       await fillWithoutTime();
-      expect(screen.getByText('Or enter a time')).toBeInTheDocument();
+      expect(typedTimeField()).toHaveValue('');
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      const picked = typedTimeField().value;
+      expect(picked).not.toBe('');
+      expect(durationField()).toBeNull();
+      await openDurationEditor();
+      let duration = durationField() as HTMLInputElement;
+      expect(duration).toHaveValue('30');
+      // Selected as it opens, so typing replaces the length rather than adding to it.
+      expect(duration).toHaveFocus();
+      expect([duration.selectionStart, duration.selectionEnd]).toEqual([0, 2]);
+      // Backspaced to empty, it stays empty, rather than bringing back the length it was cleared of.
+      fireEvent.change(duration, { target: { value: '3' } });
+      fireEvent.change(duration, { target: { value: '' } });
+      expect(duration).toHaveValue('');
+      expect(bookButton()).toBeDisabled();
+
+      // Reset puts back the length it opened on and closes the field, keeping the time.
+      fireEvent.change(duration, { target: { value: '45' } });
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Reset to 30 min' }));
+      });
+      expect(durationField()).toBeNull();
+      expect(typedTimeField()).toHaveAccessibleDescription(/^30 min visit · Change/);
+      expect(typedTimeField()).toHaveValue(picked);
+
+      await openDurationEditor();
+      duration = durationField() as HTMLInputElement;
+      fireEvent.change(duration, { target: { value: '45' } });
+      await clickBook();
+
+      const appointment = executeBatch.mock.calls[0][0].entry?.at(-1)?.resource as Appointment;
+      expect(typedTimeField()).toHaveValue(picked);
+      expect(getDurationMinutes(appointment)).toBe(45);
+    });
+
+    test('Drops a searched time once its field is emptied', async () => {
+      setup(medplum, { canBypassSchedulingRules: true });
+      await fillBooking();
+      expect(bookButton()).toBeEnabled();
+      fireEvent.change(typedTimeField(), { target: { value: '' } });
+      expect(bookButton()).toBeDisabled();
     });
 
     test('Writes a typed time directly, never through $book', async () => {
@@ -260,7 +315,7 @@ describe('AppointmentBookingForm', () => {
       const post = vi.spyOn(medplum, 'post');
       setup(medplum, { canBypassSchedulingRules: true });
       await fillWithoutTime();
-      typeTime('2026-08-17T14:07', '45');
+      await typeTime('2026-08-17T14:07', '45');
       await clickBook();
 
       // `$book` would refuse this: nothing checked the time, and 14:07 for 45 minutes
@@ -285,7 +340,7 @@ describe('AppointmentBookingForm', () => {
     test('Cannot book while the typed time is incomplete', async () => {
       setup(medplum, { canBypassSchedulingRules: true });
       await fillWithoutTime();
-      typeTime('', '45');
+      await typeTime('', '45');
 
       expect(bookButton()).toBeDisabled();
     });
@@ -296,7 +351,6 @@ describe('AppointmentBookingForm', () => {
         await chooseActor(/provider/i, 'riv', 'Dr. Maya Rivera');
         await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
         await choosePatient('Jordan', patientDetail(ElderJordanPatient, '100041'));
-        await openTimeFinder();
       }
 
       test('Holds a typed time on the first of them only', async () => {
@@ -305,7 +359,7 @@ describe('AppointmentBookingForm', () => {
           .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
         setup(medplum, { canBypassSchedulingRules: true });
         await fillWithEitherProvider();
-        typeTime('2026-08-17T14:07', '45');
+        await typeTime('2026-08-17T14:07', '45');
         await clickBook();
 
         const resources = executeBatch.mock.calls[0][0].entry?.map((entry) => entry.resource) ?? [];
@@ -329,7 +383,7 @@ describe('AppointmentBookingForm', () => {
         }
         setup(medplum, { canBypassSchedulingRules: true });
         await fillWithEitherProvider();
-        typeTime('2026-08-17T14:07', '45');
+        await typeTime('2026-08-17T14:07', '45');
         await settleAutocomplete();
 
         expect(screen.getByText(/Rivera's schedule/)).toBeInTheDocument();
@@ -348,6 +402,7 @@ describe('AppointmentBookingForm', () => {
         const post = vi.spyOn(medplum, 'post');
         setup(medplum, { canBypassSchedulingRules: true, defaultDateTime: OFFERED });
         await fillWithoutTime();
+        await openTimeFinder();
 
         expect(typedTimeField()).toHaveValue(formatZonedDateTimeInput(OFFERED, 'America/New_York'));
         const timeButtons = screen
@@ -364,6 +419,27 @@ describe('AppointmentBookingForm', () => {
         await fillWithoutTime();
 
         expect(typedTimeField()).toHaveValue('');
+      });
+
+      test('Proposes nothing while the actors chosen are blocked', async () => {
+        const onChangeProposal = vi.fn();
+        const providers = Array.from({ length: MAX_ACTOR_COMBINATIONS + 1 }, (_, index) => ({
+          schedule: { ...DrRiveraSchedule, id: `provider-${index}` },
+          actorResource: undefined,
+        }));
+        setup(medplum, {
+          canBypassSchedulingRules: true,
+          defaultDateTime: OFFERED,
+          defaultService: UltrasoundImagingService,
+          defaultSelections: { Practitioner: [createActorRequirement(providers)] },
+          onChangeProposal,
+        });
+        await settleAutocomplete();
+
+        // The field is disabled for it, so a time held on the first of them would be booked unseen.
+        expect(screen.getByText(/Too many combinations/)).toBeInTheDocument();
+        expect(typedTimeField()).toBeDisabled();
+        expect(onChangeProposal).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Appointment' }));
       });
     });
   });
@@ -402,7 +478,7 @@ describe('AppointmentBookingForm', () => {
         .mockResolvedValue({ resourceType: 'Bundle', type: 'transaction-response', entry: [] });
       setup(medplum, { canBypassSchedulingRules: true, appointmentExtensions: [HOST_USER] });
       await fillWithoutTime();
-      typeTime('2026-08-17T14:07', '45');
+      await typeTime('2026-08-17T14:07', '45');
       await clickBook();
 
       const bundle = executeBatch.mock.calls[0][0];

@@ -10,6 +10,7 @@ import type {
   OperationOutcomeIssue,
   Parameters,
   ParametersParameter,
+  Questionnaire,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -157,6 +158,42 @@ describe('Agent Push', () => {
       });
     expect(res).toHaveStatus(200);
     expect(res.body).toMatchObject(allOk);
+  });
+
+  test('Destination by device search rejects parameters that change the result type', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Questionnaire`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'draft',
+        url: 'mllp://192.168.50.11:56001',
+      } satisfies Questionnaire);
+    expect(res1).toHaveStatus(201);
+
+    const publishSpy = vi.spyOn(pubsub, 'publish');
+    try {
+      for (const destination of [
+        `Device?_type=Questionnaire&_id=${res1.body.id}`,
+        `Device?_type=Device,Questionnaire&_id=${res1.body.id}`,
+        `Device?model=${device.modelNumber}&_include=Device:patient`,
+        `Device?model=${device.modelNumber}&_revinclude=Provenance:target`,
+      ]) {
+        const res2 = await request(app)
+          .post(`/fhir/R4/Agent/${agent.id}/$push`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({ contentType: ContentType.TEXT, body: 'input', destination });
+        expect(res2).toHaveStatus(400);
+        expect(res2.body.issue[0].details.text).toStrictEqual(
+          '_type, _include, and _revinclude are not supported when searching for Device'
+        );
+      }
+      expect(publishSpy).not.toHaveBeenCalled();
+    } finally {
+      publishSpy.mockRestore();
+    }
   });
 
   test('Missing parameters', async () => {

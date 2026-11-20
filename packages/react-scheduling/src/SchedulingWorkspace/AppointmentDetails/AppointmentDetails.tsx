@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   formatCodeableConcept,
@@ -18,7 +18,7 @@ import {
 import type { Appointment, Bundle, CodeableConcept, Parameters, Reference, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
@@ -151,7 +151,6 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 
   return (
     <>
-      <Title order={5}>Cancel this appointment</Title>
       {cancelError !== undefined && (
         <Alert color="red" title="Could not cancel this appointment">
           {normalizeErrorString(cancelError)}
@@ -220,11 +219,6 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<unknown>();
 
-  const patientLine = (
-    <Detail label="Patient" value={patient && <AppointmentPatientName appointment={appointment} />} />
-  );
-  const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
-
   const innerOnCancelled = useCallback(
     (appointment: WithId<Appointment>) => {
       setCancelling(false);
@@ -281,68 +275,22 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     return onRescheduled?.(reschedule);
   }
 
-  if (cancelling) {
-    return (
-      <Stack gap="sm" className={classes.details}>
-        {patientLine}
-        {whenLine}
-        <AppointmentCancelForm
-          appointment={appointment}
-          onCancelled={innerOnCancelled}
-          cancellationReasonValueSet={props.cancellationReasonValueSet}
-        />
-        <Stack gap="sm" className={classes.actions}>
-          <Button onClick={() => setCancelling(false)} variant="outline">
-            Back to Appointment Details
-          </Button>
-        </Stack>
-      </Stack>
-    );
-  }
-
-  if (rescheduling) {
-    return (
-      <Stack gap="sm" className={classes.details}>
-        <Group justify="space-between" wrap="nowrap">
-          {/* Its own heading: a host showing this in a panel titled for the details has
-              no way of knowing the view underneath it changed. */}
-          <Title order={5}>Reschedule appointment</Title>
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            leftSection={<IconArrowLeft size={14} stroke={1.8} />}
-            onClick={stopRescheduling}
-          >
-            Back
-          </Button>
-        </Group>
-        <AppointmentRescheduleForm
-          appointment={appointment}
-          onToggleTimeFinder={onToggleTimeFinder}
-          onRescheduled={finishRescheduling}
-          canBypassSchedulingRules={props.canBypassSchedulingRules}
-        />
-      </Stack>
-    );
-  }
-
   const cancelable = isCancelable(appointment);
   const locked = isPastEditWindow(appointment);
+  const reschedulable = isReschedulable(appointment);
+  const externalUrl = getExternalUrl(appointment);
   const { visitType, procedures } = partitionServiceTypes(appointment);
   const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
-  const externalUrl = getExternalUrl(appointment);
   const site = getAppointmentSite(appointment);
   const { primary, providers, rooms, devices, others } = partitionActors(appointment);
   const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
 
-  // Both pages fill the pane the same way, so what can be done to the visit sits at the
-  // foot of either.
-  return (
-    <Stack gap="sm" className={classes.details}>
-      <AppointmentStatusBadge status={appointment.status} />
-      {patientLine}
+  const summary = (
+    <>
+      <Detail label="Status" value={<AppointmentStatusBadge status={appointment.status} />} />
+      <Detail label="Patient" value={patient && <AppointmentPatientName appointment={appointment} />} />
       <Detail label="MRN" value={mrn} />
-      {whenLine}
+      <Detail label="When" value={formatWhen(appointment)} />
       <Detail label="Repeats" value={formatSeries(appointment)} />
       <Detail label="Visit type" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
       <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
@@ -353,6 +301,68 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
       <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
       {!editing && <Detail label="Notes" value={appointment.comment} />}
       <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
+    </>
+  );
+  const codes = (
+    <>
+      <Detail label="Procedure codes" value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')} />
+      <Detail
+        label="Diagnosis codes"
+        value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
+      />
+      <Detail
+        label="Medical necessity"
+        value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
+      />
+    </>
+  );
+
+  // The whole visit stays in view above the cancellation, to check it is the one to call off.
+  // The cancellation takes the foot, where Cancel Appointment was pressed.
+  if (cancelling) {
+    return (
+      <Stack gap="sm" className={classes.details}>
+        <Title order={5}>Cancel this appointment</Title>
+        {summary}
+        {codes}
+        <Stack gap="sm" className={classes.actions}>
+          <Divider />
+          <AppointmentCancelForm
+            appointment={appointment}
+            onCancelled={innerOnCancelled}
+            cancellationReasonValueSet={props.cancellationReasonValueSet}
+          />
+          <Button variant="default" onClick={() => setCancelling(false)}>
+            Back to Appointment Details
+          </Button>
+        </Stack>
+      </Stack>
+    );
+  }
+
+  if (rescheduling) {
+    return (
+      <Stack gap="sm" className={`${classes.details} ${classes.rescheduling}`}>
+        <Title order={5}>Reschedule appointment</Title>
+        <AppointmentRescheduleForm
+          appointment={appointment}
+          onToggleTimeFinder={onToggleTimeFinder}
+          onRescheduled={finishRescheduling}
+          canBypassSchedulingRules={props.canBypassSchedulingRules}
+        >
+          <Button variant="default" onClick={stopRescheduling}>
+            Back to Appointment Details
+          </Button>
+        </AppointmentRescheduleForm>
+      </Stack>
+    );
+  }
+
+  // What can be done to the visit sits at the foot of the pane.
+  return (
+    <Stack gap="sm" className={classes.details}>
+      {editing && <Title order={5}>Edit appointment</Title>}
+      {summary}
       {editing ? (
         <AppointmentDetailsForm
           appointment={appointment}
@@ -363,23 +373,13 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             setEditing(false);
             return onUpdated?.(updated);
           }}
-          onCancel={() => setEditing(false)}
-        />
+        >
+          <Button variant="default" onClick={() => setEditing(false)}>
+            Back to Appointment Details
+          </Button>
+        </AppointmentDetailsForm>
       ) : (
-        <>
-          <Detail
-            label="Procedure codes"
-            value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')}
-          />
-          <Detail
-            label="Diagnosis codes"
-            value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
-          />
-          <Detail
-            label="Medical necessity"
-            value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
-          />
-        </>
+        codes
       )}
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
@@ -417,7 +417,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
               <Button variant="outline" onClick={() => setEditing(true)}>
                 Edit
               </Button>
-              {isReschedulable(appointment) && (
+              {reschedulable && (
                 <Button
                   variant="outline"
                   leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
@@ -426,15 +426,15 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
                   Reschedule
                 </Button>
               )}
-              <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-                Cancel Appointment
-              </Button>
-              {!cancelable && (
-                <Text size="sm" c="dimmed">
-                  {appointment.status === 'cancelled'
-                    ? 'This appointment is cancelled.'
-                    : `An appointment in '${appointment.status}' status cannot be cancelled.`}
-                </Text>
+              {cancelable && (
+                <Button
+                  variant="outline"
+                  color="red"
+                  leftSection={<IconCalendarCancel size={16} stroke={1.8} />}
+                  onClick={() => setCancelling(true)}
+                >
+                  Cancel Appointment
+                </Button>
               )}
             </>
           )}
