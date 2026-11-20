@@ -4,6 +4,12 @@ title: Bots
 weight: 10
 ---
 
+{{< tip title="Running server side code" >}}
+
+Use [Running Server Side Code: Bots and Subscriptions](/docs/decision-guides/running-server-side-code) to choose a trigger for each use case and a destination for each Subscription. Bots are the recommended starting point for handling FHIR event notifications.
+
+{{< /tip >}}
+
 Medplum bots are functions that execute when triggered. They are similar to AWS Lambda functions, and in Medplum we make them easy to write and deploy and trigger with [FHIR Subscriptions](/docs/subscriptions). For the purpose of the tutorials found in this section, it's important to understand that **Bots drive many of the major integrations that you see in Medplum**.
 
 If you are new to Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](/docs/bots/bot-basics).
@@ -36,6 +42,7 @@ Configure how and when your bots execute, from scheduled tasks to real-time even
 - [Consuming Webhooks](/docs/bots/consuming-webhooks)
 - [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response)
 - [Custom FHIR Operations](/docs/bots/custom-fhir-operations)
+- [FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications)
 
 ## Common Use Cases & Patterns
 Implement frequently-needed functionality like file handling, document generation, and data transformation.

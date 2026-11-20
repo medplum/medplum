@@ -5,6 +5,12 @@ docs_tags:
   - subscription
 ---
 
+{{< tip title="Choose a notification destination" >}}
+
+Start with a Medplum Bot to handle FHIR event notifications. Use [Running Server Side Code: Bots and Subscriptions](/docs/decision-guides/running-server-side-code#decision-2-where-should-this-subscription-send-notifications) to choose the destination and matching resource changes for each Subscription, then follow [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications) for setup.
+
+{{< /tip >}}
+
 Subscriptions are event-driven notifications, like webhooks, and are commonly used for integrations and automations. Medplum supports subscribing to changes on FHIR resources. There is a description [FHIR Subscriptions](https://www.hl7.org/fhir/subscription.html) on HL7.org that describes the functionality in detail.
 
 - [Subscriptions](https://app.medplum.com/Subscription) can be created and updated on the [Medplum App](/docs/app)

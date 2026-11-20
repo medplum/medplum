@@ -26,7 +26,7 @@ Creating a [`Patient`](/docs/api/fhir/resources/patient) if one does not exist u
 
 {{< code-example file="packages/examples/src/fhir-datastore/working-with-fhir.ts" language="ts" blocks="patient-imports, create-patient" lineNumbers="true" >}}
 
-This example uses the [`MedplumClient`](/docs/sdk/core.medplumclient) from the Medplum SDK to interact with the FHIR API. The `createResourceIfNoneExists` method is a helper that performs a search before creating the resource.
+This example uses the [`MedplumClient`](/docs/sdk/core.medplumclient) from the Medplum SDK to interact with the FHIR API. `createResourceIfNoneExist` sends a conditional create request with an `If-None-Exist` header. The server returns the matching resource or creates it if none exists. Use this instead of a separate search followed by a create, which can produce duplicates when requests overlap.
 
 The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [`Identifiers`](/docs/fhir-basics#naming-data-identifiers) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
 
@@ -37,7 +37,7 @@ We recommend that providers put documentation of their identifier system online 
 In some cases, you may want to update the resource in place if it already exists in the system, in addition to creating
 it if it doesn't exist yet. This is accomplished via a combined "update" and "insert" operation: an "upsert".
 
-Provide the current version of the resource and a search query, similar to `createResourceIfNoneExists()`.
+Provide the current version of the resource and a search query, similar to `createResourceIfNoneExist()`.
 
 {{< tabs groupId="language" >}}
   {{< tab value="ts" label="Typescript" >}}

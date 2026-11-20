@@ -13,7 +13,7 @@ Use the guides and technical docs together: the guide explains which approach fi
 
 ## Application Design
 
-Define the identity, tenancy, and access rules shared across your workflows.
+Define the identity, tenancy, access, and processing responsibilities shared across your workflows.
 
 ### Authentication
 
@@ -35,6 +35,13 @@ Define role scopes, resource and field permissions, administration, and patient 
 
 - **[Decision Guide →](/docs/decision-guides/access-control)**
 - **Docs:** [Authorization and Access Control](/docs/access)
+
+### Running Server Side Code
+
+Choose what starts each use case: a FHIR resource change, application request, incoming webhook, or schedule. Run the code in a Bot or your own service. For Subscriptions, start with Bots as the destination and select the resource changes that should send notifications.
+
+- **[Decision Guide →](/docs/decision-guides/running-server-side-code)**
+- **Docs:** [Bot Basics](/docs/bots/bot-basics), [Implementing FHIR Event Notifications](/docs/subscriptions/fhir-event-notifications)
 
 ## Clinical and Operational Workflows
 

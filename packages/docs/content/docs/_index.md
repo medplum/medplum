@@ -41,7 +41,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 1. [Learn FHIR basics](./docs/fhir-basics) to understand the structure of FHIR resources, the healthcare standard on which Medplum is built.
 2. [Learn workflow patterns](./blog/fhir-workflow-patterns-to-simplify-your-life) to understand how resources are used to place requests, record events, and store information.
 3. Use our [Decision Guides](/docs/decision-guides) to compare approaches and make design choices before you build:
-   - [Application Design](/docs/decision-guides#application-design) covers authentication, tenancy, and access control shared across workflows.
+   - [Application Design](/docs/decision-guides#application-design) covers authentication, tenancy, access control, and event processing shared across workflows.
    - [Clinical and Operational Workflows](/docs/decision-guides#clinical-and-operational-workflows) covers processes such as intake, scheduling, diagnostic orders, and follow-up.
    - [Implementation and Rollout](/docs/decision-guides#implementation-and-rollout) covers planning the transition to Medplum, starting with data migration.
 4. Explore our clinical workflow guides! Popular workflows are included below. Step through specific use cases. Don't see a how-to guide you need? Reach out on our [Discord](https://discord.gg/medplum) or send us an email at [support@medplum.com](mailto:support@medplum.com).

@@ -1,0 +1,10 @@
+<div class="guide-downloads" role="group" aria-label="Download this guide">
+  <a class="guide-download-button" href="{{ printf "/decision-guides/%s.pdf" .Params.download_slug | relURL }}" download aria-label="Download guide as PDF">
+    <span aria-hidden="true">{{ partial "icon" "outline/download" }}</span>
+    PDF
+  </a>
+  <a class="guide-download-button" href="{{ printf "/decision-guides/%s.docx" .Params.download_slug | relURL }}" download aria-label="Download guide as Word">
+    <span aria-hidden="true">{{ partial "icon" "outline/download" }}</span>
+    Word
+  </a>
+</div>

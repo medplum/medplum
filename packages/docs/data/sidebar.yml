@@ -39,6 +39,8 @@ items:
           - type: "doc"
             id: "docs/decision-guides/access-control"
             label: "Access Control"
+          - type: "doc"
+            id: "docs/decision-guides/running-server-side-code"
       - type: "category"
         label: "Clinical and Operational Workflows"
         items:
