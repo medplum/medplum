@@ -140,14 +140,14 @@ describe('useSchedulingSlots', () => {
 
       await waitFor(() => expect(result.current.slots).toEqual([slotA]));
 
-      // One Slot query scoped to the schedule, bounded by the range.
+      // One Slot query scoped to the schedule, for the Slots overlapping the range.
       expect(searches['Slot']).toHaveLength(1);
       expect(searches['Slot']?.[0].toString()).toEqual(
         getQueryString([
           ['_count', '1000'],
           ['schedule', 'Schedule/schedule-a'],
-          ['start', `ge${RANGE.start.toISOString()}`],
-          ['start', `le${RANGE.end.toISOString()}`],
+          ['start', `lt${RANGE.end.toISOString()}`],
+          ['end', `gt${RANGE.start.toISOString()}`],
           ['status:not', 'entered-in-error'],
         ])
       );
@@ -304,7 +304,7 @@ describe('useSchedulingSlots', () => {
       expect(result.current.slots).toEqual([slotA, created]);
     });
 
-    test('ignores a created Slot that falls outside the range', async () => {
+    test('ignores a created Slot outside the range, keeping one that began before it', async () => {
       configureSearch({ slotsBySchedule: { 'Schedule/schedule-a': [slotA] } });
       const { result } = setup(useSchedulingSlots, [SCHEDULE_A], RANGE);
       await waitFor(() => expect(result.current.slots).toEqual([slotA]));
@@ -327,6 +327,24 @@ describe('useSchedulingSlots', () => {
       });
 
       expect(result.current.slots).toEqual([slotA]);
+
+      // Time off that started before the range still covers part of it.
+      const spanning: WithId<Slot> = {
+        ...slotA,
+        id: 'slot-spanning',
+        start: '2023-12-20T00:00:00.000Z',
+        end: '2024-01-05T00:00:00.000Z',
+      };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Slot',
+          operation: 'create',
+          id: spanning.id,
+          resource: spanning,
+        });
+      });
+
+      expect(result.current.slots).toEqual([slotA, spanning]);
     });
 
     test('ignores a created Slot for an untracked schedule', async () => {
@@ -451,14 +469,14 @@ describe('useSchedulingAppointments', () => {
 
       await waitFor(() => expect(result.current.appointments).toEqual([apptA]));
 
-      // One Appointment query scoped to the schedule's actor, bounded by the range.
+      // One Appointment query scoped to the schedule's actor, for the Appointments overlapping the range.
       expect(searches['Appointment']).toHaveLength(1);
       expect(searches['Appointment']?.[0].toString()).toEqual(
         getQueryString([
           ['_count', '1000'],
           ['actor', 'Practitioner/pract-a'],
-          ['date', `ge${RANGE.start.toISOString()}`],
-          ['date', `le${RANGE.end.toISOString()}`],
+          ['date', `lt${RANGE.end.toISOString()}`],
+          ['end', `gt${RANGE.start.toISOString()}`],
         ])
       );
     });
@@ -637,6 +655,7 @@ describe('useSchedulingAppointments', () => {
         id: 'appt-new',
         status: 'booked',
         start: '2024-01-15T10:00:00.000Z',
+        end: '2024-01-15T10:30:00.000Z',
         participant: [{ actor: { reference: 'Practitioner/pract-a' }, status: 'accepted' }],
       };
       act(() => {
@@ -651,7 +670,7 @@ describe('useSchedulingAppointments', () => {
       expect(result.current.appointments).toEqual([apptA, created]);
     });
 
-    test('ignores a created Appointment that falls outside the range', async () => {
+    test('ignores a created Appointment outside the range, keeping one that began before it', async () => {
       configureSearch({ appointmentsByActor: { 'Practitioner/pract-a': [apptA] } });
       const { result } = setup(useSchedulingAppointments, [SCHEDULE_A], RANGE);
       await waitFor(() => expect(result.current.appointments).toEqual([apptA]));
@@ -663,6 +682,7 @@ describe('useSchedulingAppointments', () => {
         id: 'appt-outside',
         status: 'booked',
         start: '2024-02-15T10:00:00.000Z',
+        end: '2024-02-15T10:30:00.000Z',
         participant: [{ actor: { reference: 'Practitioner/pract-a' }, status: 'accepted' }],
       };
       act(() => {
@@ -675,6 +695,24 @@ describe('useSchedulingAppointments', () => {
       });
 
       expect(result.current.appointments).toEqual([apptA]);
+
+      // An overnight stay that started before the range still covers part of it.
+      const spanning: WithId<Appointment> = {
+        ...outside,
+        id: 'appt-spanning',
+        start: '2023-12-31T20:00:00.000Z',
+        end: '2024-01-01T08:00:00.000Z',
+      };
+      act(() => {
+        medplum.notifyResourceModified({
+          resourceType: 'Appointment',
+          operation: 'create',
+          id: spanning.id,
+          resource: spanning,
+        });
+      });
+
+      expect(result.current.appointments).toEqual([apptA, spanning]);
     });
 
     test('ignores a created Appointment whose actor is not tracked', async () => {
@@ -729,6 +767,7 @@ describe('useSchedulingAppointments', () => {
         id: 'appt-proposed',
         status: 'proposed',
         start: '2024-01-15T10:00:00.000Z',
+        end: '2024-01-15T10:30:00.000Z',
       };
       act(() => {
         medplum.notifyResourceModified({
@@ -764,7 +803,11 @@ describe('useSchedulingAppointments', () => {
       expect(result.current.loading).toBe(false);
 
       // A created Appointment is left out too.
-      const created: WithId<Appointment> = { ...apptA, start: '2024-01-15T10:00:00.000Z' };
+      const created: WithId<Appointment> = {
+        ...apptA,
+        start: '2024-01-15T10:00:00.000Z',
+        end: '2024-01-15T10:30:00.000Z',
+      };
       act(() => {
         medplum.notifyResourceModified({
           resourceType: 'Appointment',
