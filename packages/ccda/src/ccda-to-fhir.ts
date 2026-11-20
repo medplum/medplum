@@ -68,7 +68,6 @@ import {
 } from './oids';
 import { sanitizeNullFlavors } from './sanitize';
 import {
-  ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
@@ -87,6 +86,7 @@ import {
   IMMUNIZATION_STATUS_MAPPER,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   mapCcdaCodeToCodeableConcept,
+  mapCcdaEncounterClass,
   mapCcdaNoKnownAllergyCode,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
@@ -1426,11 +1426,7 @@ class CcdaToFhirConverter {
       id: this.mapId(encounter.id),
       identifier: this.mapIdentifiers(encounter.id),
       status: ENCOUNTER_STATUS_MAPPER.mapCcdaToFhirWithDefault(encounter.statusCode?.['@_code'], 'unknown'),
-      class: {
-        system: ACT_CODE_SYSTEM,
-        code: encounter.code?.['@_code'] ?? 'AMB',
-        display: encounter.code?.['@_displayName'] ?? 'Ambulatory',
-      },
+      class: mapCcdaEncounterClass(encounter.code),
       type: encounter.code ? [this.mapCode(encounter.code) as CodeableConcept] : undefined,
       subject: createReference(this.patient as Patient),
       period: this.mapEffectiveTimeToPeriod(encounter.effectiveTime?.[0]),
