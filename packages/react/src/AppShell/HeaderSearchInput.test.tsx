@@ -24,6 +24,9 @@ medplum.graphql = vi.fn((query: string) => {
   if (query.includes('"9001"')) {
     data.ServiceRequestList = [HomerServiceRequest];
   }
+  if (query.includes('"homer@example.com"')) {
+    data.Patients1 = [HomerSimpson];
+  }
   if (query.includes('"alpha"')) {
     const names = ['___alpha', '__alpha', '_alpha', 'alpha'];
     data.ServiceRequestList = names.map((name) => ({
@@ -173,5 +176,54 @@ describe('HeaderSearchInput', () => {
 
     expect(await screen.findByText('Patient/emptyPatient')).toBeInTheDocument();
     expect(screen.getByText('ServiceRequest/emptyServiceRequest')).toBeInTheDocument();
+  });
+  describe('Search shortcuts', () => {
+    function lastQuery(): string {
+      const calls = vi.mocked(medplum.graphql).mock.calls;
+      return calls[calls.length - 1][0];
+    }
+
+    test('Targets a single search parameter', async () => {
+      setup();
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'email:homer@example.com');
+
+      expect(lastQuery()).toContain('PatientList(email: "homer@example.com"');
+      // A Patient-only parameter should not be sent to ServiceRequest.
+      expect(lastQuery()).not.toContain('ServiceRequestList');
+      // The prefix is consumed, not searched for.
+      expect(lastQuery()).not.toContain('email:homer@example.com');
+    });
+
+    test('Accepts = as well as :', async () => {
+      setup();
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'email=homer@example.com');
+      expect(lastQuery()).toContain('PatientList(email: "homer@example.com"');
+    });
+
+    test('Searches every resource type that supports the parameter', async () => {
+      setup();
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'identifier:9001');
+
+      expect(lastQuery()).toContain('PatientList(identifier: "9001"');
+      expect(lastQuery()).toContain('ServiceRequestList(identifier: "9001"');
+    });
+
+    test('Unknown prefix falls through to a plain search', async () => {
+      setup();
+      // A token search contains a separator but is not a shortcut, so it must
+      // be searched verbatim rather than parsed as "http" plus a value.
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'http://acme.org|123');
+
+      expect(lastQuery()).toContain('PatientList(name: "http://acme.org|123"');
+      expect(lastQuery()).toContain('PatientList(identifier: "http://acme.org|123"');
+    });
+
+    test('Selecting a shortcut result navigates', async () => {
+      setup();
+      await typeInAutocomplete(screen.getByRole('searchbox'), 'email:homer@example.com');
+      await clickAutocompleteOption('Homer Simpson');
+
+      expect(navigateMock).toHaveBeenCalledWith('/Patient/' + HomerSimpson.id);
+    });
   });
 });
