@@ -16,7 +16,7 @@ import {
 } from '@medplum/core';
 import type { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { within } from '@testing-library/react';
+import { waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type * as ReactDom from 'react-dom';
 import type { Mock } from 'vitest';
@@ -857,6 +857,105 @@ describe('ToolsPage', () => {
     });
 
     expect((await screen.findAllByText(/there is an error/i))[0]).toBeInTheDocument();
+  });
+
+  test('Fetch logs -- Save fetched logs as DocumentReference', async () => {
+    medplum = new MockClient();
+    const logPayload = [
+      JSON.stringify({ level: 'INFO', timestamp: '2026-11-10T12:00:00.000Z', msg: 'Agent started' }),
+      JSON.stringify({ level: 'WARN', timestamp: '2026-11-10T12:01:00.000Z', msg: 'Retrying connection' }),
+    ].join('\n');
+
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'logs', valueString: logPayload }],
+      },
+    ]);
+
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Save fetched logs',
+      status: 'active',
+    });
+
+    const createDocumentReferenceSpy = vi.spyOn(medplum, 'createDocumentReference');
+
+    setup('/' + getReferenceString(agent) + '/tools');
+
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save logs/i })).not.toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
+
+    expect((await screen.findAllByText(/retrying connection/i))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /save logs/i }));
+    });
+
+    await waitFor(() => expect(createDocumentReferenceSpy).toHaveBeenCalledTimes(1));
+
+    expect(createDocumentReferenceSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: logPayload,
+        contentType: 'application/x-ndjson',
+        filename: expect.stringContaining('agent-' + agent.id + '-logs-'),
+        additionalFields: expect.objectContaining({
+          description: 'Agent logs for Agent/' + agent.id,
+          context: {
+            related: [{ reference: 'Agent/' + agent.id }],
+          },
+        }),
+      })
+    );
+
+    expect(await screen.findByText(/agent logs saved successfully/i)).toBeInTheDocument();
+  });
+
+  test('Fetch logs -- Save error is shown', async () => {
+    medplum = new MockClient();
+    medplum.router.router.add('GET', 'Agent/:id/$fetch-logs', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'logs',
+            valueString: JSON.stringify({
+              level: 'INFO',
+              timestamp: '2026-11-10T12:00:00.000Z',
+              msg: 'Agent started',
+            }),
+          },
+        ],
+      },
+    ]);
+
+    agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Agente - Save fetched logs error',
+      status: 'active',
+    });
+
+    vi.spyOn(medplum, 'createDocumentReference').mockRejectedValueOnce(new Error('Unable to save agent logs'));
+
+    setup('/' + getReferenceString(agent) + '/tools');
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /fetch logs/i }));
+    });
+
+    expect((await screen.findAllByText(/agent started/i))[0]).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /save logs/i }));
+    });
+
+    expect(await screen.findByText(/unable to save agent logs/i)).toBeInTheDocument();
   });
 
   test('Fetch logs -- Load More paginates with before cursor', async () => {
