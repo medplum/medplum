@@ -12,48 +12,39 @@ const serverDir = dirname(fileURLToPath(import.meta.url));
 // These files run after everything else, one file at a time:
 // - The booking tests book Slots in SERIALIZABLE transactions, which abort with 40001 when another
 //   file books at the same time.
-// - clearallwssubs.test.ts clears the active WebSocket subscriptions of every project, which
-//   deletes Redis keys that other files (e.g. getwssubprojectstats.test.ts) are still reading.
+// - clearallwssubs.int.test.ts clears the active WebSocket subscriptions of every project, which
+//   deletes Redis keys that other files (e.g. getwssubprojectstats.int.test.ts) are still reading.
 // - The user-heavy tests invite many users. Each invite runs conditionalCreate on User and the
 //   profile resource in SERIALIZABLE transactions, which can fail all of their retries under load
 //   (see #11473).
 const serialTestFiles = [
-  'src/fhir/operations/book.recurring.test.ts',
-  'src/fhir/operations/book.test.ts',
-  'src/fhir/operations/cancel.test.ts',
-  'src/fhir/operations/clearallwssubs.test.ts',
-  'src/fhir/operations/confirm.test.ts',
-  'src/fhir/operations/hold.test.ts',
-  'src/fhir/operations/reschedule.test.ts',
+  'src/fhir/operations/book.recurring.int.test.ts',
+  'src/fhir/operations/book.int.test.ts',
+  'src/fhir/operations/cancel.int.test.ts',
+  'src/fhir/operations/clearallwssubs.int.test.ts',
+  'src/fhir/operations/confirm.int.test.ts',
+  'src/fhir/operations/hold.int.test.ts',
+  'src/fhir/operations/reschedule.int.test.ts',
 
   // User-heavy tests (10+ invites per file)
-  'src/admin/invite.test.ts',
-  'src/admin/project.test.ts',
-  'src/auth/mfa.test.ts',
-  'src/fhir/accesspolicy.test.ts',
-  'src/fhir/onbehalfof.test.ts',
-  'src/fhir/operations/rescope.test.ts',
-  'src/fhir/operations/update-user-email.test.ts',
-  'src/oauth/token.test.ts',
+  'src/admin/invite.int.test.ts',
+  'src/admin/project.int.test.ts',
+  'src/auth/mfa.int.test.ts',
+  'src/fhir/accesspolicy.int.test.ts',
+  'src/fhir/onbehalfof.int.test.ts',
+  'src/fhir/operations/rescope.int.test.ts',
+  'src/fhir/operations/update-user-email.int.test.ts',
+  'src/oauth/token.int.test.ts',
 ];
 
 /**
- * Matches the Jest custom sequencer: run seed.test.ts first, then alphabetical order.
+ * Runs test files in alphabetical order.
  * Vitest's default sequencer orders by failure history and file size, which breaks test isolation.
+ * seed.int.test.ts is not sequenced here: it runs first, on its own, via vite.seed.config.ts.
  */
 class CustomSequencer extends BaseSequencer {
   async sort(files: TestSpecification[]): Promise<TestSpecification[]> {
-    return [...files].sort((a, b) => {
-      const aPath = a.moduleId;
-      const bPath = b.moduleId;
-      if (aPath.endsWith('seed.test.ts')) {
-        return -1;
-      }
-      if (bPath.endsWith('seed.test.ts')) {
-        return 1;
-      }
-      return aPath.localeCompare(bPath);
-    });
+    return [...files].sort((a, b) => a.moduleId.localeCompare(b.moduleId));
   }
 }
 
@@ -79,13 +70,11 @@ export default defineConfig({
     maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'node',
-    setupFiles: ['./src/test.setup.ts'],
-    globalSetup: ['./src/test.global-setup.ts'],
     // Jest used a single `testTimeout` for both tests and lifecycle hooks (beforeAll, afterAll, etc.).
     // Vitest splits these into `testTimeout` and `hookTimeout`, so both must be set explicitly.
     // Jest config: testTimeout 30_000; `test:seed` overrode it to 400_000 for tests and hooks alike.
     // `test:seed` still passes `--testTimeout=400000` for the test body; hookTimeout here covers the
-    // long-running seed.test.ts beforeAll (migrations, index config, vacuum).
+    // long-running seed.int.test.ts beforeAll (migrations, index config, vacuum).
     testTimeout: 30_000,
     hookTimeout: 400_000,
     sequence: {
@@ -93,18 +82,35 @@ export default defineConfig({
     },
     projects: [
       {
+        // Pure unit tests: no Postgres/Redis, so no global setup.
+        extends: true,
+        test: {
+          name: '@medplum/server-unit',
+          pool: 'threads',
+          // The guard must load before test.setup.ts, so setupFiles is per-project rather than inherited
+          setupFiles: ['./src/test.unit-guard.ts', './src/test.setup.ts'],
+          include: ['src/**/*.test.ts'],
+          exclude: ['src/**/*.int.test.ts'],
+        },
+      },
+      {
+        // Integration tests that need Postgres/Redis.
         extends: true,
         test: {
           name: '@medplum/server',
-          include: ['src/**/*.test.ts'],
-          // seed.test.ts runs on its own first, via vite.seed.config.ts
-          exclude: ['src/seed.test.ts', ...serialTestFiles],
+          setupFiles: ['./src/test.setup.ts'],
+          globalSetup: ['./src/test.global-setup.ts'],
+          include: ['src/**/*.int.test.ts'],
+          // seed.int.test.ts runs on its own first, via vite.seed.config.ts
+          exclude: ['src/seed.int.test.ts', ...serialTestFiles],
         },
       },
       {
         extends: true,
         test: {
           name: '@medplum/server-serial',
+          setupFiles: ['./src/test.setup.ts'],
+          globalSetup: ['./src/test.global-setup.ts'],
           include: serialTestFiles,
           maxWorkers: 1,
           sequence: { groupOrder: 1 },

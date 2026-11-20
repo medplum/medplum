@@ -12,7 +12,8 @@ export default defineConfig({
     ...baseConfig.test,
     name: '@medplum/server',
     projects: undefined,
+    setupFiles: ['./src/test.setup.ts'],
     globalSetup: [], // Skip global setup until DB is seeded
-    include: ['src/seed.test.ts'],
+    include: ['src/seed.int.test.ts'],
   },
 });

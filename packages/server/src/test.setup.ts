@@ -49,7 +49,7 @@ setDefaultResultOrder('ipv4first');
 
 Error.stackTraceLimit = 20;
 
-// Many integration tests call initApp/shutdownApp in quick succession (e.g. resource-cap.test.ts
+// Many integration tests call initApp/shutdownApp in quick succession (e.g. resource-cap.int.test.ts
 // does both in beforeEach/afterEach). Without serialization, shutdown can overlap the next init,
 // leaving the DB pool or Redis in a bad state and causing intermittent HTTP failures in later tests.
 const { withAppLifecycle } = vi.hoisted(() => {
@@ -241,6 +241,11 @@ let superAdminTestProjectPromise: Promise<TestProjectResult<SuperAdminTestProjec
  * @returns The shared Super Admin `TestProjectResult`.
  */
 export function getSuperAdminTestProject(): Promise<TestProjectResult<SuperAdminTestProjectOptions>> {
+  if (inject('superAdminProjectId') === undefined) {
+    return Promise.reject(
+      new Error('Super Admin test project not provided by global setup. Tests that need it must be named *.int.test.ts')
+    );
+  }
   superAdminTestProjectPromise ??= (async () => {
     const { getRepoForLogin } = await import('./fhir/accesspolicy');
     const { getShardSystemRepo } = await import('./fhir/repo');

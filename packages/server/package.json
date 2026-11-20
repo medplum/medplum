@@ -25,7 +25,9 @@
     "lint:fix": "eslint . --fix",
     "migrate": "npm run build --workspace=@medplum/definitions && tsx src/migrations/migrate-main.ts",
     "start": "node --experimental-loader=@opentelemetry/instrumentation/hook.mjs --import ./dist/otel/instrumentation.js dist/index.js",
-    "test": "vitest run --exclude src/seed.test.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run --project @medplum/server-unit",
+    "test:integration": "vitest run --project @medplum/server --project @medplum/server-serial",
     "test:seed": "vitest run --config vite.seed.config.ts --testTimeout=400000"
   },
   "dependencies": {

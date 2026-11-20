@@ -18,7 +18,7 @@ import { rotateLoginRefreshSecret } from './token';
 
 // This file deliberately does NOT mock `jose`.
 //
-// `token.test.ts` replaces `jwtVerify` for its entire module graph with a decode-only stub that
+// `token.int.test.ts` replaces `jwtVerify` for its entire module graph with a decode-only stub that
 // ignores the key resolver and the `issuer` option. That stub is load-bearing for the external-JWKS
 // cases in that file, but it means none of its refresh-token tests exercise signature validity,
 // issuer binding, expiry, or `nbf`. A forged-token test added there would pass whether or not the
