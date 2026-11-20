@@ -5,6 +5,7 @@ import {
   badRequest,
   ContentType,
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   escapeSearchValue,
   forbidden,
   getDateProperty,
@@ -1574,6 +1575,19 @@ async function tryExternalAuthLogin(
       return undefined;
     }
     client = await getExternalBearerClient(projectId, claims.iss);
+    // The server-wide provider verified the token; the client's audience binds it to this project.
+    const audience = client?.identityProvider?.audience;
+    if (
+      client &&
+      !(audience && (Array.isArray(claims.aud) ? claims.aud.includes(audience) : claims.aud === audience))
+    ) {
+      getLogger().warn('External token audience does not match ClientApplication', {
+        issuer: claims.iss,
+        projectId,
+        clientId: client.id,
+      });
+      return undefined;
+    }
     membership = client ? await getClientApplicationMembership(systemRepo, client, projectId) : undefined;
     if (!isClientSubjectAllowed(membership, claims)) {
       return undefined;
@@ -1642,6 +1656,18 @@ async function tryExternalAuthLogin(
   return { login, project, membership };
 }
 
+// An allow-list, not a deny-list: a new IdentityProvider setting must never make a client eligible for bearer tokens.
+const externalBearerIdpFields = ['issuer', 'jwksUrl', 'audience'];
+
+function isExternalBearerIdentityProvider(idp: IdentityProvider | undefined): boolean {
+  return (
+    !!idp?.issuer &&
+    !!idp.jwksUrl &&
+    !!idp.audience &&
+    Object.keys(idp).every((key) => externalBearerIdpFields.includes(key))
+  );
+}
+
 /**
  * A client membership that names an externalId admits only tokens whose `sub` equals it, so a
  * workload-identity issuer can be trusted for one principal rather than for everything it signs.
@@ -1683,16 +1709,29 @@ async function getExternalBearerClient(
       { code: '_project', operator: Operator.EQUALS, value: projectId },
       { code: 'identity-provider-issuer', operator: Operator.EXACT, value: escapeSearchValue(issuer) },
     ],
-    count: 2,
+    // Server max; projects normally have one or two clients per issuer, so this only bounds pathological configs
+    count: DEFAULT_MAX_SEARCH_COUNT,
   });
-  if (clients.length !== 1) {
-    if (clients.length > 1) {
+  // Eligibility is filtered after the search, so a full page may hide clients and the decision would be unsound
+  if (clients.length === DEFAULT_MAX_SEARCH_COUNT) {
+    getLogger().warn('Too many ClientApplications found for external auth issuer in project', { issuer, projectId });
+    return undefined;
+  }
+  const bearerClients = clients.filter((client) => isExternalBearerIdentityProvider(client.identityProvider));
+  if (bearerClients.length !== 1) {
+    if (bearerClients.length > 1) {
       getLogger().warn('Multiple ClientApplications found for external auth issuer in project', { issuer, projectId });
+    } else if (clients.length > 0) {
+      getLogger().warn('External auth issuer matched ClientApplication not configured for bearer tokens', {
+        issuer,
+        projectId,
+        clientIds: clients.map((client) => client.id),
+      });
     }
     return undefined;
   }
 
-  return clients[0];
+  return bearerClients[0];
 }
 
 /**
