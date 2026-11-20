@@ -41,7 +41,7 @@ export interface BookingGeometry {
  * @param url - Url of the sub-extension to read, for example `bufferBefore`
  * @returns The winning sub-extension, if either layer sets it
  */
-function resolveSchedulingParameter(
+export function resolveSchedulingParameter(
   service: WithId<HealthcareService>,
   schedule: Schedule | undefined,
   url: HealthcareServiceSchedulingParameterUrl

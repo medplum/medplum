@@ -18,6 +18,7 @@ import {
   getScheduleSchedulingParameters,
   isDefined,
   isReference,
+  schedulingDurationToMinutes,
   serviceTypeOffersService,
 } from '@medplum/core';
 import type {
@@ -29,8 +30,9 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
+import { getZonedParts } from './AppointmentFinder/AppointmentFinder.times';
 import { toAvailableTime } from './availability';
-import { resolveBookingGeometry } from './bookingGeometry';
+import { resolveBookingGeometry, resolveSchedulingParameter } from './bookingGeometry';
 import type { DateTimeRange } from './types';
 
 /** The `availableTime` sub-extension naming the one service facility a window holds at. Prototype only. */
@@ -510,6 +512,64 @@ function intersect(a: readonly Interval[], b: readonly Interval[]): Interval[] {
   return both;
 }
 
+/** The times of day a visit may start at: every `interval` minutes from `offset` past midnight in `timezone`. */
+export interface StartGrid {
+  readonly interval: number;
+  readonly offset: number;
+  readonly timezone: string;
+}
+
+/**
+ * Resolves the grid `Appointment/$find` lays a visit type's start times on, with the server's defaults.
+ * @param service - The visit type.
+ * @param schedule - The Schedule the visit is held on, whose parameters take precedence.
+ * @returns The grid.
+ */
+export function resolveStartGrid(service: WithId<HealthcareService>, schedule?: Schedule): StartGrid {
+  const interval = schedulingDurationToMinutes(
+    resolveSchedulingParameter(service, schedule, 'alignmentInterval')?.valueDuration
+  );
+  const offset = schedulingDurationToMinutes(
+    resolveSchedulingParameter(service, schedule, 'alignmentOffset')?.valueDuration
+  );
+  return {
+    // The server reads zero as "on the hour", which is also its default, and refuses more than a day.
+    interval: Math.min(Math.round(interval ?? 0) || 60, 24 * 60),
+    offset: Math.round(offset ?? 0),
+    timezone: resolveSchedulingParameter(service, schedule, 'alignmentTimezone')?.valueCode ?? 'Etc/UTC',
+  };
+}
+
+// How far past the grid line before it an instant is, in minutes.
+function minutesPastGrid(time: number, grid: StartGrid): number {
+  const { hour, minute } = getZonedParts(new Date(time), grid.timezone);
+  return (((hour * 60 + minute - grid.offset) % grid.interval) + grid.interval) % grid.interval;
+}
+
+/**
+ * Finds the first instant on a start grid at or after a time.
+ * @param time - The time, in epoch milliseconds.
+ * @param grid - The grid.
+ * @returns The instant, in epoch milliseconds.
+ */
+export function firstStartFrom(time: number, grid: StartGrid): number {
+  let start = Math.ceil(time / MINUTE_MS) * MINUTE_MS;
+  // More than once only when a step crosses midnight, where the grid begins again.
+  for (let step = 0; step < 3; step++) {
+    const past = minutesPastGrid(start, grid);
+    if (past === 0) {
+      break;
+    }
+    start += (grid.interval - past) * MINUTE_MS;
+  }
+  return start;
+}
+
+function lastStartBy(time: number, grid: StartGrid): number {
+  const start = Math.floor(time / MINUTE_MS) * MINUTE_MS;
+  return start - minutesPastGrid(start, grid) * MINUTE_MS;
+}
+
 function horizonTime(value: string | undefined, fallback: number): number {
   const time = value ? new Date(value).getTime() : Number.NaN;
   return Number.isNaN(time) ? fallback : time;
@@ -525,7 +585,8 @@ interface BookableCalendar {
 
 // A calendar's hours for the visit type and when a visit could start in them, worked out in the order
 // `Appointment/$find` does: hours inside the planning horizon, less what is held, less the visit's own
-// buffers at each end of what is left, less anything then too short for the visit.
+// buffers at each end of what is left, narrowed to the starts on the visit type's alignment grid, less
+// anything then too short for the visit.
 function toBookableCalendar(
   calendar: AvailabilityShadingCalendar,
   row: number,
@@ -555,11 +616,12 @@ function toBookableCalendar(
     })
   );
   const busy = busyIntervals(calendar);
+  const grid = resolveStartGrid(input.service, schedule);
   const starts = merge(hours)
     .flatMap((open) => subtract(open, busy))
     .map((free) => ({
-      start: free.start + bufferBefore * MINUTE_MS,
-      end: free.end - bufferAfter * MINUTE_MS - durationMs,
+      start: firstStartFrom(free.start + bufferBefore * MINUTE_MS, grid),
+      end: lastStartBy(free.end - bufferAfter * MINUTE_MS - durationMs, grid),
     }))
     .filter((stretch) => stretch.start <= stretch.end);
   return { row, hours, durationMs, starts };
@@ -585,7 +647,8 @@ function splitByDay(interval: Interval): Interval[] {
  *
  * A prototype, alongside {@link computeAvailabilityShading}. A calendar's open time follows
  * `Appointment/$find`: its windows for the visit type inside its Schedule's planning horizon, less its
- * appointments and blocked time, less the visit's buffers at each end of what is left. Calendars are not
+ * appointments and blocked time, less the visit's buffers at each end of what is left, from the first
+ * start on the visit type's alignment grid to the end of a visit begun at the last. Calendars are not
  * joined before the visit's length is asked of them, so two that are each free for half a visit, one after
  * the other, shade nothing. Only calendars resolving the same length for the visit are combined.
  * @param input - The rows, the visit type and the days on show.

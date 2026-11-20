@@ -68,7 +68,7 @@ function getFormatter(key: string, options: Intl.DateTimeFormatOptions, locale?:
   return formatter;
 }
 
-interface ZonedParts {
+export interface ZonedParts {
   readonly year: number;
   readonly month: number;
   readonly day: number;
@@ -83,7 +83,7 @@ interface ZonedParts {
  * @param timezone - IANA timezone identifier. Defaults to the browser's.
  * @returns The year, month, day, and hour in that timezone.
  */
-function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
+export function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
   const parts = getFormatter(
     `parts:${timezone ?? ''}`,
     {
