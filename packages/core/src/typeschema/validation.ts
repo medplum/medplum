@@ -29,6 +29,13 @@ import type {
   SlicingRules,
 } from './types';
 import { getDataType, isResourceType, parseStructureDefinition } from './types';
+import {
+  describeXmlProperty,
+  getXmlAttributeError,
+  getXsiTypeError,
+  isXmlChildElement,
+  isXmlInfrastructureAttribute,
+} from './xml';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -182,7 +189,11 @@ class ResourceValidator implements CrawlerVisitor {
   onExitObject(_path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
-    this.checkAdditionalProperties(obj, schema.elements, obj.path);
+    if (schema.xmlPropertyNames) {
+      this.checkXmlAdditionalProperties(obj, schema, obj.path);
+    } else {
+      this.checkAdditionalProperties(obj, schema.elements, obj.path);
+    }
   }
 
   onEnterResource(_path: string, obj: TypedValueWithPath): void {
@@ -246,7 +257,7 @@ class ResourceValidator implements CrawlerVisitor {
       for (const value of values) {
         this.constraintsCheck(value, element);
         this.referenceTypeCheck(value, element);
-        this.checkPropertyValue(value);
+        this.checkPropertyValue(value, element);
         this.collectValue(value, element);
 
         const sliceName = checkSliceElement(value, element.slicing);
@@ -279,8 +290,10 @@ class ResourceValidator implements CrawlerVisitor {
     return true;
   }
 
-  private checkPropertyValue(value: TypedValueWithPath): void {
-    if (isPrimitiveType(value.type)) {
+  private checkPropertyValue(value: TypedValueWithPath, element: InternalSchemaElement): void {
+    if (element.xmlName !== undefined) {
+      this.checkXmlPropertyValue(value, element);
+    } else if (isPrimitiveType(value.type)) {
       this.validatePrimitiveType(value);
     } else if (isEmpty(value.value)) {
       this.issues.push(createStructureIssue(value.path, `Invalid empty non-primitive value`));
@@ -306,6 +319,42 @@ class ResourceValidator implements CrawlerVisitor {
             }, but found ${sliceCardinality}`
           )
         );
+      }
+    }
+  }
+
+  /**
+   * Checks a property value of an XML logical model, as parsed from XML.
+   * @param value - The property value.
+   * @param element - The element definition.
+   */
+  private checkXmlPropertyValue(value: TypedValueWithPath, element: InternalSchemaElement): void {
+    let error: string | undefined;
+    if (element.xmlAttribute) {
+      error = getXmlAttributeError(value.value, value.type);
+    } else if (isXmlChildElement(element)) {
+      error = getXsiTypeError(value.value, element);
+    } else if (!element.xmlMarkup) {
+      // Text content; markup such as CDA narrative is not validated
+      this.validatePrimitiveType(value);
+    }
+    if (error) {
+      this.issues.push(createStructureIssue(value.path, error));
+    }
+  }
+
+  /**
+   * Checks for attributes, elements, and text content that are not in the XML logical model.
+   * @param parent - The parsed XML element.
+   * @param schema - The type schema of the element.
+   * @param path - The path of the element.
+   */
+  private checkXmlAdditionalProperties(parent: TypedValueWithPath, schema: InternalTypeSchema, path: string): void {
+    for (const key of Object.keys(parent.value ?? EMPTY)) {
+      if (!(key in schema.elements) && !isXmlInfrastructureAttribute(key)) {
+        const { kind, name } = describeXmlProperty(key);
+        const message = kind === 'text' ? 'Invalid text content' : `Invalid additional ${kind} "${name}"`;
+        this.issues.push(createStructureIssue(`${path}.${name}`, message));
       }
     }
   }

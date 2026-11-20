@@ -5,6 +5,7 @@ import type { TypedValue } from '../types';
 import { PropertyType, getElementDefinition, isResource } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
 import { validationRegexes } from '../typeschema/validation';
+import { getXmlPropertyValue } from '../typeschema/xml';
 import { capitalize, isCodeableConcept, isCoding, isEmpty } from '../utils';
 
 /**
@@ -137,6 +138,10 @@ export function getTypedPropertyValueWithSchema(
   const types = element.type;
   if (!types || types.length === 0) {
     return undefined;
+  }
+
+  if (element.xmlName !== undefined) {
+    return getXmlPropertyValue(value, element);
   }
 
   // The path parameter can be in both "value[x]" form and "valueBoolean" form.

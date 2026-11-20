@@ -15,6 +15,7 @@ import { formatHumanName } from './format';
 import type { SearchParameterDetails } from './search/details';
 import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
 import { getAllDataTypes, tryGetDataType } from './typeschema/types';
+import { getXmlElementByLogicalName } from './typeschema/xml';
 import { capitalize, EMPTY, getReferenceString, isResourceWithId } from './utils';
 
 /**
@@ -418,7 +419,12 @@ export function getElementDefinition(
   if (!typeSchema) {
     return undefined;
   }
-  return getElementDefinitionFromElements(typeSchema.elements, propertyName);
+  const element = getElementDefinitionFromElements(typeSchema.elements, propertyName);
+  if (!element && typeSchema.xmlPropertyNames) {
+    // FHIRPath constraints in XML logical models use the logical names, e.g. "xmlText" for "#text"
+    return getXmlElementByLogicalName(typeSchema, propertyName);
+  }
+  return element;
 }
 
 /**

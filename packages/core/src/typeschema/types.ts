@@ -17,7 +17,7 @@ import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
 import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
-import { applyXmlPropertyNames, isXmlLogicalModel } from './xml';
+import { applyXmlPropertyNames, indexXsiType, isXmlLogicalModel } from './xml';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -57,6 +57,8 @@ export interface InternalSchemaElement {
   xmlAttribute?: boolean;
   /** True for elements holding XML markup (e.g. CDA narrative), which parses to nested objects. */
   xmlMarkup?: boolean;
+  /** For XML logical models, the property name in parsed XML, e.g. `@_root` (see `loadDataType`). */
+  xmlName?: string;
 }
 
 export interface ElementType {
@@ -202,6 +204,9 @@ export function loadDataType(sd: StructureDefinition): void {
   }
 
   PROFILE_SCHEMAS_BY_URL[sd.url] = schema;
+  if (schema.xmlPropertyNames) {
+    indexXsiType(sd);
+  }
 }
 
 export function getAllDataTypes(): DataTypesMap {
