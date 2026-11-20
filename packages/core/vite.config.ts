@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { jsdomExecArgv } from '../../vitest.config';
 
 export default defineConfig({
   resolve: {
@@ -11,6 +12,7 @@ export default defineConfig({
     maxWorkers: process.env.TEST_MAX_WORKERS ?? '75%',
     globals: true,
     environment: 'jsdom',
+    execArgv: jsdomExecArgv,
     pool: 'threads',
     projects: [
       { extends: true, test: { name: '@medplum/core', include: ['src/**/*.test.ts'] } },
