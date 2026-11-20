@@ -1,13 +1,13 @@
 ---
-id: server-to-server-security
-title: Server-to-Server Communication Security
+id: server-to-server-communication
+title: Server-to-Server Communication
 weight: 320
 docs_tags: [auth]
 ---
 
-Some applications put their own server between the user and Medplum, calling Medplum from that server on the user's behalf. This server-to-server communication is sometimes necessary, but it makes your server part of your security boundary: it holds credentials, decides which user each request represents, and controls what reaches Medplum.
+This guide covers how your application's server-side logic should communicate with Medplum: whether you need your own server between your users and Medplum, and how to secure it if you do.
 
-Medplum enforces authentication, project isolation, and access policies on every request. It cannot verify that your server authenticated the right user or forwarded only what that user should be able to do. Start by deciding whether you need a server in between at all.
+In most cases you don't. If your users sign in to Medplum, call Medplum directly and run server-side logic in [Medplum Bots](/docs/bots). A server in between is only necessary when your users authenticate with a non-Medplum token.
 
 ## Choose your pattern
 
@@ -70,9 +70,11 @@ flowchart LR
 
 If your identity provider supports OIDC (or GCIP/Firebase), consider [token exchange](/docs/auth/token-exchange) instead: the user gets a Medplum token, and you can use the direct pattern above.
 
-The rest of this page covers securing the server-to-server pattern.
+## Secure a server in between
 
-## Delegate safely with On-Behalf-Of
+The rest of this guide applies to the non-Medplum token pattern. Your server becomes part of your security boundary: it holds credentials, decides which user each request represents, and controls what reaches Medplum. Medplum enforces authentication, project isolation, and access policies on every request, but it can't verify that your server authenticated the right user or forwarded only what that user should be able to do.
+
+### Delegate safely with On-Behalf-Of
 
 With On-Behalf-Of, your server decides which user each request represents, so that decision has to be airtight:
 
@@ -102,7 +104,7 @@ sequenceDiagram
 - Set the header explicitly on every delegated request. On a client shared across users, pass it per request rather than as a default header.
 - **Fail closed.** A request without the header runs with the application's own access. If user context is missing or invalid, reject the request; never retry it without the header.
 
-### When to resolve the membership
+#### When to resolve the membership
 
 Store the mapping from your user ID to a `ProjectMembership` ID on your server, for example in your user table or by matching an [external ID](/docs/user-management/external-ids). You can look it up once when the session starts or on every request:
 
@@ -114,7 +116,7 @@ Store the mapping from your user ID to a `ProjectMembership` ID on your server, 
 
 Medplum rejects inactive memberships on every On-Behalf-Of request, so revoking a user's membership takes effect immediately whichever approach you choose.
 
-## Configure the client
+### Configure the client
 
 Use a [project-scoped URL](/docs/access/project-scoped-urls) and disable SDK caching explicitly:
 
@@ -130,7 +132,7 @@ const medplum = new MedplumClient({
 - **Project-scoped URL:** credentials issued for another project are rejected. Get tokens and make requests through the same base URL, since project-scoped tokens are bound to it.
 - **`cacheTime: 0`:** `MedplumClient` caches reads by default in browser-like environments, detected by whether `window` is defined. Server runtimes don't always detect cleanly, so set it explicitly. A client shared across users must never return one user's cached response to another. Make sure your framework, HTTP layer, and CDN don't cache authenticated responses either.
 
-## Treat every request as untrusted
+### Treat every request as untrusted
 
 Assume attackers will call your server directly, with arbitrary paths, query parameters, headers, and methods, not just what your UI sends.
 
@@ -138,7 +140,7 @@ Assume attackers will call your server directly, with arbitrary paths, query par
 - Don't blindly forward `Authorization`, `X-Medplum-On-Behalf-Of`, or other security-sensitive headers.
 - Apply the same authorization checks across every route and HTTP method.
 
-## Test from an attacker's perspective
+### Test from an attacker's perspective
 
 Include these cases in automated integration tests, and supplement them with periodic security reviews or penetration testing:
 
@@ -152,7 +154,7 @@ Include these cases in automated integration tests, and supplement them with per
 | Concurrent sessions    | Simultaneous users never share delegation context or cached responses |
 | Credential exposure    | Secrets and tokens never appear in responses, logs, or error messages |
 
-## Lock down the ClientApplication
+### Lock down the ClientApplication
 
 Your server's `ClientApplication` is a privileged machine identity. On-Behalf-Of requires it to be a Project Admin, so restrict it in every other way:
 
@@ -176,7 +178,7 @@ Example policy:
 }
 ```
 
-## Forward only what you need
+### Forward only what you need
 
 Don't blindly forward every endpoint through to the Medplum server. Allowlist only the specific routes, HTTP methods, and resource types your application uses, and reject everything else. Many applications only need part of `/fhir/R4/`.
 
