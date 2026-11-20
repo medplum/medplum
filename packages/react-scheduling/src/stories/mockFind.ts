@@ -1,14 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import {
-  getHealthcareServiceSchedulingParameters,
-  RecurrenceTemplateExtensionURI,
-  schedulingDurationToMinutes,
-} from '@medplum/core';
+import { RecurrenceTemplateExtensionURI } from '@medplum/core';
 import type { Appointment, Bundle, HealthcareService, Schedule } from '@medplum/fhirtypes';
 import { getServiceDurationMinutes } from '../AppointmentFinder/AppointmentServiceSelect.utils';
-import { computeBookingShading } from '../availabilityShading';
+import { computeBookingShading, firstStartFrom, resolveStartGrid } from '../availabilityShading';
 import { buildFindBundle, buildProposedAppointment } from './scheduling';
 
 /** Clinic hours the stub offers times within, as local hours of the day. */
@@ -154,20 +150,16 @@ async function enumerateOpenTimes(medplum: MedplumClient, input: OpenTimesInput)
     from: start,
   });
 
-  const alignmentMinutes =
-    schedulingDurationToMinutes(
-      getHealthcareServiceSchedulingParameters(service, 'alignmentInterval')[0]?.valueDuration
-    ) ?? durationMinutes;
-  const stepMs = alignmentMinutes * 60_000;
+  const grid = resolveStartGrid(service);
   const durationMs = durationMinutes * 60_000;
 
   const times: Date[] = [];
   for (const block of open) {
-    const midnight = new Date(block.start);
-    midnight.setHours(0, 0, 0, 0);
-    // The first grid line at or after the block opens, counted from the day's midnight.
-    const offset = Math.ceil((block.start.getTime() - midnight.getTime()) / stepMs) * stepMs;
-    for (let time = midnight.getTime() + offset; time + durationMs <= block.end.getTime(); time += stepMs) {
+    for (
+      let time = firstStartFrom(block.start.getTime(), grid);
+      time + durationMs <= block.end.getTime();
+      time = firstStartFrom(time + 60_000, grid)
+    ) {
       if (time <= end.getTime()) {
         times.push(new Date(time));
       }

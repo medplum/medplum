@@ -21,6 +21,7 @@ import {
   AVAILABILITY_SERVICE_FACILITY_URL,
   computeAvailabilityShading,
   computeBookingShading,
+  resolveStartGrid,
 } from './availabilityShading';
 
 // Monday 4 May 2020, read in the runner's zone throughout.
@@ -268,16 +269,20 @@ describe('computeAvailabilityShading', () => {
 });
 
 describe('computeBookingShading', () => {
+  // Starts on any minute unless a test says otherwise, and on a grid read in the runner's zone, as the hours are.
   function visit(parameters: Record<string, number>): WithId<HealthcareService> {
     return {
       ...service('visit', 'Visit'),
       extension: [
         {
           url: SchedulingParametersURI,
-          extension: Object.entries(parameters).map(([url, value]) => ({
-            url,
-            valueDuration: { value, unit: 'min' },
-          })),
+          extension: [
+            ...Object.entries({ alignmentInterval: 1, ...parameters }).map(([url, value]) => ({
+              url,
+              valueDuration: { value, unit: 'min' },
+            })),
+            { url: 'alignmentTimezone', valueCode: Intl.DateTimeFormat().resolvedOptions().timeZone },
+          ],
         },
       ],
     };
@@ -336,5 +341,28 @@ describe('computeBookingShading', () => {
 
     expect(shades.map(drawn)).toEqual(['green 11:15-12:00']);
     expect(listed(shades[0])).toEqual(['alvarez', 'room']);
+  });
+
+  test('runs from the first start on the alignment grid to the end of a visit begun at the last', () => {
+    const hourly = visit({ duration: 60, alignmentInterval: 60 });
+    // No hour falls in the first window. The second opens half an hour before one and closes 45 minutes after one.
+    const alvarez = schedule('alvarez', [[hourly, window('09:10:00', '10:50:00'), window('12:30:00', '16:45:00')]]);
+
+    expect(shade(hourly, [calendar(alvarez)]).map(drawn)).toEqual(['green 13:00-16:00']);
+  });
+
+  test('shifts the alignment grid by its offset', () => {
+    const offset = visit({ duration: 30, alignmentInterval: 30, alignmentOffset: 10 });
+    const alvarez = schedule('alvarez', [[offset, window('09:00:00', '11:00:00')]]);
+
+    expect(shade(offset, [calendar(alvarez)]).map(drawn)).toEqual(['green 9:10-10:40']);
+  });
+
+  test('reads a visit type that sets no alignment, or zero, as starting on the hour in UTC', () => {
+    const silent = service('visit', 'Visit');
+    const zero = visit({ duration: 30, alignmentInterval: 0 });
+
+    expect(resolveStartGrid(silent)).toEqual({ interval: 60, offset: 0, timezone: 'Etc/UTC' });
+    expect(resolveStartGrid(zero).interval).toBe(60);
   });
 });
