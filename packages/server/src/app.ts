@@ -61,7 +61,7 @@ import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
 import { wellKnownRouter } from './wellknown';
-import { closeWorkers, initWorkers } from './workers';
+import { closeWorkers, initWorkers, runWorkers } from './workers';
 import { closeWebSockets, initWebSockets } from './ws/routes';
 
 let server: http.Server | undefined = undefined;
@@ -306,10 +306,11 @@ export async function initAppServices(config: ServerConfig): Promise<void> {
   loadStructureDefinitions(config);
   initRedis(config);
   await initDatabase(config);
+  await initWorkers(config);
   await seedDatabase(config);
   await initKeys(config);
   initBinaryStorage(config.binaryStorage);
-  await initWorkers(config);
+  runWorkers();
   initHeartbeat(config);
   initOtelHeartbeat();
   initServerRegistryHeartbeatListener();
