@@ -574,6 +574,7 @@ describe('External auth', () => {
         identityProvider: {
           issuer: 'https://external-auth.example.com',
           jwksUrl: 'https://external-auth.example.com/.well-known/bound-jwks.json',
+          audience: 'https://api.example.com',
         },
       },
     });
@@ -584,6 +585,7 @@ describe('External auth', () => {
         const jwt = new SignJWT({ nonce: randomUUID() })
           .setProtectedHeader({ alg: 'ES256' })
           .setIssuer('https://external-auth.example.com')
+          .setAudience('https://api.example.com')
           .setIssuedAt()
           .setExpirationTime('2h');
         return (sub ? jwt.setSubject(sub) : jwt).sign(keyPair.privateKey);
