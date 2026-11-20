@@ -76,11 +76,11 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
 
 /**
  * Returns the URL only when it cannot load a page of the current app.
- * Same-origin URLs are rejected unless they are under the Medplum server base URL (single-origin deployments),
- * because the URL is rendered into an iframe and a link.
+ * Same-origin URLs are rejected unless they are Medplum storage URLs (single-origin deployments),
+ * because the URL is rendered into an iframe and a link. Other server paths can redirect to app pages.
  * @param url - The attachment URL.
  * @param baseUrl - The Medplum server base URL, if available.
- * @returns The URL if it is a data, blob, other-origin http(s), or Medplum server URL; otherwise undefined.
+ * @returns The URL if it is a data, blob, other-origin http(s), or Medplum storage URL; otherwise undefined.
  */
 function toSafeUrl(url: string | undefined, baseUrl: string | undefined): string | undefined {
   if (!url) {
@@ -101,10 +101,9 @@ function toSafeUrl(url: string | undefined, baseUrl: string | undefined): string
       return undefined;
     }
     // Return the parsed href so the browser loads exactly the path that was checked
-    const server = new URL(baseUrl, window.location.href);
-    const isServerUrl =
-      server.origin === parsed.origin && server.pathname !== '/' && parsed.pathname.startsWith(server.pathname);
-    return isServerUrl ? parsed.href : undefined;
+    const storage = new URL('storage/', new URL(baseUrl, window.location.href));
+    const isStorageUrl = storage.origin === parsed.origin && parsed.pathname.startsWith(storage.pathname);
+    return isStorageUrl ? parsed.href : undefined;
   } catch {
     return undefined;
   }

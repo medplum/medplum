@@ -139,7 +139,7 @@ describe('AttachmentDisplay', () => {
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
-  test.each(['/Patient/123', `${window.location.origin}/Patient/123`, 'javascript:void(0)'])(
+  test.each(['/Patient/123', `${window.location.origin}/Patient/123`, 'javascript:void(0)', 'JAVASCRIPT:void(0)'])(
     'Ignores URL %s',
     async (url) => {
       await setup({ value: { contentType: 'text/plain', url } });
@@ -147,12 +147,14 @@ describe('AttachmentDisplay', () => {
     }
   );
 
-  test('Same-origin server URLs', async () => {
+  test('Same-origin storage URLs', async () => {
     const client = new MedplumClient({ baseUrl: `${window.location.origin}/api/`, fetch: mockFetch });
     await setup({ value: { contentType: 'text/plain', url: '/api/storage/123', title: 'a' } }, client);
     expect(screen.getByText('a')).toHaveAttribute('href', `${window.location.origin}/api/storage/123`);
     await setup({ value: { contentType: 'text/plain', url: '/api/../smart', title: 'b' } }, client);
     expect(screen.queryByText('b')).not.toBeInTheDocument();
+    await setup({ value: { contentType: 'text/plain', url: '/api/oauth2/authorize', title: 'c' } }, client);
+    expect(screen.queryByText('c')).not.toBeInTheDocument();
   });
 
   test('Renders plain text', async () => {
