@@ -41,9 +41,8 @@ import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
-import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
 import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
@@ -381,8 +380,7 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
 
   // TOTP authenticator application
   if (!verified && secret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    verified = authenticator.verify({ token, secret });
+    verified = await verifyTotpToken(user.id, secret, token);
   }
 
   if (!verified) {
