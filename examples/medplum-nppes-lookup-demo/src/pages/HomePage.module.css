@@ -1,0 +1,20 @@
+/* Results column: scrolls inside, same height as the search form. */
+.results {
+  position: relative;
+}
+
+.resultsScroll {
+  padding: var(--mantine-spacing-md);
+  /* Stacked (narrow screens): cap the height and scroll. */
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+@media (min-width: $mantine-breakpoint-md) {
+  /* Side by side: fill the grid cell, whose height comes from the search form, and scroll inside. */
+  .resultsScroll {
+    position: absolute;
+    inset: 0;
+    max-height: none;
+  }
+}
