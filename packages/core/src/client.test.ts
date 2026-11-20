@@ -4685,6 +4685,46 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test('Do not use cache with on-behalf-of header object mixed case', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const request1 = await client.get('Practitioner/123', { headers: { 'X-Medplum-On-Behalf-Of': 'Patient/123' } });
+    const request2 = client.get('Practitioner/123', { headers: { 'X-Medplum-On-Behalf-Of': 'Patient/456' } });
+    expect(request2).not.toBe(request1);
+
+    const response1 = await request1;
+    expect(response1).toBeDefined();
+    const response2 = await request2;
+    expect(response2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('Do not auto batch requests with on-behalf-of header', async () => {
+    const fetch = mockFetch(200, { resourceType: 'Bundle', type: 'searchset' });
+    const client = new MedplumClient({ fetch, autoBatchTime: 50 });
+
+    await Promise.all([
+      client.search('Patient', undefined, { headers: { 'X-Medplum-On-Behalf-Of': 'ProjectMembership/123' } }),
+      client.search('Observation', undefined, { headers: { 'X-Medplum-On-Behalf-Of': 'ProjectMembership/456' } }),
+    ]);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ 'X-Medplum-On-Behalf-Of': 'ProjectMembership/123' }),
+      })
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Observation',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ 'X-Medplum-On-Behalf-Of': 'ProjectMembership/456' }),
+      })
+    );
+  });
+
   test('Do not use cache with on-behalf-of header array', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
