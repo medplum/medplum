@@ -506,6 +506,64 @@ describe('SMART Health operations', () => {
     fetchSpy.mockRestore();
   });
 
+  test('Reports this server as the source of a generated SMART Health Link regardless of the stored url', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ mode: 'direct', exp: Math.floor(Date.now() / 1000) + 300 });
+    expect(generateResponse).toHaveStatus(200);
+
+    const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
+    const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
+    await updateGeneratedSmartHealthLink({
+      ...smartHealthLink,
+      url: 'https://issuer.example.com' + directUrl.pathname,
+    });
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: getStringParameter(generateResponse.body, 'shlink'), recipient: 'Test Recipient' });
+    expect(resolveResponse).toHaveStatus(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+    expect(getStringParameter(resolveResponse.body, 'sourceOrigin')).toBe(directUrl.origin);
+  });
+
+  test('Does not serve a generated SMART Health Link under another origin', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ mode: 'direct', exp: Math.floor(Date.now() / 1000) + 300 });
+    expect(generateResponse).toHaveStatus(200);
+
+    const { pathname } = new URL(getStringParameter(generateResponse.body, 'url'));
+    const spoofedUrl = 'https://issuer.example.com' + pathname;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 404 } as Response);
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          ...decodeShlinkPayload(getStringParameter(generateResponse.body, 'shlink')),
+          url: spoofedUrl,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(resolveResponse).toHaveStatus(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(resolveResponse.body, 'error')).toContain('HTTP 404');
+    expect((fetchSpy.mock.calls.at(-1)?.[0] as URL).origin).toBe('https://issuer.example.com');
+
+    fetchSpy.mockRestore();
+  });
+
   test('Returns warnings for expired external SMART Health Link payloads', async () => {
     const key = base64url.encode(Buffer.alloc(32, 2));
     const encrypted = await encryptSmartHealthLinkTestFile({ resourceType: 'Bundle', type: 'collection' }, key);
