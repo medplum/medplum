@@ -79,14 +79,8 @@ async function createPatient(
 
   const profile = (await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email)) as Patient;
   const policy = await systemRepo.readReference(policyRef);
-  const membership = await createProjectMembership(systemRepo, user, project, profile, {
+  // The caller sets the membership on the login with `setLoginMembership`
+  return createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });
-
-  await systemRepo.updateResource<Login>({
-    ...login,
-    project: createReference(project),
-    membership: createReference(membership),
-  });
-  return membership;
 }

@@ -23,7 +23,6 @@ import {
   getTimezoneLabel,
   getTimezoneOptions,
   getVisibleParameters,
-  isSupportedTimezone,
   validateSchedulingParameters,
 } from './SchedulingParametersEditor.utils';
 
@@ -901,11 +900,6 @@ describe('scheduling parameter validation', () => {
 });
 
 describe('timezone options', () => {
-  test('accepts an alias and rejects a zone that does not exist', () => {
-    expect(isSupportedTimezone('US/Pacific')).toBe(true);
-    expect(isSupportedTimezone('Nowhere/Nothing')).toBe(false);
-  });
-
   test('offers US zones first, then the rest by name, folding a stored zone in once', () => {
     const [us, others] = getTimezoneOptions(['Mars/Olympus_Mons', 'Etc/UTC', 'America/Chicago', undefined]);
     const values = [...us.items, ...others.items].map((item) => item.value);

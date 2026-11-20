@@ -4,6 +4,7 @@ import type { ComboboxItem, ComboboxItemGroup, ComboboxParsedItem, OptionsFilter
 import { isOptionsGroup } from '@mantine/core';
 import type { SchedulingParameterValues } from '../parameterValues';
 import { FLAT_PARAMETERS, SCHEDULING_PARAMETER_DEFAULTS, withInherited } from '../parameterValues';
+import { isSupportedTimezone } from '../timezones';
 
 /** Minutes in a day, the longest alignment interval scheduling accepts. */
 export const MINUTES_PER_DAY = 1440;
@@ -109,22 +110,6 @@ export interface SchedulingParameterWarning {
    * since otherwise only the visit type can fix it. Absent on a warning that always shows.
    */
   readonly inputs?: readonly SchedulingParameter[];
-}
-
-/**
- * Whether the runtime can interpret a timezone identifier. Aliases and unusual casing are accepted, the way
- * scheduling accepts them.
- * @param value - The IANA identifier to test.
- * @returns True when the runtime resolves it.
- */
-export function isSupportedTimezone(value: string): boolean {
-  try {
-    // Constructing the formatter is the check: an identifier the runtime cannot resolve throws here.
-    Intl.DateTimeFormat('en-US', { timeZone: value });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /**

@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import { spotlight } from '@mantine/spotlight';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { render } from '../test-utils/render';
 import type { SpotlightProps } from './Spotlight';
 import { Spotlight } from './Spotlight';
 
@@ -46,9 +46,7 @@ describe('Spotlight', () => {
   async function setup(patientsOnly?: boolean, props?: Partial<SpotlightProps>): Promise<ReturnType<typeof render>> {
     const result = render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <Spotlight patientsOnly={patientsOnly} {...props} />
-        </MantineProvider>
+        <Spotlight patientsOnly={patientsOnly} {...props} />
       </MedplumProvider>
     );
     await openSpotlight();
