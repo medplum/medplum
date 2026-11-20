@@ -60,6 +60,7 @@ export interface NavbarProps {
   readonly navbarToggle: () => void;
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
+  readonly searchHidden?: boolean;
   readonly patientsOnly?: boolean;
   readonly spotlightActions?: SpotlightLinkAction[];
   readonly userMenuEnabled?: boolean;
@@ -68,6 +69,8 @@ export interface NavbarProps {
   readonly opened?: boolean;
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  readonly settingsHref?: string;
+  readonly header?: ReactNode;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -99,7 +102,10 @@ export function Navbar(props: NavbarProps): JSX.Element {
   return (
     <>
       <MantineAppShell.Navbar id="navbar" className={classes.navbar}>
-        {props.logo && (
+        {props.header && (
+          <MantineAppShell.Section data-opened={opened || undefined}>{props.header}</MantineAppShell.Section>
+        )}
+        {props.logo && !props.header && (
           <MantineAppShell.Section px="xs" pt="xs" pb="4px">
             <UnstyledButton
               className={classes.logoButton}
@@ -114,7 +120,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
         )}
         <ScrollArea px="xs" pb="xs" pt="sm" h="100%">
           <MantineAppShell.Section grow>
-            {props.spotlightEnabled && (
+            {props.spotlightEnabled && !props.searchHidden && (
               <Box mb={2}>
                 <Tooltip label="Search" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
                   <UnstyledButton className={classes.link} onClick={() => spotlight.open()} aria-label="Search">
@@ -247,7 +253,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown className={headerDropdownClasses.dropdown}>
-                <HeaderDropdown version={props.version} showLayoutVersionToggle={props.showLayoutVersionToggle} />
+                <HeaderDropdown
+                  version={props.version}
+                  showLayoutVersionToggle={props.showLayoutVersionToggle}
+                  settingsHref={props.settingsHref}
+                />
               </Menu.Dropdown>
             </Menu>
           </MantineAppShell.Section>

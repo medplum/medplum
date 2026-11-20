@@ -6,19 +6,32 @@ import { useMedplumProfile } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import {
   Icon2fa,
+  IconAdjustmentsHorizontal,
   IconAlertTriangle,
+  IconApps,
+  IconArrowBarLeft,
   IconBellRinging,
+  IconBriefcase,
+  IconBuildingBank,
+  IconBuildingHospital,
+  IconCalendarCog,
   IconClipboardCheck,
   IconDatabaseImport,
   IconFingerprint,
   IconKey,
+  IconListCheck,
   IconMail,
   IconReceipt2,
   IconSettings,
+  IconShieldLock,
+  IconStethoscope,
+  IconUserCircle,
+  IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useLayoutEffect } from 'react';
 import { Logo } from '../Logo/Logo';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NotificationIcon } from '../NotificationIcon/NotificationIcon';
 import { AppShell } from './AppShell';
 import classes from './AppShell.stories.module.css';
@@ -324,6 +337,70 @@ export function PersistentAnnouncement(): JSX.Element {
         ]}
       >
         Your application here
+      </AppShell>
+    </div>
+  );
+}
+
+export function SettingsNavbar(): JSX.Element {
+  return (
+    <div className={classes.root}>
+      <AppShell
+        logo={<Logo size={24} />}
+        version="your.version"
+        layoutVersion="v2"
+        pathname="/settings/account"
+        searchParams={new URLSearchParams()}
+        settingsHref="/settings"
+        navbarSearchHidden={true}
+        navbarHeader={
+          <div className={classes.backLinkSection}>
+            <MedplumLink to="/" className={classes.backLink} aria-label="Back to app">
+              <IconArrowBarLeft />
+              <span className={classes.backLinkLabel}>Back to app</span>
+            </MedplumLink>
+          </div>
+        }
+        menus={[
+          {
+            title: 'Personal',
+            links: [
+              { href: '/settings/account', label: 'Account', icon: <IconUserCircle /> },
+              { href: '/settings/preferences', label: 'Preferences', icon: <IconAdjustmentsHorizontal /> },
+              { href: '/settings/security', label: 'Security', icon: <IconShieldLock /> },
+            ],
+          },
+          {
+            title: 'Project',
+            links: [
+              { href: '/settings/project', label: 'General', icon: <IconBriefcase /> },
+              { href: '/settings/members', label: 'Members', icon: <IconUsers /> },
+              { href: '/settings/integrations', label: 'Integrations', icon: <IconApps /> },
+            ],
+          },
+          {
+            title: 'Billing',
+            links: [
+              { href: '/settings/billing/organizations', label: 'Organizations', icon: <IconBuildingHospital /> },
+              { href: '/settings/billing/practitioners', label: 'Practitioners', icon: <IconStethoscope /> },
+              { href: '/settings/billing/payers', label: 'Payers', icon: <IconBuildingBank /> },
+              { href: '/settings/billing/eligibility', label: 'Eligibility', icon: <IconListCheck /> },
+              { href: '/settings/billing/charge-items', label: 'Charge Items', icon: <IconReceipt2 /> },
+            ],
+          },
+          {
+            title: 'Schedule',
+            links: [
+              {
+                href: '/settings/schedule/visit-service-types',
+                label: 'Visit Service Types',
+                icon: <IconCalendarCog />,
+              },
+            ],
+          },
+        ]}
+      >
+        Your settings page here
       </AppShell>
     </div>
   );
