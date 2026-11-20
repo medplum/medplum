@@ -4,6 +4,7 @@
 import { createReference } from '@medplum/core';
 import type { Bundle, CarePlan, Patient } from '@medplum/fhirtypes';
 import { OID_INSTRUCTIONS } from '../../oids';
+import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import { createPlanOfTreatmentCarePlanEntry } from './careplan';
 
@@ -69,14 +70,14 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
 
     expect(result).toBeDefined();
     expect(result?.act).toBeDefined();
-    expect(result?.act?.length).toBe(1);
+    expect(result?.act).toBeDefined();
 
-    const act = result?.act?.[0];
+    const act = result?.act;
     expect(act?.['@_classCode']).toBe('ACT');
     expect(act?.['@_moodCode']).toBe('INT');
     expect(act?.templateId).toEqual([{ '@_root': OID_INSTRUCTIONS }]);
     expect(act?.statusCode?.['@_code']).toBe('completed');
-    expect(act?.text?.['#text']).toBe('Follow-up care plan for patient recovery');
+    expect((act?.text as CcdaText | undefined)?.['#text']).toBe('Follow-up care plan for patient recovery');
     expect(act?.code?.['@_code']).toBe('182836005');
     expect(act?.code?.['@_displayName']).toBe('Review of care plan');
     expect(act?.id).toBeDefined();
@@ -111,8 +112,8 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
     const result = createPlanOfTreatmentCarePlanEntry(converter, carePlan);
 
     expect(result).toBeDefined();
-    const act = result?.act?.[0];
-    expect(act?.text?.reference?.['@_value']).toBe('#care-plan-text');
+    const act = result?.act;
+    expect((act?.text as CcdaText | undefined)?.reference?.['@_value']).toBe('#care-plan-text');
   });
 
   test('should return entry for completed care plan without category', () => {
@@ -128,9 +129,9 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
     const result = createPlanOfTreatmentCarePlanEntry(converter, carePlan);
 
     expect(result).toBeDefined();
-    const act = result?.act?.[0];
+    const act = result?.act;
     expect(act?.code).toBeUndefined();
-    expect(act?.text?.['#text']).toBe('Simple care plan');
+    expect((act?.text as CcdaText | undefined)?.['#text']).toBe('Simple care plan');
   });
 
   test('should return undefined for non-completed care plan', () => {
@@ -185,7 +186,7 @@ describe('createPlanOfTreatmentCarePlanEntry', () => {
     const result = createPlanOfTreatmentCarePlanEntry(converter, carePlan);
 
     expect(result).toBeDefined();
-    const act = result?.act?.[0];
+    const act = result?.act;
     expect(act?.id).toBeDefined();
   });
 });

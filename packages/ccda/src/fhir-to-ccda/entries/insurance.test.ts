@@ -3,6 +3,7 @@
 
 import { createReference } from '@medplum/core';
 import type { Account, Bundle, Coverage, Organization, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import { createInsuranceEntry } from './insurance';
 
@@ -52,12 +53,12 @@ describe('createInsuranceEntry', () => {
     const result = createInsuranceEntry(converter, account);
 
     expect(result).toBeDefined();
-    expect(result?.act?.[0]).toBeDefined();
-    expect(result?.act?.[0]?.['@_classCode']).toBe('ACT');
-    expect(result?.act?.[0]?.['@_moodCode']).toBe('EVN');
-    expect(result?.act?.[0]?.code?.['@_code']).toBe('48768-6');
-    expect(result?.act?.[0]?.code?.['@_displayName']).toBe('Payment Sources');
-    expect(result?.act?.[0]?.statusCode?.['@_code']).toBe('completed');
+    expect(result?.act).toBeDefined();
+    expect(result?.act?.['@_classCode']).toBe('ACT');
+    expect(result?.act?.['@_moodCode']).toBe('EVN');
+    expect(result?.act?.code?.['@_code']).toBe('48768-6');
+    expect(result?.act?.code?.['@_displayName']).toBe('Payment Sources');
+    expect(result?.act?.statusCode?.['@_code']).toBe('completed');
   });
 
   test('should return entry for account with coverage', () => {
@@ -118,16 +119,16 @@ describe('createInsuranceEntry', () => {
     const result = createInsuranceEntry(converter, account);
 
     expect(result).toBeDefined();
-    expect(result?.act?.[0]?.entryRelationship).toBeDefined();
-    expect(result?.act?.[0]?.entryRelationship?.length).toBe(1);
+    expect(result?.act?.entryRelationship).toBeDefined();
+    expect(result?.act?.entryRelationship?.length).toBe(1);
 
-    const entryRel = result?.act?.[0]?.entryRelationship?.[0];
+    const entryRel = result?.act?.entryRelationship?.[0];
     expect(entryRel?.['@_typeCode']).toBe('COMP');
-    expect(entryRel?.act?.[0]?.['@_classCode']).toBe('ACT');
-    expect(entryRel?.act?.[0]?.['@_moodCode']).toBe('EVN');
+    expect(entryRel?.act?.['@_classCode']).toBe('ACT');
+    expect(entryRel?.act?.['@_moodCode']).toBe('EVN');
 
     // Check policy activity
-    const policyAct = entryRel?.act?.[0];
+    const policyAct = entryRel?.act;
     expect(policyAct?.code?.['@_code']).toBe('71');
     expect(policyAct?.code?.['@_displayName']).toBe('Health Maintenance Organization');
 
@@ -159,8 +160,8 @@ describe('createInsuranceEntry', () => {
     // Check entry relationship for policy reference
     expect(policyAct?.entryRelationship).toBeDefined();
     expect(policyAct?.entryRelationship?.[0]?.['@_typeCode']).toBe('REFR');
-    expect(policyAct?.entryRelationship?.[0]?.act?.[0]?.code?.['@_code']).toBe('PAYOR');
-    expect(policyAct?.entryRelationship?.[0]?.act?.[0]?.text?.['#text']).toBe('Test Plan');
+    expect(policyAct?.entryRelationship?.[0]?.act?.code?.['@_code']).toBe('PAYOR');
+    expect((policyAct?.entryRelationship?.[0]?.act?.text as CcdaText | undefined)?.['#text']).toBe('Test Plan');
   });
 
   test('should handle coverage without payor', () => {
@@ -193,9 +194,9 @@ describe('createInsuranceEntry', () => {
     const result = createInsuranceEntry(converter, account);
 
     expect(result).toBeDefined();
-    expect(result?.act?.[0]?.entryRelationship?.length).toBe(1);
+    expect(result?.act?.entryRelationship?.length).toBe(1);
 
-    const policyAct = result?.act?.[0]?.entryRelationship?.[0]?.act?.[0];
+    const policyAct = result?.act?.entryRelationship?.[0]?.act;
     expect(policyAct?.code?.['@_code']).toBe('72');
     expect(policyAct?.performer?.[0]?.assignedEntity?.representedOrganization?.name).toBeUndefined();
   });
@@ -210,7 +211,7 @@ describe('createInsuranceEntry', () => {
     const result = createInsuranceEntry(converter, account);
 
     expect(result).toBeDefined();
-    expect(result?.act?.[0]?.entryRelationship).toEqual([]);
+    expect(result?.act?.entryRelationship).toEqual([]);
   });
 
   test('should skip invalid coverage references', () => {
@@ -227,7 +228,7 @@ describe('createInsuranceEntry', () => {
     const result = createInsuranceEntry(converter, account);
 
     expect(result).toBeDefined();
-    expect(result?.act?.[0]?.entryRelationship).toEqual([]);
+    expect(result?.act?.entryRelationship).toEqual([]);
   });
 
   test('should handle coverage without plan class', () => {
@@ -254,7 +255,7 @@ describe('createInsuranceEntry', () => {
     const result = createInsuranceEntry(converter, account);
 
     expect(result).toBeDefined();
-    const policyAct = result?.act?.[0]?.entryRelationship?.[0]?.act?.[0];
-    expect(policyAct?.entryRelationship?.[0]?.act?.[0]?.text).toBeUndefined();
+    const policyAct = result?.act?.entryRelationship?.[0]?.act;
+    expect(policyAct?.entryRelationship?.[0]?.act?.text).toBeUndefined();
   });
 });

@@ -3,6 +3,7 @@
 
 import { createReference } from '@medplum/core';
 import type { Bundle, Immunization, Organization, Patient, Practitioner, PractitionerRole } from '@medplum/fhirtypes';
+import type { CdaIVL_TS } from '../../cda-types';
 import { OID_IMMUNIZATION_ACTIVITY } from '../../oids';
 import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
@@ -68,9 +69,9 @@ describe('immunization entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.substanceAdministration).toBeDefined();
-      expect(result.substanceAdministration?.length).toBe(1);
+      expect(result.substanceAdministration).toBeDefined();
 
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.['@_classCode']).toBe('SBADM');
       expect(substanceAdmin?.['@_moodCode']).toBe('EVN');
       expect(substanceAdmin?.['@_negationInd']).toBe('false');
@@ -80,7 +81,8 @@ describe('immunization entry functions', () => {
       ]);
       expect(substanceAdmin?.id).toBeDefined();
       expect(substanceAdmin?.statusCode?.['@_code']).toBe('completed');
-      expect(substanceAdmin?.effectiveTime?.[0]?.['@_value']).toBe('20240101');
+      const effectiveTime: CdaIVL_TS | undefined = substanceAdmin?.effectiveTime?.[0];
+      expect(effectiveTime?.['@_value']).toBe('20240101');
       expect(substanceAdmin?.consumable).toBeDefined();
     });
 
@@ -108,14 +110,10 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeDefined();
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0]).toBe(
-        'Pfizer Inc.'
-      );
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0]).toBe(
-        'LOT123'
-      );
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization?.name?.[0]).toBe('Pfizer Inc.');
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturedMaterial?.lotNumberText).toBe('LOT123');
     });
 
     test('should handle immunization with manufacturer with id and identifier', () => {
@@ -145,9 +143,9 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeDefined();
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.id).toBeDefined();
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization?.id).toBeDefined();
     });
 
     test('should handle immunization without manufacturer', () => {
@@ -171,8 +169,8 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeUndefined();
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization).toBeUndefined();
     });
 
     test('should handle immunization without lot number', () => {
@@ -196,10 +194,8 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(
-        substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText
-      ).toBeUndefined();
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturedMaterial?.lotNumberText).toBeUndefined();
     });
 
     test('should handle immunization with extension for text reference', () => {
@@ -229,7 +225,7 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect((substanceAdmin?.text as CcdaText).reference?.['@_value']).toBe('#immunization-narrative');
     });
 
@@ -277,7 +273,7 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.performer).toBeDefined();
       expect(substanceAdmin?.performer?.length).toBe(1);
       expect(substanceAdmin?.performer?.[0]?.assignedEntity?.assignedPerson).toBeDefined();
@@ -327,7 +323,7 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.performer).toBeDefined();
       expect(substanceAdmin?.performer?.length).toBe(1);
       expect(substanceAdmin?.performer?.[0]?.assignedEntity?.representedOrganization).toBeDefined();
@@ -402,7 +398,7 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.performer).toBeDefined();
       expect(substanceAdmin?.performer?.length).toBe(1);
       expect(substanceAdmin?.performer?.[0]?.assignedEntity?.assignedPerson).toBeDefined();
@@ -436,7 +432,7 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.performer).toBeDefined();
       expect(substanceAdmin?.performer?.length).toBe(0);
     });
@@ -462,7 +458,7 @@ describe('immunization entry functions', () => {
       const result = createImmunizationEntry(converter, immunization);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       // Status mapper should handle non-standard statuses
       expect(substanceAdmin?.statusCode?.['@_code']).toBeDefined();
     });

@@ -55,7 +55,7 @@ describe('convertCcdaToFhir', () => {
     const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, 'ProcedureSectionActEntry.xml'), 'utf8'));
 
     // Change the section template ID to an unrecognized value
-    (ccda as any).component.structuredBody.component[0].section[0].templateId[0]['@_root'] = '9.9.9999';
+    (ccda as any).component.structuredBody.component[0].section.templateId[0]['@_root'] = '9.9.9999';
 
     // By default, this should throw an error
     expect(() => convertCcdaToFhir(ccda)).toThrow('Unhandled act templateId: 9.9.9999');
@@ -70,7 +70,7 @@ describe('convertCcdaToFhir', () => {
     const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, 'MedicationAtBedtime.xml'), 'utf8'));
 
     // Change the section template ID to an unrecognized value
-    (ccda as any).component.structuredBody.component[0].section[0].templateId[0]['@_root'] = '9.9.9999';
+    (ccda as any).component.structuredBody.component[0].section.templateId[0]['@_root'] = '9.9.9999';
 
     // By default, this should throw an error
     expect(() => convertCcdaToFhir(ccda)).toThrow('Unhandled substance administration templateId: 9.9.9999');

@@ -3,6 +3,7 @@
 
 import { createReference } from '@medplum/core';
 import type { Bundle, Medication, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import type { CdaPIVL_TS } from '../../cda-types';
 import { OID_LOINC_CODE_SYSTEM, OID_MEDICATION_ACTIVITY, OID_MEDICATION_FREE_TEXT_SIG } from '../../oids';
 import { LOINC_MEDICATION_INSTRUCTIONS } from '../../systems';
 import type { CcdaText } from '../../types';
@@ -69,9 +70,9 @@ describe('medication entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.substanceAdministration).toBeDefined();
-      expect(result.substanceAdministration?.length).toBe(1);
+      expect(result.substanceAdministration).toBeDefined();
 
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.['@_classCode']).toBe('SBADM');
       expect(substanceAdmin?.['@_moodCode']).toBe('EVN');
       expect(substanceAdmin?.templateId).toEqual([
@@ -120,16 +121,16 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]).toBeDefined();
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturedMaterial?.code).toBeDefined();
       expect(
-        substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]?.originalText
-          ?.reference?.['@_value']
+        (
+          substanceAdmin?.consumable?.manufacturedProduct?.manufacturedMaterial?.code?.originalText as
+            CcdaText | undefined
+        )?.reference?.['@_value']
       ).toBe('#medication-text');
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeDefined();
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0]).toBe(
-        'Bayer'
-      );
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization).toBeDefined();
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization?.name?.[0]).toBe('Bayer');
     });
 
     test('should handle medication with manufacturer with id and identifier', () => {
@@ -165,8 +166,8 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.id).toBeDefined();
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization?.id).toBeDefined();
     });
 
     test('should handle medication without manufacturer', () => {
@@ -191,8 +192,8 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
-      expect(substanceAdmin?.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization).toBeUndefined();
+      const substanceAdmin = result.substanceAdministration;
+      expect(substanceAdmin?.consumable?.manufacturedProduct?.manufacturerOrganization).toBeUndefined();
     });
 
     test('should handle medication with dispense validity period', () => {
@@ -223,7 +224,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.effectiveTime).toBeDefined();
       expect(substanceAdmin?.effectiveTime?.length).toBeGreaterThan(0);
     });
@@ -260,12 +261,13 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.effectiveTime).toBeDefined();
       expect(substanceAdmin?.effectiveTime?.length).toBe(1);
       expect(substanceAdmin?.effectiveTime?.[0]?.['@_xsi:type']).toBe('PIVL_TS');
-      expect(substanceAdmin?.effectiveTime?.[0]?.period?.['@_value']).toBe('24');
-      expect(substanceAdmin?.effectiveTime?.[0]?.period?.['@_unit']).toBe('h');
+      const timing: CdaPIVL_TS | undefined = substanceAdmin?.effectiveTime?.[0];
+      expect(timing?.period?.['@_value']).toBe('24');
+      expect(timing?.period?.['@_unit']).toBe('h');
     });
 
     test('should handle medication with route', () => {
@@ -303,7 +305,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.routeCode).toBeDefined();
       expect(substanceAdmin?.routeCode?.['@_code']).toBe('26643006');
     });
@@ -335,7 +337,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.routeCode).toBeUndefined();
     });
 
@@ -373,7 +375,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.doseQuantity).toBeDefined();
       expect(substanceAdmin?.doseQuantity?.['@_value']).toBe('325');
       expect(substanceAdmin?.doseQuantity?.['@_unit']).toBe('mg');
@@ -410,7 +412,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.doseQuantity).toBeUndefined();
     });
 
@@ -441,7 +443,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.doseQuantity).toBeUndefined();
     });
 
@@ -473,7 +475,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect((substanceAdmin?.text as CcdaText).reference?.['@_value']).toBe('#medication-narrative');
     });
 
@@ -500,7 +502,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       // Note: mapAuthor may return undefined for display-only requesters
       expect(substanceAdmin?.author).toBeUndefined();
     });
@@ -548,27 +550,28 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.entryRelationship).toBeDefined();
       expect(substanceAdmin?.entryRelationship?.length).toBe(2);
 
       const firstInstruction = substanceAdmin?.entryRelationship?.[0];
       expect(firstInstruction?.['@_typeCode']).toBe('COMP');
-      expect(firstInstruction?.substanceAdministration?.[0]?.templateId).toEqual([
+      expect(firstInstruction?.substanceAdministration?.templateId).toEqual([
         { '@_root': OID_MEDICATION_FREE_TEXT_SIG },
       ]);
-      expect(firstInstruction?.substanceAdministration?.[0]?.code).toEqual({
+      expect(firstInstruction?.substanceAdministration?.code).toEqual({
         '@_code': LOINC_MEDICATION_INSTRUCTIONS,
         '@_codeSystem': OID_LOINC_CODE_SYSTEM,
         '@_codeSystemName': 'LOINC',
         '@_displayName': 'Medication Instructions',
       });
-      expect((firstInstruction?.substanceAdministration?.[0]?.text as CcdaText).reference?.['@_value']).toBe(
+      expect((firstInstruction?.substanceAdministration?.text as CcdaText).reference?.['@_value']).toBe(
         '#dosage-instruction-1'
       );
       expect(
-        firstInstruction?.substanceAdministration?.[0]?.consumable?.manufacturedProduct?.[0]
-          ?.manufacturedLabeledDrug?.[0]?.['@_nullFlavor']
+        firstInstruction?.substanceAdministration?.consumable?.manufacturedProduct?.manufacturedLabeledDrug?.[
+          '@_nullFlavor'
+        ]
       ).toBe('NA');
     });
 
@@ -593,7 +596,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       expect(substanceAdmin?.id).toBeDefined();
       expect(substanceAdmin?.id?.length).toBe(1);
       expect(substanceAdmin?.id?.[0]?.['@_root']).toBeDefined();
@@ -621,7 +624,7 @@ describe('medication entry functions', () => {
       const result = createMedicationEntry(converter, medicationRequest);
 
       expect(result).toBeDefined();
-      const substanceAdmin = result.substanceAdministration?.[0];
+      const substanceAdmin = result.substanceAdministration;
       // Status mapper should handle the mapping
       expect(substanceAdmin?.statusCode?.['@_code']).toBeDefined();
     });

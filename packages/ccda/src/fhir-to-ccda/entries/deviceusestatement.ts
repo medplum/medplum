@@ -37,42 +37,40 @@ export function createDeviceUseStatementEntry(
   }
 
   return {
-    procedure: [
-      {
-        '@_classCode': 'PROC',
-        '@_moodCode': 'EVN',
-        templateId: [
-          { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
-          { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
-        ],
-        id: mapIdentifiers(resource.id, resource.identifier),
-        code: {
-          '@_code': '360030002',
-          '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-          '@_codeSystemName': 'SNOMED CT',
-          '@_displayName': 'Application of medical device',
-        },
-        statusCode: {
-          '@_code': 'completed',
-        },
-        participant: [
-          {
-            '@_typeCode': 'DEV',
-            participantRole: {
-              '@_classCode': 'MANU',
-              templateId: [{ '@_root': OID_PRODUCT_INSTANCE }],
-              id: ids,
-              playingDevice: {
-                '@_classCode': 'DEV',
-                code: mapCodeableConceptToCcdaCode(device.type) as CcdaCode,
-              },
-              scopingEntity: {
-                id: [{ '@_root': OID_FDA_CODE_SYSTEM }],
-              },
+    procedure: {
+      '@_classCode': 'PROC',
+      '@_moodCode': 'EVN',
+      templateId: [
+        { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
+        { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
+      ],
+      id: mapIdentifiers(resource.id, resource.identifier),
+      code: {
+        '@_code': '360030002',
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+        '@_codeSystemName': 'SNOMED CT',
+        '@_displayName': 'Application of medical device',
+      },
+      statusCode: {
+        '@_code': 'completed',
+      },
+      participant: [
+        {
+          '@_typeCode': 'DEV',
+          participantRole: {
+            '@_classCode': 'MANU',
+            templateId: [{ '@_root': OID_PRODUCT_INSTANCE }],
+            id: ids,
+            playingDevice: {
+              '@_classCode': 'DEV',
+              code: mapCodeableConceptToCcdaCode(device.type) as CcdaCode,
+            },
+            scopingEntity: {
+              id: [{ '@_root': OID_FDA_CODE_SYSTEM }],
             },
           },
-        ],
-      },
-    ],
+        },
+      ],
+    },
   };
 }

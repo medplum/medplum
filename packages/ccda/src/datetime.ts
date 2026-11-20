@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Period } from '@medplum/fhirtypes';
-import type { CcdaEffectiveTime } from './types';
+import type { CdaIVL_TS } from './cda-types';
 
 /*
  * C-CDA date/time formats:
@@ -121,12 +121,9 @@ export function mapFhirToCcdaDateTime(dateTime: string | undefined): string | un
   return `${outDate}${outTime}`;
 }
 
-export function mapFhirPeriodOrDateTimeToCcda(
-  period: Period | undefined,
-  dateTime: string | undefined
-): CcdaEffectiveTime {
+export function mapFhirPeriodOrDateTimeToCcda(period: Period | undefined, dateTime: string | undefined): CdaIVL_TS {
   if (period?.start || period?.end) {
-    const effectiveTime: CcdaEffectiveTime = {};
+    const effectiveTime: CdaIVL_TS = {};
     if (period.start) {
       effectiveTime.low = { '@_value': mapFhirToCcdaDateTime(period.start) ?? '' };
     }

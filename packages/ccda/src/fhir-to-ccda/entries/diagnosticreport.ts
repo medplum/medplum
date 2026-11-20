@@ -19,7 +19,7 @@ export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, reso
     }
 
     components.push({
-      observation: [createCcdaObservation(converter, child)],
+      observation: createCcdaObservation(converter, child),
     });
   }
 
@@ -28,19 +28,14 @@ export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, reso
   // it is not required that this effectiveTime be populated.
 
   return {
-    organizer: [
-      {
-        '@_classCode': 'CLUSTER',
-        '@_moodCode': 'EVN',
-        templateId: [
-          { '@_root': OID_RESULT_ORGANIZER },
-          { '@_root': OID_RESULT_ORGANIZER, '@_extension': '2015-08-01' },
-        ],
-        id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
-        code: mapCodeableConceptToCcdaCode(resource.code),
-        statusCode: { '@_code': 'completed' },
-        component: components,
-      },
-    ],
+    organizer: {
+      '@_classCode': 'CLUSTER',
+      '@_moodCode': 'EVN',
+      templateId: [{ '@_root': OID_RESULT_ORGANIZER }, { '@_root': OID_RESULT_ORGANIZER, '@_extension': '2015-08-01' }],
+      id: mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+      code: mapCodeableConceptToCcdaCode(resource.code),
+      statusCode: { '@_code': 'completed' },
+      component: components,
+    },
   };
 }

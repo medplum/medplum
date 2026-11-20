@@ -4,6 +4,7 @@
 import { createReference } from '@medplum/core';
 import type { Bundle, Condition, Encounter, EncounterParticipant, Patient } from '@medplum/fhirtypes';
 import { OID_ENCOUNTER_ACTIVITIES, OID_ENCOUNTER_LOCATION, OID_PROBLEM_OBSERVATION } from '../../oids';
+import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import { createEncounterEntry } from './encounter';
 
@@ -76,9 +77,9 @@ describe('createEncounterEntry', () => {
 
     expect(result).toBeDefined();
     expect(result.encounter).toBeDefined();
-    expect(result.encounter?.length).toBe(1);
+    expect(result.encounter).toBeDefined();
 
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.['@_classCode']).toBe('ENC');
     expect(encounterEntry?.['@_moodCode']).toBe('EVN');
     expect(encounterEntry?.templateId).toEqual([
@@ -87,8 +88,8 @@ describe('createEncounterEntry', () => {
     ]);
     expect(encounterEntry?.code?.['@_code']).toBe('270427003');
     expect(encounterEntry?.code?.['@_displayName']).toBe('Patient-initiated encounter');
-    expect(encounterEntry?.effectiveTime?.[0]?.low?.['@_value']).toBe('20240101100000+0000');
-    expect(encounterEntry?.effectiveTime?.[0]?.high?.['@_value']).toBe('20240101110000+0000');
+    expect(encounterEntry?.effectiveTime?.low?.['@_value']).toBe('20240101100000+0000');
+    expect(encounterEntry?.effectiveTime?.high?.['@_value']).toBe('20240101110000+0000');
     expect(encounterEntry?.id).toBeDefined();
   });
 
@@ -138,7 +139,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.participant).toBeDefined();
     expect(encounterEntry?.participant?.length).toBe(2);
 
@@ -204,7 +205,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.entryRelationship).toBeDefined();
     expect(encounterEntry?.entryRelationship?.length).toBe(1);
 
@@ -212,7 +213,7 @@ describe('createEncounterEntry', () => {
     expect(diagnosisEntry?.['@_typeCode']).toBe('REFR');
     expect(diagnosisEntry?.act).toBeDefined();
 
-    const diagnosisAct = diagnosisEntry?.act?.[0];
+    const diagnosisAct = diagnosisEntry?.act;
     expect(diagnosisAct?.['@_classCode']).toBe('ACT');
     expect(diagnosisAct?.['@_moodCode']).toBe('EVN');
     expect(diagnosisAct?.templateId).toEqual([
@@ -229,7 +230,7 @@ describe('createEncounterEntry', () => {
     expect(observationEntry?.['@_typeCode']).toBe('SUBJ');
     expect(observationEntry?.observation).toBeDefined();
 
-    const observation = observationEntry?.observation?.[0];
+    const observation = observationEntry?.observation;
     expect(observation?.['@_classCode']).toBe('OBS');
     expect(observation?.['@_moodCode']).toBe('EVN');
     expect(observation?.templateId).toEqual([
@@ -268,7 +269,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.entryRelationship).toEqual([]);
   });
 
@@ -288,7 +289,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.code).toBeUndefined();
   });
 
@@ -308,7 +309,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.effectiveTime).toBeUndefined();
   });
 
@@ -334,8 +335,8 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
-    expect(encounterEntry?.text?.reference?.['@_value']).toBe('#encounter-narrative');
+    const encounterEntry = result.encounter;
+    expect((encounterEntry?.text as CcdaText | undefined)?.reference?.['@_value']).toBe('#encounter-narrative');
   });
 
   test('should handle encounter without id or identifiers', () => {
@@ -353,7 +354,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.id).toBeDefined();
   });
 
@@ -378,7 +379,7 @@ describe('createEncounterEntry', () => {
     const result = createEncounterEntry(converter, encounter);
 
     expect(result).toBeDefined();
-    const encounterEntry = result.encounter?.[0];
+    const encounterEntry = result.encounter;
     expect(encounterEntry?.participant).toBeDefined();
     expect(encounterEntry?.participant?.length).toBe(1);
 

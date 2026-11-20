@@ -35,6 +35,7 @@ import {
   LOINC_TOBACCO_SMOKING_STATUS,
   LOINC_TRIBAL_AFFILIATION,
 } from '../../systems';
+import type { CcdaCode, CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import {
   createCcdaObservation,
@@ -109,7 +110,7 @@ describe('observation entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.observation).toBeDefined();
-      expect(result.observation?.length).toBe(1);
+      expect(result.observation).toBeDefined();
       expect(result.organizer).toBeUndefined();
     });
 
@@ -166,7 +167,7 @@ describe('observation entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.organizer).toBeDefined();
-      expect(result.organizer?.length).toBe(1);
+      expect(result.organizer).toBeDefined();
       expect(result.observation).toBeUndefined();
     });
 
@@ -214,7 +215,7 @@ describe('observation entry functions', () => {
 
       expect(result).toBeDefined();
       expect(result.organizer).toBeDefined();
-      expect(result.organizer?.length).toBe(1);
+      expect(result.organizer).toBeDefined();
       expect(result.observation).toBeUndefined();
     });
   });
@@ -265,7 +266,7 @@ describe('observation entry functions', () => {
       expect(result.id).toBeDefined();
       expect(result.code).toBeDefined();
       expect(result.statusCode?.['@_code']).toBe('completed');
-      expect(result.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
+      expect(result.effectiveTime?.['@_value']).toBe('20240101100000+0000');
       expect(result.component).toBeDefined();
       expect(result.component?.length).toBe(1);
     });
@@ -571,7 +572,7 @@ describe('observation entry functions', () => {
       expect(result.code?.['@_code']).toBe('8480-6');
       expect(result.code?.['@_displayName']).toBe('Systolic blood pressure');
       expect(result.value).toBeDefined();
-      expect(result.text?.reference?.['@_value']).toBe('#component-text');
+      expect((result.text as CcdaText | undefined)?.reference?.['@_value']).toBe('#component-text');
     });
 
     test('should handle observation with reference range', () => {
@@ -1009,7 +1010,7 @@ describe('observation entry functions', () => {
       const result = mapObservationValue(observation);
 
       expect(result).toBeDefined();
-      expect(result?.['@_xsi:type']).toBe('CD');
+      expect((result as CcdaCode | undefined)?.['@_xsi:type']).toBe('CD');
     });
 
     test('should map valueString', () => {
@@ -1111,7 +1112,7 @@ describe('observation entry functions', () => {
       const result = mapReferenceRange(referenceRange);
 
       expect(result).toBeDefined();
-      expect(result?.observationRange?.text?.reference?.['@_value']).toBe('#ref-range-1');
+      expect((result?.observationRange?.text as CcdaText | undefined)?.reference?.['@_value']).toBe('#ref-range-1');
     });
 
     test('should handle reference range without narrative extension', () => {

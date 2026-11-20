@@ -4,7 +4,14 @@ import type { Immunization, ImmunizationPerformer, Organization, Practitioner } 
 import { mapFhirToCcdaDate } from '../../datetime';
 import { OID_IMMUNIZATION_ACTIVITY, OID_IMMUNIZATION_MEDICATION_INFORMATION } from '../../oids';
 import { IMMUNIZATION_STATUS_MAPPER, mapCodeableConceptToCcdaCode } from '../../systems';
-import type { CcdaCode, CcdaEntry, CcdaId, CcdaPerformer, CcdaSubstanceAdministration } from '../../types';
+import type {
+  CcdaAssignedPerson,
+  CcdaCode,
+  CcdaEntry,
+  CcdaId,
+  CcdaPerformer,
+  CcdaSubstanceAdministration,
+} from '../../types';
 import type { FhirToCcdaConverter } from '../convert';
 import {
   createTextFromExtensions,
@@ -17,55 +24,44 @@ import {
 export function createImmunizationEntry(converter: FhirToCcdaConverter, immunization: Immunization): CcdaEntry {
   const manufacturer = immunization?.manufacturer;
   const result = {
-    substanceAdministration: [
-      {
-        '@_classCode': 'SBADM',
-        '@_moodCode': 'EVN',
-        '@_negationInd': 'false',
-        templateId: [
-          { '@_root': OID_IMMUNIZATION_ACTIVITY },
-          { '@_root': OID_IMMUNIZATION_ACTIVITY, '@_extension': '2015-08-01' },
-        ],
-        id: mapIdentifiers(immunization.id, immunization.identifier),
-        text: createTextFromExtensions(immunization.extension),
-        statusCode: {
-          '@_code': IMMUNIZATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(immunization.status, 'completed'),
-        },
-        effectiveTime: [{ '@_value': mapFhirToCcdaDate(immunization.occurrenceDateTime) }],
-        consumable: {
-          manufacturedProduct: [
-            {
-              '@_classCode': 'MANU',
-              templateId: [
-                { '@_root': OID_IMMUNIZATION_MEDICATION_INFORMATION },
-                { '@_root': OID_IMMUNIZATION_MEDICATION_INFORMATION, '@_extension': '2014-06-09' },
-              ],
-              manufacturedMaterial: [
-                {
-                  code: [mapCodeableConceptToCcdaCode(immunization.vaccineCode) as CcdaCode],
-                  lotNumberText: immunization.lotNumber ? [immunization.lotNumber] : undefined,
-                },
-              ],
-              manufacturerOrganization: manufacturer
-                ? [
-                    {
-                      id: mapIdentifiers(
-                        manufacturer.id,
-                        manufacturer.identifier ? [manufacturer.identifier] : undefined
-                      ),
-                      name: [manufacturer.display as string],
-                    },
-                  ]
-                : undefined,
-            },
+    substanceAdministration: {
+      '@_classCode': 'SBADM',
+      '@_moodCode': 'EVN',
+      '@_negationInd': 'false',
+      templateId: [
+        { '@_root': OID_IMMUNIZATION_ACTIVITY },
+        { '@_root': OID_IMMUNIZATION_ACTIVITY, '@_extension': '2015-08-01' },
+      ],
+      id: mapIdentifiers(immunization.id, immunization.identifier),
+      text: createTextFromExtensions(immunization.extension),
+      statusCode: {
+        '@_code': IMMUNIZATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(immunization.status, 'completed'),
+      },
+      effectiveTime: [{ '@_value': mapFhirToCcdaDate(immunization.occurrenceDateTime) }],
+      consumable: {
+        manufacturedProduct: {
+          '@_classCode': 'MANU',
+          templateId: [
+            { '@_root': OID_IMMUNIZATION_MEDICATION_INFORMATION },
+            { '@_root': OID_IMMUNIZATION_MEDICATION_INFORMATION, '@_extension': '2014-06-09' },
           ],
+          manufacturedMaterial: {
+            code: mapCodeableConceptToCcdaCode(immunization.vaccineCode) as CcdaCode,
+            lotNumberText: immunization.lotNumber,
+          },
+          manufacturerOrganization: manufacturer
+            ? {
+                id: mapIdentifiers(manufacturer.id, manufacturer.identifier ? [manufacturer.identifier] : undefined),
+                name: [manufacturer.display as string],
+              }
+            : undefined,
         },
       },
-    ],
+    },
   } satisfies CcdaEntry;
 
   if (immunization.performer) {
-    (result.substanceAdministration[0] as CcdaSubstanceAdministration).performer = immunization.performer
+    (result.substanceAdministration as CcdaSubstanceAdministration).performer = immunization.performer
       .map((p) => mapImmunizationPerformerToCcdaPerformer(converter, p))
       .filter(Boolean) as CcdaPerformer[];
   }
@@ -110,10 +106,10 @@ export function mapImmunizationPerformerToCcdaPerformer(
       addr: mapFhirAddressArrayToCcdaAddressArray(practitioner?.address),
       telecom: mapTelecom(resource.telecom),
       assignedPerson: practitioner
-        ? {
+        ? ({
             id: mapIdentifiers(practitioner.id, practitioner.identifier) as CcdaId[],
             name: mapNames(practitioner.name),
-          }
+          } as CcdaAssignedPerson)
         : undefined,
       representedOrganization: organization
         ? {

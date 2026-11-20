@@ -14,17 +14,15 @@ export function createPlanOfTreatmentCarePlanEntry(
 ): CcdaEntry | undefined {
   if (resource.status === 'completed') {
     return {
-      act: [
-        {
-          '@_classCode': 'ACT',
-          '@_moodCode': 'INT',
-          templateId: [{ '@_root': OID_INSTRUCTIONS }],
-          id: mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
-          text: resource.description ? { '#text': resource.description } : createTextFromExtensions(resource.extension),
-          statusCode: { '@_code': resource.status },
-        },
-      ],
+      act: {
+        '@_classCode': 'ACT',
+        '@_moodCode': 'INT',
+        templateId: [{ '@_root': OID_INSTRUCTIONS }],
+        id: mapIdentifiers(resource.id, resource.identifier),
+        code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
+        text: resource.description ? { '#text': resource.description } : createTextFromExtensions(resource.extension),
+        statusCode: { '@_code': resource.status },
+      },
     };
   }
 

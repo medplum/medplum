@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { arrayify } from '@medplum/core';
 import type { Location, Observation, Procedure, Reference } from '@medplum/fhirtypes';
 import { OID_ENCOUNTER_LOCATION, OID_PROCEDURE_ACTIVITY_ACT, OID_PROCEDURE_ACTIVITY_PROCEDURE } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
@@ -44,59 +45,53 @@ export function createHistoryOfProceduresEntry(
     if (procedureCode && actCodes.includes(procedureCode)) {
       // Create an <act> entry
       return {
-        act: [
-          {
-            '@_classCode': 'ACT',
-            '@_moodCode': 'EVN',
-            templateId: [
-              { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
-              { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
-            ],
-            id: mapIdentifiers(resource.id, resource.identifier),
-            code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
-            statusCode: { '@_code': 'completed' },
-            effectiveTime: mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
-            text: createTextFromExtensions(resource.extension),
-          },
-        ],
-      };
-    }
-    return {
-      procedure: [
-        {
-          '@_classCode': 'PROC',
+        act: {
+          '@_classCode': 'ACT',
           '@_moodCode': 'EVN',
           templateId: [
-            { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
-            { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
+            { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
+            { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
           ],
           id: mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
           statusCode: { '@_code': 'completed' },
           effectiveTime: mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
           text: createTextFromExtensions(resource.extension),
-          targetSiteCode: mapCodeableConceptToCcdaCode(resource.bodySite?.[0]),
-          participant: [mapLocationToParticipant(converter, resource.location)].filter(Boolean) as CcdaParticipant[],
         },
-      ],
+      };
+    }
+    return {
+      procedure: {
+        '@_classCode': 'PROC',
+        '@_moodCode': 'EVN',
+        templateId: [
+          { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
+          { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
+        ],
+        id: mapIdentifiers(resource.id, resource.identifier),
+        code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+        statusCode: { '@_code': 'completed' },
+        effectiveTime: mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
+        text: createTextFromExtensions(resource.extension),
+        targetSiteCode: arrayify(mapCodeableConceptToCcdaCode(resource.bodySite?.[0])),
+        participant: [mapLocationToParticipant(converter, resource.location)].filter(Boolean) as CcdaParticipant[],
+      },
     };
   }
   if (resource.resourceType === 'Observation') {
     // Create an <observation> entry
     return {
-      observation: [
-        {
-          '@_classCode': 'OBS',
-          '@_moodCode': 'EVN',
-          templateId: mapObservationTemplateId(resource),
-          id: mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaCode(resource.code),
-          value: mapObservationValue(resource),
-          statusCode: { '@_code': 'completed' },
-          effectiveTime: mapEffectiveTime(resource.effectiveDateTime, resource.effectivePeriod),
-          text: createTextFromExtensions(resource.extension),
-        },
-      ],
+      observation: {
+        '@_classCode': 'OBS',
+        '@_moodCode': 'EVN',
+        templateId: mapObservationTemplateId(resource),
+        id: mapIdentifiers(resource.id, resource.identifier),
+        code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+        value: arrayify(mapObservationValue(resource)),
+        statusCode: { '@_code': 'completed' },
+        effectiveTime: mapEffectiveTime(resource.effectiveDateTime, resource.effectivePeriod),
+        text: createTextFromExtensions(resource.extension),
+      },
     };
   }
   throw new Error(`Unknown history of procedures resource type: ${(resource as any).resourceType}`);

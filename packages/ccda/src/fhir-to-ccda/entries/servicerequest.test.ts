@@ -4,6 +4,7 @@
 import { createReference, SNOMED } from '@medplum/core';
 import type { Bundle, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION, OID_PLAN_OF_CARE_ACTIVITY_PROCEDURE } from '../../oids';
+import type { CcdaText } from '../../types';
 import { FhirToCcdaConverter } from '../convert';
 import { createPlanOfTreatmentServiceRequestEntry, mapPlanOfTreatmentStatus } from './servicerequest';
 
@@ -67,9 +68,9 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
 
     expect(result).toBeDefined();
     expect(result.procedure).toBeDefined();
-    expect(result.procedure?.length).toBe(1);
+    expect(result.procedure).toBeDefined();
 
-    const procedure = result.procedure?.[0];
+    const procedure = result.procedure;
     expect(procedure?.['@_classCode']).toBe('PROC');
     expect(procedure?.['@_moodCode']).toBe('RQO');
     expect(procedure?.templateId).toEqual([
@@ -80,7 +81,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     expect(procedure?.statusCode?.['@_code']).toBe('active');
     expect(procedure?.code?.['@_code']).toBe('387713003');
     expect(procedure?.code?.['@_displayName']).toBe('Surgical procedure');
-    expect(procedure?.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
+    expect(procedure?.effectiveTime?.['@_value']).toBe('20240101100000+0000');
     expect(procedure?.id).toBeDefined();
   });
 
@@ -108,16 +109,16 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
 
     expect(result).toBeDefined();
     expect(result.observation).toBeDefined();
-    expect(result.observation?.length).toBe(1);
+    expect(result.observation).toBeDefined();
 
-    const observation = result.observation?.[0];
+    const observation = result.observation;
     expect(observation?.['@_classCode']).toBe('OBS');
     expect(observation?.['@_moodCode']).toBe('RQO');
     expect(observation?.templateId).toEqual([{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }]);
     expect(observation?.statusCode?.['@_code']).toBe('active');
     expect(observation?.code?.['@_code']).toBe('33747-0');
     expect(observation?.code?.['@_displayName']).toBe('General appearance');
-    expect(observation?.effectiveTime?.[0]?.['@_value']).toBe('20240101100000+0000');
+    expect(observation?.effectiveTime?.['@_value']).toBe('20240101100000+0000');
     expect(observation?.id).toBeDefined();
   });
 
@@ -140,10 +141,10 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
 
     expect(result).toBeDefined();
     expect(result.observation).toBeDefined();
-    const observation = result.observation?.[0];
+    const observation = result.observation;
     expect(observation?.code).toBeUndefined();
     expect(observation?.statusCode?.['@_code']).toBe('completed');
-    expect(observation?.text?.reference?.['@_value']).toBe('#service-request-text');
+    expect((observation?.text as CcdaText | undefined)?.reference?.['@_value']).toBe('#service-request-text');
   });
 
   test('should handle cancelled service request status', () => {
@@ -158,7 +159,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     const result = createPlanOfTreatmentServiceRequestEntry(converter, serviceRequest);
 
     expect(result).toBeDefined();
-    const observation = result.observation?.[0];
+    const observation = result.observation;
     expect(observation?.statusCode?.['@_code']).toBe('cancelled');
   });
 
@@ -173,7 +174,7 @@ describe('createPlanOfTreatmentServiceRequestEntry', () => {
     const result = createPlanOfTreatmentServiceRequestEntry(converter, serviceRequest);
 
     expect(result).toBeDefined();
-    const observation = result.observation?.[0];
+    const observation = result.observation;
     expect(observation?.id).toBeDefined();
   });
 

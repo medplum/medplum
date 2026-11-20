@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY, getTypedPropertyValueWithoutSchema, isPopulated, toTypedValue } from '@medplum/core';
+import { arrayify, EMPTY, getTypedPropertyValueWithoutSchema, isPopulated, toTypedValue } from '@medplum/core';
 import type { Observation, ObservationComponent, ObservationReferenceRange } from '@medplum/fhirtypes';
 import { mapFhirPeriodOrDateTimeToCcda, mapFhirToCcdaDateTime } from '../../datetime';
 import {
@@ -41,7 +41,6 @@ import type {
   CcdaCode,
   CcdaEntry,
   CcdaEntryRelationship,
-  CcdaId,
   CcdaObservation,
   CcdaOrganizer,
   CcdaOrganizerComponent,
@@ -57,12 +56,12 @@ export function createObservationEntry(converter: FhirToCcdaConverter, observati
   if ((observation.component || observation.hasMember) && !isPopulated(obsValue)) {
     // Organizer
     return {
-      organizer: [createVitalSignsOrganizer(converter, observation)],
+      organizer: createVitalSignsOrganizer(converter, observation),
     };
   } else {
     // Direct observation
     return {
-      observation: [createCcdaObservation(converter, observation)],
+      observation: createCcdaObservation(converter, observation),
     };
   }
 }
@@ -72,7 +71,7 @@ export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observ
 
   for (const component of observation.component ?? EMPTY) {
     components.push({
-      observation: [createCcdaObservation(converter, observation, component)],
+      observation: createCcdaObservation(converter, observation, component),
     });
   }
 
@@ -85,12 +84,12 @@ export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observ
     if (child.component) {
       for (const component of child.component) {
         components.push({
-          observation: [createCcdaObservation(converter, child, component)],
+          observation: createCcdaObservation(converter, child, component),
         });
       }
     } else {
       components.push({
-        observation: [createCcdaObservation(converter, child)],
+        observation: createCcdaObservation(converter, child),
       });
     }
   }
@@ -99,10 +98,10 @@ export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observ
     '@_classCode': 'CLUSTER',
     '@_moodCode': 'EVN',
     templateId: mapOrganizerTemplateId(observation),
-    id: mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
+    id: mapIdentifiers(observation.id, observation.identifier),
     code: mapCodeableConceptToCcdaCode(observation.code),
     statusCode: { '@_code': 'completed' },
-    effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
+    effectiveTime: { '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) },
     component: components,
   };
 
@@ -134,7 +133,7 @@ export function createCcdaObservation(
 
     entryRelationship.push({
       '@_typeCode': 'COMP',
-      observation: [createCcdaObservation(converter, child)],
+      observation: createCcdaObservation(converter, child),
     });
   }
 
@@ -143,10 +142,10 @@ export function createCcdaObservation(
     '@_moodCode': 'EVN',
     templateId: mapObservationTemplateId(observation, component),
     id: mapIdentifiers(observation.id, observation.identifier),
-    code,
+    code: code as CcdaCode,
     statusCode: { '@_code': 'completed' },
-    effectiveTime: [mapFhirPeriodOrDateTimeToCcda(observation.effectivePeriod, observation.effectiveDateTime)],
-    value: mapObservationValue(component ?? observation),
+    effectiveTime: mapFhirPeriodOrDateTimeToCcda(observation.effectivePeriod, observation.effectiveDateTime),
+    value: arrayify(mapObservationValue(component ?? observation)),
     referenceRange: mapReferenceRangeArray(component?.referenceRange ?? observation.referenceRange),
     text: createTextFromExtensions(component?.extension ?? observation.extension),
     author: converter.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),

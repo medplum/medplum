@@ -29,7 +29,7 @@ export function createMedicationEntry(converter: FhirToCcdaConverter, med: Medic
   if (med.dispenseRequest?.validityPeriod) {
     const mapped = mapEffectiveDate(undefined, med.dispenseRequest.validityPeriod);
     if (mapped) {
-      effectiveTime.push(...mapped);
+      effectiveTime.push(mapped);
     }
   }
 
@@ -46,86 +46,67 @@ export function createMedicationEntry(converter: FhirToCcdaConverter, med: Medic
   }
 
   return {
-    substanceAdministration: [
-      {
-        '@_classCode': 'SBADM',
-        '@_moodCode': 'EVN',
-        templateId: [
-          { '@_root': OID_MEDICATION_ACTIVITY, '@_extension': '2014-06-09' },
-          { '@_root': OID_MEDICATION_ACTIVITY },
-        ],
-        id: [{ '@_root': med.id || crypto.randomUUID() }],
-        text: createTextFromExtensions(med.extension),
-        statusCode: { '@_code': MEDICATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(med.status, 'active') },
-        effectiveTime,
-        routeCode: mapMedicationRoute(med.dosageInstruction?.[0]?.route),
-        doseQuantity: mapDoseQuantity(med.dosageInstruction?.[0]?.doseAndRate?.[0]),
-        consumable: {
-          '@_typeCode': 'CSM',
-          manufacturedProduct: [
-            {
-              '@_classCode': 'MANU',
-              templateId: [
-                { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL, '@_extension': '2014-06-09' },
-                { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL },
-              ],
-              manufacturedMaterial: [
-                {
-                  code: [
-                    {
-                      ...(mapCodeableConceptToCcdaCode(medicationCode) as CcdaCode),
-                      originalText: createTextFromExtensions(medication?.extension),
-                    },
-                  ],
-                },
-              ],
-              manufacturerOrganization: manufacturer
-                ? [
-                    {
-                      id: mapIdentifiers(
-                        manufacturer.id,
-                        manufacturer.identifier ? [manufacturer.identifier] : undefined
-                      ),
-                      name: [manufacturer.display as string],
-                    },
-                  ]
-                : undefined,
-            },
+    substanceAdministration: {
+      '@_classCode': 'SBADM',
+      '@_moodCode': 'EVN',
+      templateId: [
+        { '@_root': OID_MEDICATION_ACTIVITY, '@_extension': '2014-06-09' },
+        { '@_root': OID_MEDICATION_ACTIVITY },
+      ],
+      id: [{ '@_root': med.id || crypto.randomUUID() }],
+      text: createTextFromExtensions(med.extension),
+      statusCode: { '@_code': MEDICATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(med.status, 'active') },
+      effectiveTime,
+      routeCode: mapMedicationRoute(med.dosageInstruction?.[0]?.route),
+      doseQuantity: mapDoseQuantity(med.dosageInstruction?.[0]?.doseAndRate?.[0]),
+      consumable: {
+        '@_typeCode': 'CSM',
+        manufacturedProduct: {
+          '@_classCode': 'MANU',
+          templateId: [
+            { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL, '@_extension': '2014-06-09' },
+            { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL },
           ],
+          manufacturedMaterial: {
+            code: {
+              ...(mapCodeableConceptToCcdaCode(medicationCode) as CcdaCode),
+              originalText: createTextFromExtensions(medication?.extension),
+            },
+          },
+          manufacturerOrganization: manufacturer
+            ? {
+                id: mapIdentifiers(manufacturer.id, manufacturer.identifier ? [manufacturer.identifier] : undefined),
+                name: [manufacturer.display as string],
+              }
+            : undefined,
         },
-        author: converter.mapAuthor(med.requester, med.authoredOn),
-        entryRelationship: med.dosageInstruction
-          ?.filter((instr) => !!instr.extension)
-          ?.map((instr) => ({
-            '@_typeCode': 'COMP',
-            substanceAdministration: [
-              {
-                '@_classCode': 'SBADM',
-                '@_moodCode': 'EVN',
-                templateId: [{ '@_root': OID_MEDICATION_FREE_TEXT_SIG }],
-                code: {
-                  '@_code': LOINC_MEDICATION_INSTRUCTIONS,
-                  '@_codeSystem': OID_LOINC_CODE_SYSTEM,
-                  '@_codeSystemName': 'LOINC',
-                  '@_displayName': 'Medication Instructions',
-                },
-                text: createTextFromExtensions(instr.extension),
-                consumable: {
-                  manufacturedProduct: [
-                    {
-                      manufacturedLabeledDrug: [
-                        {
-                          '@_nullFlavor': 'NA',
-                        },
-                      ],
-                    },
-                  ],
+      },
+      author: converter.mapAuthor(med.requester, med.authoredOn),
+      entryRelationship: med.dosageInstruction
+        ?.filter((instr) => !!instr.extension)
+        ?.map((instr) => ({
+          '@_typeCode': 'COMP',
+          substanceAdministration: {
+            '@_classCode': 'SBADM',
+            '@_moodCode': 'EVN',
+            templateId: [{ '@_root': OID_MEDICATION_FREE_TEXT_SIG }],
+            code: {
+              '@_code': LOINC_MEDICATION_INSTRUCTIONS,
+              '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+              '@_codeSystemName': 'LOINC',
+              '@_displayName': 'Medication Instructions',
+            },
+            text: createTextFromExtensions(instr.extension),
+            consumable: {
+              manufacturedProduct: {
+                manufacturedLabeledDrug: {
+                  '@_nullFlavor': 'NA',
                 },
               },
-            ],
-          })),
-      },
-    ],
+            },
+          },
+        })),
+    },
   };
 }
 
