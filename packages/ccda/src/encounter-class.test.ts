@@ -69,20 +69,20 @@ describe('Encounter.class', () => {
     });
   });
 
-  test('takes an ActCode in the root code as the class', () => {
+  test('takes an ActCode in the root code as the class, keeping its display', () => {
     const encounter = convertEncounter(
-      `<code code="HH" codeSystem="${OID_ACT_CODE_CODE_SYSTEM}" displayName="home health"/>`
+      `<code code="HH" codeSystem="${OID_ACT_CODE_CODE_SYSTEM}" displayName="Home visit"/>`
     );
-    expect(encounter.class).toEqual({ system: ACT_CODE_SYSTEM, code: 'HH', display: 'home health' });
+    expect(encounter.class).toEqual({ system: ACT_CODE_SYSTEM, code: 'HH', display: 'Home visit' });
   });
 
-  test('prefers an ActCode translation to a CPT code in the root', () => {
+  test('prefers an ActCode translation to a CPT code in the root, with the standard display when it has none', () => {
     const encounter = convertEncounter(
       `<code code="99213" codeSystem="${OID_CPT_CODE_SYSTEM}">
          <translation code="IMP" codeSystem="${OID_ACT_CODE_CODE_SYSTEM}"/>
        </code>`
     );
-    expect(encounter.class).toEqual({ system: ACT_CODE_SYSTEM, code: 'IMP' });
+    expect(encounter.class).toEqual({ system: ACT_CODE_SYSTEM, code: 'IMP', display: 'inpatient encounter' });
   });
 
   test('ignores an ActCode that is not an encounter code', () => {
