@@ -215,6 +215,41 @@ export async function openTimeFinder(): Promise<void> {
 }
 
 /**
+ * The link beside a typed time's length, which opens the field it is changed in, or null when
+ * no time can be typed.
+ * @returns The button, or null.
+ */
+export function durationEditorButton(): HTMLElement | null {
+  return screen.queryByRole('button', { name: 'Change duration' });
+}
+
+/** Opens the field a typed time's length is changed in. */
+export async function openDurationEditor(): Promise<void> {
+  await act(async () => {
+    fireEvent.click(durationEditorButton() as HTMLElement);
+  });
+}
+
+/**
+ * The field a typed time's length is changed in, or null while it is closed.
+ * @returns The field, or null.
+ */
+export function durationField(): HTMLInputElement | null {
+  return screen.queryByLabelText<HTMLInputElement>('Custom duration (minutes)');
+}
+
+/**
+ * Types a typed time's length into its field, opening it first if need be.
+ * @param minutes - The length, as typed.
+ */
+export async function typeDuration(minutes: string): Promise<void> {
+  if (!durationField()) {
+    await openDurationEditor();
+  }
+  fireEvent.change(durationField() as HTMLInputElement, { target: { value: minutes } });
+}
+
+/**
  * A day in the time search's calendar.
  * @param dayOfMonth - The number the cell is labelled with.
  * @returns The button for that day.
@@ -359,8 +394,9 @@ export function hasPill(name: string | RegExp): boolean {
 }
 
 /**
- * The field holding the chosen time, or null while no time has been chosen — there is
- * no field at all before one is picked, so its absence is an assertion of its own.
+ * The field holding the chosen time, or null while no time has been chosen — without
+ * `canBypassSchedulingRules` there is no field at all before one is picked, so its absence
+ * is an assertion of its own.
  *
  * @returns The field, or null.
  */
@@ -369,14 +405,12 @@ export function chosenTimeField(): HTMLInputElement | null {
 }
 
 /**
- * The field a time is typed into, told from the chosen time's read-only one of the same name.
+ * The field a time is typed into, which takes the place of the chosen time's read-only one
+ * when the user may type a time.
  * @returns The field.
  */
 export function typedTimeField(): HTMLInputElement {
-  const [typed] = screen
-    .getAllByLabelText<HTMLInputElement>('Date & time')
-    .filter((input) => !input.hasAttribute('readonly'));
-  return typed;
+  return screen.getByLabelText<HTMLInputElement>(/^Date & Time/);
 }
 
 /**

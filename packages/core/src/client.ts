@@ -4113,7 +4113,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } else if (headers instanceof Headers) {
       return headers.get(key) ?? undefined;
     } else if (isObject(headers)) {
-      return headers[key] ?? undefined;
+      const lowerKey = key.toLowerCase();
+      const header = Object.entries(headers).find(([k]) => k.toLowerCase() === lowerKey);
+      return header ? header[1] : undefined;
     }
     return undefined;
   }

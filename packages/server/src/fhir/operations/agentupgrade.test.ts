@@ -22,6 +22,7 @@ import type { MockAgentResponseHandle } from './utils/agenttestutils';
 import {
   cleanupMockAgents,
   configMockAgents,
+  expectAgentOperationRequiresUpdate,
   expectBundleToContainOutcome,
   mockAgentResponse,
 } from './utils/agenttestutils';
@@ -340,5 +341,14 @@ describe('Agent/$upgrade', () => {
     for (const handle of handles) {
       handle.cleanup();
     }
+  });
+
+  test('Requires update access to each Agent', async () => {
+    await expectAgentOperationRequiresUpdate<AgentUpgradeRequest, AgentUpgradeResponse>(
+      app,
+      'upgrade',
+      'agent:upgrade:request',
+      { type: 'agent:upgrade:response', statusCode: 200 }
+    );
   });
 });

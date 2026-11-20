@@ -265,7 +265,7 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set(['blockedEmailDomains', 'disableChainedSearch']);
+const arrayKeys = new Set(['blockedEmailDomains', 'disableChainedSearch', 'loginRateLimitExemptIps']);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

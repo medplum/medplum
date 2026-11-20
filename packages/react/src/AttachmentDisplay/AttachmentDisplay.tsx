@@ -3,7 +3,8 @@
 import { Anchor } from '@mantine/core';
 import { ContentType } from '@medplum/core';
 import type { Attachment } from '@medplum/fhirtypes';
-import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import type { MedplumContext } from '@medplum/react-hooks';
+import { useCachedBinaryUrl, useMedplumContext } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 import { ScannedImage } from './ScannedImage';
@@ -14,7 +15,10 @@ export interface AttachmentDisplayProps {
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | null {
-  const { contentType, data, url: uncachedUrl, title } = props.value ?? {};
+  // Optional context: AttachmentDisplay does not require a MedplumProvider
+  const baseUrl = (useMedplumContext() as MedplumContext | undefined)?.medplum.getBaseUrl();
+  const { contentType, data, url: storedUrl, title } = props.value ?? {};
+  const uncachedUrl = toSafeUrl(storedUrl, baseUrl);
   const cachedUrl = useCachedBinaryUrl(uncachedUrl);
 
   if (!cachedUrl && !data) {
@@ -68,6 +72,41 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
       </div>
     </div>
   );
+}
+
+/**
+ * Returns the URL only when it cannot load a page of the current app.
+ * Same-origin URLs are rejected unless they are Medplum storage URLs (single-origin deployments),
+ * because the URL is rendered into an iframe and a link. Other server paths can redirect to app pages.
+ * @param url - The attachment URL.
+ * @param baseUrl - The Medplum server base URL, if available.
+ * @returns The URL if it is a data, blob, other-origin http(s), or Medplum storage URL; otherwise undefined.
+ */
+function toSafeUrl(url: string | undefined, baseUrl: string | undefined): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (parsed.protocol === 'data:' || parsed.protocol === 'blob:') {
+      return url;
+    }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return undefined;
+    }
+    if (parsed.origin !== window.location.origin) {
+      return parsed.href;
+    }
+    if (!baseUrl) {
+      return undefined;
+    }
+    // Return the parsed href so the browser loads exactly the path that was checked
+    const storage = new URL('storage/', new URL(baseUrl, window.location.href));
+    const isStorageUrl = storage.origin === parsed.origin && parsed.pathname.startsWith(storage.pathname);
+    return isStorageUrl ? parsed.href : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function getDownloadName(title: string | undefined): string | undefined {

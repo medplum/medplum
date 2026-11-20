@@ -12,6 +12,12 @@ The `$upgrade` operation requires **Medplum Server > 3.1.9** and **Medplum Agent
 
 {{< /info >}}
 
+{{< note title="Required access" >}}
+
+The `$upgrade` operation requires **update** access to each target `Agent`. Read-only access, such as a read-only access policy entry, a `user/Agent.read` scope, or access through a [linked project](/docs/access/projects#project-linking), is not enough. A single-agent request returns `403 Forbidden`; a multi-agent request returns a `forbidden` result for each agent the caller cannot update, or `403 Forbidden` if the caller cannot update any `Agent`.
+
+{{< /note >}}
+
 ## Invoke the `$upgrade` operation
 
 ### Single Agent

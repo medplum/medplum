@@ -41,9 +41,8 @@ import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
-import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
 import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
@@ -63,7 +62,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
+import { getProjectIdFromUrl, getProjectScopedUrl, matchesIpAccessRule, safeFetch } from '../util/url';
 import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -381,8 +380,7 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
 
   // TOTP authenticator application
   if (!verified && secret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    verified = authenticator.verify({ token, secret });
+    verified = await verifyTotpToken(user.id, secret, token);
   }
 
   if (!verified) {
@@ -641,17 +639,6 @@ export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolic
       }
     }
   }
-}
-
-/**
- * Returns true if the remote address matches the rule value.
- * @param remoteAddress - The login remote address.
- * @param ruleValue - The IP Access Rule value.
- * @returns True if the remote address matches the rule value; otherwise false.
- */
-function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
-  const prefix = ruleValue.endsWith('.') ? ruleValue : ruleValue + '.';
-  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(prefix);
 }
 
 function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {

@@ -8,11 +8,11 @@ Medplum strongly believes in the importance of testing.
 
 We use the following tools for testing:
 
-- [Jest](https://jestjs.io/) as the primary test runner
+- [Vitest](https://vitest.dev/) as the primary test runner
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) for React testing
   - [@testing-library/dom](https://www.npmjs.com/package/@testing-library/dom) - DOM testing utilities
-  - [@testing-library/jest-dom](https://www.npmjs.com/package/@testing-library/jest-dom) - Jest matchers for DOM state
-  - [@testing-library/react](https://www.npmjs.com/package/@testing-library/react) - Ties it all together: Jest, React, and DOM
+  - [@testing-library/jest-dom](https://www.npmjs.com/package/@testing-library/jest-dom) - Custom matchers for DOM state, used with Vitest
+  - [@testing-library/react](https://www.npmjs.com/package/@testing-library/react) - Ties it all together: Vitest, React, and DOM
 
 Every pull request is analyzed by [Sonarcloud](https://sonarcloud.io/project/overview?id=medplum_medplum) and [Coveralls](https://coveralls.io/github/medplum/medplum?branch=main) for code coverage and other static analysis.
 

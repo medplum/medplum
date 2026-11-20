@@ -30,11 +30,16 @@ import {
   chooseFirstOfferedTime,
   chooseSite,
   chosenTimeField,
+  durationEditorButton,
+  durationField,
   hasPill,
   lastFindParams,
   MONDAY_MORNING,
+  openDurationEditor,
   openTimeFinder,
   setupBookingClient,
+  typedTimeField,
+  typeDuration,
 } from '../test-utils/bookingForm';
 import { act, fireEvent, renderWithMedplum, screen } from '../test-utils/render';
 import type { AppointmentReschedule, AppointmentRescheduleFormProps } from './AppointmentRescheduleForm';
@@ -165,15 +170,13 @@ describe('AppointmentRescheduleForm', () => {
     }
 
     async function enterTime(): Promise<void> {
-      await openTimeFinder();
-      fireEvent.change(screen.getByLabelText('Date & time'), { target: { value: '2026-08-18T14:07' } });
+      fireEvent.change(typedTimeField(), { target: { value: '2026-08-18T14:07' } });
       await settleAutocomplete();
     }
 
     test('standard users have no manual override', async () => {
       await setup(medplum);
-      await openTimeFinder();
-      expect(screen.queryByText('Or enter a time')).not.toBeInTheDocument();
+      expect(durationEditorButton()).not.toBeInTheDocument();
     });
 
     test('admins still send searched times through $reschedule', async () => {
@@ -193,7 +196,8 @@ describe('AppointmentRescheduleForm', () => {
       const post = vi.spyOn(medplum, 'post');
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
       await enterTime();
-      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      await openDurationEditor();
+      expect(durationField()).toHaveValue('30');
       await clickReschedule();
       expect(lastRescheduleParameters(post)).toBeUndefined();
       expect(onRescheduled).toHaveBeenCalledTimes(1);
@@ -214,43 +218,39 @@ describe('AppointmentRescheduleForm', () => {
     test('moves a typed time at a typed length', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await enterTime();
-      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await typeDuration('45');
       await settleAutocomplete();
       await clickReschedule();
       expect(onRescheduled.mock.calls[0][0].appointments[0].end).toBe('2026-08-18T18:52:00.000Z');
     });
 
-    test('flashes a picked time, but not a typed one that takes its place', async () => {
+    test('flashes a picked time, but not a time typed over it', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await openTimeFinder();
       await chooseFirstOfferedTime();
-      const shownTime = (): HTMLElement | undefined =>
-        screen.getAllByLabelText('Date & time').find((input) => input.hasAttribute('readonly'));
-      expect(shownTime()?.className).toMatch(/justPicked/);
+      const field = typedTimeField();
+      expect(field.className).toMatch(/justPicked/);
+      fireEvent.animationEnd(field, { animationName: 'justPicked' });
 
-      // A time typed in its place comes up without a flash.
-      await openTimeFinder();
-      fireEvent.change(
-        screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly')) as HTMLElement,
-        { target: { value: '2026-08-19T14:07' } }
-      );
+      // Typing edits the same field, so the cursor stays in it, and nothing flashes.
+      fireEvent.change(field, { target: { value: '2026-08-19T14:07' } });
       await settleAutocomplete();
-      expect(shownTime()?.className).not.toMatch(/justPicked/);
+      expect(typedTimeField()).toBe(field);
+      expect(field.className).not.toMatch(/justPicked/);
     });
 
     test('opens the typed time on the appointment as it stands, proposing nothing until something changes', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
-      await openTimeFinder();
       // 11:00 in New York is 15:00Z, where the appointment is now.
-      expect(screen.getByLabelText('Date & time')).toHaveValue('2026-08-18T11:00');
-      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
+      expect(typedTimeField()).toHaveValue('2026-08-18T11:00');
+      await openDurationEditor();
+      expect(durationField()).toHaveValue('30');
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
     test('changes only the length, keeping the time it opened on', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
-      await openTimeFinder();
-      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await typeDuration('45');
       await settleAutocomplete();
       await clickReschedule();
       const [moved] = onRescheduled.mock.calls[0][0].appointments;
@@ -261,7 +261,6 @@ describe('AppointmentRescheduleForm', () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await removePill(/Exam Room A/);
       await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
-      await openTimeFinder();
       await clickReschedule();
       const result = onRescheduled.mock.calls[0][0];
       expect([result.appointments[0].start, result.appointments[0].end]).toEqual([
@@ -274,7 +273,6 @@ describe('AppointmentRescheduleForm', () => {
     test('proposes the same time when the move only drops an actor that can no longer be offered', async () => {
       await medplum.updateResource({ ...ExamRoomASchedule, active: false });
       await setup(medplum, { canBypassSchedulingRules: true });
-      await openTimeFinder();
       await clickReschedule();
       const result = onRescheduled.mock.calls[0][0];
       expect(result.appointments[0].start).toBe('2026-08-18T15:00:00.000Z');
@@ -286,14 +284,12 @@ describe('AppointmentRescheduleForm', () => {
     test('keeps a typed time and length when the actors change', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await enterTime();
-      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '45' } });
+      await typeDuration('45');
       await settleAutocomplete();
       await removePill(/Exam Room A/);
       await chooseActor(/room/i, 'Exam Room B', 'Exam Room B');
-      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
-        '2026-08-18T14:07'
-      );
-      expect(screen.getByLabelText('Minutes')).toHaveValue('45');
+      expect(typedTimeField()).toHaveValue('2026-08-18T14:07');
+      expect(durationField()).toHaveValue('45');
       await clickReschedule();
       const result = onRescheduled.mock.calls[0][0];
       expect([result.appointments[0].start, result.appointments[0].end]).toEqual([
@@ -306,7 +302,6 @@ describe('AppointmentRescheduleForm', () => {
     test('proposes nothing when the move only offers an alternative to an actor it keeps', async () => {
       await setup(medplum, { canBypassSchedulingRules: true });
       await chooseActor(/provider/i, 'oka', 'Dr. Tunde Okafor');
-      await openTimeFinder();
       expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
     });
 
@@ -320,15 +315,19 @@ describe('AppointmentRescheduleForm', () => {
       expect(schedules).not.toContain(`Schedule/${DrOkaforSchedule.id}`);
     });
 
-    test('asks for a length when the appointment has none, rather than using the configured one', async () => {
-      const stored = await medplum.updateResource({ ...APPOINTMENT, end: undefined });
+    test('resets a changed length to the picked time it was changed from, not the stored one', async () => {
+      const stored = await medplum.updateResource({ ...APPOINTMENT, end: '2026-08-18T15:20:00.000Z' });
       await setup(medplum, { appointment: stored, canBypassSchedulingRules: true });
-      await enterTime();
-      expect(screen.getByLabelText('Minutes')).toHaveValue('');
-      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeDisabled();
-      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } });
+      await openTimeFinder();
+      await chooseFirstOfferedTime();
+      await typeDuration('45');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Reset to 30 min' }));
+      });
       await settleAutocomplete();
-      expect(screen.getByRole('button', { name: /reschedule appointment/i })).toBeEnabled();
+      await clickReschedule();
+      const [moved] = onRescheduled.mock.calls[0][0].appointments;
+      expect(new Date(moved.end).getTime() - new Date(moved.start).getTime()).toBe(30 * 60_000);
     });
 
     test('clears a manual selection if permission is withdrawn', async () => {
@@ -354,10 +353,9 @@ describe('AppointmentRescheduleForm', () => {
       await enterTime();
       await clickReschedule();
       expect(screen.getByText('Write denied')).toBeInTheDocument();
-      expect(screen.getByLabelText('Minutes')).toHaveValue('30');
-      expect(screen.getAllByLabelText('Date & time').find((input) => !input.hasAttribute('readonly'))).toHaveValue(
-        '2026-08-18T14:07'
-      );
+      await openDurationEditor();
+      expect(durationField()).toHaveValue('30');
+      expect(typedTimeField()).toHaveValue('2026-08-18T14:07');
       expect(onRescheduled).not.toHaveBeenCalled();
       expect(events.some((event) => event.resourceType === 'Appointment')).toBe(false);
     });
@@ -475,12 +473,14 @@ describe('AppointmentRescheduleForm', () => {
       };
       await medplum.createResource(unreadable);
 
-      await setup(medplum, { appointment: unreadable });
+      await setup(medplum, { appointment: unreadable, children: <button type="button">Back</button> });
 
       expect(screen.getByText(/could not be read, and so it cannot be rescheduled/i)).toBeInTheDocument();
       expect(screen.getByText(/not found/i)).toBeInTheDocument();
       expect(screen.queryByRole('textbox', { name: /visit type/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /reschedule appointment/i })).not.toBeInTheDocument();
+      // The host's way out is still offered, with no form to hold it.
+      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     });
   });
 

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import type { BaseLoginRequest, LoginAuthenticationResponse } from '@medplum/core';
-import { isUUID, normalizeErrorString } from '@medplum/core';
+import type { BaseLoginRequest, LoginAuthenticationResponse, MedplumClient } from '@medplum/core';
+import { isUUID, normalizeErrorString, parseJWTPayload } from '@medplum/core';
 import type { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -154,7 +154,9 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     // We do not want to request the login status again in that case
     // Only request login status once
     // Login IDs are UUIDs, and anything else would change the request path
-    if (loginCode && isUUID(loginCode) && !loginRequested.current && !login) {
+    // Hosts like the Medplum app swap in a loading screen while the new profile loads, which remounts
+    // this form with the same `loginCode`; by then that login is granted, and the server rejects it
+    if (loginCode && isUUID(loginCode) && !loginRequested.current && !login && !isSignedInWith(medplum, loginCode)) {
       loginRequested.current = true;
       medplum
         .get('auth/login/' + encodeURIComponent(loginCode))
@@ -232,4 +234,16 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
       })()}
     </Document>
   );
+}
+
+function isSignedInWith(medplum: MedplumClient, loginId: string): boolean {
+  const accessToken = medplum.getAccessToken();
+  if (!accessToken) {
+    return false;
+  }
+  try {
+    return parseJWTPayload(accessToken).login_id === loginId;
+  } catch (_err) {
+    return false;
+  }
 }
