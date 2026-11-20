@@ -407,12 +407,26 @@ export interface CcdaOrganizer {
   code?: CcdaCode;
   statusCode?: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
+  subject?: CcdaSubject;
   component: CcdaOrganizerComponent[];
 }
 
 export interface CcdaOrganizerComponent {
   act?: CcdaAct[];
   observation?: CcdaObservation[];
+}
+
+export interface CcdaSubject {
+  relatedSubject?: CcdaRelatedSubject;
+}
+
+export interface CcdaRelatedSubject {
+  code?: CcdaCode;
+  subject?: CcdaSubjectPerson;
+}
+
+export interface CcdaSubjectPerson {
+  administrativeGenderCode?: CcdaCode;
 }
 
 export interface CcdaCustodian {
