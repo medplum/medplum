@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
-import { ContentType, getReferenceString } from '@medplum/core';
-import type { Project, ProjectSetting } from '@medplum/fhirtypes';
+import { concatUrls, ContentType, getReferenceString } from '@medplum/core';
+import type { Binary, Project, ProjectSetting } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { simpleParser } from 'mailparser';
+import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { vi } from 'vitest';
 import { initAppServices, shutdownApp } from '../app';
@@ -15,7 +16,8 @@ import { getConfig, loadTestConfig } from '../config/loader';
 import { getTestProjectSystemRepo } from '../fhir/repository/test-utils';
 import { globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
+import { safeAgent } from '../util/url';
 import { sendEmail } from './email';
 import { PROJECT_SMTP_SOCKET_TIMEOUT_MS, PROJECT_SMTP_TIMEOUT_MS } from './utils';
 
@@ -278,6 +280,37 @@ describe('Email', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
+  test('Attach binary by storage URL', async () => {
+    const binary = await withTestContext(() =>
+      systemRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT })
+    );
+    await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, 'hello world');
+    const path = concatUrls(getConfig().storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`) + '?Expires=1';
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    try {
+      await sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        text: 'Hello Alice',
+        attachments: [{ filename: 'text1.txt', path }],
+      });
+
+      // Read with the caller's own access
+      const { repo } = await withTestContext(() => createTestProject({ withRepo: true }));
+      await expect(
+        sendEmail(repo, { to: 'alice@example.com', subject: 'Hello', attachments: [{ filename: 'text1.txt', path }] })
+      ).rejects.toThrow('Not found');
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      fetchMock.mockRestore();
+    }
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.attachments[0].content.toString()).toBe('hello world');
+  });
+
   test('Block file path', async () => {
     await expect(
       sendEmail(systemRepo, {
@@ -297,27 +330,73 @@ describe('Email', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
-  test('Fetch URL attachment via safeFetch', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('hello world'));
+  test('Send with URL attachment', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response('hello world'));
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
     try {
       await sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
-        attachments: [{ filename: 'text1.txt', path: 'https://example.com/text1.txt' }],
+        attachments: [
+          { path: 'https://example.com/files/text1.txt?version=2' },
+          { filename: 'text2.txt', path: 'data:text/plain;base64,aGVsbG8gZGF0YQ==' },
+          { path: 'https://example.com/files/download' },
+        ],
       });
-      expect(fetchSpy).toHaveBeenCalledWith(
-        'https://example.com/text1.txt',
-        expect.objectContaining({ dispatcher: expect.anything() })
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://example.com/files/text1.txt?version=2',
+        expect.objectContaining({ dispatcher: safeAgent, signal: timeoutSpy.mock.results[0].value })
       );
+      expect(timeoutSpy).toHaveBeenCalledWith(5 * 60_000);
     } finally {
-      fetchSpy.mockRestore();
+      fetchMock.mockRestore();
+      timeoutSpy.mockRestore();
     }
 
     const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.attachments).toHaveLength(1);
+    expect(parsed.attachments).toHaveLength(3);
+    expect(parsed.attachments[0].filename).toBe('text1.txt');
+    expect(parsed.attachments[0].contentType).toBe('text/plain');
     expect(parsed.attachments[0].content.toString()).toBe('hello world');
+    expect(parsed.attachments[1].filename).toBe('text2.txt');
+    expect(parsed.attachments[1].content.toString()).toBe('hello data');
+    // Named as nodemailer names a URL attachment without an extension
+    expect(parsed.attachments[2].filename).toBe('download.*');
+  });
+
+  test('Reject URL attachment that cannot be fetched', async () => {
+    await expect(
+      sendEmail(systemRepo, {
+        to: 'alice@example.com',
+        subject: 'Hello',
+        attachments: [{ filename: 'text1.txt', path: 'http://example.com/text1.txt' }],
+      })
+    ).rejects.toThrow('Invalid email attachment: fetch failed');
+    expect(mockSESv2Client.send.callCount).toBe(0);
+  });
+
+  test('Reject URL attachment with error status', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response('hello world'))
+      .mockResolvedValueOnce(new Response('Not found', { status: 404 }));
+    const attachments: Mail.Attachment[] = [
+      { path: 'https://example.com/files/text1.txt' },
+      { path: 'https://example.com/files/text2.txt' },
+    ];
+    try {
+      await expect(
+        sendEmail(systemRepo, { to: 'alice@example.com', subject: 'Hello', text: 'Hello Alice', attachments })
+      ).rejects.toThrow('Invalid email attachment: Received status 404');
+    } finally {
+      fetchMock.mockRestore();
+    }
+
+    expect((attachments[0].content as Readable).destroyed).toBe(true);
+    expect(mockSESv2Client.send.callCount).toBe(0);
   });
 
   test('Block metadata URL attachment', async () => {
@@ -328,7 +407,10 @@ describe('Email', () => {
         text: 'Hello Alice',
         attachments: [{ filename: 'creds.json', path: 'https://169.254.170.2/v2/metadata' }],
       })
-    ).rejects.toThrow('Failed to fetch attachment: Outbound request to unsafe hostname 169.254.170.2 is blocked');
+    ).rejects.toMatchObject({
+      message: 'Invalid email attachment: fetch failed',
+      cause: { cause: { message: 'Outbound request to unsafe hostname 169.254.170.2 is blocked' } },
+    });
 
     expect(mockSESv2Client.send.callCount).toBe(0);
   });

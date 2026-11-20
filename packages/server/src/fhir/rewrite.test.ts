@@ -265,6 +265,34 @@ describe('URL rewrite', () => {
     expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
   });
 
+  test('Storage URL without trailing slash in storageBaseUrl', async () => {
+    const storageBaseUrl = config.storageBaseUrl;
+    config.storageBaseUrl = storageBaseUrl.replace(/\/$/, '');
+    try {
+      const url = concatUrls(config.storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`);
+      const practitioner: Practitioner = { resourceType: 'Practitioner', photo: [{ url }] };
+      const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+      expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
+    } finally {
+      config.storageBaseUrl = storageBaseUrl;
+    }
+  });
+
+  test('Presigned URL keeps its version', () =>
+    withTestContext(async () => {
+      const v1 = await systemRepo.createResource<Binary>({ resourceType: 'Binary', contentType: ContentType.TEXT });
+      const v2 = await systemRepo.updateResource<Binary>({ ...v1, contentType: ContentType.JSON });
+      expect(v2.meta?.versionId).not.toStrictEqual(v1.meta?.versionId);
+      const presignedUrl = concatUrls(config.storageBaseUrl, `${v1.id}/${v1.meta?.versionId}`) + '?Expires=1';
+      const practitioner: Practitioner = { resourceType: 'Practitioner', photo: [{ url: presignedUrl }] };
+
+      const presigned = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
+      expect(new URL(presigned.photo?.[0]?.url as string).pathname).toMatch(`/${v1.id}/${v1.meta?.versionId}`);
+
+      const reference = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+      expect(reference.photo?.[0]?.url).toBe(`Binary/${v1.id}`);
+    }));
+
   test('Consistent results', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
