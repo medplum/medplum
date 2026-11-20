@@ -80,6 +80,36 @@ describe('claims utils', () => {
         })
       );
     });
+
+    test('points each line at the claim diagnoses named by its charge item reason', () => {
+      const icd10cm = `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`;
+      const codes = ['R51', 'J00', 'E11.9', 'I10', 'K21.9'];
+      const conditions: Condition[] = codes.map((code) => ({
+        resourceType: 'Condition',
+        subject: { reference: 'Patient/patient-1' },
+        code: { coding: [{ system: icd10cm, code }] },
+      }));
+      const withReason = (reasonCodes: string[] | undefined): ChargeItem => ({
+        ...chargeItems[0],
+        reason: reasonCodes?.map((code) => ({ coding: [{ system: icd10cm, code }] })),
+      });
+
+      const items = getCptChargeItems(
+        [
+          withReason(['J00', 'R51', 'J00', 'Z00.00']),
+          withReason([...codes].reverse()),
+          withReason(['Z00.00']),
+          withReason(undefined),
+        ],
+        { reference: 'Encounter/enc-1' },
+        conditions
+      );
+
+      expect(items[0].diagnosisSequence).toEqual([2, 1]);
+      expect(items[1].diagnosisSequence).toEqual([5, 4, 3, 2]);
+      expect(items[2]).not.toHaveProperty('diagnosisSequence');
+      expect(items[3]).not.toHaveProperty('diagnosisSequence');
+    });
   });
 
   describe('buildClaimFromEncounter', () => {

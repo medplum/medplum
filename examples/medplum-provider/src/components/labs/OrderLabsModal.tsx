@@ -36,6 +36,7 @@ import {
 import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
+import { relinkChargeItemToLabOrder } from '../../utils/chargeitems';
 import { addDiagnosesToEncounter } from '../../utils/encounter';
 import type { LabOrderDraftDefaults } from '../../utils/labOrderDraft';
 import { getLabOrderDraftDefaults, saveLabOrderDraft } from '../../utils/labOrderDraft';
@@ -254,6 +255,15 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
         });
       }
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
+
+      if (taskResource && encounterResource) {
+        await relinkChargeItemToLabOrder(
+          medplum,
+          createReference(encounterResource),
+          taskResource.focus?.reference,
+          serviceRequest
+        ).catch(showErrorNotification);
+      }
 
       if (draftOrder?.id) {
         // The resumed draft has been superseded by the order that was just sent.
