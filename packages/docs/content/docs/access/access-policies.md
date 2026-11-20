@@ -284,10 +284,10 @@ For more advanced access control configurations, You can use `%` variables to pa
 
 Medplum provides the following built-in variables:
 
-| Variable      | Description                                                                                                                                                          |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                         |
-| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                          |
+| Variable      | Description                                                                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                          |
+| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                           |
 | `%patient`    | The patient this policy is scoped to. Defaults to the user's profile. A membership parameter named `patient` overrides it. See [Caregiver access](#caregiver-access). |
 
 <details open>
@@ -699,20 +699,26 @@ This update allows for more granular control and visibility in RBAC implementati
 
 New projects are created with a set of **default access policies**, one per profile type. These are stored on the [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project) element, which maps a `profileType` to the `AccessPolicy` applied when a user of that type is invited without an explicit policy:
 
-| Profile type        | Default policy grants                                                                                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden. |
-| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
-| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. `RelatedPerson` records are read-only. See [Patient access](#patient-access).                                             |
-| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. `RelatedPerson` records are read-only, except the caregiver's own profile. See [Caregiver access](#caregiver-access).                    |
-| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
-| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
+| Profile type        | Default policy grants                                                                                                                                                                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden, and create-only `Binary`. |
+| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                                                                                                            |
+| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. `RelatedPerson` records are read-only. See [Patient access](#patient-access).                                                                                            |
+| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. `RelatedPerson` records are read-only, except the caregiver's own profile. See [Caregiver access](#caregiver-access).                              |
+| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, create-only `Binary`, and no access to `ClientApplication` secrets.                                                                      |
+| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, create-only `Binary`, and no access to `ClientApplication` secrets.                                                                      |
 
 When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a Bot](/docs/bots/bot-basics) or [create a ClientApplication](/docs/auth/client-credentials) without specifying an access policy, it receives the `Bot` or `ClientApplication` default. This includes the default client created with each new project.
 
 {{< note title="Deploying Bots with a ClientApplication" >}}
 
 Because the `ClientApplication` default makes `Bot` read-only, a client with that policy cannot save or deploy Bots, for example with `medplum bot save` or `medplum bot deploy` (`Bot/$deploy` returns `403 Forbidden`). This applies to the default client of new projects. To deploy Bots from the CLI or a CI/CD pipeline, use a ClientApplication whose access policy grants write access to `Bot`.
+
+{{< /note >}}
+
+{{< note title="Create-only Binary" >}}
+
+The `Practitioner`, `Bot`, and `ClientApplication` defaults can create and read `Binary` resources, but not update or delete them, or request an upload URL for an existing one (`Binary/$presigned-url?upload=true`). To change a file, upload a new `Binary` and update the reference to it. If your application replaces Binary content in place, give those users an access policy that grants write access to `Binary`.
 
 {{< /note >}}
 

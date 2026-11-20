@@ -18,6 +18,7 @@ import { loadTestConfig } from '../config/loader';
 import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
+import { getRateLimitRedis } from '../redis';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyConnectedFactor } from './mfa';
 import { registerNew } from './register';
@@ -455,6 +456,52 @@ describe('MFA', () => {
     expect(res13).toHaveStatus(200);
     expect(res13.body.login).toBeDefined();
     expect(res13.body.code).toBeDefined();
+  });
+
+  test('Authenticator code is single-use', async () => {
+    const email = `replay-mfa${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const { accessToken, user } = await withTestContext(() =>
+      registerNew({ firstName: 'Replay', lastName: 'MFA', projectName: `Replay ${randomUUID()}`, email, password })
+    );
+    const secret = await enrollTotpMfa(accessToken);
+
+    // Codes for this time step and the next, both accepted by the default window of 1 step
+    const now = Date.now();
+    const token = authenticator.clone({ epoch: now }).generate(secret);
+    const nextToken = authenticator.clone({ epoch: now + 30_000 }).generate(secret);
+
+    const login1 = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(login1).toHaveStatus(200);
+    const verify1 = await request(app).post('/auth/mfa/verify').type('json').send({ login: login1.body.login, token });
+    expect(verify1).toHaveStatus(200);
+    expect(verify1.body.code).toBeDefined();
+
+    const login2 = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
+    expect(login2).toHaveStatus(200);
+    const verify2 = await request(app).post('/auth/mfa/verify').type('json').send({ login: login2.body.login, token });
+    expect(verify2).toHaveStatus(400);
+    expect(verify2.body).toMatchObject(badRequest('Invalid MFA token'));
+
+    // Remembered for longer than the 3 steps the default window accepts it, to allow for clock skew
+    const ttl = await getRateLimitRedis().pttl(`medplum:mfa:{${user.id}}:totp:${token}`);
+    expect(ttl).toBeGreaterThan(3 * 30_000);
+    expect(ttl).toBeLessThanOrEqual(4 * 30_000);
+
+    const disable = await request(app)
+      .post('/auth/mfa/disable')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ token });
+    expect(disable).toHaveStatus(400);
+    expect(disable.body).toMatchObject(badRequest('Invalid token'));
+
+    const verify3 = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: login2.body.login, token: nextToken });
+    expect(verify3).toHaveStatus(200);
+    expect(verify3.body.code).toBeDefined();
   });
 
   test('Rejects an expired MFA login', async () => {
@@ -1856,7 +1903,7 @@ describe('MFA', () => {
   test('verifyConnectedFactor returns false without a token', async () => {
     // The /disable endpoint guards against a missing token before calling this
     // helper, so exercise the defensive `!token` branch directly.
-    const user = { resourceType: 'User', mfaMethod: ['totp'], mfaSecret: 'ABC' } as User;
+    const user = { resourceType: 'User', id: randomUUID(), mfaMethod: ['totp'], mfaSecret: 'ABC' } as WithId<User>;
     const login = { resourceType: 'Login' } as Login;
     expect(await verifyConnectedFactor(user, login, undefined)).toBe(false);
     expect(await verifyConnectedFactor(user, login, '')).toBe(false);
@@ -2197,10 +2244,11 @@ describe('MFA', () => {
       .send({ login: login.login, token: authenticator.generate(otherSecrets[0]) });
     expect(wrongOffer.body).toMatchObject(badRequest('Invalid MFA token'));
 
+    const enrollToken = authenticator.generate(secret);
     const enroll = await request(app)
       .post('/auth/mfa/login-enroll')
       .type('json')
-      .send({ login: login.login, token: authenticator.generate(secret) });
+      .send({ login: login.login, token: enrollToken });
     expect(enroll).toHaveStatus(200);
     expect((await getGlobalSystemRepo().readResource<User>('User', user.id)).mfaSecret).toBe(secret);
 
@@ -2211,10 +2259,19 @@ describe('MFA', () => {
         .send({ login: (await startLogin()).login, token: authenticator.generate(otherSecret) });
       expect(res.body).toMatchObject(badRequest('Invalid MFA token'));
     }
+    // The code that confirmed the enrollment also signed in, so it is spent
+    const replay = await request(app)
+      .post('/auth/mfa/verify')
+      .type('json')
+      .send({ login: (await startLogin()).login, token: enrollToken });
+    expect(replay.body).toMatchObject(badRequest('Invalid MFA token'));
     const verify = await request(app)
       .post('/auth/mfa/verify')
       .type('json')
-      .send({ login: (await startLogin()).login, token: authenticator.generate(secret) });
+      .send({
+        login: (await startLogin()).login,
+        token: authenticator.clone({ epoch: Date.now() + 30_000 }).generate(secret),
+      });
     expect(verify).toHaveStatus(200);
     expect(verify.body.code).toBeDefined();
   });
@@ -2747,7 +2804,12 @@ describe('MFA', () => {
     // verifyConnectedFactor — unit level, legacy user with no mfaMethod.
     test('verifyConnectedFactor accepts a TOTP token for a legacy user without mfaMethod', async () => {
       const secret = authenticator.generateSecret();
-      const legacyUser = { resourceType: 'User', mfaEnrolled: true, mfaSecret: secret } as User;
+      const legacyUser = {
+        resourceType: 'User',
+        id: randomUUID(),
+        mfaEnrolled: true,
+        mfaSecret: secret,
+      } as WithId<User>;
       const login = { resourceType: 'Login' } as Login;
 
       expect(await verifyConnectedFactor(legacyUser, login, authenticator.generate(secret))).toBe(true);

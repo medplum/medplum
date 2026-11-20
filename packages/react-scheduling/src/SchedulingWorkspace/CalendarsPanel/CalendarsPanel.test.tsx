@@ -24,7 +24,7 @@ function setup(overrides?: Partial<CalendarsPanelProps>): void {
 describe('CalendarsPanel', () => {
   test('renders the panel title and all section titles', () => {
     setup();
-    expect(screen.getByText('Calendars')).toBeInTheDocument();
+    expect(screen.getByText('Filter Calendars')).toBeInTheDocument();
     expect(screen.getByText('Providers & Staff')).toBeInTheDocument();
     expect(screen.getByText('Devices')).toBeInTheDocument();
     expect(screen.getByText('Rooms')).toBeInTheDocument();

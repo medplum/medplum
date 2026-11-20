@@ -159,15 +159,47 @@ describe('SchedulingWorkspace', () => {
     const providerRow = calendarRow('Dr. Maya Rivera');
     await userEvent.click(providerRow);
 
-    const toggle = screen.getByRole('button', { name: 'Hide calendars' });
+    const toggle = screen.getByRole('button', { name: 'Hide Calendar Filters' });
     expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')).toContainElement(providerRow);
     await userEvent.click(toggle);
     expect(providerRow).not.toBeVisible();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Show calendars' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show Calendar Filters' }));
     expect(providerRow).toBeVisible();
     expect(providerRow).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.queryByRole('button', { name: 'Show calendars' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show Calendar Filters' })).toBeNull();
+  });
+
+  test('marks the filter toggle with how many filters are applied', async () => {
+    const medplum = await setupClient();
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+    await waitFor(() => expect(screen.getByText('Dr. Maya Rivera')).toBeInTheDocument());
+
+    const toggle = screen.getByRole('button', { name: 'Hide Calendar Filters' });
+    const dot = (): Element | null =>
+      toggle.closest('.mantine-Indicator-root')?.querySelector('.mantine-Indicator-indicator') ?? null;
+    expect(dot()).toBeNull();
+    expect(toggle).not.toHaveAccessibleDescription();
+
+    await userEvent.click(calendarRow('Dr. Maya Rivera'));
+    await userEvent.click(calendarRow('Exam Room A'));
+    expect(dot()).not.toBeNull();
+    expect(toggle).toHaveAccessibleDescription('2 Applied');
+
+    await userEvent.click(calendarRow('Dr. Maya Rivera'));
+    await userEvent.click(calendarRow('Exam Room A'));
+    expect(dot()).toBeNull();
+    expect(toggle).not.toHaveAccessibleDescription();
+
+    // An unchecked calendar a site takes off the list stops counting until it is listed again.
+    await userEvent.click(calendarRow('Exam Room A'));
+    await chooseFilter('All service facilities', 'Uro Associates - Satellite');
+    await waitFor(() => expect(screen.queryByText('Exam Room A')).not.toBeInTheDocument());
+    expect(toggle).toHaveAccessibleDescription('1 Applied');
+
+    await clearFilter('Uro Associates - Satellite');
+    await waitFor(() => expect(calendarRow('Exam Room A')).toHaveAttribute('aria-pressed', 'false'));
+    expect(toggle).toHaveAccessibleDescription('1 Applied');
   });
 
   test('shows the empty state for sections with no schedules', async () => {
