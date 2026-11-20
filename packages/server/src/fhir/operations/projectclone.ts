@@ -90,12 +90,12 @@ class ProjectCloner {
       }
     }
 
-    // Get all binary resources
+    // Get all binary resources, to be created before the resources that reference them (e.g. Bot code)
     if (this.isAllowedResourceType('Binary')) {
       for (const binaryId of binaryIds) {
         const binary = await repo.readResource<Binary>('Binary', binaryId);
         this.idMap.set(binary.id, repo.generateId());
-        allResources.push(binary);
+        allResources.unshift(binary);
       }
     }
 

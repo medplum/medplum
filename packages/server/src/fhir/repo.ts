@@ -16,6 +16,7 @@ import {
   fhirpathPatchTypedValue,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getStatus,
   gone,
   isGone,
@@ -58,6 +59,7 @@ import type {
   AuditEvent,
   AuditEventEntityDetail,
   Binary,
+  Bot,
   Bundle,
   BundleEntry,
   Meta,
@@ -1094,6 +1096,51 @@ export class Repository extends FhirRepository implements Disposable {
     return resource;
   }
 
+  /**
+   * Verifies that the current user may change a Binary that holds a Bot's code.
+   * A Binary bound to a Bot by its `securityContext` is part of that Bot, so replacing or deleting it
+   * requires write access to the Bot, not only to the Binary.
+   * @param existing - The stored version of the resource being changed.
+   */
+  async assertCanWriteBotCode(existing: Resource): Promise<void> {
+    this.assertUsable();
+    if (
+      existing.resourceType !== 'Binary' ||
+      !existing.securityContext?.reference?.startsWith('Bot/') ||
+      this.isSuperAdmin()
+    ) {
+      return;
+    }
+    // Extended mode for meta.project
+    const bot = await this.withOverrideConfig({ extendedMode: true }).readReference(existing.securityContext);
+    if (!this.canPerformInteraction(AccessPolicyInteraction.UPDATE, bot)) {
+      throw new OperationOutcomeError(forbidden);
+    }
+  }
+
+  /**
+   * Binds the Binaries that hold a Bot's code to the Bot, so that only users who may write the Bot can change its code.
+   * The Binaries are updated with the current user's repository, so binding requires write access to them.
+   * @param bot - The Bot being written.
+   */
+  private async bindBotCode(bot: WithId<Bot>): Promise<void> {
+    const botReference = getReferenceString(bot);
+    for (const attachment of [bot.sourceCode, bot.executableCode]) {
+      const url = attachment?.url;
+      if (!url?.startsWith('Binary/')) {
+        continue;
+      }
+      const binary = await this.readReference<Binary>({ reference: url });
+      if (binary.securityContext?.reference === botReference) {
+        continue;
+      }
+      if (binary.securityContext) {
+        throw new OperationOutcomeError(badRequest(`Bot code ${url} belongs to ${binary.securityContext.reference}`));
+      }
+      await this.updateResource<Binary>({ ...binary, securityContext: { reference: botReference } });
+    }
+  }
+
   private validateBinarySecurityContext(resource: Resource): void {
     if (resource.resourceType === 'Binary' && resource.securityContext?.reference?.startsWith('Binary/')) {
       throw new OperationOutcomeError(badRequest('Binary.securityContext cannot reference another Binary'));
@@ -1131,6 +1178,7 @@ export class Repository extends FhirRepository implements Disposable {
       if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
         throw new OperationOutcomeError(preconditionFailed);
       }
+      await this.assertCanWriteBotCode(existing);
     }
 
     const restoredFields = this.restoreReadonlyFields(validatedResource, existing);
@@ -1138,6 +1186,9 @@ export class Repository extends FhirRepository implements Disposable {
     // that shares no structure with validatedResource or the cached existing resource.
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, deepClone(validatedResource));
     updated = await replaceConditionalReferences(this, updated);
+    if (updated.resourceType === 'Bot') {
+      await this.bindBotCode(updated);
+    }
 
     const resultMeta: Meta = {
       ...updated.meta,
@@ -1645,6 +1696,7 @@ export class Repository extends FhirRepository implements Disposable {
       if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
       }
+      await this.assertCanWriteBotCode(resource);
       if (options?.ifMatch && resource.meta?.versionId !== options.ifMatch) {
         throw new OperationOutcomeError(preconditionFailed);
       }

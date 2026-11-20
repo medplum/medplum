@@ -145,11 +145,18 @@ export async function uploadBinaryData(
   source: BinarySource,
   options?: { id?: string; contentType?: string; filename?: string; securityContext?: string }
 ): Promise<Binary> {
+  let securityContext: Binary['securityContext'] = options?.securityContext
+    ? { reference: options.securityContext }
+    : undefined;
+  if (options?.id && !securityContext) {
+    // Raw content carries no resource fields, so an upload without X-Security-Context keeps the stored binding
+    securityContext = (await repo.readResource<Binary>('Binary', options.id)).securityContext;
+  }
   const resource: Binary = {
     resourceType: 'Binary',
     id: options?.id,
     contentType: options?.contentType ?? DEFAULT_CONTENT_TYPE,
-    securityContext: options?.securityContext ? { reference: options.securityContext } : undefined,
+    securityContext,
   };
   const binary = await (options?.id ? repo.updateResource(resource) : repo.createResource(resource));
 

@@ -61,6 +61,10 @@ Binary resources require an explicit `securityContext` to restrict access accord
 - **Risk Level**: Low (follows established access patterns)
 - **Exposure**: Only users with access to the referenced resource (e.g., Patient) can access the Binary
 
+### Bot code
+
+The Binaries that hold a Bot's code (`Bot.sourceCode` and `Bot.executableCode`) are bound to the Bot automatically when the Bot is saved. Replacing or deleting such a Binary, or requesting an upload URL for it, requires write access to the Bot as well as to the Binary. A Bot cannot use a Binary whose `securityContext` references a different resource.
+
 ## Implementation Best Practices
 
 Choose a `securityContext` whose permitted readers match the file's intended audience. If a Patient is shared across practices but a file is practice-specific, pointing at the shared Patient can expose the file too broadly. Use a context with the required clinical or care-team restrictions; see [Clinical-record isolation](/docs/tenancy-design/patient-records#clinical-record-isolation).

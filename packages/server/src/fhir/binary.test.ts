@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, Logger, createReference } from '@medplum/core';
-import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import type { Binary, Bot, Bundle, DocumentReference, OperationOutcomeIssue, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import type { Duplex } from 'stream';
 import { Readable } from 'stream';
@@ -11,7 +11,7 @@ import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth, streamToString } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -342,6 +342,105 @@ describe('Binary', () => {
       .send('Hello world');
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+  });
+
+  test('Bot code Binary requires write access to the Bot', async () => {
+    const { project, accessToken: adminToken } = await createTestProject({
+      membership: { admin: true },
+      withAccessToken: true,
+    });
+    const admin = 'Bearer ' + adminToken;
+
+    const codeRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', admin)
+      .set('Content-Type', ContentType.JAVASCRIPT)
+      .send('exports.handler = async () => 1;');
+    expect(codeRes).toHaveStatus(201);
+    const codeUrl = '/fhir/R4/Binary/' + codeRes.body.id;
+
+    const botRes = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Authorization', admin)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        executableCode: { contentType: ContentType.JAVASCRIPT, url: 'Binary/' + codeRes.body.id },
+      } satisfies Bot);
+    expect(botRes).toHaveStatus(201);
+    const securityContext = { reference: 'Bot/' + botRes.body.id };
+
+    const member = await addTestUser(project, {
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: 'Bot', readonly: true }, { resourceType: 'Binary' }],
+      },
+    });
+    const memberAuth = 'Bearer ' + member.accessToken;
+
+    const readRes = await request(app)
+      .get(codeUrl)
+      .set('Authorization', memberAuth)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(readRes).toHaveStatus(200);
+    expect(readRes.body.securityContext).toStrictEqual(securityContext);
+
+    const rawPut = await request(app)
+      .put(codeUrl)
+      .set('Authorization', memberAuth)
+      .set('Content-Type', ContentType.JAVASCRIPT)
+      .send('exports.handler = async () => 2;');
+    expect(rawPut).toHaveStatus(403);
+    const jsonPut = await request(app)
+      .put(codeUrl)
+      .set('Authorization', memberAuth)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...readRes.body, securityContext: undefined });
+    expect(jsonPut).toHaveStatus(403);
+    const upload = await request(app)
+      .get(codeUrl + '/$presigned-url?upload=true')
+      .set('Authorization', memberAuth);
+    expect(upload).toHaveStatus(403);
+    const del = await request(app).delete(codeUrl).set('Authorization', memberAuth);
+    expect(del).toHaveStatus(403);
+
+    // A raw upload without X-Security-Context keeps the binding
+    const adminPut = await request(app)
+      .put(codeUrl)
+      .set('Authorization', admin)
+      .set('Content-Type', ContentType.JAVASCRIPT)
+      .send('exports.handler = async () => 3;');
+    expect(adminPut).toHaveStatus(200);
+    expect(adminPut.body.securityContext).toStrictEqual(securityContext);
+  });
+
+  test('Bot code bound to another resource is rejected', async () => {
+    const { accessToken: adminToken } = await createTestProject({ membership: { admin: true }, withAccessToken: true });
+    const admin = 'Bearer ' + adminToken;
+    const patient = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', admin)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' } satisfies Patient);
+    const code = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', admin)
+      .set('Content-Type', ContentType.JAVASCRIPT)
+      .set('X-Security-Context', 'Patient/' + patient.body.id)
+      .send('exports.handler = async () => 1;');
+    expect(code).toHaveStatus(201);
+
+    const bot = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Authorization', admin)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        executableCode: { contentType: ContentType.JAVASCRIPT, url: 'Binary/' + code.body.id },
+      } satisfies Bot);
+    expect(bot).toHaveStatus(400);
   });
 });
 

@@ -107,6 +107,7 @@ const knownPrivateMembers = new Set<PropertyKey>([
   'recordCacheRead',
   'assertUsable',
   'authorizeBinarySecurityContext',
+  'bindBotCode',
   'shouldAddBackgroundJobs',
   'redactWriteResult',
 ]);
@@ -125,6 +126,11 @@ const guardedPatient: WithId<Patient> = { resourceType: 'Patient', id: NIL };
  * is rejected during a transaction callback regardless of argument validity.
  */
 const guardedInvocations: MethodInvocation[] = [
+  {
+    name: 'assertCanWriteBotCode',
+    kind: 'method',
+    invoke: (repo) => repo.assertCanWriteBotCode(guardedPatient),
+  },
   { name: 'getSystemRepo', kind: 'method', invoke: (repo) => repo.getSystemRepo() },
   { name: 'setMode', kind: 'method', invoke: (repo) => repo.setMode('reader') },
   {

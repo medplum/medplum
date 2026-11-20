@@ -538,6 +538,7 @@ describe('Execute', () => {
       systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: ContentType.JAVASCRIPT,
+        data: Buffer.from('exports.handler = async () => 1;').toString('base64'),
         meta: { project: otherProject.id },
       })
     );
@@ -547,8 +548,15 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({ ...bot, executableCode: { contentType: ContentType.JAVASCRIPT, url: `Binary/${code.id}` } });
-    expect(res2).toHaveStatus(200);
+    expect(res2).toHaveStatus(404);
 
+    // Only the system can store such a reference, and the runtime still refuses it
+    await withTestContext(() =>
+      systemRepo.updateResource<Bot>({
+        ...bot,
+        executableCode: { contentType: ContentType.JAVASCRIPT, url: `Binary/${code.id}` },
+      })
+    );
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)

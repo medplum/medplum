@@ -33,6 +33,9 @@ export async function binaryPresignedUrlHandler(req: FhirRequest): Promise<FhirR
   if (params.upload && !(await repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Binary', id))) {
     throw new OperationOutcomeError(forbidden);
   }
+  if (params.upload) {
+    await repo.assertCanWriteBotCode(resource);
+  }
 
   const url = await getPresignedUrl(resource, params);
   return [allOk, buildOutputParameters(operation, { url })];
