@@ -13,23 +13,34 @@ Medplum enforces authentication, project isolation, and access policies on every
 
 The right architecture depends on what token the user has.
 
-### The user has a Medplum token: connect directly
+### The user has a Medplum token: connect directly or use Medplum Bots
 
 If the user signs in to Medplum (for example, with [Medplum Redirect Login](/docs/auth/medplum-as-idp), [Embedded Login](/docs/auth/embedded-login), or client-held [token exchange](/docs/auth/token-exchange#client-held-medplum-tokens)), the browser or mobile app should call Medplum directly with that token.
 
+With this model, building your own server in between is not recommended. For server-side code execution, the best practice is to use [Medplum Bots](/docs/bots), where the auth and access models fit together. A Bot can [inherit the calling User's access](/docs/bots/bot-run-as-user) or use its own `ProjectMembership` and AccessPolicy.
+
 ```mermaid
 flowchart LR
-    B["Browser<br/>(Medplum access token)"] -->|"FHIR API requests"| M["Medplum"]
-    M -->|"User's AccessPolicy applied"| D[("Project data")]
+    B["Browser<br/>(Medplum access token)"] -->|"FHIR API requests<br/>(Medplum token)"| F
+    B -->|"Bot $execute<br/>(Medplum token)"| BOT
+    subgraph M["Medplum"]
+        direction TB
+        BOT["Bot<br/>(server-side logic)"] -->|"FHIR API requests as the User (runAsUser)<br/>or as the Bot's ProjectMembership"| F["FHIR API"]
+    end
+    F -->|"AccessPolicy applied"| D[("Project data")]
 ```
 
-This is the recommended pattern. Medplum validates the token and applies the user's own access policy to every request, so there's no privileged server credential to protect and no user mapping to get wrong.
+There are a few reasons not to put your own server in between:
 
-Putting your own server in between a Medplum token and Medplum is not recommended. It adds latency and attack surface without adding any access control Medplum doesn't already enforce. If you need custom server-side logic, run it alongside the direct connection (for example, in a [Bot](/docs/bots)) instead of routing user traffic through it.
+- It adds latency.
+- Out-of-the-box Medplum security guardrails are not enforced.
+- It's easy to accidentally escalate privilege beyond what the User should be able to access.
+- You now need to own authentication a second time within your server.
+- It's more challenging to test and diagnose issues.
 
 ### The user has a non-Medplum token: use a server with On-Behalf-Of
 
-If your application has its own authentication and the user never receives a Medplum token, a server in between is justified. Your server verifies your application's token, then calls Medplum as a `ClientApplication` using [On-Behalf-Of](/docs/auth/on-behalf-of) to act as the user. Restrict that `ClientApplication` to your server's egress IPs: add [IP Access Rules](/docs/access/ip-access-rules) to the AccessPolicy on the `ClientApplication`'s `ProjectMembership`. They're checked on every token request.
+If your application has its own authentication and the user never receives a Medplum token, a server can be necessary to communicate with Medplum. Your server verifies your application's token, then calls Medplum as a `ClientApplication` using [On-Behalf-Of](/docs/auth/on-behalf-of) to act as the user. Restrict that `ClientApplication` to your server's egress IPs: add [IP Access Rules](/docs/access/ip-access-rules) to the AccessPolicy on the `ClientApplication`'s `ProjectMembership`. They're checked on every token request.
 
 ```mermaid
 flowchart LR
