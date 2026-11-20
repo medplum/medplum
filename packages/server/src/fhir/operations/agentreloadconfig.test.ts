@@ -22,6 +22,7 @@ import type { MockAgentResponseHandle } from './utils/agenttestutils';
 import {
   cleanupMockAgents,
   configMockAgents,
+  expectAgentOperationRequiresUpdate,
   expectBundleToContainOutcome,
   mockAgentResponse,
 } from './utils/agenttestutils';
@@ -103,6 +104,17 @@ describe('Agent/$reload-config', () => {
     for (const handle of handles) {
       handle.cleanup();
     }
+  });
+
+  test('Reload config rejects _type in the Agent search', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$reload-config')
+      .query({ _type: 'Device' })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual(
+      '_type, _include, and _revinclude are not supported when searching for Agent'
+    );
   });
 
   test('Reload config for Agent by ID', async () => {
@@ -215,5 +227,14 @@ describe('Agent/$reload-config', () => {
     for (const handle of handles) {
       handle.cleanup();
     }
+  });
+
+  test('Requires update access to each Agent', async () => {
+    await expectAgentOperationRequiresUpdate<AgentReloadConfigRequest, AgentReloadConfigResponse>(
+      app,
+      'reload-config',
+      'agent:reloadconfig:request',
+      { type: 'agent:reloadconfig:response', statusCode: 200 }
+    );
   });
 });

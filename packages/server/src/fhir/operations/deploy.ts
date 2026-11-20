@@ -34,18 +34,12 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   // Read the bot as system user to load extended metadata
   const bot = await ctx.systemRepo.readResource<Bot>('Bot', id);
 
-  // Deploying replaces the Bot's running code; unconditionally require write access to the Bot itself
-  if (!ctx.repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, bot)) {
+  // Deploying replaces the Bot's running code; unconditionally require write access to the Bot itself and admin status
+  if (!ctx.repo.isProjectAdmin() && !ctx.repo.isSuperAdmin()) {
     return [forbidden];
   }
-
-  if (!ctx.repo.isProjectAdmin() && !ctx.repo.isSuperAdmin()) {
-    getLogger().warn('Bot deployed by non-admin user', {
-      botId: bot.id,
-      botProject: bot.meta?.project,
-      profile: ctx.profile.reference,
-      membership: ctx.membership.id,
-    });
+  if (!ctx.repo.canPerformInteraction(AccessPolicyInteraction.UPDATE, bot)) {
+    return [forbidden];
   }
 
   // Validate that the request body has a code property

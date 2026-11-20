@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Badge, Button, Divider, Stack, Text } from '@mantine/core';
+import { Alert, Badge, Button, Divider, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, isOk, normalizeErrorString } from '@medplum/core';
 import type { Slot } from '@medplum/fhirtypes';
@@ -51,9 +51,16 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
     }
   }
 
+  function stopDeleting(): void {
+    setConfirmingDelete(false);
+    setDeleteError(undefined);
+  }
+
   return (
     <Stack gap="sm" className={classes.details}>
-      <Badge color="gray">{slot.status}</Badge>
+      {editing && <Title order={5}>Edit blocked time</Title>}
+      {confirmingDelete && <Title order={5}>Delete blocked time</Title>}
+      <Detail label="Status" value={<Badge color="gray">{slot.status}</Badge>} />
       <Detail
         label="For"
         value={actors?.map((actor, index) => (
@@ -64,7 +71,11 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
         ))}
       />
       {editing ? (
-        <SlotDetailsForm slot={slot} onUpdated={() => setEditing(false)} onCancel={() => setEditing(false)} />
+        <SlotDetailsForm slot={slot} onUpdated={() => setEditing(false)} onCancel={() => setEditing(false)}>
+          <Button variant="default" onClick={() => setEditing(false)}>
+            Back to Blocked Time
+          </Button>
+        </SlotDetailsForm>
       ) : (
         <>
           <Detail label="When" value={formatWhen(slot)} />
@@ -94,15 +105,8 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
                 <Button color="red" loading={deleting} onClick={deleteSlot}>
                   Confirm Delete
                 </Button>
-                <Button
-                  variant="outline"
-                  disabled={deleting}
-                  onClick={() => {
-                    setConfirmingDelete(false);
-                    setDeleteError(undefined);
-                  }}
-                >
-                  Back
+                <Button variant="default" disabled={deleting} onClick={stopDeleting}>
+                  Back to Blocked Time
                 </Button>
               </>
             ) : (

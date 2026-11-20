@@ -423,6 +423,8 @@ test('Format CodeableConcept', () => {
   expect(formatCodeableConcept({})).toBe('');
   expect(formatCodeableConcept({ text: 'foo' })).toBe('foo');
   expect(formatCodeableConcept({ coding: [{ display: 'foo' }] })).toBe('foo');
+  expect(formatCodeableConcept({ coding: [{}, {}] })).toBe('');
+  expect(formatCodeableConcept({ coding: [{}, { display: 'foo' }, {}, { code: 'bar' }] })).toBe('foo, bar');
 });
 
 test('Format Coding', () => {

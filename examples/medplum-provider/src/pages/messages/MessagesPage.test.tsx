@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { MessagesPage } from './MessagesPage';
 
 vi.mock('@medplum/react-hooks', async () => {
@@ -31,17 +31,15 @@ describe('MessagesPage', () => {
     render(
       <MemoryRouter initialEntries={[path]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Communication" element={<MessagesPage />}>
-                <Route index element={<MessagesPage />} />
-                <Route path="new" element={<MessagesPage />} />
-                <Route path=":messageId" element={<MessagesPage />} />
-                <Route path=":messageId/new" element={<MessagesPage />} />
-              </Route>
-            </Routes>
-          </MantineProvider>
+          <Notifications />
+          <Routes>
+            <Route path="/Communication" element={<MessagesPage />}>
+              <Route index element={<MessagesPage />} />
+              <Route path="new" element={<MessagesPage />} />
+              <Route path=":messageId" element={<MessagesPage />} />
+              <Route path=":messageId/new" element={<MessagesPage />} />
+            </Route>
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

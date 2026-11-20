@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { AccessPolicyInteraction } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Agent } from '@medplum/fhirtypes';
 import { makeOperationDefinition } from './definitions';
@@ -26,7 +27,7 @@ export const operation = makeOperationDefinition(
  * @returns The FHIR response.
  */
 export async function agentReloadConfigHandler(req: FhirRequest): Promise<FhirResponse> {
-  return handleBulkAgentOperation(req, async (agent) => reloadConfig(agent));
+  return handleBulkAgentOperation(req, AccessPolicyInteraction.UPDATE, async (agent) => reloadConfig(agent));
 }
 
 async function reloadConfig(agent: WithId<Agent>): Promise<FhirResponse> {

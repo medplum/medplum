@@ -1,0 +1,15 @@
+{{- /* A redirect page (content/_content.gotmpl): a meta refresh to the new URL, as Docusaurus's client redirects did,
+  without their inline script */ -}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0; url={{ .Params.redirect }}" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="{{ .Params.redirect | absURL | strings.TrimSuffix "/" }}" />
+    <title>Redirecting to {{ .Params.redirect }}</title>
+  </head>
+  <body>
+    <p>This page has moved to <a href="{{ .Params.redirect }}">{{ .Params.redirect }}</a>.</p>
+  </body>
+</html>

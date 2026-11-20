@@ -19,24 +19,11 @@ import type { OperationOutcomeIssue, Reference, Resource, ResourceType } from '@
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repo';
 
-/**
- * Exceptional, system-level references that should use systemRepo for validation
- *
- * Project.owner:
- * `User` reference which typically does not have meta.compartment specified
- * and is not technically in the project and thus would not be visible through
- * the non-system repo.
- *
- * Project.link.project:
- * The synthetic Project policy from `applyProjectAdminAccessPolicy` applies
- * a criteria that requires Project.id matches the admin's ProjectMembership.project
- * reference which will always fail for linked projects.
- */
 const SYSTEM_REFERENCE_PATHS = [
-  'Project.owner',
-  'Project.link.project',
-  'ProjectMembership.user',
-  'ProjectMembership.invitedBy',
+  'Project.owner', // can be a server-scoped User
+  'Project.link.project', // readonly for non-super admins
+  'ProjectMembership.user', // readonly for non-super admins
+  'ProjectMembership.invitedBy', // can be a server-scoped User
 ];
 
 async function validateReferences(
@@ -54,13 +41,18 @@ async function validateReferences(
   }
 }
 
-function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean {
-  const valueType = Array.isArray(propertyValue) ? propertyValue[0].type : propertyValue.type;
-  return valueType === PropertyType.Reference;
-}
+const skippedReference = /^(?:%|#|https?:)/i;
+function isCheckableReference(propertyValue: TypedValue): boolean {
+  const { type: valueType, value } = propertyValue;
+  if (valueType !== PropertyType.Reference) {
+    return false;
+  }
+  const ref = value as Reference;
+  if (!ref.reference || ref.reference.match(skippedReference)) {
+    return false;
+  }
 
-function shouldValidateReference(ref: Reference): boolean {
-  return Boolean(ref.reference && !ref.reference.startsWith('%') && !ref.reference.startsWith('#'));
+  return true;
 }
 
 class ReferenceCollector implements CrawlerVisitor {
@@ -75,11 +67,7 @@ class ReferenceCollector implements CrawlerVisitor {
   ): void {
     const values = propertyValues.flat();
     for (const propertyValue of values) {
-      if (!isCheckableReference(propertyValue) || parent.type === PropertyType.Meta) {
-        return;
-      }
-
-      if (shouldValidateReference(propertyValue.value)) {
+      if (isCheckableReference(propertyValue) && parent.type !== PropertyType.Meta) {
         this.referencesByPath[path] = append(this.referencesByPath[path], propertyValue);
       }
     }
@@ -105,10 +93,13 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
   const references = collectReferences(resource);
   const userReferences: TypedValueWithPath[] = [];
   const systemReferences: TypedValueWithPath[] = [];
+  const validateSystemReferences = repo.isSuperAdmin();
 
   for (const path of Object.keys(references)) {
     if (SYSTEM_REFERENCE_PATHS.includes(path)) {
-      systemReferences.push(...references[path]);
+      if (validateSystemReferences) {
+        systemReferences.push(...references[path]);
+      }
     } else {
       userReferences.push(...references[path]);
     }
@@ -161,12 +152,11 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
     toTypedValue(resource),
     {
       async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
-        if (!isCheckableReference(propertyValue)) {
-          return;
-        }
-
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
+            if (!isCheckableReference(propertyValue[i])) {
+              continue;
+            }
             const reference = propertyValue[i].value as Reference;
             const replacement = await resolveReplacementReference(repo, reference, path + '[' + i + ']');
 
@@ -174,7 +164,7 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
               parent.value[key][i] = replacement;
             }
           }
-        } else {
+        } else if (isCheckableReference(propertyValue)) {
           const reference = propertyValue.value as Reference;
           const replacement = await resolveReplacementReference(repo, reference, path);
 

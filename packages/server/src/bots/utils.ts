@@ -6,6 +6,7 @@ import {
   badRequest,
   ContentType,
   createReference,
+  getReferenceString,
   getStatus,
   Hl7Message,
   isGone,
@@ -42,13 +43,14 @@ import { findProjectMembership } from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getPermittedProjectIds } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
+import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
 import { LogThrottle } from '../util/logthrottle';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
 
-const missingMembershipLogThrottle = new LogThrottle(10 * 60 * 1000);
+const callerSmartScopesLogThrottle = new LogThrottle(10 * 60 * 1000);
 
 /**
  * Returns the bot's project membership.
@@ -72,16 +74,60 @@ export async function getBotProjectMembership(
   if (membership) {
     return membership;
   }
-  missingMembershipLogThrottle.maybeLog(`${project}/${bot.id}`, (suppressed) => {
-    getLogger().warn('Bot executed without ProjectMembership', {
+  throw new OperationOutcomeError(
+    badRequest('Bot does not have a ProjectMembership in this project; create one or set Bot.runAsUser')
+  );
+}
+
+/**
+ * Returns the bot input for a POST request body.
+ * If the bot has rawBody set and the original JSON text was captured, then use that text.
+ * Otherwise, use the parsed body.
+ * @param bot - The bot resource.
+ * @param body - The parsed request body.
+ * @param rawBody - The unparsed JSON body, captured by the raw-body JSON parser in app.ts.
+ * @returns The bot input.
+ */
+export function getBotBodyInput(bot: Bot, body: unknown, rawBody: Buffer | undefined): unknown {
+  return bot.rawBody && rawBody ? rawBody.toString('utf8') : body;
+}
+
+/**
+ * Diagnostic logging for bots that run as a caller whose login has SMART resource scopes or a SMART App Launch
+ * context. The bot's access token does not carry them, so they do not limit the bot.
+ * @param request - The bot execution request.
+ */
+export function logBotCallerSmartScopes(request: BotExecutionRequest): void {
+  const { bot, runAs, callerLogin, entryPoint } = request;
+  if (!callerLogin || (parseSmartScopes(callerLogin.scope).length === 0 && !callerLogin.launch)) {
+    return;
+  }
+  const runAsProject = resolveId(runAs.project);
+  const key = [runAsProject, bot.id, runAs.id, entryPoint, callerLogin.scope].join('|');
+  callerSmartScopesLogThrottle.maybeLog(key, (suppressed) => {
+    getLogger().warn('Bot ran as a caller with SMART scopes', {
       botId: bot.id,
-      botProject: bot.meta?.project,
-      runAsProject: project,
-      runAsMembership: ctx.membership.id,
+      runAsProject,
+      callerMembership: getReferenceString(runAs),
+      callerProfile: runAs.profile?.reference,
+      scope: callerLogin.scope,
+      launch: callerLogin.launch?.reference,
+      entryPoint,
       suppressed,
     });
   });
-  return ctx.membership;
+}
+
+/**
+ * Returns the HTTP request headers to pass to the bot as `event.headers`.
+ * The bot acts with the access token that `executeBot` creates for the `runAs` membership,
+ * so the caller's own Authorization header is removed.
+ * @param req - The HTTP request.
+ * @returns The HTTP request headers without the Authorization header.
+ */
+export function getBotRequestHeaders(req: Request | FhirRequest): BotExecutionRequest['headers'] {
+  const { authorization: _authorization, ...headers } = req.headers ?? {};
+  return headers;
 }
 
 /**
@@ -326,6 +372,7 @@ async function ensureBotAccessToken(runAs: WithId<ProjectMembership>, cacheKey: 
     resourceType: 'Login',
     authMethod: 'execute',
     user: runAs.user,
+    project: runAs.project,
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
     scope: 'openid',

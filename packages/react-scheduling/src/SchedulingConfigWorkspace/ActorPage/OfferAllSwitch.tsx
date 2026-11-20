@@ -3,7 +3,7 @@
 import { Switch } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { ConfirmModal } from '../ConfirmModal';
+import { ConfirmModal } from '../../ConfirmModal/ConfirmModal';
 
 const NAMED_LIMIT = 5;
 const listAll = new Intl.ListFormat('en', { type: 'conjunction' });

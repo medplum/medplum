@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Communication, Organization, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import type { FaxTab } from './FaxListItem';
 import { FaxListItem } from './FaxListItem';
 
@@ -44,9 +44,7 @@ describe('FaxListItem', () => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <FaxListItem fax={fax} selectedFax={selectedFax} activeTab={activeTab} getFaxUri={getFaxUri} />
-          </MantineProvider>
+          <FaxListItem fax={fax} selectedFax={selectedFax} activeTab={activeTab} getFaxUri={getFaxUri} />
         </MedplumProvider>
       </MemoryRouter>
     );

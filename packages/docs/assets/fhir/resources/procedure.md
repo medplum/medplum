@@ -1,0 +1,19 @@
+Refer to the [US Core Procedure profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-procedure.html).
+
+## Usage
+
+Procedure is one of the [event](https://www.hl7.org/fhir/workflow.html#event) resources in the FHIR [workflow](https://www.hl7.org/fhir/workflow.html) specification.
+
+This resource is used to record the details of current and historical procedures performed on or for a patient. A procedure is an activity that is performed on, with, or for a patient as part of the provision of care. Examples include surgical procedures, diagnostic procedures, endoscopic procedures, biopsies, counseling, physiotherapy, personal support services, adult day care services, non-emergency transportation, home modification, exercise, etc. [Procedures](/docs/api/fhir/resources/procedure) may be performed by a healthcare professional, a service provider, a friend or relative or in some cases by the patient themselves.
+
+This resource provides summary information about the occurrence of the procedure and is not intended to provide real-time snapshots of a procedure as it unfolds, though for long-running procedures such as psychotherapy, it could represent summary level information about overall progress. The creation of a resource to support detailed real-time procedure information awaits the identification of a specific implementation use-case to share such information.
+
+## Relationships
+
+The [Procedure](/docs/api/fhir/resources/procedure) resource should not be used to capture an event if a more specific resource already exists - i.e. [immunizations](/docs/api/fhir/resources/immunization), [drug administrations](/docs/api/fhir/resources/medicationadministration) and [communications](/docs/api/fhir/resources/communication). The boundary between determining whether an action is a [Procedure](/docs/api/fhir/resources/procedure) (training or counseling) as opposed to a [Communication](/docs/api/fhir/resources/communication) is based on whether there's a specific intent to change the mind-set of the patient. Mere disclosure of information would be considered a [Communication](/docs/api/fhir/resources/communication). A process that involves verification of the patient's comprehension or to change the patient's mental state would be a [Procedure](/docs/api/fhir/resources/procedure).
+
+Note that many diagnostic processes are procedures that generate [Observations](/docs/api/fhir/resources/observation) and [DiagnosticReports](/docs/api/fhir/resources/diagnosticreport). In many cases, such an observation does not require an explicit representation of the procedure used to create the observation, but where there are details of interest about how the diagnostic procedure was performed, the [Procedure](/docs/api/fhir/resources/procedure) resource is used to describe the activity.
+
+Some diagnostic procedures might not have a [Procedure](/docs/api/fhir/resources/procedure) record. The [Procedure](/docs/api/fhir/resources/procedure) record is only necessary when there is a need to capture information about the physical intervention that was performed to capture the diagnostic information (e.g. anesthetic, incision, scope size, etc.)
+
+A [Task](/docs/api/fhir/resources/task) is a workflow step such as cancelling an order, fulfilling an order, signing an order, merging a set of records, admitting a patient. [Procedures](/docs/api/fhir/resources/procedure) are actions that are intended to result in a physical or mental change to or for the subject (e.g. surgery, physiotherapy, training, counseling). A [Task](/docs/api/fhir/resources/task) resource often exists in parallel with clinical resources. For example, a [Task](/docs/api/fhir/resources/task) might request fulfillment of a [ServiceRequest](/docs/api/fhir/resources/servicerequest) ordering a [Procedure](/docs/api/fhir/resources/procedure).

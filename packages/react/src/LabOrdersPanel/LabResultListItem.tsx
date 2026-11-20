@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Stack, Text } from '@mantine/core';
+import { Badge, Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
@@ -19,6 +19,8 @@ export function LabResultListItem(props: LabResultListItemProps): JSX.Element {
   const { report, selected, to } = props;
   const performer = useResource(report.performer?.[0]);
   const subText = getSubText(report, performer);
+  const isFinalized = FINALIZED_REPORT_STATUSES.has(report.status);
+  const date = formatDate(report.issued || report.effectiveDateTime || report.meta?.lastUpdated);
 
   return (
     <MedplumLink to={to} underline="never">
@@ -30,12 +32,17 @@ export function LabResultListItem(props: LabResultListItemProps): JSX.Element {
         })}
       >
         <Stack gap={0} flex={1} miw={0}>
-          <Text fw={700} className={classes.title} flex={1}>
-            {getDisplayText(report)}
-          </Text>
-          <Text size="sm">
-            Completed {formatDate(report.issued || report.effectiveDateTime || report.meta?.lastUpdated)}
-          </Text>
+          <Group justify="space-between" align="flex-start" wrap="nowrap">
+            <Text fw={700} className={classes.title} flex={1}>
+              {getDisplayText(report)}
+            </Text>
+            {!isFinalized && (
+              <Badge size="sm" color="yellow" variant="light">
+                {getReportStatusDisplayText(report.status)}
+              </Badge>
+            )}
+          </Group>
+          <Text size="sm">{isFinalized ? `Completed ${date}` : `Received ${date}`}</Text>
           {subText && (
             <Text size="sm" c="dimmed">
               {subText}
@@ -46,6 +53,15 @@ export function LabResultListItem(props: LabResultListItemProps): JSX.Element {
     </MedplumLink>
   );
 }
+
+// A result can still be useful to a clinician before it's finalized (e.g. an interim value from
+// a multi-day culture), which is why it's listed here at all - but it must stay visually distinct
+// from a final result, or there's no way to tell the two apart without opening it.
+const FINALIZED_REPORT_STATUSES = new Set<DiagnosticReport['status']>(['final', 'corrected', 'amended']);
+
+const getReportStatusDisplayText = (status: DiagnosticReport['status']): string => {
+  return status === 'partial' ? 'Partial' : 'Preliminary';
+};
 
 const getDisplayText = (report: DiagnosticReport): string => {
   // If there are multiple codes (2 or more), show them separated by commas

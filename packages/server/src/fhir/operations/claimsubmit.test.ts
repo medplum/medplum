@@ -7,7 +7,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { createBotMembership, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 
 const app = express();
@@ -70,6 +70,7 @@ async function setClaimSubmitOperation(
 
 // Creates a custom claim-submit OperationDefinition backed by a deployed Bot.
 async function deployClaimOperation(
+  project: WithId<Project>,
   accessToken: string,
   code = SUB_OPERATION_CODE,
   insurerDisplay = 'Test Payer'
@@ -81,6 +82,7 @@ async function deployClaimOperation(
     .send({ resourceType: 'Bot', name: 'Claim Submit Bot', runtimeVersion: 'vmcontext' });
   expect(res1).toHaveStatus(201);
   const bot = res1.body as WithId<Bot>;
+  await createBotMembership(project, bot);
 
   const res2 = await request(app)
     .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -169,8 +171,12 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -185,8 +191,12 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches a raw Claim body to the operation named by the CLAIM_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -200,9 +210,13 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches preauthorization claims to the PRIOR_AUTH_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken, SUB_OPERATION_CODE, 'Claim Payer');
-    await deployClaimOperation(accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken, SUB_OPERATION_CODE, 'Claim Payer');
+    await deployClaimOperation(project, accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
     await setClaimSubmitOperation(repo, project, PRIOR_AUTH_SUB_OPERATION_CODE, 'PRIOR_AUTH_SUBMIT_OPERATION');
 
@@ -218,9 +232,13 @@ describe('Claim $submit', () => {
   });
 
   test('Dispatches Bundles containing preauthorization claims to the PRIOR_AUTH_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken, SUB_OPERATION_CODE, 'Claim Payer');
-    await deployClaimOperation(accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken, SUB_OPERATION_CODE, 'Claim Payer');
+    await deployClaimOperation(project, accessToken, PRIOR_AUTH_SUB_OPERATION_CODE, 'Prior Auth Payer');
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
     await setClaimSubmitOperation(repo, project, PRIOR_AUTH_SUB_OPERATION_CODE, 'PRIOR_AUTH_SUBMIT_OPERATION');
 
@@ -244,8 +262,12 @@ describe('Claim $submit', () => {
   });
 
   test('Returns 400 when a Bundle does not contain a Claim', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -264,8 +286,12 @@ describe('Claim $submit', () => {
   });
 
   test('Reads the Claim from the URL on the instance route', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const createRes = await request(app)
@@ -287,8 +313,12 @@ describe('Claim $submit', () => {
   });
 
   test('Returns 400 when no Claim payload is provided', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployClaimOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployClaimOperation(project, accessToken);
     await setClaimSubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)

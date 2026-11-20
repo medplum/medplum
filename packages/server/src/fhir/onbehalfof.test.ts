@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import type { ProfileResource, WithId } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, Logger } from '@medplum/core';
 import type {
+  AccessPolicy,
   OperationOutcome,
   OperationOutcomeIssue,
   Patient,
@@ -12,9 +14,12 @@ import type {
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { getAuthenticatedContext, runInAuthenticatedContext } from '../context';
 import { addTestUser, createTestProject, getSuperAdminTestProject, withTestContext } from '../test.setup';
+import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { getGlobalSystemRepo, getProjectSystemRepo } from './repo';
 
 describe('On Behalf Of', () => {
@@ -584,5 +589,55 @@ describe('On Behalf Of', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account);
       expect(patient3.meta?.accounts?.length).toStrictEqual(1);
       expect(patient3.meta?.accounts?.[0]?.reference).toStrictEqual(account);
+    }));
+
+  test('AsyncJob requester is the user the client acted on behalf of', () =>
+    withTestContext(async () => {
+      const { client, project, login, membership } = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+      const accessPolicy: AccessPolicy = { resourceType: 'AccessPolicy', resource: [{ resourceType: 'AsyncJob' }] };
+      const user1 = await addTestUser(project, { accessPolicy });
+      const user2 = await addTestUser(project, { accessPolicy });
+      const onBehalfOf = (profile: WithId<ProfileResource>): Record<string, string> => ({
+        Authorization: basicAuth,
+        'X-Medplum-On-Behalf-Of': getReferenceString(profile),
+      });
+
+      const authState = {
+        login,
+        project,
+        membership,
+        onBehalfOf: user1.profile,
+        onBehalfOfMembership: user1.membership,
+        userConfig: { resourceType: 'UserConfiguration' },
+      } as const;
+      const job = await runInAuthenticatedContext(authState, undefined, undefined, undefined, () =>
+        new AsyncJobExecutor(getAuthenticatedContext().repo).init('https://example.com/')
+      );
+      expect(job.requester?.reference).toStrictEqual(getReferenceString(user1.profile));
+
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+      try {
+        for (const headers of [
+          onBehalfOf(user1.profile),
+          { Authorization: 'Bearer ' + user1.accessToken },
+          // The admin client itself is a project admin
+          { Authorization: basicAuth },
+          onBehalfOf(user2.profile),
+        ]) {
+          const res = await request(app).get(`/fhir/R4/job/${job.id}/status`).set(headers);
+          expect(res).toHaveStatus(202);
+        }
+        const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'AsyncJob accessed by another user');
+        expect(calls).toStrictEqual([
+          [expect.any(String), expect.objectContaining({ reader: getReferenceString(user2.profile) })],
+        ]);
+      } finally {
+        warnSpy.mockRestore();
+      }
     }));
 });

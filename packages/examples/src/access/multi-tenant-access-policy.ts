@@ -12,7 +12,7 @@ import type { Organization, Parameters, Patient, Practitioner, ProjectMembership
  *  1. Get the patient's pre-existing accounts
  *  2. Check if already enrolled, and if so, return
  *  3. Construct the Parameters resource with the existing accounts and the new organization
- *  4. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
+ *  4. Call the $set-accounts operation with the Parameters resource. It will update the Patient and eligible resources in its FHIR compartment, such as Observations and Tasks.
  *     See docs: https://www.medplum.com/docs/api/fhir/operations/patient-set-accounts
  *
  * @param medplum - The Medplum client.
@@ -49,7 +49,7 @@ export async function enrollPatient(
         name: 'accounts',
         valueReference: createReference(organization),
       },
-      // Propagate changes to all resources in the Patient compartment
+      // Propagate changes to resources in the Patient's FHIR compartment, such as Observations and Tasks
       {
         name: 'propagate',
         valueBoolean: true,
@@ -58,7 +58,7 @@ export async function enrollPatient(
   };
 
   try {
-    // 4. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
+    // 4. Call the $set-accounts operation with the Parameters resource. It will update the Patient and eligible resources in its FHIR compartment, such as Observations and Tasks.
     await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
   } catch (error) {
     throw new Error(normalizeErrorString(error));
@@ -97,7 +97,7 @@ await medplum2.post(`fhir/R4/Patient/${patientId2}/$set-accounts`, {
 // end-block set-accounts-healthcare-service
 
 // start-block set-accounts-careteam
-//Assigning a specific Patient to the diabetes-care-team tenant
+//Assigning a specific Patient to the diabetes-care-team access group
 const medplum3: MedplumClient = {} as MedplumClient;
 const patientId3 = 'patient-id';
 await medplum3.post(`fhir/R4/Patient/${patientId3}/$set-accounts`, {
@@ -142,7 +142,7 @@ await medplum5.post(`fhir/R4/Questionnaire/${questionnaireId2}/$set-accounts`, {
 // end-block set-accounts-questionnaire-healthcare-service
 
 // start-block set-accounts-questionnaire-careteam
-//Assigning a specific Questionnaire to the diabetes-care-team tenant
+//Assigning a specific Questionnaire to the diabetes-care-team access group
 const medplum6: MedplumClient = {} as MedplumClient;
 const questionnaireId3 = 'questionnaire-id';
 await medplum6.post(`fhir/R4/Questionnaire/${questionnaireId3}/$set-accounts`, {
@@ -195,7 +195,7 @@ await medplum8.post(`fhir/R4/Patient/${patientId5}/$set-accounts`, {
 // end-block set-accounts-propagate-healthcare-service
 
 // start-block set-accounts-propagate-careteam
-//Assigning a specific Patient to the diabetes-care-team tenant and propagating to all resources that _"belong"_ to that Patient
+//Assigning a specific Patient to the diabetes-care-team access group and propagating to all resources that _"belong"_ to that Patient
 const medplum9: MedplumClient = {} as MedplumClient;
 const patientId6 = 'patient-id';
 await medplum9.post(`fhir/R4/Patient/${patientId6}/$set-accounts`, {
@@ -260,7 +260,7 @@ await medplum11.post(`fhir/R4/Patient/${patientId8}/$set-accounts`, {
 // end-block set-accounts-multiple-healthcare-service
 
 // start-block set-accounts-multiple-careteam
-//Assigning a specific Patient to the diabetes-care-team and hypertension-care-team tenants
+//Assigning a specific Patient to the diabetes-care-team and hypertension-care-team access groups
 const medplum12: MedplumClient = {} as MedplumClient;
 const patientId9 = 'patient-id';
 await medplum12.post(`fhir/R4/Patient/${patientId9}/$set-accounts`, {
@@ -463,9 +463,11 @@ export const _accessPolicyMixed = {
     //Non tenant level restricted resources
     {
       resourceType: 'Questionnaire',
+      readonly: true,
     },
     {
       resourceType: 'Practitioner',
+      readonly: true,
     },
     //...
 
@@ -493,14 +495,14 @@ export const _accessPolicyMixed = {
 
 /** 
 // start-block tenanting-prompt
-Below are the descriptions of an access policy scheme that a Medplum customer wants. Can you please generate example FHIR access policies. Please remember that Medplum accesspolicy criteria don't support chained search.  Use the multitenant guide to understand which resources to use to represent tenants (might be role or permission dependent). Please generate a markdown file that explains your reasoning and gives example AccessPolicies, Patient compartments, and ProjectMemberships
+Below are the descriptions of an access policy scheme that a Medplum customer wants. Can you please generate example FHIR access policies. Please remember that Medplum accesspolicy criteria don't support chained search.  Use the multitenant guide to understand which resources to use to represent tenants (might be role or permission dependent). Please generate a markdown file that explains your reasoning and gives example AccessPolicies, Patient tenant assignments in meta.accounts and meta.compartment, and ProjectMemberships
 https://www.medplum.com/docs/access/access-policies__
 https://www.medplum.com/docs/access/multi-tenant-access-policy 
 https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts 
  
 Best Practices:
 - Prefer more complicated enrollment workflows, simpler data. 
-- Patients should be only at the compartment at the lowest level of the hierarchy that they are assigned to.
+- Within the tenant hierarchy, assign Patients to the lowest-level tenants using meta.accounts; Medplum includes those references in meta.compartment.
 - Like, if a practitioner gets enrolled in some higher-level intermediary organization, you should actually just iteratively assign them to all of the lowest-level organizations.
 - If a new low-level organization is added to an intermediate level, you need some workflow to untie some knots and to update project memberships for practitioners.
  

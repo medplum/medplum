@@ -1,0 +1,38 @@
+{{- /* Element table for a FHIR type, as in the Docusaurus ResourcePropertiesTable. Params: elements, idx, page */ -}}
+{{- $idx := .idx -}}
+{{- $page := .page -}}
+<table class="fhir-elements">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Required</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{- range .elements }}
+      {{- $parts := split .path "." }}
+      {{- $depth := sub (len $parts) 1 }}
+      {{- $name := index $parts $depth }}
+      <tr>
+        <td class="fhir-element-name">
+          {{- if gt $depth 1 }}<span class="fhir-indentation" style="margin-left: calc({{ sub $depth 1 }} * 1.5rem)"></span>{{ end -}}
+          <span{{ if gt (len $name) 20 }} class="fhir-long-name"{{ end }}>{{ $name }}</span>
+        </td>
+        <td class="fhir-required">{{ if gt (int (.min | default 0)) 0 }}✓{{ end }}</td>
+        <td>{{ partial "fhir/element-type.html" (dict "element" . "idx" $idx) | safeHTML }}{{ if eq .max "*" }}[]{{ end }}</td>
+        <td>
+          <p>{{ .short }}</p>
+          {{- if or .definition .comment }}
+            <details>
+              <summary>Details</summary>
+              {{- with .definition }}{{ partial "fhir/markdown.html" (dict "text" . "idx" $idx "page" $page) }}{{ end }}
+              {{- with .comment }}{{ partial "fhir/markdown.html" (dict "text" . "idx" $idx "page" $page) }}{{ end }}
+            </details>
+          {{- end }}
+        </td>
+      </tr>
+    {{- end }}
+  </tbody>
+</table>

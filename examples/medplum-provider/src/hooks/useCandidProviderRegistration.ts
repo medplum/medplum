@@ -5,9 +5,9 @@ import { getIdentifier } from '@medplum/core';
 import type { Organization, Parameters, Practitioner } from '@medplum/fhirtypes';
 import { useMedplum, useSearchOne } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { getErrorMessage } from '../components/insurance/utils';
 import { isValidNpi } from '../utils/billing';
 import { CANDID_LIST_PROVIDERS_BOT_IDENTIFIER, CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../utils/candid';
+import { getBotErrorMessage } from '../utils/errors';
 
 export type ProviderResource = Organization | Practitioner;
 type ProviderResourceType = ProviderResource['resourceType'];
@@ -83,7 +83,7 @@ export function useCandidProviderRegistration(
       })
       .catch((error) => {
         if (!cancelled) {
-          setRegistration({ status: 'failed', resourceType, message: getErrorMessage(error) });
+          setRegistration({ status: 'failed', resourceType, message: getBotErrorMessage(error) });
         }
       });
 

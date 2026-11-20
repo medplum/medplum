@@ -13,6 +13,10 @@
   align-items: flex-start;
   flex: 1 1 auto;
   min-height: 0;
+  container-type: inline-size;
+  /* A container sizes as though empty, so a host that fits the form to its content would
+     squeeze it to nothing. It gets the form at its widest instead. */
+  contain-intrinsic-inline-size: 420px;
 }
 
 /* Each column scrolls on its own, so a wide stretch of days does not carry the form
@@ -25,6 +29,13 @@
   max-height: 100%;
   overflow-y: auto;
   padding-bottom: var(--mantine-spacing-sm);
+  /* Fills a host with a height of its own, such as the workspace's pane, so the controls take
+     the foot of it rather than trailing the last field. Resolves to nothing in an unbounded host. */
+  min-height: 100%;
+}
+
+.controls {
+  margin-top: auto;
 }
 
 /* Only present while the time search is open, which is what widens the panel. No wider
@@ -58,6 +69,26 @@
   margin-top: var(--mantine-spacing-xs);
 }
 
+/* Stacked, as they are below the two columns' bases and the gap between them (300px + 350px
+   + 20px), the columns scroll as one with whatever holds them, rather than each in its own
+   box with the times out of view below the form. */
+@container (width < 670px) {
+  .form,
+  .results {
+    max-height: none;
+  }
+
+  .form,
+  .resultsList {
+    overflow-y: visible;
+  }
+
+  /* Filled, the form would push the times stacked under it out of view. */
+  .layout:has(.results) .form {
+    min-height: 0;
+  }
+}
+
 /* Both columns are stacks, so everything in them is a flex item, and a clamped column
    squeezes its items to fit before it agrees to scroll — enough to press a button flat.
    They keep their own heights and the column scrolls instead. */
@@ -74,8 +105,55 @@
   max-width: 14rem;
 }
 
+/* Flashes the chosen time as the search closes on it, drawing the eye from where the time
+   was picked to where it landed. */
+.justPicked {
+  animation: justPicked 0.8s linear;
+}
+
+@keyframes justPicked {
+  0%,
+  50% {
+    border-color: var(--mantine-primary-color-filled);
+    box-shadow: 0 0 16px 2px color-mix(in srgb, var(--mantine-primary-color-filled) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .justPicked {
+    animation: none;
+  }
+}
+
 /* Mantine doesn't include asterisks for Checkboxes marked as required, so we add them here. */
 .requiredLabel::after {
   content: ' *';
   color: var(--mantine-color-error);
+}
+
+/* The notes' count sits at the end of the label's line, so the field below it starts where
+   every other field's does. */
+.notes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--mantine-spacing-xs);
+}
+
+.notesField {
+  flex-basis: 100%;
+}
+
+.notes .notesCountOver {
+  color: var(--mantine-color-error);
+}
+
+.addButton {
+  align-self: flex-start;
+}
+
+/* Matches the gap SearchControl's "Add Filter" leaves between its icon and label. */
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
 }

@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentError, AgentRequestMessage, AgentResponseMessage, WithId } from '@medplum/core';
+import type { AgentError, AgentRequestMessage, AgentResponseMessage, SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   ContentType,
   OperationOutcomeError,
   Operator,
   allOk,
   badRequest,
+  forbidden,
   getReferenceString,
   isOk,
   isValidHostname,
@@ -15,7 +17,15 @@ import {
   singularize,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type {
+  Agent,
+  Bundle,
+  BundleEntry,
+  Device,
+  OperationOutcome,
+  Parameters,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
@@ -61,11 +71,10 @@ export async function getAgentForRequest(
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    return searchUnique<Agent>(
-      repo,
-      { resourceType: 'Agent', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
-      'Agent identifier'
-    );
+    return searchUnique<Agent>(repo, {
+      resourceType: 'Agent',
+      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
+    });
   }
 
   // If no agent ID or identifier, return undefined
@@ -84,7 +93,9 @@ export async function getAgentsForRequest(req: FhirRequest, repo: Repository): P
     const agent = await getAgentForRequest(req, repo);
     return agent ? [agent] : undefined;
   }
-  return repo.searchResources(parseSearchRequest('Agent', req.query));
+  const searchRequest = parseSearchRequest<Agent>('Agent', req.query);
+  assertSingleTypeSearch(searchRequest, 'Agent');
+  return repo.searchResources(searchRequest);
 }
 
 export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
@@ -97,7 +108,9 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
     }
   }
   if (destination.startsWith('Device?')) {
-    return searchUnique<Device>(repo, parseSearchRequest(destination), 'Agent push Device destination');
+    const searchRequest = parseSearchRequest<Device>(destination);
+    assertSingleTypeSearch(searchRequest, 'Device');
+    return searchUnique(repo, searchRequest);
   }
   if (contentType === ContentType.PING && (isIPv4(destination) || isValidHostname(destination))) {
     return { resourceType: 'Device', url: destination };
@@ -105,11 +118,46 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
   return undefined;
 }
 
+/**
+ * Rejects a user-supplied search whose results could include resources other than `resourceType`:
+ * a search of another type, `_type` replacing the searched type, or `_include`/`_revinclude` adding other types.
+ *
+ * @param searchRequest - The parsed search request.
+ * @param resourceType - The only resource type the search may return.
+ */
+function assertSingleTypeSearch(searchRequest: SearchRequest, resourceType: ResourceType): void {
+  if (searchRequest.resourceType !== resourceType) {
+    throw new OperationOutcomeError(badRequest(`Search must be for ${resourceType}`));
+  }
+  if (searchRequest.types || searchRequest.include || searchRequest.revInclude) {
+    throw new OperationOutcomeError(
+      badRequest(`_type, _include, and _revinclude are not supported when searching for ${resourceType}`)
+    );
+  }
+}
+
+/**
+ * Runs an operation on each Agent selected by the request: the one in the path, or the results of an Agent search.
+ *
+ * Finding the Agents only proves read access. When `interaction` is stronger than read, each Agent is checked for it
+ * before `handler` runs; an Agent that fails the check gets a forbidden outcome and is never sent a message.
+ *
+ * @param req - The FHIR request.
+ * @param interaction - The interaction the caller needs on each Agent, e.g. update for operations that change the agent host.
+ * @param handler - The operation to run on each Agent.
+ * @returns The handler's response for an instance request, or a Bundle with one result entry per Agent.
+ */
 export async function handleBulkAgentOperation(
   req: FhirRequest,
+  interaction: AccessPolicyInteraction,
   handler: (agent: WithId<Agent>) => Promise<FhirResponse>
 ): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
+  const checkEachAgent = interaction !== AccessPolicyInteraction.READ;
+
+  if (checkEachAgent && !repo.supportsInteraction(interaction, 'Agent')) {
+    return [forbidden];
+  }
 
   const count = singularize(req.query._count);
   if (count && Number.parseInt(count, 10) > MAX_AGENTS_PER_PAGE) {
@@ -121,11 +169,19 @@ export async function handleBulkAgentOperation(
     return [badRequest('No agent(s) for given query')];
   }
 
+  // The Agents found above are read copies, which may lack meta.project and hidden fields, so check the stored version
+  const runIfPermitted = async (agent: WithId<Agent>): Promise<FhirResponse> => {
+    if (checkEachAgent && !(await repo.canPerformInteractionById(interaction, 'Agent', agent.id))) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    return handler(agent);
+  };
+
   if (req.params.id) {
-    return handler(agents[0]);
+    return runIfPermitted(agents[0]);
   }
 
-  const promises = agents.map((agent) => handler(agent));
+  const promises = agents.map(runIfPermitted);
   const results = await Promise.allSettled(promises);
   const entries: BundleEntry<Parameters>[] = [];
 

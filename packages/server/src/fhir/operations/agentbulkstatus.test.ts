@@ -222,6 +222,24 @@ describe('Agent/$bulk-status', () => {
     });
   });
 
+  test('Get agent statuses -- rejects parameters that change the result type', async () => {
+    for (const query of [
+      { _type: 'Device' },
+      { _type: 'Agent,Device' },
+      { name: 'Medplum Agent', _include: 'Agent:device' },
+      { name: 'Medplum Agent', _revinclude: 'Provenance:target' },
+    ]) {
+      const res = await request(app)
+        .get('/fhir/R4/Agent/$bulk-status')
+        .query(query)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res).toHaveStatus(400);
+      expect(res.body.issue[0].details.text).toStrictEqual(
+        '_type, _include, and _revinclude are not supported when searching for Agent'
+      );
+    }
+  });
+
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
     await getCacheRedis().set(
       `medplum:agent:${agents[1].id}:info`,

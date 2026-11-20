@@ -235,7 +235,7 @@ fission env list
 kubectl exec -n medplum deployment/postgres -- psql -U medplum -d medplum -c "SELECT 1;"
 
 # Test Redis connectivity
-kubectl exec -n medplum deployment/redis -- redis-cli -a medplum ping
+kubectl exec -n medplum deployment/redis -- valkey-cli -a medplum ping
 ```
 
 ### Reset Everything

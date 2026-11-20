@@ -1492,6 +1492,378 @@ describe('PlanDefinition apply', () => {
     expect(res10).toHaveStatus(200);
   });
 
+  test('task-elements on PlanDefinition action', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resQ = await request(app)
+      .post(`/fhir/R4/Questionnaire`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Questionnaire',
+        url: 'http://example.com/Questionnaire/intake-' + randomUUID(),
+        status: 'active',
+        name: 'Intake',
+        title: 'Intake Questionnaire',
+        item: [{ linkId: 'q1', text: 'Question 1', type: 'string' }],
+      });
+    expect(resQ).toHaveStatus(201);
+
+    const resAD = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        url: 'http://example.com/ActivityDefinition/follow-up-' + randomUUID(),
+        status: 'active',
+        kind: 'Task',
+        name: 'FollowUp',
+        title: 'Follow Up',
+        extension: [
+          {
+            url: taskElementsUrl,
+            extension: [
+              { url: 'owner', valueExpression: { language: 'text/fhirpath', expression: '%organization' } },
+              {
+                url: 'performerType',
+                valueCodeableConcept: {
+                  coding: [{ system: 'http://snomed.info/sct', code: '158965000', display: 'Medical practitioner' }],
+                },
+              },
+            ],
+          },
+        ],
+      });
+    expect(resAD).toHaveStatus(201);
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Action-level task elements',
+        action: [
+          {
+            title: 'Complete intake',
+            definitionCanonical: (resQ.body as Questionnaire).url,
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [
+                  { url: 'owner', valueExpression: { language: 'text/fhirpath', expression: '%practitioner' } },
+                  {
+                    url: 'performerType',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'http://snomed.info/sct',
+                          code: '224608005',
+                          display: 'Administrative healthcare staff',
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            title: 'Follow up',
+            definitionCanonical: (resAD.body as ActivityDefinition).url,
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [
+                  { url: 'owner', valueExpression: { language: 'text/fhirpath', expression: '%practitioner' } },
+                ],
+              },
+            ],
+          },
+          {
+            title: 'Call patient',
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [
+                  { url: 'owner', valueExpression: { language: 'text/fhirpath', expression: '%organization' } },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resPractitioner = await request(app)
+      .post(`/fhir/R4/Practitioner`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Practitioner', name: [{ given: ['John'], family: 'Doe' }] });
+    expect(resPractitioner).toHaveStatus(201);
+
+    const resOrg = await request(app)
+      .post(`/fhir/R4/Organization`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Organization', name: 'Example Clinic' });
+    expect(resOrg).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'subject', valueString: getReferenceString(resPatient.body as Patient) },
+          { name: 'practitioner', valueString: getReferenceString(resPractitioner.body) },
+          { name: 'organization', valueString: getReferenceString(resOrg.body) },
+        ],
+      });
+    expect(resApply).toHaveStatus(200);
+
+    const resRG = await request(app)
+      .get(`/fhir/R4/${(resApply.body as CarePlan).activity?.[0]?.reference?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resRG).toHaveStatus(200);
+    const requestGroup = resRG.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(3);
+
+    const tasks: Task[] = [];
+    for (const rgAction of requestGroup.action ?? []) {
+      const resTask = await request(app)
+        .get(`/fhir/R4/${rgAction.resource?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(resTask).toHaveStatus(200);
+      tasks.push(resTask.body as Task);
+    }
+
+    // Questionnaire action: assigned entirely from the action extension
+    expect(tasks[0].input?.[0]?.type?.text).toStrictEqual('Questionnaire');
+    expect(tasks[0].owner).toMatchObject(createReference(resPractitioner.body));
+    expect(tasks[0].performerType?.[0]?.coding?.[0]?.code).toStrictEqual('224608005');
+
+    // ActivityDefinition action: action owner wins, performerType falls back to the ActivityDefinition
+    expect(tasks[1].owner).toMatchObject(createReference(resPractitioner.body));
+    expect(tasks[1].performerType?.[0]?.coding?.[0]?.code).toStrictEqual('158965000');
+
+    // Action without a definition: assigned from the action extension
+    expect(tasks[2].owner).toMatchObject(createReference(resOrg.body));
+    expect(tasks[2].performerType).toBeUndefined();
+  });
+
+  test('task-elements fixed owner references', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resPractitioner = await request(app)
+      .post(`/fhir/R4/Practitioner`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Practitioner', name: [{ given: ['John'], family: 'Doe' }] });
+    expect(resPractitioner).toHaveStatus(201);
+
+    const resOrg = await request(app)
+      .post(`/fhir/R4/Organization`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Organization', name: 'Example Clinic' });
+    expect(resOrg).toHaveStatus(201);
+
+    const resCareTeam = await request(app)
+      .post(`/fhir/R4/CareTeam`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'CareTeam', name: 'Intake Team' });
+    expect(resCareTeam).toHaveStatus(201);
+
+    const owners = [resPractitioner.body, resOrg.body, resCareTeam.body, resPatient.body];
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Fixed owners',
+        action: owners.map((owner) => ({
+          title: `Assigned to ${owner.resourceType}`,
+          extension: [
+            {
+              url: taskElementsUrl,
+              extension: [{ url: 'owner', valueReference: createReference(owner) }],
+            },
+          ],
+        })),
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
+      });
+    expect(resApply).toHaveStatus(200);
+
+    const resRG = await request(app)
+      .get(`/fhir/R4/${(resApply.body as CarePlan).activity?.[0]?.reference?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resRG).toHaveStatus(200);
+    const requestGroup = resRG.body as RequestGroup;
+    expect(requestGroup.action).toHaveLength(owners.length);
+
+    for (let i = 0; i < owners.length; i++) {
+      const resTask = await request(app)
+        .get(`/fhir/R4/${requestGroup.action?.[i]?.resource?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(resTask).toHaveStatus(200);
+      expect((resTask.body as Task).owner).toMatchObject({ reference: getReferenceString(owners[i]) });
+    }
+  });
+
+  test('task-elements rejects unsupported owner reference type without creating resources', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Invalid owner',
+        action: [
+          { title: 'First action' },
+          {
+            title: 'Second action',
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [{ url: 'owner', valueReference: { reference: 'Location/123' } }],
+              },
+            ],
+          },
+        ],
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
+      });
+    expect(resApply).toHaveStatus(400);
+    expect(resApply.body.issue[0].details.text).toStrictEqual(
+      'task-elements owner must reference one of Practitioner, PractitionerRole, Organization, CareTeam, HealthcareService, Patient, Device, RelatedPerson (got Location/123)'
+    );
+
+    const resTasks = await request(app)
+      .get(`/fhir/R4/Task?based-on=${getReferenceString(resPD.body as PlanDefinition)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resTasks).toHaveStatus(200);
+    expect(resTasks.body.entry ?? []).toHaveLength(0);
+  });
+
+  test('task-elements action owner skips the ActivityDefinition owner', async () => {
+    const taskElementsUrl = 'https://medplum.com/fhir/StructureDefinition/task-elements';
+
+    const resPatient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ given: ['Alice'], family: 'Smith' }] });
+    expect(resPatient).toHaveStatus(201);
+
+    const resAD = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        url: 'http://example.com/ActivityDefinition/' + randomUUID(),
+        extension: [
+          {
+            url: taskElementsUrl,
+            extension: [{ url: 'owner', valueReference: { reference: 'Location/123' } }],
+          },
+        ],
+      });
+    expect(resAD).toHaveStatus(201);
+
+    const resPD = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        title: 'Action owner override',
+        action: [
+          {
+            title: 'Follow up',
+            definitionCanonical: (resAD.body as ActivityDefinition).url,
+            extension: [
+              {
+                url: taskElementsUrl,
+                extension: [{ url: 'owner', valueReference: createReference(resPatient.body as Patient) }],
+              },
+            ],
+          },
+        ],
+      });
+    expect(resPD).toHaveStatus(201);
+
+    const resApply = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${resPD.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'subject', valueString: getReferenceString(resPatient.body as Patient) }],
+      });
+    expect(resApply).toHaveStatus(200);
+
+    const resTasks = await request(app)
+      .get(`/fhir/R4/Task?based-on=${getReferenceString(resPD.body as PlanDefinition)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(resTasks).toHaveStatus(200);
+    expect(resTasks.body.entry).toHaveLength(1);
+    expect((resTasks.body.entry[0].resource as Task).owner).toMatchObject({
+      reference: getReferenceString(resPatient.body as Patient),
+    });
+  });
+
   test('Populates instantiates link when PlanDefinition has url', async () => {
     // 1. Create a Questionnaire
     const res1 = await request(app)

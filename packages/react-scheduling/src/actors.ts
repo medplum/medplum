@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Dereference, WithId } from '@medplum/core';
 import { assertNever, isDefined, isResource, parseReference } from '@medplum/core';
-import type { Appointment, AppointmentParticipant, Reference, Schedule } from '@medplum/fhirtypes';
+import type { Appointment, AppointmentParticipant, Patient, Reference, Schedule } from '@medplum/fhirtypes';
 
 /**
  * A reference to something a Schedule belongs to. The same union an Appointment
@@ -29,6 +29,9 @@ export type SchedulingActorValue = SchedulingActor | SchedulingActorResource;
  * the device are all free for it. Asking for *either* of two practitioners is a
  * second request rather than a second schedule on the same one — see
  * `getActorCombinations`.
+ *
+ * No one type has to be asked about: a search needs a schedule to book against,
+ * and a room or a device holds one as well as a provider does.
  *
  * Does not include `PractitionerRole` to prevent double-booking a `Practitioner`
  * who holds multiple roles. A practitioner is booked on their `Practitioner`,
@@ -84,29 +87,17 @@ export function getActorTypeLabel(resourceType: SchedulingActorType): string {
 }
 
 /**
- * Actor types that must be chosen before a search can run.
- *
- * Locations and devices are left optional: a service may have location schedules
- * configured without every booking needing to hold one.
- */
-export const REQUIRED_ACTOR_TYPES: ReadonlySet<SchedulingActorType> = new Set(['Practitioner']);
-
-/**
- * Reports whether an actorType has to be chosen to be a valid booking
- * @param actorType - The actor type being chosen.
- * @returns Whether a search can run without it.
- */
-export function isActorTypeRequired(actorType: SchedulingActorType): boolean {
-  return REQUIRED_ACTOR_TYPES.has(actorType);
-}
-
-/**
  * The appointment's first patient participant.
  * @param appointment - The appointment being described.
  * @returns The participant, or undefined when no patient is on it.
  */
-export function getPatientParticipant(appointment: Appointment): AppointmentParticipant | undefined {
-  return appointment.participant.find((participant) => participant.actor?.reference?.startsWith('Patient/'));
+export function getPatientParticipant(
+  appointment: Appointment
+): (AppointmentParticipant & { actor: Reference<Patient> }) | undefined {
+  return appointment.participant.find(
+    (participant): participant is AppointmentParticipant & { actor: Reference<Patient> } =>
+      participant.actor?.reference?.startsWith('Patient/') === true
+  );
 }
 
 /**

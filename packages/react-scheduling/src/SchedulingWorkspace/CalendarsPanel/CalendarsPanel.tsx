@@ -67,9 +67,9 @@ export function CalendarsPanel(props: CalendarsPanelProps): JSX.Element {
   const { items, candidatesLoading, filters, onToggle, className } = props;
 
   return (
-    <Stack gap="xs" w={300} className={className}>
+    <Stack gap="xs" className={className}>
       <Text fz="lg" fw={800} py="xs">
-        Calendars
+        Filter Calendars
       </Text>
       <Divider />
 

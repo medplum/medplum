@@ -10,6 +10,15 @@ import { NEUTRON_HEALTH } from './constants';
 import { getFillStatus, getPatient, handler } from './handle-order-event';
 import { createdWebhook, noPrescriptionId, placedWebhook } from './test-data/order-event-test-data';
 
+vi.mock('./utils.ts', async () => {
+  const actualModule = await vi.importActual('./utils.ts');
+  return {
+    ...actualModule,
+    verifyEvent: vi.fn().mockImplementation(() => true),
+    handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+  };
+});
+
 describe('Order event handler', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -17,15 +26,6 @@ describe('Order event handler', async () => {
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
       indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
     }
-  });
-
-  vi.mock('./utils.ts', async () => {
-    const actualModule = await vi.importActual('./utils.ts');
-    return {
-      ...actualModule,
-      verifyEvent: vi.fn().mockImplementation(() => true),
-      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
-    };
   });
 
   const bot: Reference<Bot> = { reference: 'Bot/123' };

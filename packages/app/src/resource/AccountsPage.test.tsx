@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, render, screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
+import { render } from '../test-utils/render';
 
 describe('AccountsPage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -15,14 +15,12 @@ describe('AccountsPage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider>
-              <Notifications />
-              <ErrorBoundary>
-                <Suspense fallback={<Loading />}>
-                  <AppRoutes />
-                </Suspense>
-              </ErrorBoundary>
-            </MantineProvider>
+            <Notifications />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading />}>
+                <AppRoutes />
+              </Suspense>
+            </ErrorBoundary>
           </MemoryRouter>
         </MedplumProvider>
       );

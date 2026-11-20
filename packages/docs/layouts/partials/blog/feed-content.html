@@ -1,0 +1,9 @@
+{{- /* A post's HTML for the blog feeds: root-relative and in-page (#) links made absolute, as Docusaurus's feeds had
+  them, and safe to wrap in CDATA */ -}}
+{{- $url := printf "%s%s" (strings.TrimSuffix "/" site.BaseURL) (partial "href" .) -}}
+{{- $html := .Content
+  | replaceRE `(href|src)="/` (printf `$1="%s/` (strings.TrimSuffix "/" site.BaseURL))
+  | replaceRE `href="#` (printf `href="%s#` $url)
+-}}
+{{- $html = replace $html "]]>" "]]]]><![CDATA[>" -}}
+{{- return $html -}}

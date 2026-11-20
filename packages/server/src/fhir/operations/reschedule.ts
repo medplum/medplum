@@ -25,12 +25,13 @@ import { addMinutes } from '../../util/date';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import type { Repository } from '../repo';
 import { makeOperationDefinition } from './definitions';
+import { alignmentFromParameters, isAlignedToGrid } from './utils/alignment';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   assertAllLoaded,
   buildAppointmentSlots,
   getSchedulingParametersGroup,
-  isAlignedToGrid,
+  getSlotWriterRepo,
   validateAllAvailability,
 } from './utils/scheduling';
 import { extractCommonParameters } from './utils/scheduling-parameters';
@@ -167,13 +168,7 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
       });
 
       const commonParameters = extractCommonParameters([...parameterGroup.values()]);
-      if (
-        !isAlignedToGrid(startDate, {
-          interval: commonParameters.alignmentInterval,
-          offset: commonParameters.alignmentOffset,
-          timezone: commonParameters.alignmentTimezone,
-        })
-      ) {
+      if (!isAlignedToGrid(startDate, alignmentFromParameters(commonParameters))) {
         throw new OperationOutcomeError(
           badRequest('Start time is not aligned to the scheduling grid', 'Parameters.start')
         );
@@ -209,9 +204,10 @@ export async function appointmentRescheduleHandler(req: FhirRequest): Promise<Fh
 
       await validateAllAvailability(txRepo, withPaths(slots, 'Parameters.schedule'), healthcareService, parameterGroup);
 
+      const slotRepo = getSlotWriterRepo(txRepo);
       const createdSlots = new Array<WithId<Slot>>(slots.length);
       for (const [i, slot] of slots.entries()) {
-        createdSlots[i] = await txRepo.createResource<Slot>(slot);
+        createdSlots[i] = await slotRepo.createResource<Slot>(slot);
       }
 
       // Replace any earlier reschedule marker, whether from $reschedule or a manual move

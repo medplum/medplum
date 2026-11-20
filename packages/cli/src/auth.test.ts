@@ -4,6 +4,7 @@ import type { MedplumClient } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import type { Mock, MockInstance } from 'vitest';
@@ -109,13 +110,36 @@ describe('CLI auth', () => {
     });
     expect(res2.end).toHaveBeenCalledWith('OK');
 
-    // Simulate the redirect
-    const req3 = { method: 'GET', url: '/?code=123' };
+    // The authorize URL includes PKCE and state
+    const authorizeUrl = new URL(
+      ((cp.exec as unknown as Mock).mock.calls[0][0] as string).match(/(https?:\/\/[^\s'"]+)/)?.[1] as string
+    );
+    const state = authorizeUrl.searchParams.get('state');
+    const codeChallenge = authorizeUrl.searchParams.get('code_challenge');
+    expect(state).toBeTruthy();
+    expect(codeChallenge).toBeTruthy();
+    expect(authorizeUrl.searchParams.get('code_challenge_method')).toBe('S256');
+
+    // Simulate a redirect with the wrong state, don't process the code
+    const req3 = { method: 'GET', url: '/?code=123&state=wrong' };
     const res3 = { writeHead: vi.fn(), end: vi.fn() };
     await handler(req3, res3);
-    expect(res3.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
-    expect(res3.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
+    expect(res3.writeHead).toHaveBeenCalledWith(400, { 'Content-Type': ContentType.TEXT });
+    expect(res3.end).toHaveBeenCalledWith('Error: Invalid state');
+    expect(medplum.getActiveLogin()).toBeUndefined();
+
+    // Simulate the redirect
+    const fetchTokensSpy = vi.spyOn(medplum as any, 'fetchTokens');
+    const req4 = { method: 'GET', url: `/?code=123&state=${state}` };
+    const res4 = { writeHead: vi.fn(), end: vi.fn() };
+    await handler(req4, res4);
+    expect(res4.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': ContentType.TEXT });
+    expect(res4.end).toHaveBeenCalledWith('Signed in as Alice Smith. You may close this window.');
     expect(medplum.getActiveLogin()).toBeDefined();
+
+    // The token request sends the verifier for the code challenge
+    const codeVerifier = (fetchTokensSpy.mock.calls[0][0] as Record<string, string>).code_verifier;
+    expect(createHash('sha256').update(codeVerifier).digest('base64url')).toBe(codeChallenge);
   });
 
   test('Login with default scope includes offline_access', async () => {
@@ -276,5 +300,95 @@ describe('CLI auth', () => {
     medplum = new MockClient({ profile: null });
     await expect(main(['node', 'index.js', 'token'])).rejects.toThrow('Process exited with exit code 1');
     expect(processError).toHaveBeenLastCalledWith(expect.stringContaining('Error: Not logged in'));
+  });
+
+  describe('Logout', () => {
+    const alice = {
+      accessToken: 'alice-access',
+      refreshToken: 'alice-refresh',
+      profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+      project: { reference: 'Project/456', display: 'My Project' },
+    };
+    const bob = {
+      accessToken: 'bob-access',
+      refreshToken: 'bob-refresh',
+      profile: { reference: 'Practitioner/789', display: 'Bob Jones' },
+      project: { reference: 'Project/456', display: 'My Project' },
+    };
+    let file: string;
+
+    beforeEach(() => {
+      file = JSON.stringify({
+        options: JSON.stringify({ baseUrl: 'https://example.com/' }),
+        activeLogin: JSON.stringify(alice),
+        logins: JSON.stringify([alice, bob]),
+      });
+      (fs.existsSync as unknown as Mock).mockReturnValue(true);
+      (fs.readFileSync as unknown as Mock).mockImplementation(() => file);
+      (fs.writeFileSync as unknown as Mock).mockImplementation((_path: string, data: string) => {
+        file = data;
+      });
+    });
+
+    function mockSignOutResponse(status: number): void {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(null, { status }))
+      );
+      vi.spyOn(medplum, 'signOut').mockImplementation(async () => {
+        const options = (createMedplumClient as unknown as Mock).mock.calls[0][0];
+        await options.fetch('https://example.com/oauth2/token', {});
+        throw new Error(`HTTP ${status}`);
+      });
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    test('Revokes every stored session and keeps profile settings', async () => {
+      const signOut = vi.spyOn(medplum, 'signOut');
+
+      await main(['node', 'index.js', 'logout']);
+
+      expect(signOut).toHaveBeenCalledTimes(2);
+      expect((console.log as unknown as Mock).mock.calls).toStrictEqual([
+        ['Revoked session: Alice Smith (Practitioner/124)'],
+        ['Revoked session: Bob Jones (Practitioner/789)'],
+        ['Logged out'],
+      ]);
+      expect(JSON.parse(file)).toStrictEqual({ options: JSON.stringify({ baseUrl: 'https://example.com/' }) });
+    });
+
+    test('Treats tokens rejected by the server as already invalid', async () => {
+      mockSignOutResponse(400);
+
+      await main(['node', 'index.js', 'logout']);
+
+      expect(console.log).toHaveBeenCalledWith('Session already invalid: Alice Smith (Practitioner/124)');
+      expect(console.log).toHaveBeenLastCalledWith('Logged out');
+      expect(JSON.parse(file).activeLogin).toBeUndefined();
+    });
+
+    test('Keeps stored tokens when the server is unavailable', async () => {
+      mockSignOutResponse(503);
+      const original = file;
+
+      await expect(main(['node', 'index.js', 'logout'])).rejects.toThrow('Process exited with exit code 1');
+
+      expect(processError).toHaveBeenLastCalledWith(
+        expect.stringContaining('Logout failed; stored credentials were kept')
+      );
+      expect(file).toBe(original);
+    });
+
+    test('Not logged in', async () => {
+      file = JSON.stringify({});
+
+      await main(['node', 'index.js', 'logout']);
+
+      expect(console.log).toHaveBeenCalledWith('Not logged in');
+      expect(createMedplumClient).not.toHaveBeenCalled();
+    });
   });
 });

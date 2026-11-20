@@ -339,6 +339,34 @@ describe('App', () => {
       expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
     });
 
+    test('Logs caller identity on authentication error', async () => {
+      const { accessToken, login, project, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        membership: { admin: true },
+      });
+      const other = await createTestProject({ withClient: true });
+      const onBehalfOf = getReferenceString(other.membership);
+
+      const res1 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-On-Behalf-Of', onBehalfOf);
+      expect(res1).toHaveStatus(400);
+
+      const logObjs = stdOutSpy.mock.calls.map((call) => JSON.parse(call[0]));
+      const callerLog = logObjs.find((obj) => obj.msg === 'Authentication failed for known caller');
+      const servedLog = logObjs.find((obj) => obj.msg === 'Request served');
+      expect(callerLog).toMatchObject({
+        requestId: res1.headers['x-request-id'],
+        login: login.id,
+        project: project.id,
+        membership: membership.id,
+        onBehalfOf,
+      });
+      expect(servedLog).toMatchObject({ requestId: res1.headers['x-request-id'], status: 400 });
+    });
+
     test('Route parsing error', async () => {
       const accessToken = await initTestAuth();
       const res1 = await request(app)
@@ -471,6 +499,20 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
+  test('Invalid compressed body', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app)
+      .post('/')
+      .set('Content-Type', ContentType.JSON)
+      .set('Content-Encoding', 'br')
+      .send(Buffer.from('not brotli'));
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject(badRequest('Decompression failed'));
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
   test('Database disconnect', async () => {
     const app = express();
     const config = await loadTestConfig();
@@ -547,6 +589,78 @@ describe('App', () => {
 
     expect(await request(app).post('/auth/mfa/verify').send({})).toHaveStatus(400);
     expect(await request(app).post('/auth/mfa/verify').send({})).toHaveStatus(429);
+
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.each([
+    ['/auth/login', '/AUTH/LOGIN'],
+    ['/auth/login', '/auth/login/'],
+    ['/auth/login', '/API/Projects/123/Auth/Login/'],
+    ['/auth/newuser', '/Auth/NewUser'],
+    ['/auth/mfa/verify', '/AUTH/MFA/VERIFY/'],
+  ])('Rate limit for %s also applies to %s', async (path, variant) => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultLoginRateLimit = 1;
+    config.defaultMfaRateLimit = 1;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'path-variant-rate-limit:';
+    await initApp(app, config);
+
+    expect(await request(app).post(path).send({})).toHaveStatus(400);
+    expect(await request(app).post(variant).send({})).toHaveStatus(429);
+
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.each([
+    { name: 'prefix with trailing dot', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/login', allowed: 2 },
+    {
+      name: 'prefix without trailing dot',
+      exemptIps: ['203.0.113'],
+      ip: '203.0.113.7',
+      path: '/auth/login',
+      allowed: 2,
+    },
+    { name: 'exact IP', exemptIps: ['203.0.113.7'], ip: '203.0.113.7', path: '/auth/login', allowed: 2 },
+    { name: 'wildcard', exemptIps: ['*'], ip: '203.0.113.7', path: '/auth/login', allowed: 2 },
+    {
+      name: 'any listed entry',
+      exemptIps: ['198.51.100.', '203.0.113.7'],
+      ip: '203.0.113.7',
+      path: '/auth/login',
+      allowed: 2,
+    },
+    { name: 'newuser path', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/newuser', allowed: 2 },
+    { name: 'newproject path', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/newproject', allowed: 2 },
+    { name: 'non-matching prefix', exemptIps: ['203.0.113.'], ip: '198.51.100.7', path: '/auth/login', allowed: 1 },
+    { name: 'partial octet prefix', exemptIps: ['203.0.11'], ip: '203.0.113.7', path: '/auth/login', allowed: 1 },
+    { name: 'different exact IP', exemptIps: ['203.0.113.7'], ip: '203.0.113.70', path: '/auth/login', allowed: 1 },
+    { name: 'no exemptions configured', exemptIps: undefined, ip: '203.0.113.7', path: '/auth/login', allowed: 1 },
+    { name: 'MFA path', exemptIps: ['203.0.113.'], ip: '203.0.113.7', path: '/auth/mfa/verify', allowed: 1 },
+  ])('Login rate limit exemption: $name', async ({ exemptIps, ip, path, allowed }) => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.defaultRateLimit = 100;
+    config.defaultLoginRateLimit = 1;
+    config.defaultMfaRateLimit = 1;
+    config.defaultAuthRateLimit = 2;
+    config.loginRateLimitExemptIps = exemptIps;
+
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    rateLimitRedisConfig.keyPrefix = 'login-exempt-rate-limit:';
+    await initApp(app, config);
+
+    for (let i = 0; i < allowed; i++) {
+      const res = await request(app).post(path).set('X-Forwarded-For', ip).send({});
+      expect(res.status).not.toBe(429);
+    }
+    expect(await request(app).post(path).set('X-Forwarded-For', ip).send({})).toHaveStatus(429);
 
     await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();

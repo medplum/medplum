@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { createReference } from '@medplum/core';
 import type { ElementDefinition, Observation, Patient, StructureDefinition, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -26,7 +27,14 @@ describe('Repository validation', () => {
 
   test('Profile validation', async () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+        withRepo: true,
+      });
+      const { repo: linkingRepo } = await createTestProject({
+        project: { link: [{ project: createReference(project) }] },
+        withRepo: true,
+      });
 
       const profile = { ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() };
       const patient: Patient = {
@@ -52,6 +60,7 @@ describe('Repository validation', () => {
       await expect(repo.createResource(patient)).resolves.toBeTruthy();
       await repo.createResource(profile);
       await expect(repo.createResource(patient)).rejects.toThrow('Missing required property (Patient.gender)');
+      await expect(linkingRepo.createResource(patient)).resolves.toBeTruthy();
     }));
 
   test('Profile update', async () =>

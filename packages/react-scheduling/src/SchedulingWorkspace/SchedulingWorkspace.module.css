@@ -6,10 +6,20 @@
   gap: var(--mantine-spacing-md);
   height: 100%;
   width: 100%;
+  overflow-x: clip;
+  /* Bounds the widened pane by the workspace, not the viewport, and keeps its z-index
+     among the workspace's own layers rather than the host page's. */
+  container-type: inline-size;
+  --pane-width: 320px;
+  /* One surface under the pane and everything it docks beside and slides over, in the color
+     the host passes as `backgroundColor`. */
+  background-color: var(--scheduling-workspace-background, var(--mantine-color-body));
 }
 
+/* Gives way once the calendar has no width left, so the pane beside it stays on screen. */
 .sidebar {
-  flex-shrink: 0;
+  flex: 0 1 300px;
+  min-width: 0;
   overflow-y: auto;
 }
 
@@ -47,22 +57,70 @@
 }
 
 /*
+ * Holds the pane's place beside the calendar at its narrow width, so the calendar keeps its
+ * size when the pane widens.
+ */
+.paneSlot {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--pane-width);
+}
+
+/*
  * The pane beside the calendar, holding the booking form, or the details of the
  * appointment or blocked time that is open. Only one at a time — each takes the
  * others' place.
  */
 .pane {
-  flex-shrink: 0;
-  width: 320px;
+  position: absolute;
+  inset: 0;
+  z-index: 200;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  background-color: var(--scheduling-workspace-background, var(--mantine-color-body));
 }
 
-/* The narrow pane's form, then the finder's times column, so the form keeps its width
-   when the times open beside it. */
+/* Widened, it slides out over the calendar like a drawer: the narrow pane's form, then the
+   finder's times column, so the form keeps its width when the times open beside it. */
 .paneWide {
-  width: calc(320px + var(--mantine-spacing-lg) + 350px);
+  left: auto;
+  width: calc(var(--mantine-spacing-md) + var(--pane-width) + var(--mantine-spacing-lg) + 350px);
+  max-width: 100cqi;
+  padding-inline-start: var(--mantine-spacing-md);
+  box-shadow: var(--mantine-shadow-xl);
+  animation: paneSlideIn 100ms ease;
+  /* Leaves the pane's first `--pane-width` where the narrow pane stands. */
+  --pane-tucked: translateX(calc(100% - var(--pane-width) - var(--mantine-spacing-md)));
+}
+
+.paneClosing {
+  animation: paneSlideOut 100ms ease forwards;
+}
+
+/* Already at the narrow pane's width, which is all the tucked pane shows, so the content
+   holds still while the pane slides back rather than spreading out and snapping back. */
+.paneClosing > * {
+  max-width: var(--pane-width);
+}
+
+@keyframes paneSlideIn {
+  from {
+    transform: var(--pane-tucked);
+  }
+}
+
+@keyframes paneSlideOut {
+  to {
+    transform: var(--pane-tucked);
+  }
+}
+
+/* Too short to see, but still ends, which is what returns a closing pane to its narrow width. */
+@media (prefers-reduced-motion: reduce) {
+  .paneWide {
+    animation-duration: 1ms;
+  }
 }
 
 /* The booking pane's tabs pass the pane's height down to the form, so the form and the
@@ -74,10 +132,11 @@
   flex-direction: column;
 }
 
-/* Pill colors, as ListWithDetailPane's, through the variables Mantine's pills variant reads. */
+/* Pill colors, through the variables Mantine's pills variant reads. Tints rather than fixed grays,
+   so they show on whatever color the workspace is given. */
 .paneTab {
-  --tab-hover-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-  --tabs-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
+  --tab-hover-color: light-dark(rgb(0 0 0 / 4%), rgb(255 255 255 / 5%));
+  --tabs-color: light-dark(rgb(0 0 0 / 8%), rgb(255 255 255 / 10%));
   --tabs-text-color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
 }
 

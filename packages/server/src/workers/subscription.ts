@@ -6,6 +6,7 @@ import {
   ContentType,
   EMPTY,
   Operator,
+  append,
   createReference,
   getExtension,
   getExtensionValue,
@@ -14,6 +15,7 @@ import {
   isNotFound,
   isString,
   matchesSearchRequest,
+  normalizeErrorString,
   normalizeOperationOutcome,
   parseSearchRequest,
   resourceMatchesSubscriptionCriteria,
@@ -23,6 +25,7 @@ import {
 import type {
   Bot,
   ClientApplication,
+  Coding,
   Patient,
   Practitioner,
   Project,
@@ -130,7 +133,6 @@ export interface SubscriptionJobData {
   // PENDING{v5.3} Remove, along with where addSubscriptionJobs sets it. Unread by this release; still
   // written for workers on earlier releases during a rolling deploy.
   readonly authState?: AuthState;
-  readonly verbose?: boolean;
 }
 
 export interface SatisfiesAccessPolicyOpts {
@@ -187,7 +189,13 @@ export const initSubscriptionWorker: WorkerInitializer = (config, options?: Work
         },
       }
     );
-    addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
+    addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields, [
+      'failed',
+      'stalled',
+      'error',
+      'closing',
+      'closed',
+    ]);
     worker.on('active', (job) => {
       // Only record queuedDuration on the first attempt
       if (job.attemptsMade === 0) {
@@ -338,8 +346,8 @@ export async function addSubscriptionJobs(
     return;
   }
 
-  if (resource.resourceType === 'AuditEvent') {
-    // Never send subscriptions for audit events
+  if (resource.resourceType === 'AuditEvent' || resource.resourceType === 'Login') {
+    // Never send subscriptions for audit events or logins
     return;
   }
 
@@ -442,7 +450,6 @@ export async function addSubscriptionJobs(
         traceId: ctx?.traceId,
         // PENDING{v5.3} Remove with SubscriptionJobData.authState
         authState: ctx?.authState,
-        verbose: options?.verbose,
       });
     }
   }
@@ -450,9 +457,25 @@ export async function addSubscriptionJobs(
   if (wsSubEvents.length) {
     await publish(
       WEBSOCKET_SUB_PUBLISH_CHANNEL,
-      JSON.stringify({ resource, events: wsSubEvents } satisfies SubEventPayload)
+      JSON.stringify({ resource: removeBinaryData(resource), events: wsSubEvents } satisfies SubEventPayload)
     );
   }
+}
+
+const SUBSETTED_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+
+/**
+ * Removes inline `Binary.data` from a resource sent to subscribers, and tags it as subsetted.
+ * Subscribers read the content from binary storage instead.
+ * @param resource - The resource to send.
+ * @returns The resource without `Binary.data`.
+ */
+function removeBinaryData<T extends Resource>(resource: T): T {
+  if (resource.resourceType !== 'Binary' || resource.data === undefined) {
+    return resource;
+  }
+  const { data: _data, ...rest } = resource;
+  return { ...rest, meta: { ...rest.meta, tag: append(rest.meta?.tag, SUBSETTED_TAG) } } as T;
 }
 
 /**
@@ -628,10 +651,53 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
 }
 
 /**
- * Executes a subscription job.
+ * Executes a subscription job, writing one summary log line for the attempt.
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
+  const startTime = Date.now();
+  const summary: SubscriptionJobSummary = {};
+  let error: unknown;
+  try {
+    await deliverSubscriptionJob(job, summary);
+  } catch (err) {
+    error = err;
+    throw err;
+  } finally {
+    const logger = getLogger();
+    const fields = {
+      jobId: job.id,
+      resource: `${job.data.resourceType}/${job.data.id}`,
+      versionId: job.data.versionId,
+      interaction: job.data.interaction,
+      attemptsMade: job.attemptsMade,
+      ...summary,
+      error: error === undefined ? undefined : normalizeErrorString(error),
+      // Only the first attempt has a meaningful queue wait; on retries it includes previous attempts and requeue
+      queuedDurationMs: job.attemptsMade === 0 && job.processedOn ? job.processedOn - job.timestamp : undefined,
+      totalDelayMs: job.processedOn ? job.processedOn - job.timestamp : undefined,
+      executionDurationMs: Date.now() - startTime,
+    };
+
+    if (error instanceof UnrecoverableError) {
+      logger.error('Subscription job attempt', fields);
+    } else if (error !== undefined) {
+      logger.warn('Subscription job attempt', fields);
+    } else {
+      logger.info('Subscription job attempt', fields);
+    }
+  }
+}
+
+interface SubscriptionJobSummary {
+  skipReason?: string;
+  delivery?: 'rest-hook' | 'bot';
+  url?: string;
+  status?: number;
+  fetchDurationMs?: number;
+}
+
+async function deliverSubscriptionJob(job: Job<SubscriptionJobData>, summary: SubscriptionJobSummary): Promise<void> {
   let systemRepo: SystemRepository;
   // The subscription's project, not the writer's: AuditEvents are recorded there and follow its redaction setting.
   let project: WithId<Project> | undefined;
@@ -639,27 +705,25 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   let rewrittenResource: Resource;
 
   try {
-    const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
+    const { subscriptionId, resourceType, id, versionId } = job.data;
     systemRepo = await getJobSystemRepo(job.data.target);
-    const logger = getLogger();
-    const logFn = verbose ? logger.info : logger.debug;
 
     subscription = await tryGetSubscription(systemRepo, subscriptionId, job.data.channelType);
     if (!subscription) {
       // If the subscription was deleted, then stop processing it.
-      logFn(`Subscription ${subscriptionId} not found`);
+      summary.skipReason = 'Subscription not found';
       return;
     }
 
     const channelType = subscription.channel.type;
     if (channelType !== 'rest-hook') {
-      logFn(`Subscription ${subscriptionId} has unsupported channel type ${channelType}`);
+      summary.skipReason = `Unsupported channel type ${channelType}`;
       return;
     }
 
     if (subscription.status !== 'active') {
       // If the subscription has been disabled, then stop processing it.
-      logFn(`Subscription ${subscriptionId} is not active`);
+      summary.skipReason = 'Subscription not active';
       return;
     }
 
@@ -667,7 +731,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     if (!job.data.target.system) {
       project = await systemRepo.readResource<Project>('Project', job.data.target.projectId);
       if (getInactiveReason(project)) {
-        logFn(`Project ${project.id} is not active`);
+        summary.skipReason = 'Project not active';
         return;
       }
     }
@@ -676,13 +740,13 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
       if (!currentVersion) {
         // If the resource was deleted, then stop processing it.
-        logFn(`Resource ${resourceType}/${id} not found`);
+        summary.skipReason = 'Resource not found';
         return;
       }
 
       if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
         // If this is a retry and the resource is not the current version, then stop processing it.
-        logFn(`Resource ${resourceType}/${id} is not the current version`);
+        summary.skipReason = 'Resource not current version';
         return;
       }
     }
@@ -695,20 +759,21 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       using projectRepo = await getRepoForProject(versionedResource.meta.project);
       rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, projectRepo, versionedResource);
     }
+    rewrittenResource = removeBinaryData(rewrittenResource);
   } catch (err) {
     if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
       throw err;
     }
 
-    // Too many errors in the preamble, give up
-    globalLogger.error('Subscription job preamble failed too many times, giving up', getLoggingFields(job));
-    return;
+    // Too many errors in the preamble, give up. UnrecoverableError moves the job to failed instead of retrying.
+    throw new UnrecoverableError(`Preamble failed too many times: ${normalizeErrorString(err)}`);
   }
 
   try {
     // Errors in this try/catch are considered to be issues in the client's rest hook or bot
     // and should trigger retries according to the subscription's max attempts
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
+      summary.delivery = 'bot';
       await execBot(
         systemRepo,
         project,
@@ -726,7 +791,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
         subscription,
         rewrittenResource,
         job.data.interaction,
-        job.data.requestTime
+        job.data.requestTime,
+        summary
       );
     }
     // Success - reset the failure counter
@@ -785,6 +851,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
  * @param requestTime - The request time.
+ * @param summary - The job attempt summary, populated with the delivery result.
  */
 async function sendRestHook(
   systemRepo: SystemRepository,
@@ -793,15 +860,17 @@ async function sendRestHook(
   subscription: WithId<Subscription>,
   resource: Resource,
   interaction: BackgroundJobInteraction,
-  requestTime: string
+  requestTime: string,
+  summary: SubscriptionJobSummary
 ): Promise<void> {
-  const log = getLogger();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    log.debug(`Ignore rest hook missing URL`);
+    summary.skipReason = 'Subscription has no endpoint';
     return;
   }
+  summary.delivery = 'rest-hook';
+  summary.url = url;
 
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
@@ -810,12 +879,7 @@ async function sendRestHook(
   const fetchStartTime = Date.now();
   let fetchEndTime: number;
   try {
-    log.info('Sending rest hook', {
-      url,
-      subscriptionId: subscription.id,
-      projectId: subscription.meta?.project,
-    });
-    log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    getLogger().debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await safeFetch(url, {
       method: 'POST',
       headers,
@@ -823,11 +887,7 @@ async function sendRestHook(
       signal: AbortSignal.timeout(REQUEST_TIMEOUT),
     });
     fetchEndTime = Date.now();
-    log.info('Received rest hook response', {
-      status: response.status,
-      subscriptionId: subscription.id,
-      projectId: subscription.meta?.project,
-    });
+    summary.status = response.status;
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
       systemRepo,
@@ -844,11 +904,6 @@ async function sendRestHook(
     }
   } catch (ex) {
     fetchEndTime = Date.now();
-    log.info('Subscription exception', {
-      err: ex,
-      subscriptionId: subscription.id,
-      projectId: subscription.meta?.project,
-    });
     await createSubscriptionAuditEvent(
       systemRepo,
       project,
@@ -861,13 +916,8 @@ async function sendRestHook(
     error = ex as Error;
   }
 
-  const fetchDurationMs = fetchEndTime - fetchStartTime;
-  recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
-  log.info('Subscription rest hook fetch duration', {
-    fetchDurationMs,
-    subscriptionId: subscription.id,
-    projectId: subscription?.meta?.project,
-  });
+  summary.fetchDurationMs = fetchEndTime - fetchStartTime;
+  recordHistogramValue('medplum.subscription.restHookFetchDuration', summary.fetchDurationMs / 1000);
 
   if (error) {
     throw error;
@@ -979,6 +1029,18 @@ async function execBot(
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;
+
+  // A runAsUser Bot runs as the requester's membership, but the system user has none
+  if (bot.runAsUser && requester?.reference === 'system') {
+    ctx.logger.warn('Skipping runAsUser Bot for system-authored resource', {
+      subscription: getReferenceString(subscription),
+      project: subscription.meta?.project,
+      bot: getReferenceString(bot),
+      resource: getReferenceString(resource),
+    });
+    return;
+  }
+
   let runAs: WithId<ProjectMembership> | undefined;
   if (projectId) {
     runAs = await findProjectMembership(projectId, bot.runAsUser ? requester : createReference(bot));

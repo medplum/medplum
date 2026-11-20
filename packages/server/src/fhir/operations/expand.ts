@@ -93,7 +93,9 @@ export async function expandOperator(
   }
 
   let valueSet = params.valueSet;
-  if (!valueSet) {
+  if (req.params.id) {
+    valueSet = await repo.readResource<ValueSet>('ValueSet', req.params.id);
+  } else if (!valueSet) {
     let url = params.url;
     if (!url) {
       return [badRequest('Missing url')];
