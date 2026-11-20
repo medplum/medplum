@@ -2559,7 +2559,7 @@ describe('AccessPolicy', () => {
 
       const results = await repo.searchResources<ProjectMembership>({ resourceType: 'ProjectMembership' });
       expect(results.map((m) => m.id)).toStrictEqual([practitionerMember.id]);
-      await expect(repo.readResource('ProjectMembership', patientMember.id)).rejects.toThrow('Forbidden');
+      await expect(repo.readResource('ProjectMembership', patientMember.id)).rejects.toThrow('Not found');
 
       // Both the policy's readonly fields and the admin readonly fields are enforced
       const updated = await repo.updateResource<ProjectMembership>({
@@ -2628,7 +2628,7 @@ describe('AccessPolicy', () => {
       });
       await repo.deleteResource('Cron', cron.id);
 
-      await expect(repo.readResource('ProjectMembership', practitionerMembership.id)).rejects.toThrow('Forbidden');
+      await expect(repo.readResource('ProjectMembership', practitionerMembership.id)).rejects.toThrow('Not found');
     }));
 
   test('Project admin ProjectMembership compartment entry stays limited to own project', () =>
