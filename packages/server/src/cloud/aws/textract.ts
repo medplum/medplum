@@ -134,7 +134,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
 
   const options = req.body as undefined | { comprehend?: boolean };
   if (options?.comprehend && textractResult?.Blocks) {
-    const lines = textractResult.Blocks.map((b) => b.Text ?? '');
+    const lines = textractResult.Blocks.filter((b) => b.BlockType === 'LINE').map((b) => b.Text ?? '');
     const text = lines.join('\n');
     const comprehendMedicalClient = new ComprehendMedicalClient({ region: awsRegion });
     const comprehendResult = await comprehendMedicalClient.send(new DetectEntitiesV2Command({ Text: text }));
