@@ -314,7 +314,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   if (client?.pkceOptional) {
-    logPkceOptionalCodeRedemption(req, client, login, authMethod, clientSecret);
+    logPkceOptionalCodeRedemption(req, client, login, authMethod, clientId, clientSecret);
   }
 
   await sendTokenResponse(req, res, login, client);
@@ -872,6 +872,7 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * @param client - The `pkceOptional` client application.
  * @param login - The login being redeemed.
  * @param authMethod - How the client presented credentials to the token endpoint.
+ * @param clientId - The client ID presented in the request, if any.
  * @param clientSecret - The client secret, if one was presented and validated.
  */
 function logPkceOptionalCodeRedemption(
@@ -879,6 +880,7 @@ function logPkceOptionalCodeRedemption(
   client: ClientApplication,
   login: WithId<Login>,
   authMethod: TokenEndpointAuthMethod | undefined,
+  clientId: string | undefined,
   clientSecret: string | undefined
 ): void {
   // Log-only: must never affect the response
@@ -907,6 +909,7 @@ function logPkceOptionalCodeRedemption(
       getLogger().warn('Authorization code redeemed by pkceOptional client without verification', {
         reason,
         clientId: client.id,
+        clientIdPresented: !!clientId,
         projectId: client.meta?.project,
         loginId: login.id,
         authMethod,
