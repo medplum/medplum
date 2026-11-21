@@ -578,6 +578,8 @@ Limit that user with resource `criteria` and a parameter on their [`ProjectMembe
 
 The default Patient and RelatedPerson policies follow this shape for the clinical resource types in the FHIR Patient compartment. `Patient` is matched by id. `Communication` is matched on `sender` and `recipient`, because those are the references that place it in the FHIR Patient compartment. The other clinical types are matched with `_compartment=%patient`, as `Observation` and `Condition` are above.
 
+On a `Communication` the patient received, they can only set `received` and move `status` to `completed`, which marks a message read or closes a thread. A thread's `sent` time can also move forward, so inboxes can track new replies. Changes to other fields of a received `Communication` are not saved. A caregiver sends messages as their own `RelatedPerson` and must name the patient on each one; they can read, but not edit, messages the patient sent. Messages sent by either one cannot name any other Patient.
+
 `RelatedPerson` records are read-only in both policies, so a patient or caregiver cannot add a contact or change which Patient one points at. The one exception is that a caregiver can update their own `RelatedPerson` profile, as long as its `patient` stays the same.
 
 #### 2. Put the Patient on the membership

@@ -31,6 +31,7 @@ import type {
   ProjectMembership,
   Quantity,
   Questionnaire,
+  Reference,
   RelatedPerson,
   ServiceRequest,
   SmartAppLaunch,
@@ -2091,6 +2092,96 @@ describe('AccessPolicy', () => {
       await expect(repo.deleteResource('RelatedPerson', self.id)).rejects.toThrow('Forbidden');
       await expect(repo.updateResource({ ...other, active: false })).rejects.toThrow('Forbidden');
     }));
+
+  describe('Default policy Communication access', () => {
+    let adminRepo: Repository;
+    let patient: Reference<Patient>;
+    let otherPatient: Reference<Patient>;
+    let practitioner: Reference<Practitioner>;
+
+    beforeEach(async () => {
+      adminRepo = getRepository({ projects: [testProject], strictMode: true, extendedMode: true });
+      patient = createReference(await adminRepo.createResource<Patient>({ resourceType: 'Patient' }));
+      otherPatient = createReference(await adminRepo.createResource<Patient>({ resourceType: 'Patient' }));
+      practitioner = createReference(await adminRepo.createResource<Practitioner>({ resourceType: 'Practitioner' }));
+    });
+
+    async function login(
+      profileType: 'Patient' | 'RelatedPerson',
+      profile: ProjectMembership['profile']
+    ): Promise<Repository> {
+      const accessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        ...DEFAULT_ACCESS_POLICIES[profileType](),
+      });
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: createReference(testProject),
+        profile,
+        access: [{ policy: createReference(accessPolicy), parameter: [{ name: 'patient', valueReference: patient }] }],
+      });
+      return getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+        userConfig: {} as UserConfiguration,
+      });
+    }
+
+    function message(
+      sender: Communication['sender'],
+      recipient: Communication['recipient'],
+      extra?: Partial<Communication>
+    ): Communication {
+      return { resourceType: 'Communication', status: 'in-progress', sender, recipient, ...extra };
+    }
+
+    test('Patient can only mark received messages read', () =>
+      withTestContext(async () => {
+        const repo = await login('Patient', patient);
+        const thread = await adminRepo.createResource(
+          message(practitioner, [patient, practitioner], { subject: patient, sent: '2026-01-01T00:00:00Z' })
+        );
+        const received = await adminRepo.createResource(
+          message(practitioner, [patient], { partOf: [createReference(thread)], payload: [{ contentString: 'a' }] })
+        );
+
+        await expect(repo.createResource(message(practitioner, [patient]))).rejects.toThrow('Forbidden');
+        await expect(repo.deleteResource('Communication', received.id)).rejects.toThrow('Forbidden');
+
+        const edited = await repo.updateResource({ ...received, payload: [{ contentString: 'b' }] });
+        expect(edited.payload).toStrictEqual(received.payload);
+
+        const read = await repo.updateResource({ ...received, status: 'completed', received: '2026-01-02T00:00:00Z' });
+        expect(read.status).toBe('completed');
+        await expect(repo.updateResource({ ...read, status: 'in-progress' })).rejects.toThrow('Forbidden');
+        await expect(repo.updateResource({ ...read, received: undefined })).rejects.toThrow('Forbidden');
+
+        const touched = await repo.patchResource<Communication>('Communication', thread.id, [
+          { op: 'add', path: '/sent', value: '2026-01-03T00:00:00Z' },
+        ]);
+        expect(touched.sent).toBe('2026-01-03T00:00:00Z');
+
+        await expect(
+          repo.createResource(message(patient, [practitioner], { subject: patient, partOf: [createReference(thread)] }))
+        ).resolves.toBeDefined();
+        await expect(repo.createResource(message(patient, [otherPatient]))).rejects.toThrow('Forbidden');
+      }));
+
+    test('RelatedPerson sends messages as self, about their patient', () =>
+      withTestContext(async () => {
+        const self = createReference(
+          await adminRepo.createResource<RelatedPerson>({ resourceType: 'RelatedPerson', patient })
+        );
+        const repo = await login('RelatedPerson', self);
+
+        await expect(repo.createResource(message(self, [patient, practitioner]))).resolves.toBeDefined();
+        await expect(repo.createResource(message(patient, [practitioner]))).rejects.toThrow('Forbidden');
+        await expect(repo.createResource(message(self, [practitioner]))).rejects.toThrow('Forbidden');
+        await expect(repo.createResource(message(self, [patient, otherPatient]))).rejects.toThrow('Forbidden');
+      }));
+  });
 
   test('String parameters', () =>
     withTestContext(async () => {
