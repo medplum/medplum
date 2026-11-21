@@ -1169,7 +1169,13 @@ export function isExternalEmailUnverified(userInfo: Record<string, unknown>): bo
   return userInfo.email_verified === false || userInfo.email_verified === 'false';
 }
 
-async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
+/**
+ * Verifies an external token against the identity provider's JWKS, issuer and audience,
+ * or against its user info endpoint when no JWKS URL is configured.
+ * @param idp - The external identity provider.
+ * @param token - The external token.
+ */
+export async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
   if (!idp.jwksUrl) {
     if (!idp.userInfoUrl) {
       throw new OperationOutcomeError(badRequest('Missing user info URL - check your identity provider configuration'));
