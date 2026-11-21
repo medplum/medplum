@@ -1,0 +1,11 @@
+{
+  "models": { "classify": "claude-opus-5-5", "draft": "claude-opus-5-5", "verify": "claude-sonnet-5-5" },
+  "effort": "high",
+  "maxTurns": 40,
+  "budgetUsd": { "classify": 3, "draft": 5, "verify": 3 },
+  "maxSourceFiles": 80,
+  "maxDiffBytes": 300000,
+  "maxDraftFiles": 6,
+  "maxDraftBytes": 160000,
+  "fallbackAssignee": ""
+}

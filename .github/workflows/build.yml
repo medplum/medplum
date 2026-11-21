@@ -71,6 +71,10 @@ jobs:
         run: npm ci
       - name: Check Provider documentation labels
         run: node packages/docs/scripts/check-provider-labels.mjs
+      - name: Test documentation automation controller
+        run: |
+          npx --no-install tsc -p scripts/docs-automation
+          node --test scripts/docs-automation/pilot.test.mts
       - name: Build Project
         run: npm run build
         env:
