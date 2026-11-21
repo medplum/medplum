@@ -11,10 +11,11 @@ import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendValidationErrors } from '../util/validator';
-import { assertMfaLoginActive, verifyTotpToken } from './mfalimit';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
   addMfaMethod,
@@ -49,6 +50,9 @@ function parseMfaMethod(value: unknown): MfaMethod {
  * currently-enrolled MFA factors. The token may be either an authenticator
  * (TOTP) code or the 6-digit code emailed via `/send-email-challenge`, so the
  * user only needs to satisfy a single connected factor to make a change.
+ * Each attempt counts against the same per-login and per-user limits as the
+ * sign-in challenge; once either is reached, this throws a 429 even for a
+ * correct token.
  * @param user - The user.
  * @param login - The current login (holds the emailed code hash, if any).
  * @param token - The user supplied token.
@@ -62,19 +66,17 @@ export async function verifyConnectedFactor(
   if (!token) {
     return false;
   }
+  await reserveMfaAttempt(login);
   const methods = getEnrolledMfaMethods(user);
-
-  // Authenticator app
-  if (methods.includes('totp') && user.mfaSecret && (await verifyTotpToken(user.id, user.mfaSecret, token))) {
-    return true;
+  const verified =
+    // Authenticator app
+    (methods.includes('totp') && !!user.mfaSecret && (await verifyTotpToken(user.id, user.mfaSecret, token))) ||
+    // Emailed code
+    (methods.includes('email') && (await verifyEmailMfaCode(login, token)));
+  if (verified) {
+    await tryReleaseMfaAttempt(getLogger(), login);
   }
-
-  // Emailed code
-  if (methods.includes('email') && (await verifyEmailMfaCode(login, token))) {
-    return true;
-  }
-
-  return false;
+  return verified;
 }
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
@@ -84,7 +86,8 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   const enrolledMethods = getEnrolledMfaMethods(user);
 
   // The TOTP QR code is only returned while TOTP is not enrolled: for initial enrollment,
-  // or to add TOTP alongside email-based MFA.
+  // or to add TOTP alongside email-based MFA. The secret alone cannot add a factor to an
+  // account that has one, since `/enroll` then also requires a code from an enrolled method.
   const enrollment = enrolledMethods.includes('totp')
     ? undefined
     : await buildTotpEnrollment(ctx.login, user, ctx.project);
@@ -178,6 +181,13 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
+  const enrolledFactorToken =
+    typeof req.body.enrolledFactorToken === 'string' ? req.body.enrolledFactorToken : undefined;
+  if (user.mfaEnrolled && !enrolledFactorToken) {
+    sendOutcome(res, badRequest('Missing enrolled factor token'));
+    return;
+  }
+
   if (method === 'email') {
     // Reverify the user's email before enrolling: they must enter the code
     // emailed via `/send-email-challenge`, proving they currently control the
@@ -189,6 +199,10 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     }
     if (!(await verifyEmailMfaCode(ctx.login, req.body.token as string))) {
       sendOutcome(res, badRequest('Invalid token'));
+      return;
+    }
+    if (user.mfaEnrolled && !(await verifyConnectedFactor(user, ctx.login, enrolledFactorToken))) {
+      sendOutcome(res, badRequest('Invalid enrolled factor token'));
       return;
     }
     await systemRepo.updateResource({
@@ -221,8 +235,14 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     sendOutcome(res, badRequest('Invalid token'));
     return;
   }
+  if (user.mfaEnrolled && !(await verifyConnectedFactor(user, ctx.login, enrolledFactorToken))) {
+    sendOutcome(res, badRequest('Invalid enrolled factor token'));
+    return;
+  }
 
   await enrollTotp(ctx.login, user, secret);
+  // Consume the emailed code that proved the enrolled factor, if any
+  await clearMfaEmailCode(ctx.login as WithId<Login>);
   sendOutcome(res, allOk);
 });
 
@@ -274,10 +294,11 @@ mfaRouter.post(
  * Emails a verification code to the currently authenticated user so they can
  * prove control of their email address. The same endpoint serves two flows:
  * reverifying the email when enrolling in email-based MFA (`/enroll`), and
- * satisfying the email factor when changing MFA settings — removing a factor or
- * disabling MFA (`/disable`). The code is stored on the current login and later
- * checked by the corresponding endpoint. It is therefore available whenever the
- * user is already enrolled in email MFA or the project allows enrolling in it.
+ * satisfying the email factor when changing MFA settings — adding another
+ * factor (`/enroll`), removing a factor or disabling MFA (`/disable`). The code
+ * is stored on the current login and later checked by the corresponding
+ * endpoint. It is therefore available whenever the user is already enrolled in
+ * email MFA or the project allows enrolling in it.
  */
 mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();

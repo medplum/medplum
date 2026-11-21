@@ -36,8 +36,8 @@ The routes fall into two groups depending on what they authenticate against.
 | Method & Path | Body | Purpose |
 |---|---|---|
 | `GET /auth/mfa/status` | — | Read the user's current enrollment status and the TOTP QR code while TOTP is not enrolled. |
-| `POST /auth/mfa/send-email-challenge` | `{}` | Email a 6-digit code to the current user (used to prove control of their email when enrolling email MFA, removing a factor, or disabling MFA). |
-| `POST /auth/mfa/enroll` | `{ method?, token }` | Enroll the current user in a method. `method` defaults to `totp`. |
+| `POST /auth/mfa/send-email-challenge` | `{}` | Email a 6-digit code to the current user (used to prove control of their email when enrolling email MFA, adding or removing a factor, or disabling MFA). |
+| `POST /auth/mfa/enroll` | `{ method?, token, enrolledFactorToken? }` | Enroll the current user in a method. `method` defaults to `totp`. `enrolledFactorToken` is required when the user is already enrolled in MFA (see [Adding a second method](#adding-a-second-method)). |
 | `POST /auth/mfa/disable` | `{ token, method? }` | Remove a single factor (when `method` is given) or disable MFA entirely (when `method` is omitted). |
 
 And the [admin reset route](/docs/auth/mfa#admin-mfa-reset), `POST /admin/projects/:projectId/members/:membershipId/mfa/reset`, for project admins.
@@ -125,7 +125,7 @@ const status = await medplum.get('auth/mfa/status', { cache: 'no-cache' });
 // }
 ```
 
-`/auth/mfa/status` returns a TOTP `enrollQrCode`/`enrollUri` while the user is not enrolled in TOTP, so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email. Once TOTP is enrolled, they are no longer returned.
+`/auth/mfa/status` returns a TOTP `enrollQrCode`/`enrollUri` while the user is not enrolled in TOTP, so you can offer authenticator enrollment at any time — including adding TOTP to an account that currently only has email, which also takes an emailed code. Once TOTP is enrolled, they are no longer returned.
 
 Each session (and, at login, each `login`) is offered its own TOTP secret, which is returned unchanged on repeated reads for 20 minutes. It becomes the user's authenticator secret only when that same session or `login` confirms it with a code. After 20 minutes, enrollment fails with `Secret not found` and the QR code must be fetched again.
 
@@ -149,7 +149,19 @@ POST /auth/mfa/enroll  { method: 'email', token }  ──▶  200 OK
 
 Email enrollment requires the user to enter the emailed code, which reverifies that they currently control the address (and sets `emailVerified`). Both `/enroll` calls reject a method the user is already enrolled in, or a method the project does not allow.
 
-**Adding a second method:** the same calls work when the user is already enrolled. `enrolledMethods` from `/auth/mfa/status` tells you which methods are already active so you can offer only the missing one.
+### Adding a second method
+
+When the user is already enrolled, `/auth/mfa/enroll` also requires `enrolledFactorToken`: a code from a method the user is already enrolled in, the same proof that `/auth/mfa/disable` requires. `token` is still the code for the method being added. `enrolledMethods` from `/auth/mfa/status` tells you which methods are already active so you can offer only the missing one.
+
+```
+Add TOTP to email:   POST /auth/mfa/send-email-challenge  {}
+                     POST /auth/mfa/enroll  { method: 'totp', token: <authenticator code>, enrolledFactorToken: <emailed code> }
+
+Add email to TOTP:   POST /auth/mfa/send-email-challenge  {}
+                     POST /auth/mfa/enroll  { method: 'email', token: <emailed code>, enrolledFactorToken: <authenticator code> }
+```
+
+An authenticator code expires within about a minute and an emailed code within 20 minutes, so collect the emailed code first and the authenticator code last.
 
 ## Flow: Removing a factor or disabling MFA
 
@@ -174,4 +186,6 @@ Notes:
 
 ## Error responses
 
-The MFA routes return a FHIR `OperationOutcome` with `400 Bad Request` on failure. Common cases include `Invalid token` / `Invalid MFA token`, `MFA code expired`, `Secret not found` (the TOTP enrollment offer expired), `Already enrolled`, `MFA method not allowed`, `User not enrolled in MFA`, `Missing token`, and `Cannot remove the last MFA factor because MFA is required`. The login-time routes additionally reject a `login` that is already `revoked`, `granted`, or verified.
+The MFA routes return a FHIR `OperationOutcome` with `400 Bad Request` on failure. Common cases include `Invalid token` / `Invalid MFA token`, `MFA code expired`, `Secret not found` (the TOTP enrollment offer expired), `Already enrolled`, `MFA method not allowed`, `User not enrolled in MFA`, `Missing token`, `Missing enrolled factor token` / `Invalid enrolled factor token`, and `Cannot remove the last MFA factor because MFA is required`. The login-time routes additionally reject a `login` that is already `revoked`, `granted`, or verified.
+
+Wrong codes for an enrolled method sent to `/auth/mfa/enroll` or `/auth/mfa/disable` count toward the same per-login and per-user attempt limits as `/auth/mfa/verify`. Once either limit is reached, those routes return `429 Too Many Requests` until it resets, even for a correct code.

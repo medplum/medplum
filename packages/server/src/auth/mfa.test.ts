@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
-import { allOk, badRequest, getReferenceString, OAuthGrantType } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString, OAuthGrantType } from '@medplum/core';
 import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -10,12 +10,13 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import type { ParsedMail } from 'mailparser';
 import { simpleParser } from 'mailparser';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { authenticator } from 'otplib';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
+import { MFA_LOGIN_ATTEMPT_LIMIT, MFA_LOGIN_EXPIRATION_MS, MFA_USER_ATTEMPT_LIMIT } from '../constants';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { rotateLoginRefreshSecret } from '../oauth/token';
 import { getRateLimitRedis } from '../redis';
@@ -96,30 +97,56 @@ function parseEnrollUriLabels(enrollUri: string): { issuer: string | null; label
 }
 
 /**
- * Enrolls the authenticated user in email-based MFA via the reverification flow:
- * requests an emailed code, reads it, and submits it to `/enroll`. Mirrors how
- * the Security page enrolls email MFA, where the user must prove control of
- * their email before the factor is added.
+ * Emails a verification code to the authenticated user via `/send-email-challenge`.
  * @param accessToken - The user's access token.
+ * @returns The emailed code.
  */
-async function enrollEmailMfa(accessToken: string): Promise<void> {
+async function requestEmailCode(accessToken: string): Promise<string> {
   const challenge = await request(app)
     .post('/auth/mfa/send-email-challenge')
     .set('Authorization', `Bearer ${accessToken}`)
     .type('json')
     .send({});
   if (challenge.status !== 200) {
-    throw new Error('Failed to send enrollment email: ' + JSON.stringify(challenge.body));
+    throw new Error('Failed to send verification email: ' + JSON.stringify(challenge.body));
   }
-  const code = await getCodeFromEmail();
+  return getCodeFromEmail();
+}
+
+/**
+ * Enrolls the authenticated user in email-based MFA via the reverification flow:
+ * requests an emailed code, reads it, and submits it to `/enroll`. Mirrors how
+ * the Security page enrolls email MFA, where the user must prove control of
+ * their email before the factor is added.
+ * @param accessToken - The user's access token.
+ * @param enrolledFactorToken - A code from an enrolled method, required when the user already has MFA.
+ */
+async function enrollEmailMfa(accessToken: string, enrolledFactorToken?: string): Promise<void> {
+  const code = await requestEmailCode(accessToken);
   const res = await request(app)
     .post('/auth/mfa/enroll')
     .set('Authorization', `Bearer ${accessToken}`)
     .type('json')
-    .send({ method: 'email', token: code });
+    .send({ method: 'email', token: code, enrolledFactorToken });
   if (res.status !== 200) {
     throw new Error('Failed to enroll in email MFA: ' + JSON.stringify(res.body));
   }
+}
+
+/**
+ * Returns an authenticator code for the previous time step. The default window still accepts it,
+ * and spending it leaves the current code free for a later step of the test.
+ * The code leaves the window when the next step starts, so near the end of a step this waits for
+ * the next one, leaving the caller time to use the code.
+ * @param secret - The authenticator secret.
+ * @returns The authenticator code.
+ */
+async function previousTotpCode(secret: string): Promise<string> {
+  const remainingMs = 30_000 - (Date.now() % 30_000);
+  if (remainingMs < 2_000) {
+    await sleep(remainingMs);
+  }
+  return authenticator.clone({ epoch: Date.now() - 30_000 }).generate(secret);
 }
 
 /**
@@ -1057,7 +1084,7 @@ describe('MFA', () => {
     expect(enrollTotp).toHaveStatus(200);
 
     // Add email as a second method (reverifying the email via a code)
-    await enrollEmailMfa(accessToken);
+    await enrollEmailMfa(accessToken, await previousTotpCode(totpSecret));
 
     const status2 = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
     expect(status2.body.enrolledMethods).toEqual(expect.arrayContaining(['totp', 'email']));
@@ -1102,7 +1129,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(totpSecret) });
-    await enrollEmailMfa(accessToken);
+    await enrollEmailMfa(accessToken, await previousTotpCode(totpSecret));
 
     const loginRes = await request(app).post('/auth/login').type('json').send({ email, password, scope: 'openid' });
     expect(loginRes.body.mfaRequired).toBe(true);
@@ -1360,7 +1387,7 @@ describe('MFA', () => {
       .type('json')
       .send({ method: 'totp', token: authenticator.generate(secret) });
 
-    await enrollEmailMfa(accessToken);
+    await enrollEmailMfa(accessToken, await previousTotpCode(secret));
 
     return secret;
   }
@@ -1549,6 +1576,121 @@ describe('MFA', () => {
       .send({ method: 'sms', token: authenticator.generate(secret) });
     expect(badMethod).toHaveStatus(400);
     expect(badMethod.body).toMatchObject(badRequest('Invalid method'));
+  });
+
+  /**
+   * Registers a user in a project that allows both MFA methods.
+   * @returns The user's access token and a helper that POSTs JSON with it.
+   */
+  async function registerWithBothMethodsAllowed(): Promise<{
+    accessToken: string;
+    post: (path: string, body: object) => request.Test;
+  }> {
+    const { accessToken, project } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Add',
+        lastName: 'Method',
+        projectName: `Add Method Project ${randomUUID()}`,
+        email: `add-method${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    await setAllowedMfaMethods(project, 'totp,email');
+    const post = (path: string, body: object): request.Test =>
+      request(app).post(path).set('Authorization', `Bearer ${accessToken}`).type('json').send(body);
+    return { accessToken, post };
+  }
+
+  async function getEnrolledMethods(accessToken: string): Promise<string[]> {
+    const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    return status.body.enrolledMethods;
+  }
+
+  test('Adding TOTP to email MFA requires an emailed code', async () => {
+    const { accessToken, post } = await registerWithBothMethodsAllowed();
+    await enrollEmailMfa(accessToken);
+
+    // The secret offered by /status confirms the new authenticator, but cannot add it on its own
+    const status = await request(app).get('/auth/mfa/status').set('Authorization', `Bearer ${accessToken}`);
+    const secret = new URL(status.body.enrollUri).searchParams.get('secret') as string;
+    const token = authenticator.generate(secret);
+    const missing = await post('/auth/mfa/enroll', { method: 'totp', token });
+    expect(missing).toHaveStatus(400);
+    expect(missing.body).toMatchObject(badRequest('Missing enrolled factor token'));
+    const ownCode = await post('/auth/mfa/enroll', { method: 'totp', token, enrolledFactorToken: token });
+    expect(ownCode).toHaveStatus(400);
+    expect(ownCode.body).toMatchObject(badRequest('Invalid enrolled factor token'));
+
+    // Nor can its codes remove the email method
+    for (const body of [{ token }, { method: 'email', token }]) {
+      const disable = await post('/auth/mfa/disable', body);
+      expect(disable).toHaveStatus(400);
+      expect(disable.body).toMatchObject(badRequest('Invalid token'));
+    }
+    expect(await getEnrolledMethods(accessToken)).toEqual(['email']);
+
+    const code = await requestEmailCode(accessToken);
+    const enroll = await post('/auth/mfa/enroll', { method: 'totp', token, enrolledFactorToken: code });
+    expect(enroll).toHaveStatus(200);
+    expect(await getEnrolledMethods(accessToken)).toEqual(['email', 'totp']);
+
+    // The emailed code is spent
+    const reuse = await post('/auth/mfa/disable', { method: 'totp', token: code });
+    expect(reuse).toHaveStatus(400);
+    expect(reuse.body).toMatchObject(badRequest('Invalid token'));
+  });
+
+  test('Adding email to TOTP MFA requires an authenticator code', async () => {
+    const { accessToken, post } = await registerWithBothMethodsAllowed();
+    const secret = await enrollTotpMfa(accessToken);
+
+    const code = await requestEmailCode(accessToken);
+    const missing = await post('/auth/mfa/enroll', { method: 'email', token: code });
+    expect(missing).toHaveStatus(400);
+    expect(missing.body).toMatchObject(badRequest('Missing enrolled factor token'));
+    const ownCode = await post('/auth/mfa/enroll', { method: 'email', token: code, enrolledFactorToken: code });
+    expect(ownCode).toHaveStatus(400);
+    expect(ownCode.body).toMatchObject(badRequest('Invalid enrolled factor token'));
+    expect(await getEnrolledMethods(accessToken)).toEqual(['totp']);
+
+    // The authenticator code is checked last, so a wrong emailed code does not spend it
+    const totpCode = authenticator.generate(secret);
+    const wrongCode = await post('/auth/mfa/enroll', {
+      method: 'email',
+      token: code === '000000' ? '111111' : '000000',
+      enrolledFactorToken: totpCode,
+    });
+    expect(wrongCode).toHaveStatus(400);
+    expect(wrongCode.body).toMatchObject(badRequest('Invalid token'));
+
+    const enroll = await post('/auth/mfa/enroll', { method: 'email', token: code, enrolledFactorToken: totpCode });
+    expect(enroll).toHaveStatus(200);
+    expect(await getEnrolledMethods(accessToken)).toEqual(['totp', 'email']);
+
+    // The authenticator code is spent
+    const reuse = await post('/auth/mfa/disable', { method: 'email', token: totpCode });
+    expect(reuse).toHaveStatus(400);
+    expect(reuse.body).toMatchObject(badRequest('Invalid token'));
+  });
+
+  test('Codes for an enrolled method are attempt limited', async () => {
+    const { accessToken, post } = await registerWithBothMethodsAllowed();
+    const secret = await enrollTotpMfa(accessToken);
+    const code = await requestEmailCode(accessToken);
+
+    for (let i = 0; i < MFA_LOGIN_ATTEMPT_LIMIT; i++) {
+      const res = await post('/auth/mfa/enroll', { method: 'email', token: code, enrolledFactorToken: 'INVALID' });
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(badRequest('Invalid enrolled factor token'));
+    }
+
+    // Even a valid code is refused now, here and at /disable, which shares the limit
+    const totpCode = authenticator.generate(secret);
+    const enroll = await post('/auth/mfa/enroll', { method: 'email', token: code, enrolledFactorToken: totpCode });
+    expect(enroll).toHaveStatus(429);
+    const disable = await post('/auth/mfa/disable', { token: totpCode });
+    expect(disable).toHaveStatus(429);
+    expect(await getEnrolledMethods(accessToken)).toEqual(['totp']);
   });
 
   /**
@@ -2810,7 +2952,7 @@ describe('MFA', () => {
         mfaEnrolled: true,
         mfaSecret: secret,
       } as WithId<User>;
-      const login = { resourceType: 'Login' } as Login;
+      const login = { resourceType: 'Login', id: randomUUID(), user: createReference(legacyUser) } as Login;
 
       expect(await verifyConnectedFactor(legacyUser, login, authenticator.generate(secret))).toBe(true);
       expect(await verifyConnectedFactor(legacyUser, login, '000000')).toBe(false);
