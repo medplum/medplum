@@ -284,15 +284,15 @@ For more advanced access control configurations, You can use `%` variables to pa
 
 Medplum provides the following built-in variables:
 
-| Variable      | Description                                                                                                                                                          |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                         |
-| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                          |
+| Variable      | Description                                                                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                          |
+| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                           |
 | `%patient`    | The patient this policy is scoped to. Defaults to the user's profile. A membership parameter named `patient` overrides it. See [Caregiver access](#caregiver-access). |
 
 In `criteria`, each parameter value is percent-encoded so that it stays within its search parameter, and outside `_filter`, commas are escaped so that it is a single search value. A `compartment` must be a reference such as `Organization/123` once its variables are replaced.
 
-A `valueReference` parameter must refer to an existing resource of the referenced type in the project or a project it links to, and cannot refer to a `Project`. Login fails if the policy uses a parameter that does not meet these rules.
+A `valueReference` parameter must be a relative reference such as `Organization/123`. Login fails if the policy uses a parameter that does not meet these rules.
 
 <details open>
 <summary>
@@ -703,14 +703,14 @@ This update allows for more granular control and visibility in RBAC implementati
 
 New projects are created with a set of **default access policies**, one per profile type. These are stored on the [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project) element, which maps a `profileType` to the `AccessPolicy` applied when a user of that type is invited without an explicit policy:
 
-| Profile type        | Default policy grants                                                                                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Profile type        | Default policy grants                                                                                                                                                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden. |
-| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
-| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. `RelatedPerson` records are read-only. See [Patient access](#patient-access).                                             |
-| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. `RelatedPerson` records are read-only, except the caregiver's own profile. See [Caregiver access](#caregiver-access).                    |
-| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
-| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
+| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                                                                                  |
+| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. `RelatedPerson` records are read-only. See [Patient access](#patient-access).                                                                  |
+| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. `RelatedPerson` records are read-only, except the caregiver's own profile. See [Caregiver access](#caregiver-access).    |
+| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets.                                                                  |
+| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets.                                                                  |
 
 When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a Bot](/docs/bots/bot-basics) or [create a ClientApplication](/docs/auth/client-credentials) without specifying an access policy, it receives the `Bot` or `ClientApplication` default. This includes the default client created with each new project.
 

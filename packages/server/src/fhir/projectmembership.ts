@@ -12,7 +12,7 @@ import {
 } from '@medplum/core';
 import type { Project, ProjectMembership, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAllowedProjects, getRepoForProjects } from './accesspolicy';
-import type { Repository, SystemRepository } from './repo';
+import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo } from './repo';
 
 export const membershipProfileTypes: readonly ResourceType[] = [
@@ -110,52 +110,10 @@ export async function readMembershipReference<T extends Resource>(
     return resource;
   }
 
-  const projectsRepo = await getMembershipProjectsRepo(systemRepo, membership, options);
-  if (!projectsRepo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
+  const project = await systemRepo.readReference<Project>(membership.project);
+  const projects = options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project];
+  if (!getRepoForProjects(projects).canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
     throw new OperationOutcomeError(notFound);
   }
   return resource;
-}
-
-/**
- * Reads resources referenced by a ProjectMembership in one batch, checking each as `readMembershipReference` does.
- * Unlike `readMembershipReference`, the resource types are not restricted.
- * @param systemRepo - The system repository used for the reads.
- * @param membership - The project membership that holds the references.
- * @param references - The references to read.
- * @param options - Optional read options.
- * @param options.allowLinkedProjects - Whether a target may belong to a project linked from the membership's project.
- * @returns For each reference, the resource, or a not found or gone error.
- */
-export async function readMembershipReferences<T extends Resource>(
-  systemRepo: SystemRepository,
-  membership: ProjectMembership,
-  references: readonly Reference<T>[],
-  options?: { allowLinkedProjects?: boolean }
-): Promise<(WithId<T> | Error)[]> {
-  const results = await systemRepo.readReferences<T>(references);
-  let projectsRepo: Repository | undefined;
-  for (let i = 0; i < results.length; i++) {
-    const resource = results[i];
-    if (
-      resource instanceof Error ||
-      (resource.meta?.project && resource.meta.project === resolveId(membership.project))
-    ) {
-      continue;
-    }
-    projectsRepo ??= await getMembershipProjectsRepo(systemRepo, membership, options);
-    if (!projectsRepo.canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
-      results[i] = new OperationOutcomeError(notFound);
-    }
-  }
-  return results;
-}
-
-async function getMembershipProjectsRepo(
-  systemRepo: SystemRepository,
-  membership: ProjectMembership,
-  options: { allowLinkedProjects?: boolean } | undefined
-): Promise<Repository> {
-  const project = await systemRepo.readReference<Project>(membership.project);
-  return getRepoForProjects(options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project]);
 }

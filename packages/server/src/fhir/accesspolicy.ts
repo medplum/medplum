@@ -34,7 +34,7 @@ import type {
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { escapeRegexString } from '../util/text';
-import { membershipProfileTypes, readMembershipReference, readMembershipReferences } from './projectmembership';
+import { membershipProfileTypes, readMembershipReference } from './projectmembership';
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { PLACEHOLDER_SHARD_ID } from './sharding';
@@ -229,8 +229,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   }
 
   const systemRepo = await getProjectSystemRepo(membership.project);
-  // Resolved once for all entries, since entries often share parameters
-  const allowedReferences = await resolveReferenceParameters(systemRepo, membership, access);
+  const projectIds = await getReadableProjectIds(systemRepo, membership, access);
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
@@ -242,7 +241,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
       entry,
       membership.profile as Reference<ProfileResource>,
       accessPolicyMap,
-      allowedReferences
+      projectIds
     );
     if (replaced.compartment) {
       compartment = replaced.compartment;
@@ -275,6 +274,28 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   };
 }
 
+async function getReadableProjectIds(
+  systemRepo: SystemRepository,
+  membership: ProjectMembership,
+  access: ProjectMembershipAccess[]
+): Promise<Set<string>> {
+  const projectIds = new Set<string>();
+  const projectId = resolveId(membership.project);
+  if (projectId) {
+    projectIds.add(projectId);
+  }
+  if (access.some((entry) => entry.parameter?.some((param) => param.valueReference))) {
+    const project = await systemRepo.readReference<Project>(membership.project);
+    for (const link of project.link ?? EMPTY) {
+      const linkedProjectId = resolveId(link.project);
+      if (linkedProjectId) {
+        projectIds.add(linkedProjectId);
+      }
+    }
+  }
+  return projectIds;
+}
+
 /**
  * Reads an access policy and replaces all variables.
  * @param systemRepo - The system repository.
@@ -282,7 +303,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
  * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
- * @param allowedReferences - The reference parameters that resolve, as from `resolveReferenceParameters`.
+ * @param projectIds - The projects the membership can read, as from `getReadableProjectIds`.
  * @returns The AccessPolicy with variables resolved.
  */
 async function buildAccessPolicyResources(
@@ -291,7 +312,7 @@ async function buildAccessPolicyResources(
   access: ProjectMembershipAccess,
   profile: Reference<ProfileResource>,
   accessPolicyMap: Map<string, AccessPolicy>,
-  allowedReferences: Set<string>
+  projectIds: ReadonlySet<string>
 ): Promise<AccessPolicy> {
   const accessPolicyReference = access.policy;
   const policyReferenceString = getReferenceString(accessPolicyReference);
@@ -313,74 +334,37 @@ async function buildAccessPolicyResources(
     }
   }
 
-  const values = getParameterValues(profile, access.parameter, (reference) => allowedReferences.has(reference));
+  const values = getParameterValues(profile, access.parameter, projectIds);
   return substituteAccessPolicyParameters(original, values);
-}
-
-async function resolveReferenceParameters(
-  systemRepo: SystemRepository,
-  membership: ProjectMembership,
-  access: ProjectMembershipAccess[]
-): Promise<Set<string>> {
-  const candidates = new Set<string>();
-  for (const entry of access) {
-    for (const param of entry.parameter ?? EMPTY) {
-      const parsed = parseReferenceParameter(param.valueReference?.reference);
-      // Every resource in a project is in the project's compartment
-      if (parsed && !parsed.reference.startsWith('Project/')) {
-        candidates.add(parsed.reference);
-      }
-    }
-  }
-  const resolved = new Set<string>();
-  if (candidates.size === 0) {
-    return resolved;
-  }
-  const references = Array.from(candidates);
-  const results = await readMembershipReferences(
-    systemRepo,
-    membership,
-    references.map((reference) => ({ reference })),
-    { allowLinkedProjects: true }
-  );
-  for (let i = 0; i < results.length; i++) {
-    if (isResource(results[i])) {
-      resolved.add(references[i]);
-    }
-  }
-  return resolved;
 }
 
 /**
  * Returns the values of the membership and built-in parameters. The first parameter with a given name wins.
  * @param profile - The membership profile.
  * @param parameters - The membership access parameters.
- * @param isAllowedReference - Returns true if a membership reference parameter may refer to the resource, given as
- * `ResourceType/id`. The built-in parameters, which come from the membership profile, are not checked.
+ * @param projectIds - The projects the membership can read. A reference parameter cannot have one as its ID.
  * @returns The parameter values by variable.
  */
 export function getParameterValues(
   profile: Reference,
   parameters: ProjectMembershipAccessParameter[] | undefined,
-  isAllowedReference: (reference: string) => boolean
+  projectIds: ReadonlySet<string>
 ): ParameterValues {
   const values: ParameterValues = new Map();
   for (const param of parameters ?? EMPTY) {
-    addParameter(values, param, isAllowedReference);
+    addParameter(values, param, projectIds);
   }
-  addParameter(values, { name: 'profile', valueReference: profile }, allowAnyReference);
+  addParameter(values, { name: 'profile', valueReference: profile }, projectIds);
   if (!parameters?.some((p) => p.name === 'patient')) {
-    addParameter(values, { name: 'patient', valueReference: profile }, allowAnyReference);
+    addParameter(values, { name: 'patient', valueReference: profile }, projectIds);
   }
   return values;
 }
 
-const allowAnyReference = (): boolean => true;
-
 function addParameter(
   values: ParameterValues,
   param: ProjectMembershipAccessParameter,
-  isAllowedReference: (reference: string) => boolean
+  projectIds: ReadonlySet<string>
 ): void {
   const variable = `%${param.name}`;
   if (values.has(variable)) {
@@ -390,7 +374,8 @@ function addParameter(
     values.set(variable, param.valueString);
   } else if (param.valueReference) {
     const parsed = parseReferenceParameter(param.valueReference.reference);
-    const valid = parsed && isAllowedReference(parsed.reference) ? parsed : undefined;
+    // Compartment search matches on ID alone, and every resource in a project is in the project's compartment
+    const valid = parsed && !projectIds.has(parsed.id) ? parsed : undefined;
     values.set(variable, valid?.reference);
     // An earlier parameter named `name.id` takes precedence
     if (!values.has(`${variable}.id`)) {
