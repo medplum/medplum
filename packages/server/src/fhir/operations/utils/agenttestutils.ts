@@ -194,26 +194,26 @@ export async function createAgentAccessFixture(): Promise<AgentAccessFixture> {
   const writableAgent = await repo.createResource<Agent>({ resourceType: 'Agent', name: 'Writable', status: 'active' });
   const readonlyAgent = await repo.createResource<Agent>({ resourceType: 'Agent', name: 'Readonly', status: 'active' });
 
-  const [readonlyPolicyUser, readScopeUser, mixedUser, linkedProject] = await Promise.all([
-    addTestUser(project, {
-      accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Agent', readonly: true }] },
-    }),
-    addTestUser(project, { scope: 'openid user/Agent.read' }),
-    addTestUser(project, {
-      accessPolicy: {
-        resourceType: 'AccessPolicy',
-        resource: [
-          { resourceType: 'Agent', criteria: 'Agent?name=Writable' },
-          { resourceType: 'Agent', readonly: true },
-        ],
-      },
-    }),
-    createTestProject({
-      project: { link: [{ project: createReference(project) }] },
-      membership: { admin: true },
-      withAccessToken: true,
-    }),
-  ]);
+  // Create these sequentially: concurrent writes into one project under SERIALIZABLE
+  // transactions can conflict and exhaust their retries.
+  const readonlyPolicyUser = await addTestUser(project, {
+    accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Agent', readonly: true }] },
+  });
+  const readScopeUser = await addTestUser(project, { scope: 'openid user/Agent.read' });
+  const mixedUser = await addTestUser(project, {
+    accessPolicy: {
+      resourceType: 'AccessPolicy',
+      resource: [
+        { resourceType: 'Agent', criteria: 'Agent?name=Writable' },
+        { resourceType: 'Agent', readonly: true },
+      ],
+    },
+  });
+  const linkedProject = await createTestProject({
+    project: { link: [{ project: createReference(project) }] },
+    membership: { admin: true },
+    withAccessToken: true,
+  });
 
   return {
     adminToken: accessToken,
