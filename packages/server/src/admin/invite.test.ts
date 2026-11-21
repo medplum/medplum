@@ -2047,6 +2047,44 @@ describe('Admin Invite', () => {
       ).rejects.toThrow('Patient does not belong to project');
     }));
 
+  test('Invite existing RelatedPerson with patient from another project throws', () =>
+    withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { project: otherProject } = await createTestProject();
+      const systemRepo = await getProjectSystemRepo(project);
+      const otherPatient = await (
+        await getProjectSystemRepo(otherProject)
+      ).createResource<Patient>({ resourceType: 'Patient', meta: { project: otherProject.id } });
+      const policy = await systemRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        meta: { project: project.id },
+        resource: [{ resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' }],
+      });
+      const projectWithDefault = await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: [{ profileType: 'RelatedPerson', accessPolicy: createReference(policy) }],
+      });
+      const email = `bob${randomUUID()}@example.com`;
+      // A project member can point an existing RelatedPerson at any patient
+      await systemRepo.createResource<RelatedPerson>({
+        resourceType: 'RelatedPerson',
+        meta: { project: project.id },
+        patient: createReference(otherPatient),
+        telecom: [{ system: 'email', use: 'work', value: email }],
+      });
+
+      await expect(
+        inviteUser({
+          project: projectWithDefault,
+          resourceType: 'RelatedPerson',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email,
+          sendEmail: false,
+        })
+      ).rejects.toThrow('Patient does not belong to project');
+    }));
+
   test('Invite Practitioner without patient does not error', () =>
     withTestContext(async () => {
       const { project } = await createTestProject();

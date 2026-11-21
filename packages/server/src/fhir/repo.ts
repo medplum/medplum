@@ -2114,10 +2114,19 @@ export class Repository extends FhirRepository implements Disposable {
     for (const policy of accessPolicy.resource) {
       if (interactions.some((i) => shallowMatchesResourcePolicy(policy, resourceType as ResourceType, i))) {
         matched = true;
-        const policyCompartmentId = resolveId(policy.compartment);
-        if (policyCompartmentId) {
+        if (policy.compartment) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
+          const policyCompartmentId = resolveId(policy.compartment);
+          if (!policyCompartmentId || !isUUID(policyCompartmentId)) {
+            getLogger().error('Invalid access policy compartment', {
+              accessPolicy: accessPolicy.id,
+              resourceType: policy.resourceType,
+              compartment: policy.compartment,
+            });
+            // Fail closed: a compartment that cannot be applied must not leave the type unfiltered
+            throw new OperationOutcomeError(forbidden);
+          }
           expressions.push(
             new Condition('compartments', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
           );

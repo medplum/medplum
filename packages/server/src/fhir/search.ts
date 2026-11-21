@@ -18,6 +18,7 @@ import {
   getSearchParameter,
   invalidSearchOperator,
   isChainedSearchFilter,
+  isResourceType,
   isUUID,
   OperationOutcomeError,
   Operator,
@@ -1292,7 +1293,9 @@ function buildUuidSearchFilter(table: string, impl: ColumnSearchParameterImpleme
   const values = splitSearchOnComma(filter.value);
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
-      values[i] = values[i].split('/').pop() as string;
+      // The ID must follow a resource type, so that a literal value such as `Patient/a,Patient/b` is not read as `b`
+      const parts = values[i].split('/');
+      values[i] = isResourceType(parts[parts.length - 2]) ? (parts.pop() as string) : '';
     }
     if (!isUUID(values[i])) {
       values[i] = '00000000-0000-0000-0000-000000000000';

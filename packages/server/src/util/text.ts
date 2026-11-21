@@ -14,3 +14,7 @@ const DIACRITICS = /\p{Diacritic}/gu;
 export function foldText(value: string): string {
   return value.normalize('NFD').replace(DIACRITICS, '').toLowerCase();
 }
+
+export function escapeRegexString(str: string): string {
+  return str.replaceAll(/[.^$*+?()[\]{}\\|]/g, String.raw`\$&`);
+}

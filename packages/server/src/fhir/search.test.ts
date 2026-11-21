@@ -3,6 +3,7 @@
 import type { Filter, OperationOutcomeError, SearchRequest, WithId } from '@medplum/core';
 import {
   createReference,
+  escapeSearchValue,
   getReferenceString,
   getSearchParameter,
   isDefined,
@@ -1365,6 +1366,25 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
 
       expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
+    }));
+
+  test('Escaped comma in reference string _compartment is a single value', () =>
+    withTestContext(async () => {
+      const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      const patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      const searchResult = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_compartment',
+            operator: Operator.EQUALS,
+            value: escapeSearchValue(`${getReferenceString(patient1)},${getReferenceString(patient2)}`),
+          },
+        ],
+      });
+
+      expect(searchResult.entry ?? []).toHaveLength(0);
     }));
 
   test.each([

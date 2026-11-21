@@ -290,6 +290,10 @@ Medplum provides the following built-in variables:
 | `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                           |
 | `%patient`    | The patient this policy is scoped to. Defaults to the user's profile. A membership parameter named `patient` overrides it. See [Caregiver access](#caregiver-access). |
 
+In `criteria`, each parameter value is percent-encoded so that it stays within its search parameter, and outside `_filter`, commas are escaped so that it is a single search value. A `compartment` must be a reference such as `Organization/123` once its variables are replaced.
+
+A `valueReference` parameter must be a relative reference such as `Organization/123`. Login fails if the policy uses a parameter that does not meet these rules.
+
 <details open>
 <summary>
   Example: General Practitioner Access Policy
