@@ -398,6 +398,28 @@ describe('encounter utils', () => {
       expect(createResourceSpy).not.toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Condition' }));
     });
 
+    test('does not reuse a refuted patient Condition', async () => {
+      const createdPatient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
+      const refuted = await medplum.createResource({
+        resourceType: 'Condition',
+        subject: { reference: `Patient/${createdPatient.id}` },
+        verificationStatus: { coding: [{ code: 'refuted' }] },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+      });
+      const encounter = await medplum.createResource<Encounter>({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: classification,
+        subject: { reference: `Patient/${createdPatient.id}` },
+      });
+
+      const updated = await addDiagnosesToEncounter(medplum, encounter, [
+        { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] },
+      ]);
+
+      expect(updated?.diagnosis?.[0].condition?.reference).not.toBe(`Condition/${refuted.id}`);
+    });
+
     test('skips diagnoses already present on the encounter', async () => {
       const createdPatient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
       const existingCondition = await medplum.createResource({

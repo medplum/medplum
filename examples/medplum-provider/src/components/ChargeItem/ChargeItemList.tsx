@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Card, Flex, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
@@ -96,17 +96,17 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
   );
 
   return (
-    <Stack gap={0}>
-      <Flex justify="space-between" align="center" mb="md">
+    <Stack gap="xs">
+      <Group justify="space-between">
         <Text fw={600} size="lg">
-          Charge Items
+          Charge Items ({chargeItems.length})
         </Text>
-        <Button leftSection={<IconPlus size={16} />} onClick={addChargeItem}>
+        <Button variant="light" size="xs" leftSection={<IconPlus size={14} />} onClick={addChargeItem}>
           Add Charge Item
         </Button>
-      </Flex>
+      </Group>
 
-      <Text size="xs" c="dimmed" mb="md">
+      <Text size="xs" c="dimmed">
         {CPT_COPYRIGHT_NOTICE}
       </Text>
 
@@ -133,10 +133,10 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
           </Card>
         </Stack>
       ) : (
-        <Card withBorder shadow="sm">
-          <Stack gap="md" align="center">
-            <Text c="dimmed">No charge items available</Text>
-          </Stack>
+        <Card withBorder p={0}>
+          <Text size="sm" c="dimmed" px="md" py="sm">
+            No charge items available
+          </Text>
         </Card>
       )}
 
