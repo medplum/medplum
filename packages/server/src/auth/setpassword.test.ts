@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference, Operator } from '@medplum/core';
-import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { DomainConfiguration, Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import bcrypt from 'bcrypt';
@@ -705,6 +705,52 @@ describe('Set Password', () => {
       password: 'my-new-password',
     });
     expect(res3).toHaveStatus(400);
+  });
+
+  test('External auth', async () => {
+    const domain = randomUUID() + '.example.com';
+    const { user, project } = await withTestContext(() =>
+      registerNew({
+        projectName: 'Set Password Project',
+        firstName: 'George',
+        lastName: 'Washington',
+        email: `george@${domain}`,
+        password: 'password!@#',
+        scope: 'openid profile email',
+      })
+    );
+
+    const systemRepo = await getProjectSystemRepo(project);
+    const usr = await withTestContext(async () => {
+      await getGlobalSystemRepo().createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      });
+      return systemRepo.createResource<UserSecurityRequest>({
+        resourceType: 'UserSecurityRequest',
+        meta: { project: project.id },
+        type: 'invite',
+        user: createReference(user),
+        secret: generateSecret(16),
+      });
+    });
+
+    const res = await request(app).post('/auth/setpassword').type('json').send({
+      id: usr.id,
+      secret: usr.secret,
+      password: 'my-new-password',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe(
+      'Cannot set password for external auth. Contact your system administrator.'
+    );
   });
 
   test('Wrong secret', async () => {

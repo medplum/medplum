@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { Operator, badRequest } from '@medplum/core';
-import type { OperationOutcome, Project, User } from '@medplum/fhirtypes';
+import type { DomainConfiguration, OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -219,6 +219,39 @@ describe('New user', () => {
     const res2 = await request(app).post('/auth/newuser').type('json').send(registerRequest);
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0].details.text).toBe('Email already registered');
+  });
+
+  test('External auth', async () => {
+    // Create a domain with external auth
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        email: `alice@${domain}`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe(
+      'Cannot register with password for external auth. Contact your system administrator.'
+    );
   });
 
   test('Custom recaptcha client success', async () => {
