@@ -1,0 +1,2 @@
+{{- /* Plain text for /llms-full.txt (see feature.html) */ -}}
+**{{ .Get "title" }}**: {{ trim .Inner "\n" }}{{ if and (.Get "linkRef") (.Get "linkText") }} ([{{ .Get "linkText" }}]({{ .Get "linkRef" }})){{ end }}

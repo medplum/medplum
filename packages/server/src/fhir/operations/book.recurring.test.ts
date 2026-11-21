@@ -28,6 +28,7 @@ import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
+import { Repository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
 
@@ -360,6 +361,122 @@ describe('Appointment/$book and $hold with a recurrenceTemplate', () => {
       appointments.map(async (a) => (await systemRepo.readResource<Appointment>('Appointment', a.id)).status)
     );
     expect(statuses).toEqual(['pending', 'booked', 'pending']);
+  });
+
+  // Holds a series of 3, returning its Appointments and Slots in order.
+  async function holdSeries(): Promise<{ appointments: WithId<Appointment>[]; slots: WithId<Slot>[] }> {
+    const held = await book(firstOccurrence(await makeSchedule(), recurrenceTemplate(3)), '$hold');
+    expect(held).toHaveStatus(201);
+    const resources = ((held.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
+    return {
+      appointments: resources.filter((r): r is WithId<Appointment> => r.resourceType === 'Appointment'),
+      slots: resources.filter((r): r is WithId<Slot> => r.resourceType === 'Slot'),
+    };
+  }
+
+  function confirm(appointment: WithId<Appointment>, occurrences: string): ReturnType<typeof request.post> {
+    return request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: occurrences }] });
+  }
+
+  async function readStatuses<T extends Appointment | Slot>(resources: WithId<T>[]): Promise<T['status'][]> {
+    return Promise.all(resources.map(async (r) => (await systemRepo.readResource<T>(r.resourceType, r.id)).status));
+  }
+
+  test('$confirm with occurrences=all books every occurrence of the series', async () => {
+    const { appointments, slots } = await holdSeries();
+
+    const confirmed = await confirm(appointments[1], 'all');
+    expect(confirmed).toHaveStatus(200);
+
+    // Each Appointment, followed by its Slots, in the order the series occurs.
+    const resources = ((confirmed.body as Bundle).entry ?? []).map((e) => e.resource).filter(isDefined);
+    expect(resources.filter((r) => r.resourceType === 'Appointment').map((r) => r.id)).toEqual(
+      appointments.map((a) => a.id)
+    );
+    expect(resources.map((r) => r.resourceType)).toEqual(appointments.flatMap(() => ['Appointment', 'Slot', 'Slot']));
+
+    expect(await readStatuses(appointments)).toEqual(['booked', 'booked', 'booked']);
+    expect((await readStatuses(slots)).filter((status) => status !== 'busy-unavailable')).toEqual([
+      'busy',
+      'busy',
+      'busy',
+    ]);
+  });
+
+  test('$confirm with occurrences=this-and-following books the occurrence and those after it', async () => {
+    const { appointments } = await holdSeries();
+
+    const confirmed = await confirm(appointments[1], 'this-and-following');
+    expect(confirmed).toHaveStatus(200);
+
+    expect(await readStatuses(appointments)).toEqual(['pending', 'booked', 'booked']);
+  });
+
+  test('$confirm with occurrences=all skips occurrences already booked or cancelled', async () => {
+    const { appointments } = await holdSeries();
+    expect(await confirm(appointments[0], 'this')).toHaveStatus(200);
+    const canceled = await request
+      .post(`/fhir/R4/Appointment/${appointments[2].id}/$cancel`)
+      .set('Authorization', `Bearer ${project.accessToken}`);
+    expect(canceled).toHaveStatus(200);
+
+    const confirmed = await confirm(appointments[1], 'all');
+    expect(confirmed).toHaveStatus(200);
+
+    expect(await readStatuses(appointments)).toEqual(['booked', 'booked', 'cancelled']);
+  });
+
+  test('$confirm with occurrences=all skips an occurrence cancelled after its series was searched', async () => {
+    const { appointments, slots } = await holdSeries();
+    // Cancel the last occurrence once the series search has found it, before the transaction re-reads it.
+    const searchResources = Repository.prototype.searchResources;
+    const spy = vi.spyOn(Repository.prototype, 'searchResources').mockImplementationOnce(async function (
+      this: Repository,
+      ...args
+    ) {
+      const found = await searchResources.apply(this, args);
+      await systemRepo.updateResource<Appointment>({ ...appointments[2], status: 'cancelled' });
+      return found;
+    });
+
+    const confirmed = await confirm(appointments[0], 'all');
+    expect(confirmed).toHaveStatus(200);
+    spy.mockRestore();
+
+    expect(await readStatuses(appointments)).toEqual(['booked', 'booked', 'cancelled']);
+    // Its Slot is left held, not firmed up as the others are.
+    const lastSlot = slots.find((s) => s.status === 'busy-tentative' && s.start === appointments[2].start);
+    expect(await readStatuses([lastSlot as WithId<Slot>])).toEqual(['busy-tentative']);
+  });
+
+  test('$confirm with occurrences=all books none of the series when one occurrence fails', async () => {
+    const { appointments, slots } = await holdSeries();
+    // The last occurrence's Slot is gone, so confirming it fails after the others are confirmed.
+    const lastSlot = slots.find((s) => s.status === 'busy-tentative' && s.start === appointments[2].start);
+    await systemRepo.deleteResource('Slot', lastSlot?.id as string);
+
+    const confirmed = await confirm(appointments[0], 'all');
+    expect(confirmed).toHaveStatus(400);
+    expect(confirmed.body.issue[0].details.text).toEqual('Loading slots failed');
+
+    expect(await readStatuses(appointments)).toEqual(['pending', 'pending', 'pending']);
+    // The Slots of the occurrences confirmed before the failure are held again too.
+    const remaining = slots.filter((s) => s.status === 'busy-tentative' && s.id !== lastSlot?.id);
+    expect(await readStatuses(remaining)).toEqual(['busy-tentative', 'busy-tentative']);
+  });
+
+  test('$confirm with occurrences=all refuses an occurrence that is no longer pending', async () => {
+    const { appointments } = await holdSeries();
+    expect(await confirm(appointments[1], 'this')).toHaveStatus(200);
+
+    const confirmed = await confirm(appointments[1], 'all');
+    expect(confirmed).toHaveStatus(400);
+    expect(confirmed.body.issue[0].details.text).toEqual("Appointment cannot be confirmed in 'booked' status");
+
+    expect(await readStatuses(appointments)).toEqual(['pending', 'booked', 'pending']);
   });
 
   test.each<{

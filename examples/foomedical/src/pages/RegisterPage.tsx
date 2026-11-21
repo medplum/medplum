@@ -12,7 +12,7 @@ export function RegisterPage(): JSX.Element {
       <Box pt={100} pb={200}>
         <RegisterForm
           type="patient"
-          projectId={import.meta.env.MEDPLUM_PROJECT_ID}
+          projectId={import.meta.env.FOOMEDICAL_PROJECT_ID}
           googleClientId={import.meta.env.GOOGLE_CLIENT_ID}
           clientId={import.meta.env.MEDPLUM_CLIENT_ID}
           recaptchaSiteKey={import.meta.env.RECAPTCHA_SITE_KEY}

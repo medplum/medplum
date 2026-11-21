@@ -32,6 +32,7 @@ import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { getClaimChargeItemIds } from '../../utils/claims';
 import { PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
+import { getBotErrorMessage } from '../../utils/errors';
 import { showErrorNotification } from '../../utils/notifications';
 import {
   CANDID_SUBMIT_CLAIM_OPERATION,
@@ -500,17 +501,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         showNotification({ title: successTitle, message: successMessage, color: 'green' });
         setClaimsVersion((v) => v + 1);
       } catch (err) {
-        try {
-          const parsed = JSON.parse((err as Error).message);
-          notifications.show({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: parsed?.errorMessage,
-          });
-        } catch {
-          showErrorNotification(err);
-        }
+        notifications.show({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: getBotErrorMessage(err),
+        });
       } finally {
         setSubmitting(false);
       }

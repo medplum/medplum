@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { CPT, createReference } from '@medplum/core';
 import type { Claim, Encounter } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test } from 'vitest';
 import { pinClaimEncounter } from './claimConditions';
 import { RelatedClaims } from './RelatedClaims';
+import { render } from '../../test-utils/render';
 
 describe('RelatedClaims', () => {
   const setup = async (): Promise<{ visitClaim: WithId<Claim>; related: WithId<Claim>; medplum: MockClient }> => {
@@ -55,9 +55,7 @@ describe('RelatedClaims', () => {
     render(
       <MemoryRouter initialEntries={[`/Billing/Claims/open/${claim.id}`]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
             <RelatedClaims claim={claim} />
-          </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -88,9 +86,7 @@ describe('RelatedClaims', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
             <RelatedClaims claim={{ resourceType: 'Claim', id: 'x', patient: {} } as WithId<Claim>} />
-          </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );

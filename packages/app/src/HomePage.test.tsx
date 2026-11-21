@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
+import type { SearchRequest } from '@medplum/core';
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Loading, MedplumProvider } from '@medplum/react';
 import { randomUUID } from 'crypto';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
-import { getDefaultFields, RESOURCE_TYPE_CREATION_PATHS } from './HomePage.utils';
+import { addSearchValues, getDefaultFields, RESOURCE_TYPE_CREATION_PATHS } from './HomePage.utils';
 import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
 
 vi.mock('@mantine/notifications', async (importOriginal) => ({
@@ -301,7 +302,7 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(exportButton);
     });
-    expect(screen.getByText('Export as Transaction Bundle')).toBeInTheDocument();
+    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled());
   });
 
   test('Export Transaction Bundle button, error notifies', async () => {
@@ -332,6 +333,18 @@ describe('HomePage', () => {
       );
     });
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+  });
+
+  test('Default resource type', () => {
+    const config = (valueString: string): UserConfiguration => ({
+      resourceType: 'UserConfiguration',
+      option: [{ id: 'defaultResourceType', valueString }],
+    });
+    const search = {} as SearchRequest;
+    expect(addSearchValues(search, config('Observation')).resourceType).toBe('Observation');
+    expect(addSearchValues(search, config('smart?query=x&y=')).resourceType).toBe('Patient');
+    window.localStorage.setItem('defaultResourceType', 'admin/project');
+    expect(addSearchValues(search, config('Observation')).resourceType).toBe('Observation');
   });
 
   test('Default search fields', () => {

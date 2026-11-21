@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { CPT, createReference, formatDate, formatDateTime } from '@medplum/core';
 import type { ChargeItem, Claim, ClaimItem, Condition, Encounter, Practitioner } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -14,6 +13,7 @@ import { describe, expect, test, vi } from 'vitest';
 import { getLineAuthor, withLineAuthor } from '../../utils/claims';
 import { pinClaimEncounter } from './claimConditions';
 import { ClaimDiagnosesEditor, ClaimLinesEditor, ClaimVisitDetails } from './ClaimEditor';
+import { render } from '../../test-utils/render';
 
 const baseClaim: Claim = {
   resourceType: 'Claim',
@@ -59,9 +59,7 @@ function setup(initial: Claim = baseClaim, medplum = new MockClient()): ReturnTy
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
           <Harness initial={initial} onChange={onChange} />
-        </MantineProvider>
       </MedplumProvider>
     </MemoryRouter>
   );
@@ -304,9 +302,7 @@ describe('ClaimEditor', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={new MockClient()}>
-          <MantineProvider>
             <ClaimDiagnosesEditor claim={baseClaim} onChange={vi.fn()} readOnly />
-          </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -333,9 +329,7 @@ describe('ClaimEditor', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
             <ClaimLinesEditor lineName="Charge Item" claim={{ ...baseClaim, item: [line] }} onChange={vi.fn()} />
-          </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );

@@ -88,10 +88,8 @@ export type RepositoryMode = (typeof RepositoryMode)[keyof typeof RepositoryMode
 export abstract class FhirRepository {
   /**
    * Sets the repository mode.
-   * In general, it is assumed that repositories will start in "reader" mode,
-   * and that the mode will be changed to "writer" as needed.
-   * It is recommended that the repository use "reader" opportunistically,
-   * but after using "writer" once it should use "writer" exclusively.
+   * Repositories start in "writer" mode. Callers may opt in to "reader" for read-only work;
+   * any writer operation promotes the repository back to "writer" for the rest of its life.
    * @param mode - The repository mode.
    */
   abstract setMode(mode: RepositoryMode): void;

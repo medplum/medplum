@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CANDID_CLAIM_STATUS_SYSTEM, SOURCE_CLAIM_STATUS_EXTENSION_URL, toLocalCalendarDate } from '../../utils/candid';
 import { BillingPage } from './BillingPage';
+import { render } from '../../test-utils/render';
 
 function daysAgo(days: number): string {
   const date = new Date();
@@ -56,10 +56,8 @@ describe('BillingPage', () => {
     );
     render(
       <MedplumProvider medplum={medplum} navigate={router.navigate}>
-        <MantineProvider>
           <Notifications />
           <RouterProvider router={router} />
-        </MantineProvider>
       </MedplumProvider>
     );
     return { router };

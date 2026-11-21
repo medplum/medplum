@@ -15,8 +15,10 @@ export class FileSystemStorage extends ClientStorage {
     this.fileName = resolve(this.dirName, profile + '.json');
   }
 
+  // Keeps the profile settings; MedplumClient calls this on sign-out and unrecoverable 401s.
   clear(): void {
-    this.writeFile({});
+    const options = this.getString('options');
+    this.writeFile(options ? { options } : {});
   }
 
   getString(key: string): string | undefined {

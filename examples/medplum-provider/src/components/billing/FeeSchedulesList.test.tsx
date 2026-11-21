@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { ChargeItemDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, test } from 'vitest';
 import { FEE_SCHEDULE_TAG, PAYER_USAGE_CONTEXT } from './feeSchedules';
 import { FeeSchedulesList } from './FeeSchedulesList';
+import { render } from '../../test-utils/render';
 
 describe('FeeSchedulesList', () => {
   test("lists the payers' fee schedules and opens one", async () => {
@@ -28,9 +28,7 @@ describe('FeeSchedulesList', () => {
     const router = createMemoryRouter([{ path: '*', element: <FeeSchedulesList /> }]);
     render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
           <RouterProvider router={router} />
-        </MantineProvider>
       </MedplumProvider>
     );
 

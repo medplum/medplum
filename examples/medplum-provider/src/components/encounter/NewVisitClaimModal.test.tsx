@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { CPT } from '@medplum/core';
 import type { ChargeItem, Condition, Coverage } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
 import { NewVisitClaimModal } from './NewVisitClaimModal';
+import { render } from '../../test-utils/render';
 
 const condition = (code: string): Condition => ({
   resourceType: 'Condition',
@@ -45,7 +45,6 @@ describe('NewVisitClaimModal', () => {
     ];
     render(
       <MedplumProvider medplum={new MockClient()}>
-        <MantineProvider>
           <NewVisitClaimModal
             opened
             onClose={onClose}
@@ -56,7 +55,6 @@ describe('NewVisitClaimModal', () => {
             unavailable={new Map([['c', 'On another claim']])}
             onCreate={onCreate}
           />
-        </MantineProvider>
       </MedplumProvider>
     );
 

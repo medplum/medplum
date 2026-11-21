@@ -22,8 +22,8 @@ import {
   withCandidProviderId,
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
+import { getBotErrorMessage } from '../../utils/errors';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { getErrorMessage } from '../insurance/utils';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidExistingOrganizationPicker } from './CandidExistingOrganizationPicker';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
@@ -276,7 +276,7 @@ function CandidBillingOrganizationForm(props: CandidBillingOrganizationFormProps
         } catch (error) {
           showErrorNotification(
             new Error(
-              `Billing organization saved, but ${candidProviderId ? 'updating it in' : 'registering it with'} Candid failed: ${getErrorMessage(error)}. ` +
+              `Billing organization saved, but ${candidProviderId ? 'updating it in' : 'registering it with'} Candid failed: ${getBotErrorMessage(error)}. ` +
                 'Save the organization again to retry.'
             )
           );

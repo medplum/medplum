@@ -16,6 +16,7 @@ import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { getActorTypeLabel } from '../../actors';
 import type { ConfigurableActor, ConfigurableActorResource } from '../../configSearch';
+import { ConfirmModal } from '../../ConfirmModal/ConfirmModal';
 import { getAvailabilityFieldsError } from '../../ScheduleAvailabilityEditor/ScheduleAvailabilityEditor.utils';
 import {
   getBlockingErrors,
@@ -24,7 +25,6 @@ import {
 import { ConfigSection, SaveBar, SaveFailureAlert } from '../ConfigPage/ConfigPage';
 import type { ConfigChange, ConfigSaveFailure } from '../ConfigPage/configSave';
 import { saveConfigChanges } from '../ConfigPage/configSave';
-import { ConfirmModal } from '../ConfirmModal';
 import { summarizeOffering } from '../offeringSummary';
 import { getActorStatus } from '../SchedulingConfigWorkspace.utils';
 import type { ConfigStatus } from '../StatusBadge';
@@ -126,15 +126,20 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
   const actorDirty = !deepEquals(general, initialGeneral);
   // Compares the fields rather than the Schedule draft, so edits the draft can't store yet, like an emptied
   // week, still count and the save bar can say why it refuses.
-  const dirty = creating || actorDirty || !deepEquals(fields, initial) || facilities.changes.length > 0;
+  const scheduleDirty = !deepEquals(
+    { ...fields, comment: fields.comment.trim() },
+    { ...initial, comment: initial.comment.trim() }
+  );
+  const dirty = creating || actorDirty || scheduleDirty || facilities.changes.length > 0;
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const offered = useMemo(
     () => services.filter((service) => Object.hasOwn(fields.offerings, service.id)),
     [services, fields.offerings]
   );
-  const scheduleActive = schedule ? fields.active : undefined;
-  const status = actorWithId && getActorStatus(actorWithId, scheduleActive);
+  // The Schedule's fields as edited, or undefined when the actor has none.
+  const scheduleFields = schedule ? fields : undefined;
+  const status = actorWithId && getActorStatus(actorWithId, scheduleFields?.active);
   const alert = status && getBookingAlert(actorDraft, status);
 
   function errorsFor(service: WithId<HealthcareService>): ReturnType<typeof getBlockingErrors> {
@@ -332,8 +337,8 @@ export function ActorPage(props: ActorPageProps): JSX.Element {
           resource={actorDraft}
           value={general}
           onChange={handleGeneralChange}
-          scheduleActive={scheduleActive}
-          onScheduleActiveChange={(active) => setFields((current) => ({ ...current, active }))}
+          schedule={scheduleFields}
+          onScheduleChange={(change) => setFields((current) => ({ ...current, ...change }))}
           nameErrors={triedToSave || !creating ? nameErrors : undefined}
         />
         {facilities.field && <ProviderFacilitiesFields {...facilities.field} />}

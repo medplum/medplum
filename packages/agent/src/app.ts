@@ -403,8 +403,10 @@ export class App {
       try {
         const data = e.data as Buffer;
         const str = data.toString('utf8');
-        this.log.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
+        // Frames can carry message bodies, so the full frame stays out of the main log
+        this.channelLog.debug(`Received from WebSocket: ${str.replaceAll('\r', '\n')}`);
         command = JSON.parse(str) as AgentMessage;
+        this.log.debug(`Received from WebSocket: ${command.type}`);
         switch (command.type) {
           // @ts-expect-error - Deprecated message type
           case 'connected':
@@ -452,8 +454,10 @@ export class App {
             } else if (command.statusCode === undefined || command.statusCode < 400) {
               this.addToHl7Queue(command);
             } else {
-              // Log error
-              this.log.error(`Error during handling transmit request: ${command.body}`);
+              this.log.error(
+                `Error during handling transmit request (channel: ${command.channel}, remote: ${command.remote}, status: ${command.statusCode}) - check channel logs`
+              );
+              this.channelLog.error(`Error during handling transmit request: ${command.body}`);
             }
             break;
           }
@@ -1867,7 +1871,9 @@ export class App {
       return;
     }
 
-    this.log.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
+    const msgType = requestMsg.getSegment('MSH')?.getField(9)?.toString();
+    this.log.info(`[Request -- ID: ${msh10} -- Type: ${msgType ?? 'unknown'} -- Remote: ${message.remote}]`);
+    this.channelLog.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
 
     let forceClose = false;
     let client: EnhancedHl7Client;
@@ -1889,10 +1895,15 @@ export class App {
       return;
     }
 
+    const sentAt = Date.now();
     client
       .sendAndWait(requestMsg, { returnAck })
       .then((response) => {
-        this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
+        const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+        this.log.info(
+          `[Response -- ID: ${msh10} -- ACK: ${ackCode ?? 'unknown'} -- Duration: ${Date.now() - sentAt}ms]`
+        );
+        this.channelLog.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
         this.addToWebSocketQueue({
           type: 'agent:transmit:response',
           channel: message.channel,

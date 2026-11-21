@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Claim, Encounter } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { NewClaimModal } from './NewClaimModal';
+import { render } from '../../test-utils/render';
 
 describe('NewClaimModal', () => {
   let medplum: MockClient;
@@ -35,12 +35,10 @@ describe('NewClaimModal', () => {
     const onCreated = vi.fn();
     render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
           <Notifications />
           <MemoryRouter>
             <NewClaimModal opened onClose={vi.fn()} onCreated={onCreated} />
           </MemoryRouter>
-        </MantineProvider>
       </MedplumProvider>
     );
     return onCreated;

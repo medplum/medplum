@@ -1,0 +1,4 @@
+{{- $groupId := .Get "groupId" -}}
+<div class="tabs-container"{{ with $groupId }} data-group-id="{{ . }}"{{ end }}>
+  {{ .Inner }}
+</div>

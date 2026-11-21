@@ -4,10 +4,15 @@ import type { SearchRequest, SortRule } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { LabTab } from '@medplum/react';
 
-// The "Completed" tab lists finalized results; the "Open" tab lists orders that
-// have not yet resolved into a result; the "Revoked" tab lists revoked orders.
+// The "Completed" tab lists any report with reviewable result content - not just fully
+// finalized ones, since a preliminary or partial report (e.g. a multi-day culture's interim
+// result) still has real values worth seeing, and the order it belongs to otherwise has nowhere
+// to surface them: "Open" lists the order itself, with no indication a result already exists.
+// "registered" is deliberately excluded - it's a report shell with no result content yet.
+// The "Open" tab lists orders that have not yet resolved into a result; the "Revoked" tab lists
+// revoked orders.
 export const LAB_REVOKED_ORDER_STATUS = 'revoked';
-const COMPLETED_REPORT_STATUS = 'final,corrected,amended';
+const COMPLETED_REPORT_STATUS = 'final,corrected,amended,preliminary,partial';
 const OPEN_ORDER_STATUS = 'active,draft,on-hold';
 const DEFAULT_SORT_RULES: SortRule[] = [{ code: '_lastUpdated', descending: true }];
 const DEFAULT_COUNT = 20;

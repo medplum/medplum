@@ -1,0 +1,20 @@
+{{- /* Markdown with every heading one level deeper (## -> ###), outside fenced code, so a page's sections nest under
+  its ## title in /llms-full.txt */ -}}
+{{- $out := slice -}}
+{{- $fence := "" -}}
+{{- range split . "\n" -}}
+  {{- $line := . -}}
+  {{- $markers := findRE "^\\s*(```+|~~~+)" $line 1 -}}
+  {{- if $markers -}}
+    {{- $marker := strings.TrimSpace (index $markers 0) -}}
+    {{- if not $fence -}}
+      {{- $fence = $marker -}}
+    {{- else if hasPrefix $marker $fence -}}
+      {{- $fence = "" -}}
+    {{- end -}}
+  {{- else if and (not $fence) (hasPrefix $line "#") -}}
+    {{- $line = replaceRE `^(#{1,5}) ` "#$1 " $line -}}
+  {{- end -}}
+  {{- $out = $out | append $line -}}
+{{- end -}}
+{{- return delimit $out "\n" -}}

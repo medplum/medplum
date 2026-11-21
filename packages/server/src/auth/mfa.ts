@@ -14,16 +14,19 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendValidationErrors } from '../util/validator';
-import { assertMfaLoginActive } from './mfalimit';
+import { assertMfaLoginActive, verifyTotpToken } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
+  addMfaMethod,
   buildTotpEnrollment,
   clearMfaEmailCode,
+  enrollTotp,
   getAllowedMfaMethods,
-  getCallerUserReference,
   getEnrolledMfaMethods,
   getLoginProject,
+  getTotpEnrollmentSecret,
   isMfaRequired,
+  readUserForAccountManagement,
   sendLoginResult,
   sendMfaEmailCode,
   verifyEmailMfaCode,
@@ -42,20 +45,6 @@ function parseMfaMethod(value: unknown): MfaMethod {
 }
 
 /**
- * Returns the union of the user's existing MFA methods plus the new method.
- * @param user - The user.
- * @param method - The method to add.
- * @returns The updated list of MFA methods.
- */
-function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
-  const methods = getEnrolledMfaMethods(user);
-  if (!methods.includes(method)) {
-    methods.push(method);
-  }
-  return methods;
-}
-
-/**
  * Verifies that the supplied token proves control of one of the user's
  * currently-enrolled MFA factors. The token may be either an authenticator
  * (TOTP) code or the 6-digit code emailed via `/send-email-challenge`, so the
@@ -65,18 +54,19 @@ function addMfaMethod(user: User, method: MfaMethod): MfaMethod[] {
  * @param token - The user supplied token.
  * @returns True if the token matches an enrolled factor.
  */
-export async function verifyConnectedFactor(user: User, login: Login, token: string | undefined): Promise<boolean> {
+export async function verifyConnectedFactor(
+  user: WithId<User>,
+  login: Login,
+  token: string | undefined
+): Promise<boolean> {
   if (!token) {
     return false;
   }
   const methods = getEnrolledMfaMethods(user);
 
   // Authenticator app
-  if (methods.includes('totp') && user.mfaSecret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    if (authenticator.verify({ token, secret: user.mfaSecret })) {
-      return true;
-    }
+  if (methods.includes('totp') && user.mfaSecret && (await verifyTotpToken(user.id, user.mfaSecret, token))) {
+    return true;
   }
 
   // Emailed code
@@ -89,24 +79,26 @@ export async function verifyConnectedFactor(user: User, login: Login, token: str
 
 mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+  const user = await readUserForAccountManagement(ctx);
   const allowedMethods = getAllowedMfaMethods(ctx.project);
+  const enrolledMethods = getEnrolledMfaMethods(user);
 
-  // The TOTP QR code can always be shown, whether for initial enrollment or for
-  // adding TOTP as a second method to an account already enrolled in
-  // email-based MFA, because a secret is generated on demand if missing.
-  const { enrollUri, enrollQrCode } = await buildTotpEnrollment(ctx.systemRepo, user, ctx.project);
+  // The TOTP QR code is only returned while TOTP is not enrolled: for initial enrollment,
+  // or to add TOTP alongside email-based MFA.
+  const enrollment = enrolledMethods.includes('totp')
+    ? undefined
+    : await buildTotpEnrollment(ctx.login, user, ctx.project);
 
   res.json({
     enrolled: Boolean(user.mfaEnrolled),
-    enrolledMethods: getEnrolledMfaMethods(user),
+    enrolledMethods,
     allowedMethods,
     // When MFA is required for the account, the client must not offer to disable
     // it (the `/disable` endpoint enforces this server-side as well).
     mfaRequired: isMfaRequired(user, ctx.project),
     email: user.email,
-    enrollUri,
-    enrollQrCode,
+    enrollUri: enrollment?.enrollUri,
+    enrollQrCode: enrollment?.enrollQrCode,
   });
 });
 
@@ -151,7 +143,8 @@ mfaRouter.post(
       return;
     }
 
-    if (!user.mfaSecret) {
+    const secret = await getTotpEnrollmentSecret(login, user);
+    if (!secret) {
       sendOutcome(res, badRequest('Secret not found'));
       return;
     }
@@ -161,14 +154,7 @@ mfaRouter.post(
       return;
     }
 
-    const result = await verifyMfaToken(login, req.body.token);
-
-    await systemRepo.updateResource({
-      ...user,
-      mfaEnrolled: true,
-      mfaMethod: addMfaMethod(user, 'totp'),
-    });
-
+    const result = await verifyMfaToken(login, req.body.token, secret);
     await sendLoginResult(res, result);
   }
 );
@@ -176,7 +162,7 @@ mfaRouter.post(
 mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Response) => {
   const systemRepo = getGlobalSystemRepo();
   const ctx = getAuthenticatedContext();
-  const user = await systemRepo.readReference<User>(getCallerUserReference(ctx));
+  const user = await readUserForAccountManagement(ctx);
 
   const method = parseMfaMethod(req.body.method);
 
@@ -217,7 +203,8 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  if (!user.mfaSecret) {
+  const secret = await getTotpEnrollmentSecret(ctx.login, user);
+  if (!secret) {
     sendOutcome(res, badRequest('Secret not found'));
     return;
   }
@@ -227,7 +214,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  const secret = user.mfaSecret;
+  // Not consumed: confirming the authenticator grants nothing, and the user may sign in with this code
   const token = req.body.token as string;
   authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
   if (!authenticator.verify({ token, secret })) {
@@ -235,11 +222,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
     return;
   }
 
-  await systemRepo.updateResource({
-    ...user,
-    mfaEnrolled: true,
-    mfaMethod: addMfaMethod(user, 'totp'),
-  });
+  await enrollTotp(ctx.login, user, secret);
   sendOutcome(res, allOk);
 });
 
@@ -253,7 +236,13 @@ mfaRouter.post(
 
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
-    const result = await verifyMfaToken(login, req.body.token);
+
+    // A code for this login's own enrollment offer enrolls the user, as /login-enroll does
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+    const secret = user.mfaEnrolled ? undefined : await getTotpEnrollmentSecret(login, user);
+    const enrollSecret =
+      secret && getAllowedMfaMethods(await getLoginProject(login)).includes('totp') ? secret : undefined;
+    const result = await verifyMfaToken(login, req.body.token, enrollSecret);
     await sendLoginResult(res, result);
   }
 );
@@ -292,7 +281,7 @@ mfaRouter.post(
  */
 mfaRouter.post('/send-email-challenge', authenticateRequest, async (_req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+  const user = await readUserForAccountManagement(ctx);
 
   const emailEnrolled = getEnrolledMfaMethods(user).includes('email');
   const emailAllowed = getAllowedMfaMethods(ctx.project).includes('email');
@@ -311,7 +300,7 @@ mfaRouter.post(
   [body('token').optional().isString(), body('method').optional().isString()],
   async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const user = await ctx.systemRepo.readReference<User>(getCallerUserReference(ctx));
+    const user = await readUserForAccountManagement(ctx);
 
     if (!user.mfaEnrolled) {
       sendOutcome(res, badRequest('User not enrolled in MFA'));
@@ -365,9 +354,8 @@ mfaRouter.post(
       return;
     }
 
-    // Regenerate the authenticator secret whenever TOTP is being removed, so a
-    // future re-enrollment gets a fresh secret. This covers the lost / stolen
-    // device case. Email-only removals leave the secret untouched.
+    // Replace the stored authenticator secret whenever TOTP is being removed, so
+    // the old one is no longer kept. Email-only removals leave it untouched.
     const totpRemoved = !methodToRemove || methodToRemove === 'totp';
 
     await ctx.systemRepo.updateResource({

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Claim, Coverage } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { ClaimInsurance } from './ClaimInsurance';
 import { FEE_SCHEDULE_TAG, PAYER_USAGE_CONTEXT } from './feeSchedules';
+import { render } from '../../test-utils/render';
 
 describe('ClaimInsurance', () => {
   let medplum: MockClient;
@@ -49,11 +49,9 @@ describe('ClaimInsurance', () => {
   const setup = (value: Claim): void => {
     render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
           <MemoryRouter>
             <ClaimInsurance claim={value} />
           </MemoryRouter>
-        </MantineProvider>
       </MedplumProvider>
     );
   };

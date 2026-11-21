@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Textarea, TextInput } from '@mantine/core';
 import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, isDefined, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Schedule, Slot } from '@medplum/fhirtypes';
@@ -18,6 +18,7 @@ import {
 } from '../../AppointmentFinder/AppointmentFinder.times';
 import { useChanged } from '../../hooks/useChanged';
 import type { DateTimeRange } from '../../types';
+import classes from './BlockTimeForm.module.css';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, readonly ScheduleCandidate[]>>;
 
@@ -30,6 +31,8 @@ export interface BlockTimeFormProps {
   readonly defaultRange: DateTimeRange;
   /** Called when the time typed changes, with undefined while it is not a whole range. */
   readonly onChangeTime?: (range: DateTimeRange | undefined) => void;
+  /** Called whenever the form starts or stops holding anything beyond the time it opened on. */
+  readonly onDirtyChange?: (dirty: boolean) => void;
   /**
    * Called with the Slots written. A failure here is logged rather than shown: the
    * time is blocked by the time it runs.
@@ -48,7 +51,7 @@ export interface BlockTimeFormProps {
  * @returns The form.
  */
 export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
-  const { candidatesByActorType, defaultRange, onChangeTime, onBlocked } = props;
+  const { candidatesByActorType, defaultRange, onChangeTime, onDirtyChange, onBlocked } = props;
   const medplum = useMedplum();
 
   const [startValue, setStartValue] = useState(() => formatZonedDateTimeInput(defaultRange.start));
@@ -65,6 +68,13 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
     setEndValue(formatZonedDateTimeInput(defaultRange.end));
     setWritten(false);
   }
+
+  const dirty =
+    startValue !== formatZonedDateTimeInput(defaultRange.start) ||
+    endValue !== formatZonedDateTimeInput(defaultRange.end) ||
+    chosen !== NONE_CHOSEN ||
+    comment !== '';
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
 
   const start = parseZonedDateTimeInput(startValue);
   const end = parseZonedDateTimeInput(endValue);
@@ -127,7 +137,7 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
   }
 
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" className={classes.form}>
       <TextInput
         label="Start"
         type={getNativeInputType('datetime-local')}
@@ -171,17 +181,36 @@ export function BlockTimeForm(props: BlockTimeFormProps): JSX.Element {
           setWritten(false);
         }}
       />
-
-      {writeError !== undefined && (
-        <Alert color="red" title="Could not block this time">
-          {normalizeErrorString(writeError)}
-        </Alert>
-      )}
-      <Button fullWidth disabled={!range || schedules.length === 0 || written} loading={writing} onClick={handleSubmit}>
-        Block time
-      </Button>
+      <Stack gap="sm" className={classes.controls}>
+        <Divider />
+        {writeError !== undefined && (
+          <Alert color="red" title="Could not block this time">
+            {normalizeErrorString(writeError)}
+          </Alert>
+        )}
+        <Button
+          fullWidth
+          disabled={!range || schedules.length === 0 || written}
+          loading={writing}
+          onClick={handleSubmit}
+        >
+          {getBlockLabel(schedules.length)}
+        </Button>
+      </Stack>
     </Stack>
   );
+}
+
+/**
+ * Names the submit button after how many calendars it blocks.
+ * @param count - How many calendars are chosen.
+ * @returns The label.
+ */
+function getBlockLabel(count: number): string {
+  if (count === 0) {
+    return 'Block Time';
+  }
+  return `Block Time on ${count} ${count === 1 ? 'Calendar' : 'Calendars'}`;
 }
 
 interface BlockSlotsOptions {

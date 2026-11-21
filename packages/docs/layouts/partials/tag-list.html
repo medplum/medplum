@@ -1,0 +1,7 @@
+{{- /* A page's tags, linked to their tag pages. Works for docs and blog pages */ -}}
+{{- $taxonomy := cond (eq .Section "blog") "blog_tags" "docs_tags" -}}
+{{- with .GetTerms $taxonomy -}}
+  <ul class="tag-list">
+    {{- range . }}<li><a class="tag" href="{{ partial "href" . }}">{{ .Title }}</a></li>{{ end -}}
+  </ul>
+{{- end -}}

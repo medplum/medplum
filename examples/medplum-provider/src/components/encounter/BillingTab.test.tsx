@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { CPT } from '@medplum/core';
@@ -21,12 +20,13 @@ import type {
 } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CPT_COPYRIGHT_NOTICE, SAVE_TIMEOUT_MS } from '../../config/constants';
+import { render } from '../../test-utils/render';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import { LINE_CHARGE_ITEM_URL } from '../../utils/claims';
@@ -140,18 +140,16 @@ describe('BillingTab', () => {
   const tree = (props: TabProps): JSX.Element => (
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <Notifications />
-          <BillingTab
-            patient={mockPatient}
-            encounter={mockEncounter}
-            setEncounter={vi.fn()}
-            practitioner={mockPractitioner}
-            setPractitioner={vi.fn()}
-            chartNoteStatus={ChartNoteStatus.SignedAndLocked}
-            {...props}
-          />
-        </MantineProvider>
+        <Notifications />
+        <BillingTab
+          patient={mockPatient}
+          encounter={mockEncounter}
+          setEncounter={vi.fn()}
+          practitioner={mockPractitioner}
+          setPractitioner={vi.fn()}
+          chartNoteStatus={ChartNoteStatus.SignedAndLocked}
+          {...props}
+        />
       </MedplumProvider>
     </MemoryRouter>
   );

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { notifications, Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -16,12 +15,10 @@ async function setup(): Promise<UserEvent> {
   await act(async () => {
     render(
       <MemoryRouter initialEntries={['/mfa']} initialIndex={0}>
-        <MantineProvider>
-          <MedplumProvider medplum={medplum}>
-            <AppRoutes />
-            <Notifications />
-          </MedplumProvider>
-        </MantineProvider>
+        <MedplumProvider medplum={medplum}>
+          <AppRoutes />
+          <Notifications />
+        </MedplumProvider>
       </MemoryRouter>
     );
   });
@@ -44,6 +41,23 @@ describe('MfaPage', () => {
     await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
     expect(screen.getByText('Multi-factor authentication')).toBeInTheDocument();
+  });
+
+  test('Expired authenticator enrollment shows a message and refreshes the QR code', async () => {
+    const getSpy = vi.spyOn(medplum, 'get');
+    const postSpy = vi.spyOn(medplum, 'post').mockRejectedValueOnce(new Error('Secret not found'));
+    const user = await setup();
+    getSpy.mockClear();
+
+    await user.type(screen.getByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    await expect(screen.findByText(/This QR code has expired/)).resolves.toBeInTheDocument();
+    expect(getSpy).toHaveBeenCalledWith('auth/mfa/status', expect.objectContaining({ cache: 'no-cache' }));
+    expect(screen.getByText('Multi Factor Auth Setup')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
   });
 
   test('Add another method when one is available', async () => {

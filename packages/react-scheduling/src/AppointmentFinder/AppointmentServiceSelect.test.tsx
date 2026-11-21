@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { ReadablePromise } from '@medplum/core';
 import type { HealthcareService } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
@@ -19,7 +20,7 @@ import {
   settleAutocomplete,
   typeInAutocomplete,
 } from '../test-utils/asyncAutocomplete';
-import { renderWithMedplum, screen, waitFor } from '../test-utils/render';
+import { act, renderWithMedplum, screen, waitFor } from '../test-utils/render';
 import type { AppointmentServiceSelectProps } from './AppointmentServiceSelect';
 import { AppointmentServiceSelect } from './AppointmentServiceSelect';
 
@@ -138,14 +139,64 @@ describe('AppointmentServiceSelect', () => {
 
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
+    // Both read on opening; typing filters them without asking again.
     const searches = serviceSearches(searchResources);
     expect(searches).toHaveLength(2);
     expect(searches[0].get('location')).toBe('Location/main-clinic');
     expect(searches[1].get('location:missing')).toBe('true');
-    expect(searches.map((params) => [params.get('name'), params.get('_count'), params.get('_sort')])).toEqual([
-      ['Ultrasound', '25', 'name'],
-      ['Ultrasound', '25', 'name'],
+    expect(searches.map((params) => [params.get('name:contains'), params.get('_count'), params.get('_sort')])).toEqual([
+      [null, '100', 'name'],
+      [null, '100', 'name'],
     ]);
+    searchResources.mockRestore();
+  });
+
+  test('Lists every visit type on opening, not just a first page of them', async () => {
+    const manyServices = new MockClient();
+    for (let i = 10; i < 40; i++) {
+      await manyServices.createResource(
+        buildSchedulableService({
+          id: `visit-${i}`,
+          name: `Visit ${i}`,
+          category: 'Office visit',
+          durationMinutes: 30,
+          alignmentMinutes: 15,
+        })
+      );
+    }
+    renderWithMedplum(<AppointmentServiceSelect onChange={vi.fn()} />, manyServices);
+
+    await openAutocomplete(searchBox());
+    expect(screen.getAllByRole('option')).toHaveLength(30);
+
+    // Matched anywhere in the name, regardless of case.
+    await typeInAutocomplete(searchBox(), 'it 3');
+    expect(screen.getAllByRole('option')).toHaveLength(10);
+  });
+
+  test('Searches the server as the user types when one read could not hold every visit type', async () => {
+    const searchResources = vi.spyOn(medplum, 'searchResources');
+    // Unschedulable filler, which still fills the page: there may be more beyond it.
+    const fullPage = [
+      BARIATRIC_SURGERY,
+      ...Array.from({ length: 99 }, (_, i) => ({ ...TELEHEALTH_CHAT, id: `chat-${i}` })),
+    ];
+    searchResources.mockReturnValueOnce(new ReadablePromise(Promise.resolve(fullPage as never)));
+    setup();
+
+    // Opening lists the page already read, without asking again.
+    await openAutocomplete(searchBox());
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      expect.stringMatching(/^Bariatric Surgery/),
+    ]);
+    expect(serviceSearches(searchResources)).toHaveLength(1);
+
+    await typeInAutocomplete(searchBox(), 'Ultrasound');
+
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
+    const searches = serviceSearches(searchResources);
+    expect(searches).toHaveLength(2);
+    expect([searches[1].get('name:contains'), searches[1].get('_count')]).toEqual(['Ultrasound', '100']);
     searchResources.mockRestore();
   });
 
@@ -158,6 +209,36 @@ describe('AppointmentServiceSelect', () => {
     await typeInAutocomplete(searchBox(), 'Ultrasound');
 
     expect(serviceSearches(searchResources)[0].get('location')).toBe('Location/main-clinic');
+    searchResources.mockRestore();
+  });
+
+  test('Drops what the previous site found when the site changes mid-search', async () => {
+    // Holds each catalog read until released, failing it if aborted first, as the client does.
+    const held: (() => void)[] = [];
+    const search = medplum.searchResources.bind(medplum);
+    const searchResources = vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType, query, options) => {
+      if (resourceType !== 'HealthcareService' || (query as URLSearchParams).has('name:contains')) {
+        return search(resourceType, query, options);
+      }
+      return new ReadablePromise(
+        new Promise((resolve, reject) => {
+          held.push(() => resolve(search(resourceType, query, options)));
+          options?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        })
+      );
+    });
+    const { rerender } = setup({ serviceFacility: MainClinic });
+
+    await openAutocomplete(searchBox());
+    rerender(<AppointmentServiceSelect onChange={vi.fn()} serviceFacility={SatelliteClinic} />);
+    await settleAutocomplete();
+
+    // Held only at the main clinic.
+    expect(screen.queryByText('Bariatric Surgery')).not.toBeInTheDocument();
+
+    await typeInAutocomplete(searchBox(), 'Ultrasound');
+    await act(async () => held.forEach((release) => release()));
+    expect(await screen.findByText('Satellite Ultrasound')).toBeInTheDocument();
     searchResources.mockRestore();
   });
 

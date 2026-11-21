@@ -273,17 +273,23 @@ export function getTypedPropertyValueWithoutSchema(
  */
 export function removeDuplicates(arr: TypedValue[]): TypedValue[] {
   const result: TypedValue[] = [];
-  for (const i of arr) {
-    let found = false;
-    for (const j of result) {
-      if (toJsBoolean(fhirPathEquals(i, j))) {
-        found = true;
-        break;
+  const seenPrimitives = new Set<string | boolean>();
+  const others: TypedValue[] = [];
+  for (const item of arr) {
+    const value = item.value?.valueOf();
+    // Strings and booleans only equal identical primitives, so a Set suffices; other values need pairwise fhirPathEquals
+    if (typeof value === 'string' || typeof value === 'boolean') {
+      if (seenPrimitives.has(value)) {
+        continue;
       }
+      seenPrimitives.add(value);
+    } else {
+      if (others.some((other) => toJsBoolean(fhirPathEquals(item, other)))) {
+        continue;
+      }
+      others.push(item);
     }
-    if (!found) {
-      result.push(i);
-    }
+    result.push(item);
   }
   return result;
 }

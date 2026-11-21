@@ -1,0 +1,6 @@
+{{- /* Plain text for /llms-full.txt (see medplum-rules.html) */ -}}
+medplum-rules.md
+
+````markdown
+{{ readFile "static/ai/medplum-rules.md" | strings.TrimRight "\n" }}
+````

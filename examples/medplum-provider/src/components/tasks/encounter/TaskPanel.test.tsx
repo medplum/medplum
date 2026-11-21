@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../../config/constants';
+import { render } from '../../../test-utils/render';
 import { TaskPanel } from './TaskPanel';
 import type * as TaskServiceRequestModule from './TaskServiceRequest';
 
@@ -50,19 +50,17 @@ describe('TaskPanel', () => {
       render(
         <MemoryRouter initialEntries={['/Patient/123/Encounter/456?tab=tasks']}>
           <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <Routes>
-                <Route
-                  path="/Patient/:patientId/Encounter/:encounterId"
-                  element={<TaskPanel task={task} onUpdateTask={onUpdateTask} enabled={enabled} />}
-                />
-                <Route
-                  path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId"
-                  element={<div>Task Detail Page</div>}
-                />
-              </Routes>
-            </MantineProvider>
+            <Notifications />
+            <Routes>
+              <Route
+                path="/Patient/:patientId/Encounter/:encounterId"
+                element={<TaskPanel task={task} onUpdateTask={onUpdateTask} enabled={enabled} />}
+              />
+              <Route
+                path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId"
+                element={<div>Task Detail Page</div>}
+              />
+            </Routes>
           </MedplumProvider>
         </MemoryRouter>
       );

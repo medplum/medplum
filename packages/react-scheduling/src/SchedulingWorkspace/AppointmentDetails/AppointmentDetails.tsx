@@ -1,15 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Text, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
-  extractServiceTypeReferences,
   formatCodeableConcept,
   getAppointmentSite,
   getExtension,
   getExtensionValue,
   getPrimaryProvider,
-  getSchedulingRequirements,
   normalizeErrorString,
   RecurrenceIdExtensionURI,
   RecurrenceTemplateExtensionURI,
@@ -20,15 +18,16 @@ import {
 import type { Appointment, Bundle, CodeableConcept, Parameters, Reference, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptInput, ResourceName } from '@medplum/react';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconArrowLeft, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
+import { IconCalendarCancel, IconCalendarCheck, IconCalendarEvent, IconExternalLink } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { getNonPatientActors, getPatientParticipant } from '../../actors';
 import type { AppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
 import { readAppointmentWrite } from '../../AppointmentFinder/AppointmentFinder.writes';
 import type { AppointmentReschedule } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentRescheduleForm } from '../../AppointmentFinder/AppointmentRescheduleForm';
 import { AppointmentStatusBadge } from '../../AppointmentStatusBadge';
+import { AppointmentPatientName } from '../../CalendarBase/AppointmentPatientName';
 import { APPOINTMENT_CANCELLATION_REASON_VALUE_SET } from '../../constants';
 import { getMedicalRecordNumber } from '../../patients';
 import { ServiceTypeDisplay } from '../../ServiceTypeDisplay';
@@ -69,7 +68,8 @@ export interface AppointmentDetailsProps {
    */
   readonly onRescheduled?: (reschedule: AppointmentReschedule) => void | Promise<void>;
   /**
-   * Called when the reschedule form's time search opens or closes.
+   * Called when the reschedule form's time search opens or closes, including when
+   * picking an offered time closes it.
    *
    * The times render beside that form rather than under it, so a host showing this in a
    * drawer or a panel has to widen it to fit them — under the width they need they wrap,
@@ -87,7 +87,9 @@ export interface AppointmentDetailsProps {
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
-  /** Called with the appointment as written, after the visit type's codes are saved. */
+  /** See {@link AppointmentDetailsFormProps.commentMaxLength}. */
+  readonly commentMaxLength?: number;
+  /** Called with the appointment as written, after the visit type's codes or the notes are saved. */
   readonly onUpdated?: (appointment: WithId<Appointment>) => void | Promise<void>;
 }
 
@@ -149,7 +151,6 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
 
   return (
     <>
-      <Title order={5}>Cancel this appointment</Title>
       {cancelError !== undefined && (
         <Alert color="red" title="Could not cancel this appointment">
           {normalizeErrorString(cancelError)}
@@ -191,6 +192,7 @@ export function AppointmentCancelForm(props: AppointmentCancelFormProps): JSX.El
  * @param props.procedureBinding - The value set the procedure code field binds to
  * @param props.diagnosisBinding - The value set the diagnosis code field binds to
  * @param props.mrnSystem - The system a project issues medical record numbers under
+ * @param props.commentMaxLength - The most characters the notes may be edited to hold
  * @param props.onToggleTimeFinder - A callback told when the reschedule form's time search
  * opens or closes, for a host that has to widen to fit it
  * @returns The details component
@@ -206,22 +208,16 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     procedureBinding,
     diagnosisBinding,
     mrnSystem,
+    commentMaxLength,
   } = props;
   const patient = getPatientParticipant(appointment)?.actor;
   const patientResource = useResource(patient);
-  const service = useResource(extractServiceTypeReferences(appointment.serviceType)[0]);
-  const requirements = useMemo(() => getSchedulingRequirements(service), [service]);
   const [editing, setEditing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const medplum = useMedplum();
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<unknown>();
-
-  const patientLine = (
-    <Detail label="Patient" value={patient && <ResourceName value={patient} link={false} inherit />} />
-  );
-  const whenLine = <Detail label="When" value={formatWhen(appointment)} />;
 
   const innerOnCancelled = useCallback(
     (appointment: WithId<Appointment>) => {
@@ -279,18 +275,64 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
     return onRescheduled?.(reschedule);
   }
 
+  const cancelable = isCancelable(appointment);
+  const locked = isPastEditWindow(appointment);
+  const reschedulable = isReschedulable(appointment);
+  const externalUrl = getExternalUrl(appointment);
+  const { visitType, procedures } = partitionServiceTypes(appointment);
+  const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
+  const site = getAppointmentSite(appointment);
+  const { primary, providers, rooms, devices, others } = partitionActors(appointment);
+  const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
+
+  const summary = (
+    <>
+      <Detail label="Status" value={<AppointmentStatusBadge status={appointment.status} />} />
+      <Detail label="Patient" value={patient && <AppointmentPatientName appointment={appointment} />} />
+      <Detail label="MRN" value={mrn} />
+      <Detail label="When" value={formatWhen(appointment)} />
+      <Detail label="Repeats" value={formatSeries(appointment)} />
+      <Detail label="Visit type" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
+      <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
+      <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
+      <Detail label="Rooms" value={listActors(rooms)} />
+      <Detail label="Devices" value={listActors(devices)} />
+      <Detail label="With" value={listActors(others)} />
+      <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
+      {!editing && <Detail label="Notes" value={appointment.comment} />}
+      <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
+    </>
+  );
+  const codes = (
+    <>
+      <Detail label="Procedure codes" value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')} />
+      <Detail
+        label="Diagnosis codes"
+        value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
+      />
+      <Detail
+        label="Medical necessity"
+        value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
+      />
+    </>
+  );
+
+  // The whole visit stays in view above the cancellation, to check it is the one to call off.
+  // The cancellation takes the foot, where Cancel Appointment was pressed.
   if (cancelling) {
     return (
       <Stack gap="sm" className={classes.details}>
-        {patientLine}
-        {whenLine}
-        <AppointmentCancelForm
-          appointment={appointment}
-          onCancelled={innerOnCancelled}
-          cancellationReasonValueSet={props.cancellationReasonValueSet}
-        />
+        <Title order={5}>Cancel this appointment</Title>
+        {summary}
+        {codes}
         <Stack gap="sm" className={classes.actions}>
-          <Button onClick={() => setCancelling(false)} variant="outline">
+          <Divider />
+          <AppointmentCancelForm
+            appointment={appointment}
+            onCancelled={innerOnCancelled}
+            cancellationReasonValueSet={props.cancellationReasonValueSet}
+          />
+          <Button variant="default" onClick={() => setCancelling(false)}>
             Back to Appointment Details
           </Button>
         </Stack>
@@ -300,83 +342,44 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
 
   if (rescheduling) {
     return (
-      <Stack gap="sm" className={classes.details}>
-        <Group justify="space-between" wrap="nowrap">
-          {/* Its own heading: a host showing this in a panel titled for the details has
-              no way of knowing the view underneath it changed. */}
-          <Title order={5}>Reschedule appointment</Title>
-          <Button
-            variant="subtle"
-            size="compact-sm"
-            leftSection={<IconArrowLeft size={14} stroke={1.8} />}
-            onClick={stopRescheduling}
-          >
-            Back
-          </Button>
-        </Group>
+      <Stack gap="sm" className={`${classes.details} ${classes.rescheduling}`}>
+        <Title order={5}>Reschedule appointment</Title>
         <AppointmentRescheduleForm
           appointment={appointment}
           onToggleTimeFinder={onToggleTimeFinder}
           onRescheduled={finishRescheduling}
           canBypassSchedulingRules={props.canBypassSchedulingRules}
-        />
+        >
+          <Button variant="default" onClick={stopRescheduling}>
+            Back to Appointment Details
+          </Button>
+        </AppointmentRescheduleForm>
       </Stack>
     );
   }
 
-  const cancelable = isCancelable(appointment);
-  const locked = isPastEditWindow(appointment);
-  const { visitType, procedures } = partitionServiceTypes(appointment);
-  const medicalNecessity = getExtensionValue(appointment, SchedulingMedicalNecessityURI);
-  const externalUrl = getExternalUrl(appointment);
-  const site = getAppointmentSite(appointment);
-  const { primary, providers, rooms, devices, others } = partitionActors(appointment);
-  const mrn = patientResource?.resourceType === 'Patient' && getMedicalRecordNumber(patientResource, mrnSystem);
-
-  // Both pages fill the pane the same way, so what can be done to the visit sits at the
-  // foot of either.
+  // What can be done to the visit sits at the foot of the pane.
   return (
     <Stack gap="sm" className={classes.details}>
-      <AppointmentStatusBadge status={appointment.status} />
-      {patientLine}
-      <Detail label="MRN" value={mrn} />
-      {whenLine}
-      <Detail label="Repeats" value={formatSeries(appointment)} />
-      <Detail label="Service" value={visitType && <ServiceTypeDisplay appointment={appointment} />} />
-      <Detail label="Primary provider" value={primary && <ResourceName value={primary} link={false} inherit />} />
-      <Detail label={primary ? 'Other providers' : 'Providers'} value={listActors(providers)} />
-      <Detail label="Rooms" value={listActors(rooms)} />
-      <Detail label="Devices" value={listActors(devices)} />
-      <Detail label="With" value={listActors(others)} />
-      <Detail label="Service facility" value={site && <ResourceName value={site} link={false} inherit />} />
-      <Detail label="Notes" value={appointment.comment ?? appointment.description} />
-      <Detail label="Cancellation reason" value={formatCodeableConcept(appointment.cancelationReason) || undefined} />
+      {editing && <Title order={5}>Edit appointment</Title>}
+      {summary}
       {editing ? (
         <AppointmentDetailsForm
           appointment={appointment}
           procedureBinding={procedureBinding}
           diagnosisBinding={diagnosisBinding}
+          commentMaxLength={commentMaxLength}
           onUpdated={(updated) => {
             setEditing(false);
             return onUpdated?.(updated);
           }}
-          onCancel={() => setEditing(false)}
-        />
+        >
+          <Button variant="default" onClick={() => setEditing(false)}>
+            Back to Appointment Details
+          </Button>
+        </AppointmentDetailsForm>
       ) : (
-        <>
-          <Detail
-            label="Procedure codes"
-            value={procedures.map((concept) => formatCodeableConcept(concept)).join(', ')}
-          />
-          <Detail
-            label="Diagnosis codes"
-            value={appointment.reasonCode?.map((concept) => formatCodeableConcept(concept)).join(', ')}
-          />
-          <Detail
-            label="Medical necessity"
-            value={typeof medicalNecessity === 'boolean' && (medicalNecessity ? 'Confirmed' : 'Not confirmed')}
-          />
-        </>
+        codes
       )}
       {!editing && (
         <Stack gap="sm" className={classes.actions}>
@@ -411,13 +414,10 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
             </Text>
           ) : (
             <>
-              {/* The visit type's codes are all there is to edit. */}
-              {requirements.size > 0 && (
-                <Button variant="outline" onClick={() => setEditing(true)}>
-                  Edit
-                </Button>
-              )}
-              {isReschedulable(appointment) && (
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              {reschedulable && (
                 <Button
                   variant="outline"
                   leftSection={<IconCalendarEvent size={16} stroke={1.8} />}
@@ -426,15 +426,15 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
                   Reschedule
                 </Button>
               )}
-              <Button onClick={() => setCancelling(true)} disabled={!cancelable} variant="outline">
-                Cancel Appointment
-              </Button>
-              {!cancelable && (
-                <Text size="sm" c="dimmed">
-                  {appointment.status === 'cancelled'
-                    ? 'This appointment is cancelled.'
-                    : `An appointment in '${appointment.status}' status cannot be cancelled.`}
-                </Text>
+              {cancelable && (
+                <Button
+                  variant="outline"
+                  color="red"
+                  leftSection={<IconCalendarCancel size={16} stroke={1.8} />}
+                  onClick={() => setCancelling(true)}
+                >
+                  Cancel Appointment
+                </Button>
               )}
             </>
           )}

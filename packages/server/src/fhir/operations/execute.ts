@@ -15,8 +15,10 @@ import type { Request, Response } from 'express';
 import { executeBot } from '../../bots/execute';
 import type { BotExecutionResult } from '../../bots/types';
 import {
+  getBotBodyInput,
   getBotDefaultHeaders,
   getBotProjectMembership,
+  getBotRequestHeaders,
   getOutParametersFromResult,
   sendBotResponse,
 } from '../../bots/utils';
@@ -116,14 +118,17 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
   // If the request is HTTP GET, then the query string is the input
+  const runAs = await getBotProjectMembership(ctx, bot);
   const result = await executeBot({
     bot,
-    runAs: await getBotProjectMembership(ctx, bot),
+    runAs,
+    callerLogin: runAs.id === ctx.membership.id ? ctx.login : undefined,
+    entryPoint: 'execute',
     runAsProject: ctx.project,
     requester: ctx.membership.profile,
-    input: req.method === 'POST' ? req.body : req.query,
+    input: req.method === 'POST' ? getBotBodyInput(bot, req.body, res.locals.rawBody) : req.query,
     contentType: req.header('content-type') as string,
-    headers: req.headers,
+    headers: getBotRequestHeaders(req),
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
     responseStream,
@@ -151,11 +156,10 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
   // Otherwise, search by identifier
   const { identifier } = req.query;
   if (identifier && typeof identifier === 'string') {
-    const bot = await searchUnique<Bot>(
-      ctx.repo,
-      { resourceType: 'Bot', filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }] },
-      'Execute Bot by identifier'
-    );
+    const bot = await searchUnique<Bot>(ctx.repo, {
+      resourceType: 'Bot',
+      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
+    });
 
     if (!bot) {
       throw new OperationOutcomeError(notFound);

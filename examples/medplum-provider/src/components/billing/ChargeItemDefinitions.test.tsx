@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { ChargeItemDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { RouterProvider, createMemoryRouter, useNavigate, useParams } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ChargeItemDefinitions } from './ChargeItemDefinitions';
+import { render } from '../../test-utils/render';
 
 const BASE_URL = '/Billing/Settings/ChargeItems';
 
@@ -47,10 +47,8 @@ describe('ChargeItemDefinitions', () => {
     });
     render(
       <MedplumProvider medplum={medplum} navigate={router.navigate}>
-        <MantineProvider>
           <Notifications />
           <RouterProvider router={router} />
-        </MantineProvider>
       </MedplumProvider>
     );
     return { router };

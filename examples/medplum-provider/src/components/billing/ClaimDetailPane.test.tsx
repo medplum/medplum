@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import type { Bot, Claim, ClaimResponse, Coverage, PaymentReconciliation } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -18,6 +17,7 @@ import {
   SOURCE_CLAIM_STATUS_EXTENSION_URL,
 } from '../../utils/candid';
 import { ClaimDetailPane } from './ClaimDetailPane';
+import { render } from '../../test-utils/render';
 
 describe('ClaimDetailPane', () => {
   let medplum: MockClient;
@@ -103,12 +103,10 @@ describe('ClaimDetailPane', () => {
     const onChanged = vi.fn();
     render(
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
           <Notifications />
           <MemoryRouter>
             <ClaimDetailPane claimId={claimId} onClose={onClose} onChanged={onChanged} />
           </MemoryRouter>
-        </MantineProvider>
       </MedplumProvider>
     );
     return { onClose, onChanged };

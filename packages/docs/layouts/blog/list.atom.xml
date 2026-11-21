@@ -1,0 +1,43 @@
+{{- /* The blog's Atom feed at /blog/atom.xml: the 20 newest posts, in the format of Docusaurus's feed */ -}}
+{{- $posts := first 20 (partial "blog/sort-posts.html" .Pages) -}}
+{{- $base := strings.TrimSuffix "/" site.BaseURL -}}
+{{- printf `<?xml version="1.0" encoding="utf-8"?>` | safeHTML }}
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>{{ $base }}/blog</id>
+  <title>Medplum Blog</title>
+  {{- with index $posts 0 }}
+  <updated>{{ .Date.UTC.Format "2006-01-02T15:04:05.000Z" }}</updated>
+  {{- end }}
+  <link rel="alternate" href="{{ $base }}/blog" />
+  <subtitle>Medplum Blog</subtitle>
+  <icon>{{ $base }}/favicon.ico</icon>
+  {{- range $posts }}
+  {{- $url := printf "%s%s" $base (partial "href" .) }}
+  <entry>
+    {{- /* Built as one string: html/template escapes anything inside a <title> element */}}
+    {{ printf `<title type="html"><![CDATA[%s]]></title>` .Title | safeHTML }}
+    <id>{{ $url }}</id>
+    <link href="{{ $url }}" />
+    <updated>{{ .Date.UTC.Format "2006-01-02T15:04:05.000Z" }}</updated>
+    {{- with partial "page-description.html" . }}
+    <summary type="html">{{ printf "<![CDATA[%s]]>" . | safeHTML }}</summary>
+    {{- end }}
+    <content type="html">{{ printf "<![CDATA[%s]]>" (partial "blog/feed-content.html" .) | safeHTML }}</content>
+    {{- with .Params.authors }}
+    {{- range cond (reflect.IsSlice .) . (slice .) }}
+    {{- $author := dict "name" . }}
+    {{- range first 1 (where hugo.Data.authors "key" .) }}{{ $author = . }}{{ end }}
+    <author>
+      <name>{{ $author.name }}</name>
+      {{- with $author.url }}
+      <uri>{{ . }}</uri>
+      {{- end }}
+    </author>
+    {{- end }}
+    {{- end }}
+    {{- range .Params.blog_tags }}
+    <category label="{{ . }}" term="{{ . }}" />
+    {{- end }}
+  </entry>
+  {{- end }}
+</feed>

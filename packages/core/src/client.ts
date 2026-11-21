@@ -2523,7 +2523,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       const fileData = createBinaryOptions.data;
       let fileStr: string;
 
-      if (fileData instanceof Blob) {
+      // Prefer FileReader: readAsText honors a UTF-16 BOM, and React Native's Blob has no text()
+      if (fileData instanceof Blob && typeof FileReader !== 'undefined') {
         fileStr = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -2533,8 +2534,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
             }
             resolve(reader.result as string);
           };
+          reader.onerror = () => reject(reader.error ?? new Error('Failed to load file'));
           reader.readAsText(fileData, 'utf-8');
         });
+      } else if (fileData instanceof Blob) {
+        // Node has no FileReader
+        fileStr = await fileData.text();
       } else if (ArrayBuffer.isView(fileData)) {
         fileStr = new TextDecoder().decode(fileData);
       } else {
@@ -3692,12 +3697,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.isCacheEnabled(options) && !options?.signal?.aborted) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
 
-      // If the request is aborted, remove the abort result from the cache so
-      // later attempts will not re-resolve the abort.
+      // If the request is aborted while in flight, remove the abort result from the cache so
+      // later attempts will not re-resolve the abort. Once settled, an abort cannot change the result.
       if (options?.signal) {
-        options.signal.addEventListener('abort', () => {
-          this.requestCache.delete(key);
-        });
+        const signal = options.signal;
+        const evict = (): void => {
+          // Ensure we don't evict another entry that may have overwritten the
+          // one we set, such as a subsequent request made with `cache: 'reload'`.
+          if (this.requestCache.get(key)?.value === value) {
+            this.requestCache.delete(key);
+          }
+        };
+        const disarm = (): void => signal.removeEventListener('abort', evict);
+        signal.addEventListener('abort', evict, { once: true });
+        value.then(disarm, disarm);
       }
     }
   }

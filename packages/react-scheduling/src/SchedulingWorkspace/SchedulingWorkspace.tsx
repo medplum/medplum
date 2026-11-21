@@ -1,6 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Alert, Anchor, Box, Tabs, Text, Tooltip, useMantineTheme } from '@mantine/core';
+import type { MantineColor } from '@mantine/core';
+import {
+  ActionIcon,
+  Alert,
+  Anchor,
+  Box,
+  getThemeColor,
+  Indicator,
+  Tabs,
+  Text,
+  Tooltip,
+  useMantineTheme,
+  VisuallyHidden,
+} from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import {
   extractServiceTypeReferences,
@@ -21,8 +34,8 @@ import type {
 import { useMedplum, useResourceModified } from '@medplum/react-hooks';
 import { IconFilter2Search, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
-import type { JSX } from 'react';
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
 import { BOOKABLE_ACTOR_TYPES } from '../actors';
 import type { AppointmentBooking } from '../AppointmentFinder/AppointmentBookingForm';
@@ -33,10 +46,11 @@ import type { AppointmentWrite } from '../AppointmentFinder/AppointmentFinder.wr
 import type { AppointmentReschedule } from '../AppointmentFinder/AppointmentRescheduleForm';
 import { filterBookedSlots } from '../CalendarBase/CalendarBase.utils';
 import { fallbackColorIndex, getSchedulingColor, resolveThemeColor } from '../colors';
+import { DiscardChangesModal } from '../ConfirmModal/DiscardChangesModal';
 import { useSchedulingResources } from '../hooks/useSchedulingResources';
 import type { CalendarHandle, MultiCalendarSource } from '../MultiCalendar/MultiCalendar';
 import { MultiCalendar } from '../MultiCalendar/MultiCalendar';
-import type { DateTimeRange } from '../types';
+import type { CalendarSelection, DateTimeRange } from '../types';
 import { AppointmentDetails } from './AppointmentDetails/AppointmentDetails';
 import { BlockTimeForm } from './BlockTimeForm/BlockTimeForm';
 import type { CalendarFilterValues } from './CalendarFilters';
@@ -48,8 +62,14 @@ import { CalendarsPanel } from './CalendarsPanel/CalendarsPanel';
 import { CalendarTimezoneNotice } from './CalendarTimezoneNotice';
 import { PaneHeader } from './PaneHeader';
 import classes from './SchedulingWorkspace.module.css';
-import { getCalendarTimezones, groupAppointmentsByService, matchesCalendarFilters } from './SchedulingWorkspace.utils';
+import {
+  filterSlotsByDrawnAppointments,
+  getCalendarTimezones,
+  groupAppointmentsByService,
+  matchesCalendarFilters,
+} from './SchedulingWorkspace.utils';
 import { SlotDetails } from './SlotDetails';
+import { useBookingPaneGuard } from './useBookingPaneGuard';
 
 type CandidatesByActorType = Readonly<Record<BookableActorType, ScheduleCandidate[]>>;
 type DeselectedIdsByActorType = Readonly<Record<BookableActorType, ReadonlySet<string>>>;
@@ -77,12 +97,23 @@ const RESOURCE_OPTIONS = {
 
 export interface SchedulingWorkspaceProps {
   readonly className?: string;
+  /**
+   * The workspace's background: behind the calendars, the calendar and the pane beside it, and
+   * the drawer the pane widens into. Pass the host page's color to sit the workspace flush on
+   * the page. A theme color such as `gray.0`, or any CSS color. Defaults to the body color.
+   */
+  readonly backgroundColor?: MantineColor;
   /** The ValueSet the procedure code field binds to. Defaults to full CPT valueset. */
   readonly procedureBinding?: string;
   /** The ValueSet the diagnosis code field binds to. Defaults to full ICD-10-CM valueset. */
   readonly diagnosisBinding?: string;
   /** See {@link AppointmentProposalFormProps.mrnSystem}. */
   readonly mrnSystem?: string;
+  /**
+   * The most characters an appointment's notes may hold, when booking and when editing. See
+   * {@link AppointmentProposalFormProps.commentMaxLength}.
+   */
+  readonly appointmentCommentMaxLength?: number;
   readonly onBooked?: (booking: AppointmentBooking) => void | Promise<void>;
   /** Called with the Slots written when time is blocked from the pane's Block Time tab. */
   readonly onBlocked?: (slots: WithId<Slot>[]) => void | Promise<void>;
@@ -158,9 +189,9 @@ export interface SchedulingWorkspaceProps {
  * - Filters calendars and what is booked on them: the Service facility and Visit Type filters
  *   narrow the calendars listed to the ones held at that site and offering that service type,
  *   and the appointments drawn to the ones recording that site and naming that service type.
- *   Under either filter, only the drawn appointments' Slots, such as their buffers, are shown:
- *   Slots record no site, and most blocks name no service type, so apply to every one, and
- *   showing each block that might apply would clutter the calendar.
+ *   Under either filter, the Slots of an appointment it hides, such as its buffers, are hidden
+ *   with it. Blocked time stays on every calendar left listed: Slots record no site, and a
+ *   block takes its actor's time whatever the visit type.
  * - Keeps an open appointment or blocked time open until it is closed, even once paging,
  *   filtering, or hiding its calendars takes it off the calendar, with a notice saying when the
  *   filters or hidden calendars are why.
@@ -175,6 +206,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     procedureBinding,
     diagnosisBinding,
     mrnSystem,
+    appointmentCommentMaxLength,
     onBooked,
     onBlocked,
     appointmentCancellationReasonValueSet,
@@ -204,7 +236,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [range, setRange] = useState<DateTimeRange>();
 
   // What was selected
-  const [bookingSelection, setBookingSelection] = useState<DateTimeRange>();
+  const [bookingSelection, setBookingSelection] = useState<CalendarSelection>();
   const [selectedAppointment, setSelectedAppointment] = useState<WithId<Appointment>>();
   const [selectedSlot, setSelectedSlot] = useState<WithId<Slot>>();
   // The Slots of a block just written, one per calendar, listed beside whichever is open.
@@ -222,6 +254,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const [timeFinderOpen, setTimeFinderOpen] = useState(false);
   const [calendarsOpen, setCalendarsOpen] = useState(true);
   const sidebarId = useId();
+  const appliedFiltersId = useId();
   const [rescheduleFinderOpen, setRescheduleFinderOpen] = useState(false);
 
   // Finds all bookable Schedules, with one search per bookable actor type.
@@ -309,15 +342,11 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     // Appointments are drawn by service type rather than on the calendars they are held on,
     // so the Slots they hold have to be cleared here: a source only clears the ones behind
     // its own appointments. A held-back appointment's Slots stay, so its time isn't shown as free.
-    // Under a filter, only the Slots the drawn appointments hold are shown. Slots record no site,
-    // and most blocks name no service type, so apply to every one: showing each block that might
-    // apply would clutter the calendar.
-    const visibleSlots = new Set(
-      visibleAppointments.flatMap((appointment) => (appointment.slot ?? []).map(getReferenceString))
-    );
+    // Under a filter, the Slots of an appointment it hides go with it. Blocked time stays: the
+    // calendars listed are already the ones the filters keep.
     const shownSlots =
       filters.service || filters.serviceFacility
-        ? (slots ?? []).filter((slot) => visibleSlots.has(getReferenceString(slot)))
+        ? filterSlotsByDrawnAppointments(slots ?? [], appointments ?? [], visibleAppointments)
         : (slots ?? []);
     const openSlots = filterBookedSlots(
       shownSlots,
@@ -373,7 +402,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
 
   const { timezones, anyUnknown } = useMemo(() => getCalendarTimezones(activeCandidates), [activeCandidates]);
 
-  const startBooking = useCallback((interval: DateTimeRange): void => {
+  const startBooking = useCallback((interval: CalendarSelection): void => {
     setSelectedAppointment(undefined);
     setSelectedSlot(undefined);
     setNewBlockSlots(undefined);
@@ -391,12 +420,16 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     calendarRef.current?.gotoDate(start);
   }, [startBooking]);
 
+  const discard = useBookingPaneGuard();
+  const { guard, reset: resetDirty } = discard;
+
   const closeBooking = useCallback((): void => {
     setBookingSelection(undefined);
     setProposal(undefined);
     setBlockHighlight(undefined);
     setTimeFinderOpen(false);
-  }, []);
+    resetDirty();
+  }, [resetDirty]);
 
   // Hides are kept across a service change rather than pruned: a calendar hidden under
   // one service type stays hidden if another offers it again.
@@ -421,19 +454,26 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
     [closeBooking, onBlocked, schedules]
   );
 
+  const showAppointment = useCallback(
+    (appointment: WithId<Appointment>): void => {
+      if (appointment.id !== selectedAppointment?.id) {
+        setRescheduleFinderOpen(false);
+      }
+      closeBooking();
+      setSelectedSlot(undefined);
+      setNewBlockSlots(undefined);
+      setSelectedAppointment(appointment);
+    },
+    [closeBooking, selectedAppointment?.id]
+  );
+
   const selectAppointment = useCallback(
     (appointment: Appointment): void => {
       if (isResourceWithId(appointment)) {
-        if (appointment.id !== selectedAppointment?.id) {
-          setRescheduleFinderOpen(false);
-        }
-        closeBooking();
-        setSelectedSlot(undefined);
-        setNewBlockSlots(undefined);
-        setSelectedAppointment(appointment);
+        guard(() => showAppointment(appointment));
       }
     },
-    [closeBooking, selectedAppointment?.id]
+    [guard, showAppointment]
   );
 
   // Opens what was booked, the first visit of a recurring series, and brings it on screen,
@@ -441,13 +481,13 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const finishBooking = useCallback(
     (booking: AppointmentBooking): void | Promise<void> => {
       const [first] = booking.appointments;
-      selectAppointment(first);
+      showAppointment(first);
       if (first.start) {
         calendarRef.current?.gotoDate(new Date(first.start));
       }
       return onBooked?.(booking);
     },
-    [selectAppointment, onBooked]
+    [showAppointment, onBooked]
   );
 
   const closeAppointment = useCallback((): void => {
@@ -458,13 +498,15 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const selectSlot = useCallback(
     (slot: Slot): void => {
       if (isResourceWithId(slot)) {
-        closeBooking();
-        closeAppointment();
-        setSelectedSlot(slot);
-        setNewBlockSlots(undefined);
+        guard(() => {
+          closeBooking();
+          closeAppointment();
+          setSelectedSlot(slot);
+          setNewBlockSlots(undefined);
+        });
       }
     },
-    [closeBooking, closeAppointment]
+    [guard, closeBooking, closeAppointment]
   );
 
   const closeSlot = useCallback((): void => {
@@ -568,7 +610,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   ) as Record<BookableActorType, CalendarsPanelItem[]>;
 
   const displayError = resourcesError ?? schedulesLoadingError;
-  const calendarsLabel = calendarsOpen ? 'Hide calendars' : 'Show calendars';
+  const calendarsLabel = calendarsOpen ? 'Hide Calendar Filters' : 'Show Calendar Filters';
+  const filterCount =
+    (filters.serviceFacility ? 1 : 0) +
+    (filters.service ? 1 : 0) +
+    Object.values(panelItems)
+      .flat()
+      .filter((item) => !item.selected).length;
+  const appliedFiltersLabel = filterCount > 0 ? `${filterCount} Applied` : undefined;
 
   // The pane beside the calendar shows one thing at a time. Opening any of them already
   // closes the others, so this only decides which wins if they ever hold something together.
@@ -577,7 +626,14 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const blocking = showBooking && paneTab === 'block';
 
   return (
-    <div className={`${classes.root} ${props.className ?? ''}`}>
+    <div
+      className={`${classes.root} ${props.className ?? ''}`}
+      style={
+        props.backgroundColor
+          ? ({ '--scheduling-workspace-background': getThemeColor(props.backgroundColor, theme) } as CSSProperties)
+          : undefined
+      }
+    >
       {/* Hidden rather than unmounted, so the filter fields and open sections are as they were left. */}
       <Box id={sidebarId} className={classes.sidebar} display={calendarsOpen ? undefined : 'none'}>
         <CalendarsPanel
@@ -599,21 +655,31 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
           sources={sources}
           onRangeChange={setRange}
           toolbarStart={
-            <Tooltip label={calendarsLabel} position="bottom" openDelay={500}>
-              <ActionIcon
-                className={classes.calendarsToggle}
-                variant="default"
-                size={32}
-                radius="xl"
-                c="dimmed"
-                aria-label={calendarsLabel}
-                aria-expanded={calendarsOpen}
-                aria-controls={sidebarId}
-                onClick={() => setCalendarsOpen((open) => !open)}
-              >
-                <IconFilter2Search size={16} />
-              </ActionIcon>
-            </Tooltip>
+            <>
+              <Indicator disabled={!appliedFiltersLabel} color="blue" size={8} offset={5}>
+                <Tooltip
+                  label={appliedFiltersLabel ? `${calendarsLabel} · ${appliedFiltersLabel}` : calendarsLabel}
+                  position="bottom"
+                  openDelay={500}
+                >
+                  <ActionIcon
+                    className={classes.calendarsToggle}
+                    variant="default"
+                    size={32}
+                    radius="xl"
+                    c="dimmed"
+                    aria-label={calendarsLabel}
+                    aria-expanded={calendarsOpen}
+                    aria-controls={sidebarId}
+                    aria-describedby={appliedFiltersLabel ? appliedFiltersId : undefined}
+                    onClick={() => setCalendarsOpen((open) => !open)}
+                  >
+                    <IconFilter2Search size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              </Indicator>
+              {appliedFiltersLabel && <VisuallyHidden id={appliedFiltersId}>{appliedFiltersLabel}</VisuallyHidden>}
+            </>
           }
           toolbarEnd={
             <Tooltip label="New appointment" position="bottom" openDelay={500}>
@@ -635,11 +701,7 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
         </div>
       </div>
       {openAppointment && (
-        <section
-          key={openAppointment.id}
-          className={cx(classes.pane, { [classes.paneWide]: rescheduleFinderOpen })}
-          aria-label="Appointment details"
-        >
+        <SidePane key={openAppointment.id} label="Appointment details" wide={rescheduleFinderOpen}>
           <PaneHeader title="Appointment Details" closeLabel="Close appointment details" onClose={closeAppointment} />
           {hiddenNotice && (
             <Alert color="blue" mb="sm">
@@ -658,11 +720,12 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             procedureBinding={procedureBinding}
             diagnosisBinding={diagnosisBinding}
             mrnSystem={mrnSystem}
+            commentMaxLength={appointmentCommentMaxLength}
           />
-        </section>
+        </SidePane>
       )}
       {showSlot && (
-        <section key={openSlot.id} className={classes.pane} aria-label="Blocked time details">
+        <SidePane key={openSlot.id} label="Blocked time details">
           <PaneHeader title="Blocked Time" closeLabel="Close blocked time details" onClose={closeSlot} />
           {slotNotice && (
             <Alert color="blue" mb="sm">
@@ -683,13 +746,10 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             </Text>
           )}
           <SlotDetails slot={openSlot} />
-        </section>
+        </SidePane>
       )}
       {showBooking && (
-        <section
-          className={cx(classes.pane, { [classes.paneWide]: timeFinderOpen && !blocking })}
-          aria-label="Book appointment"
-        >
+        <SidePane label="Book appointment" wide={timeFinderOpen && !blocking}>
           {/* Both panels stay mounted, so switching tabs loses nothing typed into either. */}
           <Tabs
             value={paneTab}
@@ -711,14 +771,17 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
             <Tabs.Panel value="appointment">
               <AppointmentBookingForm
                 defaultStart={bookingSelection.start}
+                defaultDateTime={bookingSelection.allDay ? undefined : bookingSelection.start}
                 procedureBinding={procedureBinding}
                 diagnosisBinding={diagnosisBinding}
                 mrnSystem={mrnSystem}
+                commentMaxLength={appointmentCommentMaxLength}
                 canBypassSchedulingRules={canBypassSchedulingRules}
                 appointmentExtensions={appointmentExtensions}
                 allowRecurring
                 onToggleTimeFinder={setTimeFinderOpen}
                 onChangeProposal={setProposal}
+                onDirtyChange={discard.onBookingDirtyChange}
                 onBooked={finishBooking}
                 defaultServiceFacility={selectedServiceFacility}
                 defaultService={selectedService}
@@ -729,12 +792,71 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
                 candidatesByActorType={candidatesByActorType}
                 defaultRange={bookingSelection}
                 onChangeTime={setBlockHighlight}
+                onDirtyChange={discard.onBlockDirtyChange}
                 onBlocked={finishBlock}
               />
             </Tabs.Panel>
           </Tabs>
-        </section>
+        </SidePane>
       )}
+      <DiscardChangesModal {...discard.modalProps}>Your changes haven't been saved.</DiscardChangesModal>
+    </div>
+  );
+}
+
+interface SidePaneProps {
+  /** Names the pane for assistive technology. */
+  readonly label: string;
+  /** Whether the pane widens over the calendar, as it does for a time search. */
+  readonly wide?: boolean;
+  readonly children: ReactNode;
+}
+
+/**
+ * The pane beside the calendar. Widened, it slides out over the calendar like a drawer, and
+ * stays wide while it slides back.
+ * @param props - The React props.
+ * @returns The pane.
+ */
+function SidePane(props: SidePaneProps): JSX.Element {
+  const { label, wide = false, children } = props;
+  // Out over the calendar from widening until the slide back ends.
+  const [extended, setExtended] = useState(wide);
+  if (wide && !extended) {
+    setExtended(true);
+  }
+  const closing = extended && !wide;
+  const paneRef = useRef<HTMLElement>(null);
+  // Before paint, as the slide back starts then and a reduced-motion one can end a frame later.
+  useLayoutEffect(() => {
+    const pane = paneRef.current;
+    if (!closing || !pane) {
+      return undefined;
+    }
+    // Only the slide back ends it, not an animation inside the pane, nor the slide open it cut
+    // short. A cancelled slide back (the pane hidden, or its animation removed) ends it too, so
+    // the pane can't stay wide. Listened for natively, as React has no `onAnimationCancel`.
+    const settle = (event: AnimationEvent): void => {
+      if (event.animationName === classes.paneSlideOut) {
+        setExtended(false);
+      }
+    };
+    pane.addEventListener('animationend', settle);
+    pane.addEventListener('animationcancel', settle);
+    return () => {
+      pane.removeEventListener('animationend', settle);
+      pane.removeEventListener('animationcancel', settle);
+    };
+  }, [closing]);
+  return (
+    <div className={classes.paneSlot}>
+      <section
+        ref={paneRef}
+        className={cx(classes.pane, { [classes.paneWide]: extended, [classes.paneClosing]: closing })}
+        aria-label={label}
+      >
+        {children}
+      </section>
     </div>
   );
 }

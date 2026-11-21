@@ -75,7 +75,7 @@ describe('Reindex Worker', () => {
       const queue = getReindexQueue() as any;
       queue.add.mockClear();
 
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -96,7 +96,7 @@ describe('Reindex Worker', () => {
       const processIterationSpy = vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
       expect(asyncJob.output).toMatchObject<Partial<Parameters>>({
         parameter: expect.arrayContaining([
@@ -150,7 +150,7 @@ describe('Reindex Worker', () => {
 
   test('Multiple iterations when more than one batchSize exist', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -180,7 +180,7 @@ describe('Reindex Worker', () => {
       vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
       expect(asyncJob.output).toMatchObject<Partial<Parameters>>({
         parameter: expect.arrayContaining([
@@ -206,7 +206,7 @@ describe('Reindex Worker', () => {
 
   test('Applies delay between batches when configured', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -238,7 +238,7 @@ describe('Reindex Worker', () => {
       vi.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
 
       // Verify multiple iterations occurred (which triggers sleep between batches)
@@ -249,7 +249,7 @@ describe('Reindex Worker', () => {
     withTestContext(async () => {
       const loggerSpy = vi.spyOn(globalLogger, 'info');
 
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -280,7 +280,7 @@ describe('Reindex Worker', () => {
       const reindexJob = await ReindexJob.create(jobData);
       await reindexJob.execute(undefined);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
 
       // Verify progress was logged
@@ -296,7 +296,7 @@ describe('Reindex Worker', () => {
 
   test('Proceeds to next resource type after exhausting initial one', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -319,7 +319,7 @@ describe('Reindex Worker', () => {
         })
       );
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
 
       // Expect 4 history entries (newest first):
@@ -328,7 +328,7 @@ describe('Reindex Worker', () => {
       // PaymentNotice finished
       // creation (no output)
 
-      const history = await repo.readHistory<AsyncJob>('AsyncJob', asyncJob.id);
+      const history = await systemRepo.readHistory<AsyncJob>('AsyncJob', asyncJob.id);
       const outputs = history.entry?.map((entry) => entry.resource?.output?.parameter) ?? [];
       expect(outputs).toHaveLength(4);
       expect(outputs[0]).toStrictEqual(outputs[1]);
@@ -354,7 +354,7 @@ describe('Reindex Worker', () => {
 
   test('Fails job on error', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -377,7 +377,7 @@ describe('Reindex Worker', () => {
         }
       );
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
       expect(asyncJob.output?.parameter).toEqual([
         {
@@ -400,7 +400,7 @@ describe('Reindex Worker', () => {
 
   test('Retries iteration on error when maxIterationAttempts > 1', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -450,7 +450,7 @@ describe('Reindex Worker', () => {
         })
       );
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
 
       loggerWarnSpy.mockRestore();
@@ -458,7 +458,7 @@ describe('Reindex Worker', () => {
 
   test('Fails after exhausting maxIterationAttempts', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -487,7 +487,7 @@ describe('Reindex Worker', () => {
       // Should have attempted exactly maxIterationAttempts times
       expect(processIterationSpy).toHaveBeenCalledTimes(2);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
       expect(asyncJob.output?.parameter).toEqual([
         {
@@ -502,7 +502,7 @@ describe('Reindex Worker', () => {
 
   test('Retries on thrown exceptions from processIteration', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -540,7 +540,7 @@ describe('Reindex Worker', () => {
         })
       );
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
 
       loggerWarnSpy.mockRestore();
@@ -548,7 +548,7 @@ describe('Reindex Worker', () => {
 
   test('Rethrows after exhausting maxIterationAttempts with thrown exceptions', () =>
     withTestContext(async () => {
-      const asyncJob = await repo.createResource<AsyncJob>({
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -577,7 +577,7 @@ describe('Reindex Worker', () => {
 
   test('Throws error when maxIterationAttempts is less than 1', () =>
     withTestContext(async () => {
-      const asyncJob = await repo.createResource<AsyncJob>({
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -592,7 +592,7 @@ describe('Reindex Worker', () => {
 
   test('Handles DEFAULT upsertStatementTimeout without failing', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -606,7 +606,7 @@ describe('Reindex Worker', () => {
       const reindexJob = await ReindexJob.create(jobData);
       await reindexJob.execute(undefined);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
     }));
 
@@ -635,9 +635,28 @@ describe('Reindex Worker', () => {
     })
   );
 
-  test('Continues when one resource type fails and reports error', () =>
+  test('Fails a job tracked by a project-owned AsyncJob', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData({ shardId, asyncJob }, ['MedicinalProductManufactured']);
+      await expect((await ReindexJob.create(jobData)).execute(undefined)).rejects.toThrow(
+        `Unexpected AsyncJob owner for AsyncJob/${asyncJob.id}`
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('error');
+      expect(asyncJob.output?.parameter?.find((p) => p.name === 'result')).toBeUndefined();
+    }));
+
+  test('Continues when one resource type fails and reports error', () =>
+    withTestContext(async () => {
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -653,7 +672,7 @@ describe('Reindex Worker', () => {
       const jobData = prepareReindexJobData({ shardId, asyncJob }, resourceTypes);
       await expect((await ReindexJob.create(jobData)).execute(undefined)).resolves.toBe('finished');
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
       expect(asyncJob.output?.parameter).toEqual<Parameters['parameter']>([
         {
@@ -688,7 +707,7 @@ describe('Reindex Worker', () => {
       const idSystem = 'http://example.com/mrn';
       const mrn = randomUUID();
 
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -718,7 +737,7 @@ describe('Reindex Worker', () => {
 
       await (await ReindexJob.create(jobData)).execute(undefined);
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
       expect(asyncJob.output?.parameter).toEqual([
         {
@@ -871,7 +890,7 @@ describe('Reindex Worker', () => {
       const idSystem = 'http://example.com/mrn';
       const mrn = randomUUID();
 
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -938,7 +957,7 @@ describe('Job cancellation', () => {
 
   test('Detect cancelled AsyncJob when iteration begins', () =>
     withTestContext(async () => {
-      let asyncJob = await repo.createResource<AsyncJob>({
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'cancelled',
         requestTime: new Date().toISOString(),
@@ -949,21 +968,21 @@ describe('Job cancellation', () => {
       const result = await (await ReindexJob.create(jobData)).execute(undefined);
       expect(result).toStrictEqual('interrupted');
 
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('cancelled');
       expect(asyncJob.output).toBeUndefined();
     }));
 
   test('Ensure job reads up-to-date cancellation status from DB', () =>
     withTestContext(async () => {
-      const originalJob = await repo.createResource<AsyncJob>({
+      const originalJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
         request: '/admin/super/reindex',
       });
 
-      const cancelledJob = await repo.updateResource<AsyncJob>({
+      const cancelledJob = await systemRepo.updateResource<AsyncJob>({
         ...originalJob,
         status: 'cancelled',
       });
@@ -975,14 +994,14 @@ describe('Job cancellation', () => {
       const result = await (await ReindexJob.create(jobData)).execute(undefined);
       expect(result).toStrictEqual('interrupted');
 
-      const finalJob = await repo.readResource<AsyncJob>('AsyncJob', cancelledJob.id);
+      const finalJob = await systemRepo.readResource<AsyncJob>('AsyncJob', cancelledJob.id);
       expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
     }));
 
   test.each(['some-token', undefined])('Job handles queue closing with job.token %s', async (jobToken) =>
     withTestContext(async () => {
-      const originalJob = await repo.createResource<AsyncJob>({
+      const originalJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -1045,7 +1064,7 @@ describe('Job cancellation', () => {
   ])(
     'Handles insufficient reindex worker version with minReindexWorkerVersion %s and job.token %s',
     async (minReindexWorkerVersion, jobToken) => {
-      const originalJob = await repo.createResource<AsyncJob>({
+      const originalJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
@@ -1119,14 +1138,14 @@ describe('Job cancellation', () => {
 
   test('Ensure updates from job do not clobber cancellation status', () =>
     withTestContext(async () => {
-      const originalJob = await repo.createResource<AsyncJob>({
+      const originalJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
         request: '/admin/super/reindex',
       });
 
-      const cancelledJob = await repo.updateResource<AsyncJob>({
+      const cancelledJob = await systemRepo.updateResource<AsyncJob>({
         ...originalJob,
         status: 'cancelled',
       });
@@ -1137,7 +1156,8 @@ describe('Job cancellation', () => {
       vi.spyOn(systemRepo, 'updateResource').mockReturnValueOnce(error);
       // Simulate job being cancelled in the middle of the worker execution, after the initial status check
       // but before the job would update the resource itself
-      vi.spyOn(systemRepo, 'readResource')
+      const readSpy = vi
+        .spyOn(systemRepo, 'readResource')
         .mockReturnValueOnce(Promise.resolve(originalJob))
         .mockReturnValueOnce(Promise.resolve(cancelledJob));
 
@@ -1148,14 +1168,15 @@ describe('Job cancellation', () => {
       const result = await (await ReindexJob.create(jobData)).execute(undefined);
       expect(result).toStrictEqual('interrupted');
 
-      const finalJob = await repo.readResource<AsyncJob>('AsyncJob', originalJob.id);
+      readSpy.mockRestore();
+      const finalJob = await systemRepo.readResource<AsyncJob>('AsyncJob', originalJob.id);
       expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
     }));
 
   test('Throws error when updating AsyncJob output fails with non-412 error', () =>
     withTestContext(async () => {
-      const asyncJob = await repo.createResource<AsyncJob>({
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
