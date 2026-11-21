@@ -48,13 +48,13 @@ The image contains a full build at `/src`, plus Postgres and Redis with a seeded
 Then run tests with Vitest. Running individual files is much faster than the full suite:
 
 ```sh
-cd /src/packages/server && npx vitest run --project @medplum/server src/fhir/accesspolicy.test.ts
+cd /src/packages/server && npx vitest run --project @medplum/server src/fhir/accesspolicy.int.test.ts
 cd /src/packages/core && npx vitest run src/fhirpath
 ```
 
 Server tests create isolated Projects and users through helpers in `packages/server/src/test.setup.ts` (for example `createTestProject` and `initTestAuth`). These are the best starting point for reproducing cross-project or privilege escalation issues. Use `supertest` against `initApp` the way existing tests do. Do not re-run `npm run test:seed`: the database is already seeded.
 
-The scheduling tests listed in `serialTestFiles` in `packages/server/vite.config.ts` (`book.test.ts`, `hold.test.ts`, `cancel.test.ts` and others under `src/fhir/operations`) belong to a separate project. Run them with `--project @medplum/server-serial`; with `--project @medplum/server`, vitest reports "No test files found".
+The files listed in `serialTestFiles` in `packages/server/vite.config.ts` (the scheduling tests under `src/fhir/operations` such as `book.int.test.ts`, and the user-heavy files) belong to a separate project. Run them with `--project @medplum/server-serial`; with `--project @medplum/server`, vitest reports "No test files found".
 
 The image has no network, so tests that expect real network behavior can fail. For example, `packages/hl7/src/client.test.ts` "Connection timeout when server does not respond" gets `ENETUNREACH` instead of a timeout. Such failures are environmental, not findings.
 
