@@ -1,0 +1,504 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  evalFhirPath,
+  OperationOutcomeError,
+  preconditionFailed,
+  satisfiedAccessPolicy,
+} from '@medplum/core';
+import type { Appointment, Basic, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { handler as disconnect } from '../bots/google-calendar-disconnect-bot';
+import { connect, operationIdentity } from '../test-auth';
+import type { CalendarConnection } from './connection';
+import { findConnection, updateConnection } from './connection';
+import { BOT_IDENTIFIER_VALUE, IMPORT_IDENTIFIER_SYSTEM } from './constants';
+import { importedSlots } from './import';
+import { runInbound } from './inbound';
+import { ConnectionBusyError, LEASE_MS, LEASE_URL, withConnectionLease } from './lease';
+import { ensurePolicy } from './policies';
+import { readState, requestSync, withState } from './state';
+import { transitionExpression } from './subscriptions';
+import { ensureWatch, receiveNotification } from './watch';
+
+const PRACTITIONER = 'Practitioner/test-practitioner';
+const secrets: BotEvent['secrets'] = {
+  GOOGLE_CALENDAR_CLIENT_ID: { name: 'id', valueString: 'client' },
+  GOOGLE_CALENDAR_CLIENT_SECRET: { name: 'secret', valueString: 'secret' },
+  GOOGLE_CALENDAR_WEBHOOK_URL: { name: 'webhook', valueString: 'https://api.medplum.test/webhook/customer-membership' },
+};
+const event: BotEvent = { bot: { reference: 'Bot/import' }, input: {}, contentType: 'application/fhir+json', secrets };
+
+function response(status: number, body?: unknown): Response {
+  return new Response(body === undefined ? null : JSON.stringify(body), { status });
+}
+
+// MockClient does not enforce If-Match. This adapter models the server's atomic version check;
+// separate server/deployment validation is still required for the actual authorization boundary.
+function enforceVersions(medplum: MockClient): void {
+  const update = medplum.updateResource.bind(medplum);
+  let queue: Promise<unknown> = Promise.resolve();
+  vi.spyOn(medplum, 'updateResource').mockImplementation(
+    (resource: Resource, options?: Parameters<MedplumClient['updateResource']>[1]) => {
+      const next = queue.then(async () => {
+        const expected = new Headers(options?.headers).get('If-Match');
+        if (expected && resource.id) {
+          const current = await medplum.readResource(resource.resourceType, resource.id);
+          if (expected !== `W/"${current.meta?.versionId}"`) {
+            throw new OperationOutcomeError(preconditionFailed);
+          }
+        }
+        return update(resource, options);
+      });
+      queue = next.catch(() => undefined);
+      return next;
+    }
+  );
+}
+
+describe('calendar runtime', () => {
+  let medplum: MockClient;
+  let connection: CalendarConnection;
+  let schedule: WithId<Schedule>;
+  let appointment: WithId<Appointment>;
+  let tokenRevoked: boolean;
+  let snapshotFails: boolean;
+  let watchFails: boolean;
+  let watch: { id: string; token: string };
+  let requests: { url: string; method: string }[];
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(async () => {
+    medplum = new MockClient({ project: { resourceType: 'Project', id: 'project', name: 'Calendar test' } });
+    enforceVersions(medplum);
+    connection = await connect(medplum, PRACTITIONER, 'google-sub', 'refresh-secret');
+    schedule = await medplum.createResource<Schedule>({
+      resourceType: 'Schedule',
+      active: true,
+      actor: [{ reference: PRACTITIONER }],
+    });
+    appointment = await medplum.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'booked',
+      start: new Date(Date.now() + 60 * 60_000).toISOString(),
+      end: new Date(Date.now() + 90 * 60_000).toISOString(),
+      participant: [{ actor: { reference: PRACTITIONER }, status: 'accepted' }],
+    });
+    tokenRevoked = false;
+    snapshotFails = false;
+    watchFails = false;
+    requests = [];
+    watch = { id: '', token: '' };
+    globalThis.fetch = vi.fn(async (input, init) => {
+      const url = String(input);
+      requests.push({ url, method: init?.method ?? 'GET' });
+      if (url.includes('oauth2.googleapis.com/token')) {
+        return tokenRevoked
+          ? response(400, { error: 'invalid_grant' })
+          : response(200, { access_token: 'access', expires_in: 3600, scope: '', token_type: 'Bearer' });
+      }
+      if (url.includes('/revoke')) {
+        return response(tokenRevoked ? 400 : 200);
+      }
+      if (url.endsWith('/events/watch')) {
+        if (watchFails) {
+          return response(403, { error: { message: 'unavailable', errors: [{ reason: 'forbidden' }] } });
+        }
+        const body = JSON.parse(String(init?.body));
+        watch = { id: body.id, token: body.token };
+        return response(200, {
+          id: body.id,
+          resourceId: 'google-resource',
+          expiration: String(Date.now() + 7 * 24 * 60 * 60_000),
+        });
+      }
+      if (url.includes('/channels/stop')) {
+        return response(204);
+      }
+      if (url.endsWith('/calendars/primary')) {
+        return response(200, { id: 'calendar@workspace.example' });
+      }
+      if (url.includes('/events?') && new URL(url).searchParams.has('timeMin')) {
+        if (snapshotFails) {
+          return response(403, { error: { message: 'unavailable', errors: [{ reason: 'forbidden' }] } });
+        }
+        return response(200, {
+          items: [
+            { id: 'google-occurrence', start: { dateTime: appointment.start }, end: { dateTime: appointment.end } },
+          ],
+        });
+      }
+      if (url.includes('/events?')) {
+        return response(200, { items: [] });
+      }
+      throw new Error(`Unexpected test request: ${url}`);
+    });
+  });
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  const current = async (): Promise<WithId<Basic>> =>
+    medplum.readResource('Basic', connection.basic.id, { cache: 'no-cache' });
+  const headers = (number = '2'): NonNullable<BotEvent['headers']> => ({
+    'x-goog-channel-id': watch.id,
+    'x-goog-channel-token': watch.token,
+    'x-goog-resource-id': 'google-resource',
+    'x-goog-message-number': number,
+    'x-goog-resource-state': 'exists',
+  });
+  async function requestDisconnect(): ReturnType<typeof disconnect> {
+    const request = {
+      ...event,
+      requester: { reference: PRACTITIONER },
+      input: { resourceType: 'Parameters' as const },
+    };
+    await operationIdentity(medplum, request, BOT_IDENTIFIER_VALUE.disconnect);
+    return disconnect(medplum, request);
+  }
+
+  test('imports and records freshness without duplicating Slots', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const state = readState(await current());
+    expect(state.lastInbound).toBeTruthy();
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
+    expect(JSON.stringify(await current())).not.toContain(watch.token);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
+  });
+
+  test('headers authenticate routing; duplicate and out-of-order notifications do not queue again', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const before = readState(await current()).inboundRequest;
+    expect(await receiveNotification(medplum, { ...headers(), 'x-goog-channel-token': 'wrong' })).toMatchObject({
+      issue: [{ code: 'forbidden' }],
+    });
+    expect(readState(await current()).inboundRequest).toBe(before);
+    expect(
+      await receiveNotification(medplum, { ...headers(), 'x-goog-resource-id': 'another-calendar' })
+    ).toBeDefined();
+    expect(await receiveNotification(medplum, { ...headers(), 'x-goog-channel-token': [watch.token] })).toBeDefined();
+    expect(
+      await receiveNotification(medplum, { ...headers('10'), 'x-goog-resource-uri': 'https://untrusted.example' })
+    ).toBeUndefined();
+    const requested = readState(await current()).inboundRequest;
+    expect(requested).not.toBe(before);
+    await receiveNotification(medplum, headers('10'));
+    await receiveNotification(medplum, headers('9'));
+    expect(readState(await current()).inboundRequest).toBe(requested);
+    expect(requests.some((r) => r.url.includes('untrusted'))).toBe(false);
+  });
+
+  test('the authenticated initial callback may arrive before watch registration returns', async () => {
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      await ensureWatch(
+        lease,
+        {
+          watchEvents: async (id, token) => {
+            watch = { id, token };
+            expect(
+              await receiveNotification(medplum, { ...headers('1'), 'x-goog-resource-state': 'sync' })
+            ).toBeUndefined();
+            return { id, resourceId: 'google-resource', expiration: String(Date.now() + 7 * 24 * 60 * 60_000) };
+          },
+          stopChannel: async () => undefined,
+        },
+        'https://api.medplum.test/webhook/member'
+      );
+    });
+    expect(readState(await current()).channels[0].resourceId).toBe('google-resource');
+  });
+
+  test('renews before expiry and retires the old channel only after registration', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const old = watch.id;
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      await lease.mutate((basic) => {
+        const state = readState(basic);
+        state.channels[0].expires = new Date(Date.now() + 60_000).toISOString();
+        return withState(basic, state);
+      });
+    });
+    requests = [];
+    await runInbound(medplum, event, connection.basic.id);
+    expect(watch.id).not.toBe(old);
+    expect(readState(await current()).channels.map((c) => c.id)).toEqual([watch.id]);
+    expect(requests.findIndex((r) => r.url.includes('/events/watch'))).toBeLessThan(
+      requests.findIndex((r) => r.url.includes('/channels/stop'))
+    );
+  });
+
+  test('a channel registered to a previous webhook address is replaced, as is one without an address', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const first = watch.id;
+    expect(readState(await current()).channels[0].address).toBe(secrets?.GOOGLE_CALENDAR_WEBHOOK_URL?.valueString);
+
+    // The installer moved the webhook membership: the stored address no longer matches.
+    const moved: BotEvent = {
+      ...event,
+      secrets: {
+        ...secrets,
+        GOOGLE_CALENDAR_WEBHOOK_URL: {
+          name: 'webhook',
+          valueString: 'https://api.medplum.test/webhook/new-membership',
+        },
+      },
+    };
+    requests = [];
+    await runInbound(medplum, moved, connection.basic.id);
+    expect(watch.id).not.toBe(first);
+    expect(readState(await current()).channels.map((c) => [c.id, c.address])).toEqual([
+      [watch.id, 'https://api.medplum.test/webhook/new-membership'],
+    ]);
+    expect(requests.some((r) => r.url.includes('/channels/stop'))).toBe(true);
+
+    // A channel written by an earlier version has no address and is replaced the same way.
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      await lease.mutate((basic) => {
+        const state = readState(basic);
+        state.channels = state.channels.map((c) => ({ ...c, address: undefined }));
+        return withState(basic, state);
+      });
+    });
+    const legacy = watch.id;
+    await runInbound(medplum, moved, connection.basic.id);
+    expect(watch.id).not.toBe(legacy);
+    expect(readState(await current()).channels).toHaveLength(1);
+  });
+
+  test('a failed watch registration does not stop the import', async () => {
+    watchFails = true;
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
+    const failed = readState(await current());
+    expect(failed.lastInbound).toBeTruthy();
+    expect(failed.staleReason).toBe('watch-unavailable');
+    expect(failed.channels).toEqual([]);
+    // The next run inside the backoff imports without another registration attempt.
+    const attempts = (): number => requests.filter((r) => r.url.endsWith('/events/watch')).length;
+    const before = attempts();
+    await requestSync(medplum, connection.basic.id, ['inbound']);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(attempts()).toBe(before);
+    watchFails = false;
+    await medplum.updateResource(
+      withState(await current(), { ...readState(await current()), watchRetryAt: undefined })
+    );
+    await requestSync(medplum, connection.basic.id, ['inbound']);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(readState(await current()).staleReason).toBeUndefined();
+    expect(readState(await current()).channels).toHaveLength(1);
+  });
+
+  test('an outage or revocation preserves blocks and last successful import', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const before = readState(await current());
+    const slots = await importedSlots(medplum, connection.basic.id);
+    snapshotFails = true;
+    await expect(runInbound(medplum, event, connection.basic.id)).rejects.toMatchObject({ status: 403 });
+    const failed = readState(await current());
+    expect(failed).toMatchObject({
+      lastInbound: before.lastInbound,
+      inboundError: 'inbound-error',
+    });
+    // The failure is retried with a backoff, not on every minute sweep.
+    expect(Date.parse(failed.inboundRetryAt ?? '')).toBeGreaterThan(Date.now() + 10 * 60_000);
+    const deferred = requests.length;
+    await runInbound(medplum, event, connection.basic.id);
+    expect(requests).toHaveLength(deferred);
+    await medplum.updateResource(withState(await current(), { ...failed, inboundRetryAt: undefined }));
+    tokenRevoked = true;
+    await runInbound(medplum, event, connection.basic.id);
+    expect((await findConnection(medplum, PRACTITIONER))?.status).toBe('reauth-required');
+    expect(await importedSlots(medplum, connection.basic.id)).toEqual(slots);
+  });
+
+  test('disconnect is queued, then removes watches and imported Slots without changing the appointment', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const result = await requestDisconnect();
+    expect(result.parameter).toContainEqual({ name: 'status', valueCode: 'disconnecting' });
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await findConnection(medplum, PRACTITIONER)).toBeUndefined();
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(0);
+    expect(await medplum.readResource('Appointment', appointment.id)).toEqual(appointment);
+    expect(requests.some((r) => r.url.includes('/channels/stop'))).toBe(true);
+  });
+
+  test('partial disconnect retains checkpoints and resumes without redoing Google cleanup', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    await requestDisconnect();
+    const remove = medplum.deleteResource.bind(medplum);
+    const spy = vi.spyOn(medplum, 'deleteResource').mockImplementation(async (type, id, options) => {
+      if (type === 'Slot') {
+        throw new Error('Slot removal unavailable');
+      }
+      return remove(type, id, options);
+    });
+    await expect(runInbound(medplum, event, connection.basic.id)).rejects.toThrow('Slot removal unavailable');
+    expect(readState(await current()).googleCleaned).toBe(true);
+    expect(await importedSlots(medplum, connection.basic.id)).toHaveLength(1);
+    spy.mockRestore();
+    requests = [];
+    await runInbound(medplum, event, connection.basic.id);
+    expect(requests.some((r) => r.url.includes('/events?') || r.url.includes('/token'))).toBe(false);
+    expect(await findConnection(medplum, PRACTITIONER)).toBeUndefined();
+  });
+
+  test('mutually exclusive workers reject concurrent work; request markers survive a worker state update', async () => {
+    await withConnectionLease(medplum, connection.basic.id, async (lease) => {
+      await expect(withConnectionLease(medplum, connection.basic.id, async () => undefined)).rejects.toBeInstanceOf(
+        ConnectionBusyError
+      );
+      await requestSync(medplum, connection.basic.id, ['inbound']);
+      const requested = readState(await current()).inboundRequest;
+      await lease.mutate((basic) => withState(basic, { ...readState(basic), lastOutbound: new Date().toISOString() }));
+      expect(readState(await current()).inboundRequest).toBe(requested);
+    });
+    expect((await current()).extension?.some((e) => e.url === LEASE_URL)).toBe(false);
+  });
+
+  test('expired workers cannot write after a replacement takes the lease', async () => {
+    let time = Date.now();
+    await expect(
+      withConnectionLease(
+        medplum,
+        connection.basic.id,
+        async (old) => {
+          time += LEASE_MS + 1;
+          await withConnectionLease(
+            medplum,
+            connection.basic.id,
+            async (replacement) => {
+              await expect(old.check()).rejects.toThrow('deadline');
+              await replacement.check();
+            },
+            () => time
+          );
+        },
+        () => time
+      )
+    ).rejects.toThrow('lost its connection lease');
+  });
+
+  test('work transition expressions ignore unrelated connection writes', async () => {
+    const previous = await current();
+    await requestSync(medplum, connection.basic.id, ['inbound']);
+    const updated = await current();
+    const evaluate = (field: string, before: Basic, after: Basic): unknown[] =>
+      evalFhirPath(transitionExpression(field), after, {
+        '%previous': { type: 'Basic', value: before },
+        '%current': { type: 'Basic', value: after },
+      });
+    expect(evaluate('inboundRequest', previous, updated)).toEqual([true]);
+    expect(evaluate('outboundRequest', previous, updated)).toEqual([false]);
+    expect(evaluate('inboundRequest', updated, updated)).toEqual([false]);
+  });
+
+  test('worker policy permits owned Slots only and denies Appointment/Schedule mutations', async () => {
+    const policy = await ensurePolicy(medplum, 'worker');
+    const ordinary: Slot = {
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: { reference: `Schedule/${schedule.id}` },
+      start: appointment.start as string,
+      end: appointment.end as string,
+    };
+    const owned = { ...ordinary, identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'owned' }] };
+    for (const interaction of [
+      AccessPolicyInteraction.CREATE,
+      AccessPolicyInteraction.UPDATE,
+      AccessPolicyInteraction.DELETE,
+    ]) {
+      expect(satisfiedAccessPolicy(ordinary, interaction, policy)).toBeUndefined();
+      expect(satisfiedAccessPolicy(owned, interaction, policy)).toBeDefined();
+      expect(satisfiedAccessPolicy(appointment, interaction, policy)).toBeUndefined();
+      expect(satisfiedAccessPolicy(schedule, interaction, policy)).toBeUndefined();
+    }
+    expect(satisfiedAccessPolicy(owned, AccessPolicyInteraction.READ, policy)).toBeDefined();
+  });
+  test('lease release rebases after a webhook changes the version', async () => {
+    const spy = vi.mocked(medplum.updateResource);
+    const update = spy.getMockImplementation();
+    if (!update) {
+      throw new Error('Missing version adapter');
+    }
+    let interfere = true;
+    spy.mockImplementation(async (resource, options) => {
+      if (interfere && resource.resourceType === 'Basic' && !resource.extension?.some((e) => e.url === LEASE_URL)) {
+        interfere = false;
+        await requestSync(medplum, connection.basic.id, ['inbound']);
+      }
+      return update(resource, options);
+    });
+    const before = readState(await current()).inboundRequest;
+    await withConnectionLease(medplum, connection.basic.id, async () => undefined);
+    expect(readState(await current()).inboundRequest).not.toBe(before);
+    expect((await current()).extension?.some((e) => e.url === LEASE_URL)).toBe(false);
+  });
+
+  test('a long import yields after completed writes and resumes the remaining Slots', async () => {
+    await medplum.createResource<Schedule>({
+      resourceType: 'Schedule',
+      active: true,
+      actor: [{ reference: PRACTITIONER }],
+    });
+    let time = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => time);
+    const create = vi.mocked(medplum.createResourceIfNoneExist).getMockImplementation()?.bind(medplum);
+    if (!create) {
+      throw new Error('Missing test project stamping');
+    }
+    let advance = true;
+    vi.spyOn(medplum, 'createResourceIfNoneExist').mockImplementation(async (resource, query, options) => {
+      const stored = await create(resource, query, options);
+      if (resource.resourceType === 'Slot' && advance) {
+        time += 7 * 60_000;
+        advance = false;
+      }
+      return stored;
+    });
+    await runInbound(medplum, event, connection.basic.id);
+    const first = await importedSlots(medplum, connection.basic.id);
+    expect(first).toHaveLength(1);
+    expect(readState(await current()).inboundError).toBe('inbound-pending');
+    expect(readState(await current()).lastInbound).toBeUndefined();
+    await runInbound(medplum, event, connection.basic.id);
+    const final = await importedSlots(medplum, connection.basic.id);
+    expect(final).toHaveLength(2);
+    expect(final.some((s) => s.id === first[0].id)).toBe(true);
+    expect(readState(await current()).inboundError).toBeUndefined();
+    expect(readState(await current()).lastInbound).toBeTruthy();
+  });
+
+  test('an unassignable Slot does not hold unrelated disconnects or credentials hostage', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    const broken = await medplum.createResource<Slot>({
+      resourceType: 'Slot',
+      status: 'busy-unavailable',
+      schedule: { reference: 'Schedule/unknown-owner' },
+      start: appointment.start as string,
+      end: appointment.end as string,
+      identifier: [{ system: IMPORT_IDENTIFIER_SYSTEM, value: 'broken' }],
+    });
+    const latest = (await findConnection(medplum, PRACTITIONER)) as CalendarConnection;
+    await updateConnection(medplum, latest, { status: 'disconnecting' });
+    await runInbound(medplum, event, connection.basic.id);
+    expect(await findConnection(medplum, PRACTITIONER)).toBeUndefined();
+    expect(await importedSlots(medplum, connection.basic.id)).toEqual([]);
+    expect(await medplum.readResource('Slot', broken.id)).toBeDefined();
+    expect(requests.some((r) => r.url.includes('/revoke'))).toBe(true);
+  });
+
+  test('a late notification after disconnect cannot revive the connection', async () => {
+    await runInbound(medplum, event, connection.basic.id);
+    await requestDisconnect();
+    expect(await receiveNotification(medplum, headers())).toMatchObject({ issue: [{ code: 'forbidden' }] });
+    expect((await findConnection(medplum, PRACTITIONER))?.status).toBe('disconnecting');
+  });
+});
