@@ -71,3 +71,5 @@ if (import.meta.main) {
   // We should never hit the catch block here but we can't do top-level await due to how we transpile to CJS for Jest
   runFromCli(process.argv).catch(console.error);
 }
+
+// ci-timing-experiment: run 5
