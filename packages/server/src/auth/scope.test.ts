@@ -26,7 +26,7 @@ describe('Scope', () => {
     await initApp(app, config);
 
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project, profile } = await registerNew({
         firstName: 'Scope',
         lastName: 'Scope',
         projectName: 'Scope Project',
@@ -39,11 +39,13 @@ describe('Scope', () => {
         resourceType: 'Patient',
         meta: { project: project.id },
       });
-      const launch = await systemRepo.createResource<SmartAppLaunch>({
-        resourceType: 'SmartAppLaunch',
-        meta: { project: project.id },
-        patient: createReference(patient),
-      });
+      const launch = await systemRepo
+        .withOverrideConfig({ author: createReference(profile) })
+        .createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          meta: { project: project.id },
+          patient: createReference(patient),
+        });
       launchId = launch.id;
     });
   });

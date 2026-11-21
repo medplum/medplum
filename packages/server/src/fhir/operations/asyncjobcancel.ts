@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, assert, badRequest } from '@medplum/core';
+import { AccessPolicyInteraction, allOk, assert, badRequest, forbidden } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { makeOperationDefinition } from './definitions';
 import { readAsyncJob } from './utils/asyncjobexecutor';
 
@@ -28,6 +29,10 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
   // Update status of async job
   const ctx = getAuthenticatedContext();
   const job = await readAsyncJob(req.params.id);
+  // The system repo patch below checks nothing, so authorize with the caller's repo
+  if (!(await ctx.repo.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'AsyncJob', job.id))) {
+    return [forbidden];
+  }
   switch (job.status) {
     case 'accepted':
       // We patch with system repo so that AsyncJob is not added to a project
@@ -41,6 +46,11 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
         { op: 'test', path: '/status', value: 'accepted' },
         { op: 'add', path: '/status', value: 'cancelled' },
       ]);
+      getLogger().info('AsyncJob cancelled', {
+        asyncJobId: job.id,
+        requester: job.requester?.reference,
+        canceller: ctx.profile.reference,
+      });
       break;
     case 'cancelled':
       break;

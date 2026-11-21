@@ -15,6 +15,9 @@ describe('$clear-all-ws-subs', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    // Without a projectId, $clear-all-ws-subs deletes the WebSocket subscription keys of every
+    // project. A pub/sub Redis DB of its own keeps it from deleting keys other test files are using.
+    config.pubSubRedis = { ...config.redis, db: 12 };
     await initApp(app, config);
   });
 

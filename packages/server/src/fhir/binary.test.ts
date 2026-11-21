@@ -11,7 +11,8 @@ import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
-import { initTestAuth, streamToString } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth, streamToString } from '../test.setup';
+import { DEFAULT_ACCESS_POLICIES } from './default-access-policies';
 
 const app = express();
 let accessToken: string;
@@ -342,6 +343,39 @@ describe('Binary', () => {
       .send('Hello world');
     expect(res2).toHaveStatus(400);
     expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+  });
+
+  test('Default Practitioner policy can create Binaries but not replace or delete them', async () => {
+    const { project } = await createTestProject();
+    const member = await addTestUser(project, {
+      accessPolicy: { resourceType: 'AccessPolicy', ...DEFAULT_ACCESS_POLICIES.Practitioner() },
+    });
+    const auth = 'Bearer ' + member.accessToken;
+
+    const createRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.TEXT)
+      .send('original');
+    expect(createRes).toHaveStatus(201);
+    const url = '/fhir/R4/Binary/' + createRes.body.id;
+
+    const readRes = await request(app).get(url).set('Authorization', auth);
+    expect(readRes).toHaveStatus(200);
+    expect(readRes.text).toBe('original');
+
+    const putRes = await request(app)
+      .put(url)
+      .set('Authorization', auth)
+      .set('Content-Type', ContentType.TEXT)
+      .send('replaced');
+    expect(putRes).toHaveStatus(403);
+    const uploadRes = await request(app)
+      .get(url + '/$presigned-url?upload=true')
+      .set('Authorization', auth);
+    expect(uploadRes).toHaveStatus(403);
+    const deleteRes = await request(app).delete(url).set('Authorization', auth);
+    expect(deleteRes).toHaveStatus(403);
   });
 });
 
