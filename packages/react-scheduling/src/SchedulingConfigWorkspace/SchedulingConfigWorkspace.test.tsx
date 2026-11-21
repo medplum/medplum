@@ -84,6 +84,7 @@ describe('SchedulingConfigWorkspace', () => {
     await setup();
 
     expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
+    expect(within(details()).queryByRole('button')).not.toBeInTheDocument();
     expect(
       within(sidebar())
         .queryAllByRole('button')
@@ -347,6 +348,63 @@ describe('SchedulingConfigWorkspace', () => {
     ).toBeInTheDocument();
   });
 
+  test('a new provider is listed under Providers and selected once created, and can then offer visit types', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New provider' }));
+    await userEvent.type(within(details()).getByLabelText(/First name/), 'Mary');
+    await userEvent.type(within(details()).getByLabelText(/Last name/), 'Lee');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Mary Lee')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Providers')).getByText('Mary Lee')).toBeInTheDocument();
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(within(details()).getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
+    expect(await within(details()).findByRole('searchbox', { name: 'Service facilities' })).toBeInTheDocument();
+  });
+
+  test('a new room is listed under Rooms and selected once created, with its Schedule, and can then offer visit types', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
+    expect(within(details()).getByText('Not saved yet')).toBeInTheDocument();
+    await userEvent.type(nameField(), 'Room 9');
+    expect(within(sidebar()).queryByText('Room 9')).not.toBeInTheDocument();
+
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Room 9')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Rooms')).getByText('Room 9')).toBeInTheDocument();
+    expect(within(details()).getByRole('heading', { name: 'Room 9' })).toBeInTheDocument();
+    expect(within(details()).getByRole('switch', { name: 'Schedule status' })).toBeChecked();
+    expect(within(details()).getByText('Room 9 offers no visit types yet.')).toBeInTheDocument();
+    expect(within(details()).getByRole('button', { name: 'Offer visit types' })).toBeInTheDocument();
+  });
+
+  test('a new device is listed under Devices once created', async () => {
+    await setup();
+
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New device' }));
+    await userEvent.type(nameField(), 'Ultrasound 4');
+    await userEvent.click(saveButton());
+
+    await waitFor(() => expect(row('Ultrasound 4')).toHaveAttribute('aria-current', 'true'));
+    expect(within(section('Devices')).getByText('Ultrasound 4')).toBeInTheDocument();
+  });
+
+  test('discarding a new room lists nothing and leaves nothing selected', async () => {
+    await setup();
+    await userEvent.click(within(sidebar()).getByRole('button', { name: 'New room' }));
+    await userEvent.type(nameField(), 'Room 9');
+
+    await userEvent.click(
+      within(screen.getByRole('region', { name: 'Unsaved changes' })).getByRole('button', { name: 'Discard' })
+    );
+
+    expect(within(details()).getByText('Nothing selected')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Room 9')).not.toBeInTheDocument();
+  });
+
   test("a provider's saved time zone is kept on the page, and the row stays selected", async () => {
     await setup();
     await userEvent.click(row('Dr. Anika Patel'));
@@ -355,24 +413,26 @@ describe('SchedulingConfigWorkspace', () => {
 
     fireEvent.focus(timezone);
     fireEvent.change(timezone, { target: { value: 'America/Chicago' } });
-    fireEvent.click(screen.getByText('America/Chicago'));
+    fireEvent.click(screen.getByRole('option'));
     await userEvent.click(saveButton());
 
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Unsaved changes' })).not.toBeInTheDocument());
     expect(row('Dr. Anika Patel')).toHaveAttribute('aria-current', 'true');
     expect(
       within(within(details()).getByRole('region', { name: 'General' })).getByRole('textbox', { name: 'Time zone' })
-    ).toHaveValue('America/Chicago');
+    ).toHaveValue('(CT) Central Time');
   });
 
-  test('an empty project says each section has nothing yet, and still offers to create a visit type', async () => {
+  test('an empty project says each section has nothing yet, and still offers to create a visit type, room, or device', async () => {
     const medplum = new MockClient({ seedDefaultData: false });
     renderWithMedplum(<SchedulingConfigWorkspace />, medplum);
 
     for (const noun of ['visit types', 'providers', 'rooms', 'devices']) {
       expect(await within(sidebar()).findByText(`No ${noun} yet`)).toBeInTheDocument();
     }
-    expect(within(sidebar()).getByRole('button', { name: 'New visit type' })).toBeInTheDocument();
+    for (const label of ['New visit type', 'New room', 'New device']) {
+      expect(within(sidebar()).getByRole('button', { name: label })).toBeInTheDocument();
+    }
   });
 
   test('says when the visit types could not be loaded', async () => {

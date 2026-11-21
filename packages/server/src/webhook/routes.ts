@@ -1,20 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isOperationOutcome, singularize } from '@medplum/core';
-import type { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { isOperationOutcome, resolveId, singularize } from '@medplum/core';
+import type { Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { executeBot } from '../bots/execute';
-import { sendBotResponse } from '../bots/utils';
+import { canProjectReadBot, getBotBodyInput, sendBotResponse } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-
-export const WEBHOOK_PATHS = [
-  '/webhook/:id',
-  '/api/webhook/:id',
-  '/projects/:projectId/webhook/:id',
-  '/api/projects/:projectId/webhook/:id',
-];
 
 /**
  * Handles HTTP requests for anonymous webhooks.
@@ -41,6 +34,13 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
   const systemRepo = await getProjectSystemRepo(runAs.project);
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
 
+  // The Bot must be readable from the ProjectMembership's project
+  const project = await systemRepo.readResource<Project>('Project', resolveId(runAs.project) as string);
+  if (!(await canProjectReadBot(project, bot))) {
+    res.status(403).send('Bot is not accessible from the ProjectMembership project');
+    return;
+  }
+
   // The Bot must have a publicWebhook flag set to true
   if (!bot.publicWebhook) {
     res.status(403).send('Bot is not configured for public webhook access');
@@ -52,11 +52,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
   // If the request is HTTP GET, then the query string is the input
-  let input = req.query;
-  if (req.method === 'POST') {
-    const rawBody = (req as any).rawBody as Buffer | undefined;
-    input = bot.rawBody && rawBody ? rawBody.toString('utf8') : req.body;
-  }
+  const input = req.method === 'POST' ? getBotBodyInput(bot, req.body, res.locals.rawBody) : req.query;
 
   const result = await executeBot({
     bot,

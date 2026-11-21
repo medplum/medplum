@@ -128,7 +128,8 @@ console.log(topics);
 
 // start-block loadConversationMessagesTs
 // Each turn is a child Communication linked via partOf. payload[0].contentString
-// is JSON of { role, content, tool_calls, tool_call_id, resources, componentCode, sequenceNumber }.
+// is JSON of { role, content, tool_calls, tool_call_id, resources, componentCode }. Messages are
+// saved one at a time and never updated, so _lastUpdated is their order.
 const topicId = 'example-topic-id';
 const messages = await medplum.searchResources('Communication', {
   'part-of': `Communication/${topicId}`,
@@ -137,8 +138,7 @@ const messages = await medplum.searchResources('Communication', {
 });
 const turns = messages
   .filter((m) => m.payload?.[0]?.contentString)
-  .map((m) => JSON.parse(m.payload?.[0]?.contentString as string))
-  .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+  .map((m) => JSON.parse(m.payload?.[0]?.contentString as string));
 console.log(turns);
 // end-block loadConversationMessagesTs
 

@@ -3,6 +3,7 @@
 import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError, Job, Queue } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -20,7 +21,7 @@ import * as migrationUtils from '../migrations/migration-utils';
 import type { PhasalMigration } from '../migrations/types';
 import type { ServerRegistryInfo } from '../server-registry';
 import * as serverRegistry from '../server-registry';
-import { withTestContext } from '../test.setup';
+import { TEST_SHARD_ID, withTestContext } from '../test.setup';
 import * as versionModule from '../util/version';
 import { getServerVersion } from '../util/version';
 import { getAsyncJobTracking } from './base';
@@ -36,15 +37,15 @@ import {
 import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
-const shardId = TODO_SHARD_ID;
-
 describe('Post-Deploy Migration Worker', () => {
   let config: ServerConfig;
   let mockRegisteredServers: ServerRegistryInfo[];
+  const shardId = TEST_SHARD_ID;
+  // System-owned AsyncJobs live on the global shard, where `getTrackingAsyncJobExecutor` reads them
   const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
 
   beforeAll(async () => {
-    config = await loadTestConfig();
+    config = await loadTestConfig({ sharded: true });
 
     // initialize everything but workers
     await initAppServices(config);
@@ -122,7 +123,7 @@ describe('Post-Deploy Migration Worker', () => {
       const data1 = prepareCustomMigrationJobData({ shardId, asyncJob });
       expect(data1).toEqual({
         type: 'custom',
-        target: { kind: 'shard', shardId: TODO_SHARD_ID },
+        target: { kind: 'shard', shardId },
         tracking: getAsyncJobTracking(asyncJob),
         requestId: expect.any(String),
         traceId: expect.any(String),
@@ -141,7 +142,7 @@ describe('Post-Deploy Migration Worker', () => {
     const data2 = prepareCustomMigrationJobData({ shardId, asyncJob });
     expect(data2).toEqual({
       type: 'custom',
-      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      target: { kind: 'shard', shardId },
       tracking: getAsyncJobTracking(asyncJob),
       requestId: undefined,
       traceId: undefined,
@@ -377,6 +378,84 @@ describe('Post-Deploy Migration Worker', () => {
     ]);
   });
 
+  test.each<[string, Pick<PostDeployJobData, 'target'> | Record<string, never>]>([
+    ['a TODO shard target', { target: { kind: 'shard', shardId: TODO_SHARD_ID } }],
+    ['no target', {}],
+  ])('Job processor runs a job queued with %s on the global shard', async (_label, legacyTarget) => {
+    const callback = vi.fn(async () => undefined);
+    const mockCustomMigration: CustomPostDeployMigration = {
+      type: 'custom',
+      prepareJobData: vi.fn(),
+      run: vi.fn(async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback)),
+    };
+    const getPostDeployMigrationSpy = vi
+      .spyOn(migrationUtils, 'getPostDeployMigration')
+      .mockReturnValue(mockCustomMigration);
+
+    // dataVersion 1 is already applied everywhere, so marking it complete leaves the shared database unchanged
+    const asyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      type: 'data-migration',
+      status: 'accepted',
+      dataVersion: 1,
+      minServerVersion: '0.0.0',
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+    });
+    const job = {
+      id: '1',
+      data: { type: 'custom', tracking: getAsyncJobTracking(asyncJob), ...legacyTarget },
+      queueName: PostDeployMigrationQueueName,
+    } as unknown as Job<PostDeployJobData>;
+
+    await jobProcessor(job);
+
+    expect(mockCustomMigration.run).toHaveBeenCalledWith(
+      expect.objectContaining({ shardId: GLOBAL_SHARD_ID }),
+      job,
+      expect.objectContaining({ target: { kind: 'shard', shardId: GLOBAL_SHARD_ID } })
+    );
+    expect(callback).toHaveBeenCalled();
+    const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
+    expect(updatedAsyncJob.status).toBe('completed');
+
+    getPostDeployMigrationSpy.mockRestore();
+  });
+
+  test('Job processor fails a job tracked by a project-owned AsyncJob', () =>
+    withTestContext(async () => {
+      const mockCustomMigration: CustomPostDeployMigration = {
+        type: 'custom',
+        prepareJobData: vi.fn(),
+        run: vi.fn(),
+      };
+      const getPostDeployMigrationSpy = vi
+        .spyOn(migrationUtils, 'getPostDeployMigration')
+        .mockReturnValue(mockCustomMigration);
+
+      const asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        meta: { project: randomUUID() },
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/migrate',
+      });
+      const job = {
+        id: '1',
+        data: { type: 'custom', tracking: getAsyncJobTracking(asyncJob), target: { kind: 'shard', shardId } },
+        queueName: PostDeployMigrationQueueName,
+      } as unknown as Job<PostDeployJobData>;
+
+      await expect(jobProcessor(job)).rejects.toThrow(`Unexpected AsyncJob owner for AsyncJob/${asyncJob.id}`);
+
+      expect(mockCustomMigration.run).not.toHaveBeenCalled();
+      await expect(systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id)).resolves.toMatchObject({
+        status: 'error',
+      });
+
+      getPostDeployMigrationSpy.mockRestore();
+    }));
+
   test('Worker logs async job data', () => {
     const loggingSpy = vi.spyOn(workerUtils, 'addVerboseQueueLogging');
     initPostDeployMigrationWorker(config);
@@ -602,7 +681,7 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      target: { kind: 'shard', shardId },
       tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
@@ -642,7 +721,7 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      target: { kind: 'shard', shardId },
       tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',
@@ -686,7 +765,7 @@ describe('Post-Deploy Migration Worker', () => {
 
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
-      target: { kind: 'shard', shardId: TODO_SHARD_ID },
+      target: { kind: 'shard', shardId },
       tracking: getAsyncJobTracking(asyncJob),
       requestId: '123',
       traceId: '456',

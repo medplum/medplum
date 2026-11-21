@@ -159,6 +159,34 @@ export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Patient-identifier',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-identifier',
+        name: 'identifier',
+        status: 'active',
+        description: 'A patient identifier',
+        code: 'identifier',
+        base: ['Patient'],
+        type: 'token',
+        expression: 'Patient.identifier',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Patient-deceased',
+        url: 'http://hl7.org/fhir/SearchParameter/Patient-deceased',
+        name: 'deceased',
+        status: 'active',
+        description: 'This patient has been marked as deceased, or as a death date entered',
+        code: 'deceased',
+        base: ['Patient'],
+        type: 'token',
+        expression: 'Patient.deceased.exists() and Patient.deceased != false',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Location-name',
         url: 'http://hl7.org/fhir/SearchParameter/Location-name',
         name: 'name',
@@ -294,6 +322,20 @@ export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
         base: ['Appointment'],
         type: 'token',
         expression: 'Appointment.status',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Appointment-slot',
+        url: 'http://hl7.org/fhir/SearchParameter/Appointment-slot',
+        name: 'slot',
+        status: 'draft',
+        description: 'The slots that this appointment is filling',
+        code: 'slot',
+        base: ['Appointment'],
+        type: 'reference',
+        expression: 'Appointment.slot',
       },
     },
     {

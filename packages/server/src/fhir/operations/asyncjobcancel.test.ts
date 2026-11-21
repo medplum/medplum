@@ -1,14 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, ContentType } from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { allOk, badRequest, ContentType, createReference, forbidden, getReferenceString, Logger } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
-import type { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
+import type { AsyncJob, OperationOutcome, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSuperAdminTestProject, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, getSuperAdminTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
@@ -185,4 +188,92 @@ describe('AsyncJob/$cancel', () => {
         },
       });
     }));
+
+  describe('Access', () => {
+    let project: WithId<Project>;
+    let requester: Awaited<ReturnType<typeof addTestUser>>;
+    let otherMember: Awaited<ReturnType<typeof addTestUser>>;
+    let readOnlyMember: Awaited<ReturnType<typeof addTestUser>>;
+    let linkedToken: string;
+
+    beforeAll(async () => {
+      ({ project } = await createTestProject({ membership: { admin: true } }));
+      requester = await addTestUser(project);
+      otherMember = await addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: '*' }] },
+      });
+      readOnlyMember = await addTestUser(project, {
+        accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'AsyncJob', readonly: true }] },
+      });
+      // Admin status does not carry across the project link
+      ({ accessToken: linkedToken } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
+        project: { link: [{ project: createReference(project) }] },
+      }));
+    });
+
+    async function createJob(jobRequester: AsyncJob['requester']): Promise<WithId<AsyncJob>> {
+      return (await getProjectSystemRepo(project)).createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        meta: { project: project.id },
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: 'random-request',
+        requester: jobRequester,
+      });
+    }
+
+    function cancel(token: string, job: WithId<AsyncJob>): request.Test {
+      return request(app)
+        .post(`/fhir/R4/AsyncJob/${job.id}/$cancel`)
+        .set('Authorization', 'Bearer ' + token);
+    }
+
+    async function expectStatus(job: WithId<AsyncJob>, status: AsyncJob['status']): Promise<void> {
+      const stored = await (await getProjectSystemRepo(project)).readResource<AsyncJob>('AsyncJob', job.id);
+      expect(stored.status).toStrictEqual(status);
+    }
+
+    test('Requester can cancel', async () => {
+      const job = await createJob(createReference(requester.profile));
+      const res = await cancel(requester.accessToken, job);
+      expect(res).toHaveStatus(200);
+      await expectStatus(job, 'cancelled');
+    });
+
+    test('Forbidden with read-only AsyncJob access', async () => {
+      const job = await createJob(createReference(readOnlyMember.profile));
+      const res = await cancel(readOnlyMember.accessToken, job);
+      expect(res).toHaveStatus(403);
+      expect(res.body).toMatchObject(forbidden);
+      await expectStatus(job, 'accepted');
+    });
+
+    test('Forbidden for an admin of a linked project', async () => {
+      const job = await createJob(createReference(requester.profile));
+      const res = await cancel(linkedToken, job);
+      expect(res).toHaveStatus(403);
+      expect(res.body).toMatchObject(forbidden);
+      await expectStatus(job, 'accepted');
+    });
+
+    test('Non-requester with write access can cancel, and is logged', async () => {
+      const job = await createJob(createReference(requester.profile));
+      // Each request logs with its own Logger instance, so spy on the prototype
+      const infoSpy = vi.spyOn(Logger.prototype, 'info');
+      try {
+        const res = await cancel(otherMember.accessToken, job);
+        expect(res).toHaveStatus(200);
+        expect(infoSpy).toHaveBeenCalledWith('AsyncJob cancelled', {
+          asyncJobId: job.id,
+          requester: getReferenceString(requester.profile),
+          canceller: getReferenceString(otherMember.profile),
+        });
+      } finally {
+        infoSpy.mockRestore();
+      }
+      await expectStatus(job, 'cancelled');
+    });
+  });
 });

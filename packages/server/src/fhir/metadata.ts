@@ -24,6 +24,7 @@ import {
   getSupportedProfiles,
   getSystemInteractions,
   isResourceTypeAdvertised,
+  TERMINOLOGY_OPERATIONS,
 } from '../config/capabilitystatement';
 import { getConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
@@ -148,10 +149,17 @@ const supportedProfiles: Record<string, string[]> = {
 };
 
 const supportedOperations: Record<string, CapabilityStatementRestResourceOperation[]> = {
+  ...TERMINOLOGY_OPERATIONS,
   Group: [
     {
       name: 'export',
       definition: 'http://hl7.org/fhir/uv/bulkdata/OperationDefinition/group-export',
+    },
+  ],
+  Questionnaire: [
+    {
+      name: 'assemble',
+      definition: 'http://hl7.org/fhir/uv/sdc/OperationDefinition/Questionnaire-assemble',
     },
   ],
 };

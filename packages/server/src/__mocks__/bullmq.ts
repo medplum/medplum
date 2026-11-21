@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 
 export class Queue {
   add = vi.fn().mockImplementation(async (jobName: string, jobData: any, options: any) => ({
-    id: '123',
+    id: options?.jobId ?? '123',
     name: jobName,
     data: jobData,
     opts: options,
@@ -23,6 +23,7 @@ export class Queue {
 export const Worker = vi.fn().mockImplementation(function Worker() {
   return {
     on: vi.fn().mockReturnThis(),
+    run: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   };
 }) as Mock;

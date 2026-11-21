@@ -9,12 +9,14 @@ import cx from 'clsx';
 import type { JSX } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import type { BookableActorType } from '../actors';
-import { isBookableActorType } from '../actors';
+import { getActorTypeLabel, isBookableActorType } from '../actors';
+import { DiscardChangesModal } from '../ConfirmModal/DiscardChangesModal';
+import { useDiscardGuard } from '../hooks/useDiscardGuard';
+import type { NewActorType } from './ActorPage/actorDraft';
 import { ActorPage } from './ActorPage/ActorPage';
 import { ConfigEmptyState } from './ConfigPage/ConfigEmptyState';
 import type { ConfigPanelSection } from './ConfigPanel/ConfigPanel';
 import { ConfigPanel } from './ConfigPanel/ConfigPanel';
-import { ConfirmModal } from './ConfirmModal';
 import classes from './SchedulingConfigWorkspace.module.css';
 import type { ConfigSelection } from './SchedulingConfigWorkspace.utils';
 import { buildActorItems, buildServiceItems, getOfferings, isSameSelection } from './SchedulingConfigWorkspace.utils';
@@ -56,14 +58,13 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   const [filter, setFilter] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [dirty, setDirty] = useState(false);
-  // A selection waiting on the viewer to confirm that unsaved changes may be discarded.
-  const [pending, setPending] = useState<ConfigSelection>();
+  const discard = useDiscardGuard(dirty);
   const [nextNewKey, setNextNewKey] = useState(1);
 
   const detailRef = useRef<HTMLElement>(null);
 
   // A different page opens at its top. The same page remounting, as after a save, keeps its place.
-  function open(next: ConfigSelection | undefined): void {
+  function open(next: ConfigSelection): void {
     setSelection(next);
     if (detailRef.current) {
       detailRef.current.scrollTop = 0;
@@ -74,22 +75,15 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     if (isSameSelection(next, selection)) {
       return;
     }
-    if (dirty) {
-      setPending(next);
-      return;
-    }
-    open(next);
+    discard.guard(() => {
+      setDirty(false);
+      open(next);
+    });
   }
 
-  function startNew(): void {
-    select({ kind: 'new-service', key: nextNewKey });
+  function startNew(next: { kind: 'new-service' } | { kind: 'new-actor'; resourceType: NewActorType }): void {
+    select({ ...next, key: nextNewKey });
     setNextNewKey((key) => key + 1);
-  }
-
-  function confirmDiscard(): void {
-    setDirty(false);
-    open(pending);
-    setPending(undefined);
   }
 
   const handleSynced = useCallback(
@@ -102,13 +96,21 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
   );
 
   // Dirty is left to the page, which remounts on what it stored and reports itself clean. A save landing after
-  // the viewer moved on must not touch the page now shown.
+  // the viewer moved on must not touch the page now shown. A room or device just created is selected by its new
+  // id, so its page remounts on what was stored.
   const handleActorSynced = useCallback(
     (syncedFor: ConfigSelection, resources: WithId<Resource>[], openServiceId: string | undefined): void => {
       store(resources);
-      setSelection((current) =>
-        current?.kind === 'actor' && isSameSelection(current, syncedFor) ? { ...current, openServiceId } : current
-      );
+      setSelection((current) => {
+        if (!isSameSelection(syncedFor, current)) {
+          return current;
+        }
+        if (syncedFor.kind === 'new-actor') {
+          const created = resources.find((resource) => resource.resourceType === syncedFor.resourceType);
+          return created ? { kind: 'actor', resourceType: syncedFor.resourceType, id: created.id } : current;
+        }
+        return current?.kind === 'actor' ? { ...current, openServiceId } : current;
+      });
     },
     [store]
   );
@@ -149,6 +151,17 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
     ) : (
       <ConfigEmptyState notFound />
     );
+  } else if (selection?.kind === 'new-actor') {
+    detail = (
+      <ActorPage
+        key={`new-${selection.key}`}
+        newActorType={selection.resourceType}
+        services={services.items}
+        onSynced={(resources) => handleActorSynced(selection, resources, undefined)}
+        onDiscardNew={handleDiscardNew}
+        onDirtyChange={setDirty}
+      />
+    );
   } else if (selection?.kind === 'actor') {
     const list = actors[selection.resourceType];
     const actor = list.items.find((item) => item.resource.id === selection.id);
@@ -188,7 +201,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       incomplete: !services.complete,
       icon: <IconCalendarEvent size={12} />,
       createLabel: 'New visit type',
-      onCreate: startNew,
+      onCreate: () => startNew({ kind: 'new-service' }),
     },
     ...ACTOR_SECTIONS.map(({ resourceType, ...section }): ConfigPanelSection => ({
       key: resourceType,
@@ -196,6 +209,8 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
       items: buildActorItems(actors[resourceType].items, selection, filter, showInactive),
       loading: actors[resourceType].loading,
       incomplete: !actors[resourceType].complete,
+      createLabel: `New ${getActorTypeLabel(resourceType).toLowerCase()}`,
+      onCreate: () => startNew({ kind: 'new-actor', resourceType }),
     })),
   ];
 
@@ -239,17 +254,7 @@ export function SchedulingConfigWorkspace(props: SchedulingConfigWorkspaceProps)
         </Stack>
       </Box>
 
-      <ConfirmModal
-        opened={pending !== undefined}
-        title="Discard unsaved changes?"
-        cancelLabel="Keep editing"
-        confirmLabel="Discard changes"
-        destructive
-        onCancel={() => setPending(undefined)}
-        onConfirm={confirmDiscard}
-      >
-        The changes on this page haven't been saved.
-      </ConfirmModal>
+      <DiscardChangesModal {...discard.modalProps}>The changes on this page haven't been saved.</DiscardChangesModal>
     </Box>
   );
 }

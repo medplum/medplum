@@ -1,0 +1,59 @@
+.jumbotron {
+  max-width: 72rem;
+  display: flex;
+  margin: 20px auto 60px auto;
+  padding: 20px;
+}
+
+@media screen and (max-width: 996px) {
+  .jumbotron {
+    flex-direction: column-reverse;
+    gap: 2rem;
+  }
+}
+
+.jumbotron-content {
+  flex-direction: column;
+  flex: 1;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 300px;
+  padding: 60px 0;
+  display: flex;
+}
+
+/* Matches .heroTitle in about.module.css, which every Docusaurus jumbotron title uses */
+.jumbotron h1 {
+  margin: 0 0 1rem 0;
+  font-size: 3.5rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+@media screen and (max-width: 996px) {
+  .jumbotron h1 {
+    font-size: 2rem;
+  }
+}
+
+.jumbotron h3 {
+  font-size: 2.375rem;
+  line-height: 1.25;
+  font-weight: 400;
+}
+
+.jumbotron p {
+  color: #4d4d4d;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-size: 1.125rem;
+}
+
+.jumbotron-image {
+  flex-wrap: wrap;
+  flex: 1;
+  place-content: center flex-end;
+  width: 100%;
+  display: flex;
+}

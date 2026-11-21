@@ -23,8 +23,8 @@ import {
   withCandidProviderId,
 } from '../../utils/billing';
 import { CANDID_ORGANIZATION_PROVIDER_ID_SYSTEM } from '../../utils/candid';
+import { getBotErrorMessage } from '../../utils/errors';
 import { showErrorNotification, showSuccessNotification } from '../../utils/notifications';
-import { getErrorMessage } from '../insurance/utils';
 import { BillingOrganizationOption } from './BillingOrganizationOption';
 import { CandidContractAlert } from './CandidContractAlert';
 import { CandidRegistrationAlert } from './CandidRegistrationAlert';
@@ -149,7 +149,7 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
         } catch (error) {
           showErrorNotification(
             new Error(
-              `Practitioner saved, but ${candidProviderId ? 'updating them in' : 'registering them with'} Candid failed: ${getErrorMessage(error)}. ` +
+              `Practitioner saved, but ${candidProviderId ? 'updating them in' : 'registering them with'} Candid failed: ${getBotErrorMessage(error)}. ` +
                 'Save the practitioner again to retry.'
             )
           );
@@ -207,9 +207,9 @@ export function CandidBillingPractitionerModal(props: CandidBillingPractitionerM
       showErrorNotification(
         new Error(
           action === 'link'
-            ? `Practitioner saved, but linking them to the Candid contracts of ${name} failed: ${getErrorMessage(error)}. ` +
+            ? `Practitioner saved, but linking them to the Candid contracts of ${name} failed: ${getBotErrorMessage(error)}. ` +
                 'Save the practitioner again to retry.'
-            : `Practitioner saved, but unlinking them from the Candid contracts of ${name} failed: ${getErrorMessage(error)}. ` +
+            : `Practitioner saved, but unlinking them from the Candid contracts of ${name} failed: ${getBotErrorMessage(error)}. ` +
                 'Remove them from those contracts in the Candid portal.'
         )
       );

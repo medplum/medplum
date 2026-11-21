@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import type { AsyncJob, Resource } from '@medplum/fhirtypes';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
-import { GLOBAL_SHARD_ID } from '../fhir/sharding';
+import { GLOBAL_SHARD_ID, normalizeShardId } from '../fhir/sharding';
 
 export type ProjectJobTarget =
   | {
@@ -22,6 +23,18 @@ export type ProjectJobTarget =
 export type ShardJobTarget = { readonly kind: 'shard'; readonly shardId: string };
 
 export type JobTarget = ProjectJobTarget | ShardJobTarget;
+
+/**
+ * Normalizes the shard target of dequeued job data. Jobs queued before shard targets were populated carry
+ * `TODO_SHARD_ID`, and older ones carry no target at all; both belong to the global shard.
+ * @param data - The job data as dequeued.
+ * @returns The job data with a normalized shard target.
+ */
+export function normalizeJobTarget<T extends { readonly target?: ShardJobTarget }>(
+  data: T
+): T & { readonly target: ShardJobTarget } {
+  return { ...data, target: { kind: 'shard', shardId: normalizeShardId(data.target?.shardId) } };
+}
 
 export function getProjectJobTarget(resource: WithId<Resource>): ProjectJobTarget {
   return resource.meta?.project
@@ -62,6 +75,7 @@ export type AsyncJobTracking =
       readonly asyncJobId: string;
     };
 
+// SHARDING assume system-owned AsyncJobs are only on the global shard.
 export function getAsyncJobTracking(asyncJob: WithId<Resource>): AsyncJobTracking {
   return asyncJob.meta?.project
     ? { owner: 'project', projectId: asyncJob.meta.project, asyncJobId: asyncJob.id }
@@ -80,4 +94,18 @@ export async function getTrackingAsyncJobExecutor(tracking: AsyncJobTracking): P
   const asyncJob = await asyncJobSystemRepo.readResource<AsyncJob>('AsyncJob', tracking.asyncJobId);
 
   return new AsyncJobExecutor(asyncJobSystemRepo, asyncJob);
+}
+
+/**
+ * Fails the tracking AsyncJob and throws unless it is system-owned. Workers for server-wide
+ * maintenance only run under AsyncJobs created by the system repository.
+ * @param exec - The executor bound to the tracking AsyncJob.
+ */
+export async function requireSystemAsyncJob(exec: AsyncJobExecutor): Promise<void> {
+  const asyncJob = exec.getAsyncJob();
+  if (asyncJob.meta?.project) {
+    const err = new Error(`Unexpected AsyncJob owner for ${getReferenceString(asyncJob)}`);
+    await exec.failJob(err);
+    throw err;
+  }
 }

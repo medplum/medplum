@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import * as otel from './otel/otel';
 
 const app = express();
@@ -87,7 +88,7 @@ describe('Health check', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const connectSpy = vi.spyOn(pool, 'connect');
 
     const res1 = await request(app).get('/healthcheck');
@@ -120,7 +121,7 @@ describe('Health check', () => {
       release: vi.fn(),
       on: vi.fn(),
     };
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const connectSpy = vi.spyOn(pool, 'connect').mockResolvedValueOnce(deadClient as unknown as never);
 
     const [res1, res2] = await Promise.all([request(app).get('/healthcheck'), request(app).get('/healthcheck')]);
@@ -138,7 +139,7 @@ describe('Health check', () => {
     config.readonlyDatabase = undefined;
     await initApp(app, config);
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const connectSpy = vi
       .spyOn(pool, 'connect')
       .mockRejectedValueOnce(new Error('connect ECONNREFUSED'))

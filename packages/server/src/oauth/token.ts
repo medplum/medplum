@@ -31,13 +31,18 @@ import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import { createHash, randomUUID } from 'node:crypto';
+import type { ExternalLoginIdentity } from '../auth/external';
+import { resolveExternalLoginIdentity } from '../auth/external';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
+import { AUTH_CODE_EXPIRATION_MS } from '../constants';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { getInactiveReason } from '../fhir/projectmembership';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import { getLogger } from '../logger';
+import { LogThrottle } from '../util/logthrottle';
 import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
@@ -49,14 +54,25 @@ import {
   getClientApplicationMembership,
   getExternalUserInfo,
   hashCode,
+  isExternalEmailUnverified,
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
   verifyMultipleMatchingException,
 } from './utils';
 
-type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
+type TokenEndpointAuthMethod =
+  'private_key_jwt' | 'client_secret_basic' | 'tls_client_auth' | 'client_secret_post' | 'none';
+type ClientIdAndSecret = {
+  error?: string;
+  clientId?: string;
+  clientSecret?: string;
+  authMethod?: TokenEndpointAuthMethod;
+};
+
 type FhircastProps = { 'hub.topic': string; 'hub.url': string };
+
+const pkceOptionalLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 /**
  * How long after a rotation the previous refresh token is still accepted from the same IP address,
@@ -158,6 +174,12 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const project = await systemRepo.readReference(membership.project);
+  const inactiveReason = getInactiveReason(project, membership);
+  if (inactiveReason) {
+    sendTokenError(res, 'access_denied', inactiveReason);
+    return;
+  }
+
   const scope = (req.body.scope || 'openid') as string;
 
   if (scope.includes('patient/')) {
@@ -169,6 +191,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authMethod: 'client',
     user: createReference(client),
     client: createReference(client),
+    project: membership.project,
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
@@ -198,7 +221,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
  * @param res - The HTTP response.
  */
 async function handleAuthorizationCode(req: Request, res: Response): Promise<void> {
-  const { clientId, clientSecret, error } = await getClientIdAndSecret(req);
+  const { clientId, clientSecret, authMethod, error } = await getClientIdAndSecret(req);
   if (error) {
     sendTokenError(res, 'invalid_request', error);
     return;
@@ -250,6 +273,12 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const issuedAt = Date.parse(login.meta?.lastUpdated ?? '');
+  if (!Number.isFinite(issuedAt) || Date.now() - issuedAt >= AUTH_CODE_EXPIRATION_MS) {
+    sendTokenError(res, 'invalid_grant', 'Authorization code expired');
+    return;
+  }
+
   let client: ClientApplication | undefined;
   try {
     if (clientId) {
@@ -282,6 +311,10 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
       return;
     }
+  }
+
+  if (client?.pkceOptional) {
+    logPkceOptionalCodeRedemption(req, client, login, authMethod, clientSecret);
   }
 
   await sendTokenResponse(req, res, login, client);
@@ -325,8 +358,10 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
 
   if (login.membership) {
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-    if (membership.active === false) {
-      sendTokenError(res, 'access_denied', 'Profile not active');
+    const project = await systemRepo.readReference(membership.project);
+    const inactiveReason = getInactiveReason(project, membership);
+    if (inactiveReason) {
+      sendTokenError(res, 'access_denied', inactiveReason);
       return;
     }
   }
@@ -574,11 +609,23 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  const { email, externalId } = getExternalAuthLoginIdentity(idp, userInfo);
+  const identity = await tryResolveExternalLoginIdentity(res, idp, userInfo);
+  if (!identity) {
+    return;
+  }
+
+  if (identity.email && isExternalEmailUnverified(userInfo)) {
+    getLogger().warn('External identity provider reported unverified email', {
+      clientId,
+      projectId,
+      userInfoMode: idp.userInfoMode,
+    });
+  }
+
   const login = await tryLogin({
     authMethod: 'exchange',
-    email,
-    externalId,
+    email: identity.email,
+    externalId: identity.externalId,
     projectId,
     clientId: client?.id,
     scope: req.body.scope || 'openid offline_access',
@@ -651,15 +698,20 @@ async function tryGetExternalUserInfo(
   }
 }
 
-function getExternalAuthLoginIdentity(
+async function tryResolveExternalLoginIdentity(
+  res: Response,
   idp: IdentityProvider,
   userInfo: JWTPayload
-): { email?: string; externalId?: string } {
-  if (idp.useSubject) {
-    return { externalId: userInfo.sub };
+): Promise<ExternalLoginIdentity | undefined> {
+  try {
+    return await resolveExternalLoginIdentity(idp, userInfo);
+  } catch (err) {
+    if (err instanceof OperationOutcomeError) {
+      sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(err.outcome));
+      return undefined;
+    }
+    throw err;
   }
-
-  return { email: userInfo.email as string };
 }
 
 function resolveExternalAuthProvider(clientId: string, client?: ClientApplication): IdentityProvider | undefined {
@@ -786,26 +838,88 @@ async function handlePreAuthorizedCode(req: Request, res: Response): Promise<voi
  */
 async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
   if (req.body.client_assertion_type) {
-    return parseClientAssertion(req, req.body.client_assertion_type, req.body.client_assertion);
+    return {
+      ...(await parseClientAssertion(req, req.body.client_assertion_type, req.body.client_assertion)),
+      authMethod: 'private_key_jwt',
+    };
   }
 
   const authHeader = req.headers.authorization;
   if (authHeader) {
-    return parseAuthorizationHeader(authHeader);
+    return { ...(await parseAuthorizationHeader(authHeader)), authMethod: 'client_secret_basic' };
   }
 
   const mtlsHeaderName = getConfig().mtlsCertHeader;
   if (mtlsHeaderName) {
     const mtlsHeader = req.headers[mtlsHeaderName];
     if (mtlsHeader) {
-      return parseMtlsClientCertificate(req, mtlsHeader);
+      return { ...(await parseMtlsClientCertificate(req, mtlsHeader)), authMethod: 'tls_client_auth' };
     }
   }
 
   return {
     clientId: req.body.client_id,
     clientSecret: req.body.client_secret,
+    authMethod: req.body.client_secret ? 'client_secret_post' : 'none',
   };
+}
+
+/**
+ * Diagnostic logging for an authorization code redeemed by a `pkceOptional` client in a way that would be
+ * rejected if PKCE or client authentication were required: no valid `code_verifier` and no client authentication,
+ * or a `code_verifier` that does not match the code challenge. Behavior is otherwise unchanged.
+ * @param req - The token request.
+ * @param client - The `pkceOptional` client application.
+ * @param login - The login being redeemed.
+ * @param authMethod - How the client presented credentials to the token endpoint.
+ * @param clientSecret - The client secret, if one was presented and validated.
+ */
+function logPkceOptionalCodeRedemption(
+  req: Request,
+  client: ClientApplication,
+  login: WithId<Login>,
+  authMethod: TokenEndpointAuthMethod | undefined,
+  clientSecret: string | undefined
+): void {
+  // Log-only: must never affect the response
+  try {
+    const verifierPresented = !!req.body.code_verifier;
+    const codeVerifier = typeof req.body.code_verifier === 'string' ? req.body.code_verifier : undefined;
+    const verifierValid =
+      !!login.codeChallenge &&
+      !!codeVerifier &&
+      verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier);
+
+    // authMethod is how credentials were presented, not whether they were verified.
+    // JWT and mTLS are verified in getClientIdAndSecret; secret-based methods only count if a secret was checked.
+    const clientAuthenticated = authMethod === 'private_key_jwt' || authMethod === 'tls_client_auth' || !!clientSecret;
+
+    let reason: string;
+    if (verifierPresented && !verifierValid) {
+      reason = 'invalid-code-verifier';
+    } else if (!verifierValid && !clientAuthenticated) {
+      reason = 'no-pkce-no-client-auth';
+    } else {
+      return;
+    }
+
+    pkceOptionalLogThrottle.maybeLog([client.id, reason].join('|'), (suppressed) => {
+      getLogger().warn('Authorization code redeemed by pkceOptional client without verification', {
+        reason,
+        clientId: client.id,
+        projectId: client.meta?.project,
+        loginId: login.id,
+        authMethod,
+        hasCodeChallenge: !!login.codeChallenge,
+        codeChallengeMethod: login.codeChallengeMethod,
+        hasCodeVerifier: verifierPresented,
+        userAgent: req.get('User-Agent'),
+        suppressed,
+      });
+    });
+  } catch (err) {
+    getLogger().debug('Failed to log pkceOptional code redemption', { err });
+  }
 }
 
 /**

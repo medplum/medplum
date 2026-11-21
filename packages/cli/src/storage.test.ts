@@ -67,4 +67,17 @@ describe('FileSystemStorage', () => {
     // After clearing, the object should still be gone
     expect(storage.getObject('objKey')).toBeUndefined();
   });
+
+  test('clear keeps profile options', async () => {
+    const storage = new FileSystemStorage('clear-keeps-options');
+    storage.setObject('options', { baseUrl: 'https://example.com/' });
+    storage.setObject('activeLogin', { accessToken: 'token' });
+    storage.setObject('logins', [{ accessToken: 'token' }]);
+
+    storage.clear();
+
+    expect(storage.getObject('options')).toStrictEqual({ baseUrl: 'https://example.com/' });
+    expect(storage.getObject('activeLogin')).toBeUndefined();
+    expect(storage.getObject('logins')).toBeUndefined();
+  });
 });

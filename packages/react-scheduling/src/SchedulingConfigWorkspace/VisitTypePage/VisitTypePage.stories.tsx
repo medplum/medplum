@@ -8,7 +8,7 @@ import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { withFixtures } from '../../stories/decorators';
-import { ConfigFixtures, TelehealthService } from '../../stories/scheduling';
+import { ConfigFixtures, IronInfusionService, TelehealthService } from '../../stories/scheduling';
 import { VisitTypePage } from './VisitTypePage';
 
 export default {
@@ -20,18 +20,19 @@ export default {
 
 /**
  * Opens the page on the visit type as the story's server holds it, so a save is conditional on a real version.
- * @param props - What to do to the stored visit type once the page has it.
+ * @param props - Which visit type to open, and what to do to it once the page has it.
+ * @param props.id - The visit type to open. Telehealth Consult when omitted.
  * @param props.outdate - Saves a newer version behind the page's back, so the next Save conflicts.
  * @returns The page, once the visit type is loaded.
  */
-function StoredVisitType(props: { readonly outdate?: boolean }): JSX.Element {
+function StoredVisitType(props: { readonly id?: string; readonly outdate?: boolean }): JSX.Element {
   const medplum = useMedplum();
   const [service, setService] = useState<WithId<HealthcareService>>();
   const [stored, setStored] = useState<WithId<HealthcareService>>();
 
   useEffect(() => {
     medplum
-      .readResource('HealthcareService', TelehealthService.id, { cache: 'no-cache' })
+      .readResource('HealthcareService', props.id ?? TelehealthService.id, { cache: 'no-cache' })
       .then(async (loaded) => {
         setService(loaded);
         if (props.outdate) {
@@ -39,7 +40,7 @@ function StoredVisitType(props: { readonly outdate?: boolean }): JSX.Element {
         }
       })
       .catch(console.error);
-  }, [medplum, props.outdate]);
+  }, [medplum, props.id, props.outdate]);
 
   if (!service) {
     return <Text c="dimmed">Loading…</Text>;
@@ -82,3 +83,10 @@ export const Create = (): JSX.Element => (
  * @returns The story.
  */
 export const SaveConflict = (): JSX.Element => <StoredVisitType outdate />;
+
+/**
+ * Iron Infusion asks for a diagnosis code at booking and nothing else, so only Require diagnosis code(s) is ticked
+ * under Booking requirements. Tick another and save, and booking asks for that too.
+ * @returns The story.
+ */
+export const PriorAuthorization = (): JSX.Element => <StoredVisitType id={IronInfusionService.id} />;

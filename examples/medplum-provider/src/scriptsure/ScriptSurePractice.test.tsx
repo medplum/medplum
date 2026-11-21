@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Organization } from '@medplum/fhirtypes';
 import type * as ScriptSureReactModule from '@medplum/scriptsure-react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../test-utils/render';
 import { ScriptSurePracticeSwitcher } from './ScriptSurePractice';
 
 const SELECT_INPUT = 'input[aria-label="ScriptSure practice location"]';
@@ -25,11 +25,7 @@ function org(id: string, name: string): Organization {
 }
 
 function setup(): ReturnType<typeof render> {
-  return render(
-    <MantineProvider>
-      <ScriptSurePracticeSwitcher />
-    </MantineProvider>
-  );
+  return render(<ScriptSurePracticeSwitcher />);
 }
 
 describe('ScriptSurePracticeSwitcher', () => {

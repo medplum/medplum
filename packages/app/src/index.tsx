@@ -8,13 +8,14 @@ import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { StrictMode } from 'react';
+import type { Root } from 'react-dom/client';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
 import { getConfig } from './config';
 import './index.css';
 
-export async function initApp(): Promise<void> {
+export async function initApp(): Promise<{ root: Root; medplum: MedplumClient }> /* NOSONAR */ {
   const config = getConfig();
 
   const medplum = new MedplumClient({
@@ -31,6 +32,7 @@ export async function initApp(): Promise<void> {
   });
 
   const theme = createTheme({
+    activeClassName: '',
     headings: {
       sizes: {
         h1: {
@@ -64,6 +66,7 @@ export async function initApp(): Promise<void> {
       </MedplumProvider>
     </StrictMode>
   );
+  return { root, medplum };
 }
 
 if (process.env.NODE_ENV !== 'test') {

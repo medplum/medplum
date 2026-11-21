@@ -1,0 +1,2 @@
+{{- /* Plain text for /llms-full.txt: just the content */ -}}
+{{ trim .Inner "\n" }}

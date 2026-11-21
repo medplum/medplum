@@ -1,6 +1,7 @@
 import { createTheme, MantineThemeOverride } from '@mantine/core';
 
 const medplumDefault = createTheme({
+  activeClassName: '',
   headings: {
     sizes: {
       h1: {

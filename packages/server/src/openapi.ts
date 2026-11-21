@@ -452,9 +452,10 @@ function buildDeletePath(): OperationObject {
     summary: 'Delete Resource',
     description: 'Delete Resource',
     operationId: 'deleteResource',
-    parameters: [parameterRef('resourceType'), parameterRef('id')],
+    parameters: [parameterRef('resourceType'), parameterRef('id'), parameterRef('ifMatch')],
     responses: {
       '200': fhirResponse('Success', 'OperationOutcome'),
+      '412': fhirResponse('If-Match failed; nothing is deleted', 'OperationOutcome'),
     },
   };
 }

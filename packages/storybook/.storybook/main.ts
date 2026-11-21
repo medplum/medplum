@@ -42,6 +42,9 @@ const config: StorybookConfig = {
           'react-dom',
         ],
       },
+      build: {
+        cssTarget: ['chrome123', 'edge123', 'firefox120', 'safari17.5', 'ios17.5'], // Native `light-dark()` support
+      },
     });
     if (configType === 'PRODUCTION') {
       config = mergeConfig(config, {

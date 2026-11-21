@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, generateId } from '@medplum/core';
 import type { Binary, Bundle, Parameters, Patient, SmartHealthLink } from '@medplum/fhirtypes';
+import bcrypt from 'bcrypt';
 import express from 'express';
 import { base64url, CompactEncrypt, CompactSign, exportJWK, generateKeyPair } from 'jose';
 import { deflateRawSync } from 'node:zlib';
@@ -12,6 +13,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { KeyLike } from '../../oauth/keys';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
+import { SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT } from './smarthealthlinks';
 
 const app = express();
 let accessToken: string;
@@ -220,6 +222,62 @@ describe('SMART Health operations', () => {
     expect(getBooleanParameter(viewerResolveResponse.body, 'valid')).toBe(true);
   });
 
+  test('Revokes a SMART Health Link after too many incorrect passcodes', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '1234' });
+    expect(generateResponse).toHaveStatus(200);
+    const manifestPath = new URL(getStringParameter(generateResponse.body, 'manifestUrl')).pathname;
+    const postManifest = (passcode: string): request.Test =>
+      request(app).post(manifestPath).set('Content-Type', ContentType.JSON).send({ passcode });
+
+    for (let remaining = SMART_HEALTH_LINK_PASSCODE_ATTEMPT_LIMIT - 1; remaining > 0; remaining--) {
+      const wrongResponse = await postManifest('0000');
+      expect(wrongResponse).toHaveStatus(401);
+      expect(wrongResponse.body.remainingAttempts).toBe(remaining);
+    }
+
+    // A correct passcode does not use up an attempt
+    expect(await postManifest('1234')).toHaveStatus(200);
+
+    const lastResponse = await postManifest('0000');
+    expect(lastResponse).toHaveStatus(401);
+    expect(lastResponse.body.remainingAttempts).toBe(0);
+    expect(await readGeneratedSmartHealthLink(manifestPath)).toMatchObject({ status: 'revoked' });
+
+    const correctResponse = await postManifest('1234');
+    expect(correctResponse).toHaveStatus(400);
+    expect(correctResponse.body.error).toContain('revoked');
+  });
+
+  test('Rejects a correct passcode when the link is revoked during the check', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '1234' });
+    expect(generateResponse).toHaveStatus(200);
+    const manifestPath = new URL(getStringParameter(generateResponse.body, 'manifestUrl')).pathname;
+    const smartHealthLink = await readGeneratedSmartHealthLink(manifestPath);
+
+    // Stands in for concurrent incorrect guesses revoking the link while this one is checked
+    const compareSpy = vi.spyOn(bcrypt, 'compare').mockImplementationOnce(async () => {
+      await repo.updateResource<SmartHealthLink>({ ...smartHealthLink, status: 'revoked' });
+      return true;
+    });
+    const response = await request(app)
+      .post(manifestPath)
+      .set('Content-Type', ContentType.JSON)
+      .send({ passcode: '1234' });
+    compareSpy.mockRestore();
+    expect(response).toHaveStatus(400);
+    expect(response.body.error).toContain('revoked');
+  });
+
   test('Rejects invalid SMART Health Links', async () => {
     const patient = await createPatient();
     const passcodeResponse = await request(app)
@@ -235,7 +293,7 @@ describe('SMART Health operations', () => {
       .post(manifestUrl.pathname)
       .set('Content-Type', ContentType.JSON)
       .send({ recipient: 'Test Recipient' });
-    expect(missingPasscodeManifestResponse).toHaveStatus(400);
+    expect(missingPasscodeManifestResponse).toHaveStatus(401);
     expect(missingPasscodeManifestResponse.body.error).toContain('passcode');
 
     const wrongPasscodeResolveResponse = await request(app)
@@ -444,6 +502,64 @@ describe('SMART Health operations', () => {
     const fhirResources = JSON.parse(getStringParameter(resolveResponse.body, 'fhirResources')) as Bundle[];
     expect(fhirResources).toHaveLength(1);
     expect(fhirResources[0]).toMatchObject({ resourceType: 'Bundle', type: 'collection' });
+
+    fetchSpy.mockRestore();
+  });
+
+  test('Reports this server as the source of a generated SMART Health Link regardless of the stored url', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ mode: 'direct', exp: Math.floor(Date.now() / 1000) + 300 });
+    expect(generateResponse).toHaveStatus(200);
+
+    const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
+    const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
+    await updateGeneratedSmartHealthLink({
+      ...smartHealthLink,
+      url: 'https://issuer.example.com' + directUrl.pathname,
+    });
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ shlink: getStringParameter(generateResponse.body, 'shlink'), recipient: 'Test Recipient' });
+    expect(resolveResponse).toHaveStatus(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(true);
+    expect(getStringParameter(resolveResponse.body, 'sourceOrigin')).toBe(directUrl.origin);
+  });
+
+  test('Does not serve a generated SMART Health Link under another origin', async () => {
+    const patient = await createPatient();
+    const generateResponse = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$generate-smart-health-link`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ mode: 'direct', exp: Math.floor(Date.now() / 1000) + 300 });
+    expect(generateResponse).toHaveStatus(200);
+
+    const { pathname } = new URL(getStringParameter(generateResponse.body, 'url'));
+    const spoofedUrl = 'https://issuer.example.com' + pathname;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: false, status: 404 } as Response);
+
+    const resolveResponse = await request(app)
+      .post('/fhir/R4/$resolve-smart-health-link')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        shlink: encodeShlinkPayload({
+          ...decodeShlinkPayload(getStringParameter(generateResponse.body, 'shlink')),
+          url: spoofedUrl,
+        }),
+        recipient: 'Test Recipient',
+      });
+    expect(resolveResponse).toHaveStatus(200);
+    expect(getBooleanParameter(resolveResponse.body, 'valid')).toBe(false);
+    expect(getStringParameter(resolveResponse.body, 'error')).toContain('HTTP 404');
+    expect((fetchSpy.mock.calls.at(-1)?.[0] as URL).origin).toBe('https://issuer.example.com');
 
     fetchSpy.mockRestore();
   });
@@ -714,7 +830,7 @@ describe('SMART Health operations', () => {
     expect(JSON.stringify(expiredResponse.body)).toContain('Expected exp to be in the future');
   });
 
-  test('Returns not found when direct SMART Health Link Binary is deleted', async () => {
+  test('Returns not found when direct SMART Health Link Binary is unavailable', async () => {
     const patient = await createPatient();
 
     const generateResponse = await request(app)
@@ -730,6 +846,12 @@ describe('SMART Health operations', () => {
     const directUrl = new URL(getStringParameter(generateResponse.body, 'url'));
     const smartHealthLink = await readGeneratedSmartHealthLink(directUrl.pathname);
     const binaryId = getBinaryId(smartHealthLink);
+    const binary = await repo.readResource<Binary>('Binary', binaryId);
+    await repo.updateResource<Binary>({ ...binary, contentType: ContentType.TEXT });
+
+    const textPayloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });
+    expect(textPayloadResponse).toHaveStatus(404);
+
     await repo.deleteResource('Binary', binaryId);
 
     const payloadResponse = await request(app).get(directUrl.pathname).query({ recipient: 'Test Recipient' });

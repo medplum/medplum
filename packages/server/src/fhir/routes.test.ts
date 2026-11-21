@@ -6,13 +6,14 @@ import type { Bundle, Meta, Organization, Parameters, Patient, Reference } from 
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import type { MockInstance } from 'vitest';
+import type { Mock, MockInstance } from 'vitest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { getSubscriptionQueue } from '../workers/subscription';
 
 const app = express();
 let accessToken: string;
@@ -21,17 +22,18 @@ let searchOnReaderAccessToken: string;
 let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
+let shardId: string;
 
 // Search tests spy on the shared reader/writer pools. Restore only those spies in try/finally
 // rather than vi.restoreAllMocks() in afterEach, which can disturb unrelated mocks and leave
 // pool.query in an inconsistent state for subsequent HTTP requests in this file.
-function spyOnDatabasePools(): {
+function spyOnDatabasePools(shardId: string): {
   readerSpy: MockInstance;
   writerSpy: MockInstance;
   restore: () => void;
 } {
-  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+  const readerSpy = vi.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+  const writerSpy = vi.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
   return {
     readerSpy,
     writerSpy,
@@ -46,7 +48,10 @@ describe('FHIR Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    const res = await createTestProject({ withAccessToken: true, withRepo: true });
+    accessToken = res.accessToken;
+    shardId = res.repo.shardId;
+
     legacyJsonResponseAccessToken = await initTestAuth({
       project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: true }] },
     });
@@ -93,6 +98,52 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res).toHaveStatus(200);
     expect(res.body.resourceType).toStrictEqual('CapabilityStatement');
+  });
+
+  test('Get TerminologyCapabilities anonymously', async () => {
+    const res = await request(app).get(`/fhir/R4/metadata?mode=terminology`);
+    expect(res).toHaveStatus(200);
+    expect(res.body).toMatchObject({
+      resourceType: 'TerminologyCapabilities',
+      kind: 'instance',
+      status: 'active',
+      name: 'MedplumTerminologyCapabilities',
+    });
+    expect(res.body.codeSystem).toBeUndefined();
+  });
+
+  test('Get TerminologyCapabilities authenticated', async () => {
+    const url = 'http://example.com/CodeSystem/' + randomUUID();
+    const versionlessUrl = 'http://example.com/CodeSystem/' + randomUUID();
+    const retiredUrl = 'http://example.com/CodeSystem/' + randomUUID();
+    const codeSystems = [
+      { url, version: '2.0.0', status: 'active' },
+      { url, version: '1.0.0', status: 'active' },
+      { url, status: 'active' },
+      { url: versionlessUrl, status: 'active' },
+      { url: retiredUrl, version: '1.0.0', status: 'retired' },
+    ];
+    for (const codeSystem of codeSystems) {
+      const res = await request(app)
+        .post(`/fhir/R4/CodeSystem`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'CodeSystem', content: 'not-present', ...codeSystem });
+      expect(res).toHaveStatus(201);
+    }
+
+    const res = await request(app)
+      .get(`/fhir/R4/metadata?mode=terminology`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res).toHaveStatus(200);
+    const codeSystem = res.body.codeSystem as { uri: string }[];
+    expect(codeSystem).toContainEqual({ uri: url, version: [{ code: '1.0.0' }, { code: '2.0.0' }] });
+    expect(codeSystem).toContainEqual({ uri: versionlessUrl });
+    expect(codeSystem.find((cs) => cs.uri === retiredUrl)).toBeUndefined();
+
+    const anonymousRes = await request(app).get(`/fhir/R4/metadata?mode=terminology`);
+    expect(anonymousRes).toHaveStatus(200);
+    expect(anonymousRes.body.codeSystem).toBeUndefined();
   });
 
   test('Get versions anonymously', async () => {
@@ -437,6 +488,25 @@ describe('FHIR Routes', () => {
     expect(res3).toHaveStatus(410);
   });
 
+  test('Delete resource with failed precondition', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(res).toHaveStatus(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .delete(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('If-Match', 'W/"bad-id"');
+    expect(res2).toHaveStatus(412);
+    const res3 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3).toHaveStatus(200);
+  });
+
   test('Delete resource invalid UUID', async () => {
     const res = await request(app)
       .delete(`/fhir/R4/Patient/123`)
@@ -473,6 +543,16 @@ describe('FHIR Routes', () => {
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res).toHaveStatus(400);
+  });
+
+  test('Patch resource invalid resource type', async () => {
+    const res = await request(app)
+      .patch(`/fhir/R4/Foo/${patientId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Parameters' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Unknown resource type');
   });
 
   test('Patch resource invalid result', async () => {
@@ -532,7 +612,7 @@ describe('FHIR Routes', () => {
 
   describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
     test('Search', async () => {
-      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
       try {
         const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
@@ -554,7 +634,7 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST', async () => {
-      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
       try {
         const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
@@ -580,7 +660,7 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST with multiple includes', async () => {
-      const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
       try {
         const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
@@ -631,7 +711,7 @@ describe('FHIR Routes', () => {
           });
         expect(res2).toHaveStatus(201);
 
-        const { readerSpy, writerSpy, restore } = spyOnDatabasePools();
+        const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
         try {
           const res3 = await request(app)
             .get('/fhir/R4?_type=Patient,Observation')
@@ -669,6 +749,93 @@ describe('FHIR Routes', () => {
       }));
   });
 
+  test('chainedSearchOnReader only routes chained searches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'chainedSearchOnReader', valueBoolean: true }] },
+    });
+
+    for (const [url, expectReader] of [
+      ['/fhir/R4/Observation?subject:Patient.name=Alice', true],
+      ['/fhir/R4/Patient?_has:Observation:subject:status=final', true],
+      ['/fhir/R4/Patient?name=Alice', false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .get(url)
+          .set('Authorization', 'Bearer ' + token);
+        expect(res).toHaveStatus(200);
+        expect(readerSpy).toHaveBeenCalledTimes(expectReader ? 1 : 0);
+        expect(writerSpy).toHaveBeenCalledTimes(expectReader ? 0 : 1);
+      } finally {
+        restore();
+      }
+    }
+  });
+
+  test('readonlyBatchOnReader only routes read-only batches to reader', async () => {
+    const token = await initTestAuth({
+      project: { systemSetting: [{ name: 'readonlyBatchOnReader', valueBoolean: true }] },
+    });
+
+    const search = { request: { method: 'GET', url: 'Patient?name=Alice' } };
+    const create = { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } };
+    const nested = {
+      request: { method: 'POST', url: '/' },
+      resource: { resourceType: 'Bundle', type: 'batch', entry: [search] },
+    };
+    for (const [type, entry, expectReader] of [
+      ['batch', [search, search], true],
+      ['batch', [search, create], false],
+      ['transaction', [search, search], false],
+      ['batch', [nested, search], false],
+    ] as const) {
+      const { readerSpy, writerSpy, restore } = spyOnDatabasePools(shardId);
+      try {
+        const res = await request(app)
+          .post('/fhir/R4')
+          .set('Authorization', 'Bearer ' + token)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send({ resourceType: 'Bundle', type, entry });
+        expect(res).toHaveStatus(200);
+        expect(readerSpy.mock.calls.length > 0).toBe(expectReader);
+        expect(writerSpy.mock.calls.length > 0).toBe(!expectReader);
+      } finally {
+        restore();
+      }
+    }
+  });
+
+  test('readonlyBatchOnReader does not break a nested read-only batch inside a transaction', async () => {
+    const token = await initTestAuth({
+      project: {
+        features: ['transaction-bundles'],
+        systemSetting: [{ name: 'readonlyBatchOnReader', valueBoolean: true }],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4')
+      .set('Authorization', 'Bearer ' + token)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          { request: { method: 'POST', url: 'Patient' }, resource: { resourceType: 'Patient' } },
+          {
+            request: { method: 'POST', url: '/' },
+            resource: {
+              resourceType: 'Bundle',
+              type: 'batch',
+              entry: [{ request: { method: 'GET', url: 'Patient?name=Alice' } }],
+            },
+          },
+        ],
+      });
+    expect(res).toHaveStatus(200);
+  });
+
   test('Search invalid resource', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patientx`)
@@ -698,6 +865,29 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ resourceType: 'Patient', badProperty: 'bad' });
     expect(res).toHaveStatus(400);
+  });
+
+  test('Validate unwraps the resource parameter of a Parameters body', async () => {
+    const validate = (resource: Record<string, unknown>): request.Test =>
+      request(app)
+        .post(`/fhir/R4/Patient/$validate`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'resource', resource }] });
+
+    expect(await validate({ resourceType: 'Patient' })).toHaveStatus(200);
+
+    const res = await validate({ resourceType: 'Patient', name: 'x' });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].expression).toStrictEqual(['Patient.name']);
+  });
+
+  test('Validate rejects a Parameters body without a resource parameter', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/$validate`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Parameters', parameter: [] });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing resource parameter');
   });
 
   test('Validate wrong content type', async () => {
@@ -755,6 +945,80 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ subscription: 'Subscription/123' });
     expect(res3).toHaveStatus(200);
+
+    // Resend a specific version
+    const res4 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/_history/${profile.meta?.versionId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ interaction: 'create' });
+    expect(res4).toHaveStatus(200);
+
+    // Resend an unknown version
+    const res5 = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/_history/${randomUUID()}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res5).toHaveStatus(404);
+  });
+
+  test('Resend specific version queues subscription job', async () => {
+    const { accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // No X-Medplum: extended header, like a normal API client
+    const subRes = await request(app)
+      .post(`/fhir/R4/Subscription`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+    expect(subRes).toHaveStatus(201);
+
+    const patientRes = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
+    expect(patientRes).toHaveStatus(201);
+    const patient = patientRes.body as WithId<Patient>;
+
+    const add = getSubscriptionQueue()?.add as Mock;
+    add.mockClear();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/_history/${patient.meta?.versionId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ interaction: 'create', subscription: `Subscription/${subRes.body.id}` });
+    expect(res).toHaveStatus(200);
+    expect(add).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        subscriptionId: subRes.body.id,
+        id: patient.id,
+        versionId: patient.meta?.versionId,
+        interaction: 'create',
+      })
+    );
+  });
+
+  test('Resend specific version access denied', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patientId}/_history/${patientVersionId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res).toHaveStatus(403);
   });
 
   test('ProjectMembership with null access policy', async () =>

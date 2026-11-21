@@ -5,7 +5,7 @@ import { TimezoneExtensionURI } from '@medplum/core';
 import type { Device, Location, Practitioner } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import type { ActorGeneralFields } from './actorDraft';
-import { actorGeneralFieldsOf, buildActorResource } from './actorDraft';
+import { actorGeneralFieldsOf, buildActorResource, newActorResource } from './actorDraft';
 
 const other = { url: 'http://example.org/other', valueString: 'kept' };
 
@@ -58,5 +58,42 @@ describe('buildActorResource', () => {
     expect(withZone.extension).toEqual([{ url: TimezoneExtensionURI, valueCode: 'America/Denver' }]);
 
     expect(edit(withZone, { timezone: undefined })).toEqual(room3);
+  });
+
+  test("writes a room's name, status, and service facility", () => {
+    expect(edit(room3, { name: ' Room 3A ', active: false, location: { reference: 'Location/northside' } })).toEqual({
+      ...room3,
+      name: 'Room 3A',
+      status: 'inactive',
+      partOf: { reference: 'Location/northside' },
+    });
+    const { partOf: _partOf, ...unplaced } = room3;
+    expect(edit(room3, { location: undefined })).toEqual(unplaced);
+  });
+
+  test("writes a device's location and leaves its names alone", () => {
+    const device: Device = {
+      resourceType: 'Device',
+      id: 'ultrasound-2',
+      deviceName: [{ name: 'US-2000', type: 'model-name' }],
+    };
+    expect(edit(device, { name: 'Ultrasound 2', location: { reference: 'Location/downtown' } })).toEqual({
+      ...device,
+      location: { reference: 'Location/downtown' },
+    });
+  });
+});
+
+describe('newActorResource', () => {
+  test('a new room is typed as a room and active, and a new device is active', () => {
+    const room = edit(newActorResource('Location'), { name: 'Room 9' });
+    expect(room).toMatchObject({ resourceType: 'Location', name: 'Room 9', status: 'active' });
+    expect((room as Location).physicalType?.coding?.[0].code).toBe('ro');
+
+    expect(edit(newActorResource('Device'), { name: 'Ultrasound 4' })).toEqual({
+      resourceType: 'Device',
+      status: 'active',
+      deviceName: [{ name: 'Ultrasound 4', type: 'user-friendly-name' }],
+    });
   });
 });

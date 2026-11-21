@@ -88,6 +88,33 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('ECR image pinned by digest', async () => {
+    const digest = 'sha256:a3ed4dd54a141f1068831a8a1c6144db1d07261204d39afd1b14be883ff00501';
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumEcrDigestStack',
+      additionalContainers: [
+        {
+          name: 'otel-collector',
+          image: `647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum/otel-collector@${digest}`,
+        },
+      ],
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    expect(JSON.stringify(template.toJSON())).toContain(`/medplum/otel-collector@${digest}`);
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: Match.arrayWith(['ecr:BatchGetImage']),
+            Resource: 'arn:aws:ecr:us-east-1:647991932601:repository/medplum/otel-collector',
+          }),
+        ]),
+      }),
+    });
+  });
+
   test('Custom VPC', async () => {
     // Create a temp config file
     const filename = await writeConfig('./medplum.customvpc.config.json', {
@@ -682,6 +709,44 @@ describe('Infra', () => {
     });
   });
 
+  test('storageBotInputExpirationDays expires only the bot input prefix', async () => {
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumBotInputExpirationStack',
+      storageBotInputExpirationDays: 30,
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'medplum-storage',
+      LifecycleConfiguration: {
+        Rules: [
+          {
+            Id: 'ExpireBotInput',
+            Prefix: 'bot/',
+            Status: 'Enabled',
+            ExpirationInDays: 30,
+            NoncurrentVersionExpiration: { NoncurrentDays: 1 },
+          },
+          { Id: 'ExpireBotInputDeleteMarkers', Prefix: 'bot/', Status: 'Enabled', ExpiredObjectDeleteMarker: true },
+        ],
+      },
+    });
+  });
+
+  test('No storage lifecycle rules without storageBotInputExpirationDays', async () => {
+    const config = await normalizeInfraConfig({
+      ...baseConfig,
+      stackName: 'MedplumNoBotInputExpirationStack',
+    } as unknown as MedplumSourceInfraConfig);
+    const template = Template.fromStack(new MedplumStack(new App(), config).primaryStack);
+
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'medplum-storage',
+      LifecycleConfiguration: Match.absent(),
+    });
+  });
+
   // Regression test for https://github.com/medplum/medplum/issues/8985:
   // The default ElastiCache node type was `cache.t2.medium`, but AWS no longer
   // allows creating new ElastiCache clusters on T2 instances, so fresh deploys
@@ -735,5 +800,22 @@ describe('Infra', () => {
       },
       0
     );
+  });
+
+  test('HTTPS listeners use loadBalancerSslPolicy', async () => {
+    const sslPolicy = 'ELBSecurityPolicy-TLS13-1-2-Res-FIPS-PQ-2025-09';
+    const sourceConfig = {
+      ...baseConfig,
+      stackName: 'MedplumSslPolicyStack',
+      loadBalancerSslPolicy: sslPolicy,
+      mtlsDomainName: 'mtls.medplum.com',
+      mtlsSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
+    } as unknown as MedplumSourceInfraConfig;
+    const config = await normalizeInfraConfig(sourceConfig);
+    const app = new App();
+    const stack = new MedplumStack(app, config);
+    const template = Template.fromStack(stack.primaryStack);
+
+    template.resourcePropertiesCountIs('AWS::ElasticLoadBalancingV2::Listener', { SslPolicy: sslPolicy }, 2);
   });
 });

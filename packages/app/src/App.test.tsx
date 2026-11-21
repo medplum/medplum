@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
@@ -16,9 +15,7 @@ async function setup(url = '/'): Promise<UserEvent> {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <MedplumProvider medplum={new MockClient()} navigate={navigateMock}>
-          <MantineProvider>
-            <App />
-          </MantineProvider>
+          <App />
         </MedplumProvider>
       </MemoryRouter>
     );

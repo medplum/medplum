@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
+import type { PgQueryable } from '../fhir/sql';
 import { indexDefinitionsEqual } from './migrate';
 import {
   doubleEscapeSingleQuotes,
@@ -17,11 +19,13 @@ import {
 import type { IndexDefinition } from './types';
 
 describe('migration-utils', () => {
+  let conn: PgQueryable;
   beforeAll(async () => {
     const config = await loadTestConfig();
     config.database.runMigrations = false;
     config.database.disableRunPostDeployMigrations = true;
     await initDatabase(config);
+    conn = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
   });
 
   afterAll(async () => {
@@ -68,8 +72,7 @@ describe('migration-utils', () => {
   });
 
   test('getColumns', async () => {
-    const client = await getDatabasePool(DatabaseMode.WRITER);
-    const result = await getColumns(client, 'DatabaseMigration');
+    const result = await getColumns(conn, 'DatabaseMigration');
     expect(result).toEqual([
       {
         defaultValue: null,
@@ -104,8 +107,7 @@ describe('migration-utils', () => {
 
   describe('getFunctionDefinition', () => {
     test('getFunctionDefinition', async () => {
-      const client = await getDatabasePool(DatabaseMode.WRITER);
-      const result = await getFunctionDefinition(client, 'token_array_to_text');
+      const result = await getFunctionDefinition(conn, 'token_array_to_text');
       expect(result).toEqual({
         name: 'token_array_to_text',
         createQuery: expect.stringContaining('CREATE OR REPLACE FUNCTION public.token_array_to_text'),
@@ -113,8 +115,7 @@ describe('migration-utils', () => {
     });
 
     test('getFunctionDefinition', async () => {
-      const client = await getDatabasePool(DatabaseMode.WRITER);
-      const result = await getFunctionDefinition(client, 'non_existent_function');
+      const result = await getFunctionDefinition(conn, 'non_existent_function');
       expect(result).toBeUndefined();
     });
   });
@@ -195,6 +196,45 @@ describe('migration-utils', () => {
       };
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse WITH fastupdate before WHERE', () => {
+      const indexdef =
+        'CREATE INDEX "Task_projectId_status_idx" ON public."Task" USING gin ("projectId", status) WITH (fillfactor=90, fastupdate=off) WHERE (deleted = false)';
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['projectId', 'status'],
+        indexType: 'gin',
+        where: 'deleted = false',
+        fastupdate: false,
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+    });
+
+    test('fastupdate only differs when both definitions set it', () => {
+      const base: IndexDefinition = { columns: ['projectId', 'status'], indexType: 'gin' };
+      expect(indexDefinitionsEqual({ ...base, fastupdate: false }, base)).toBe(true);
+      expect(indexDefinitionsEqual({ ...base, fastupdate: false }, { ...base, fastupdate: false })).toBe(true);
+      expect(indexDefinitionsEqual({ ...base, fastupdate: false }, { ...base, fastupdate: true })).toBe(false);
+    });
+
+    test.each([
+      ['ye', true],
+      ['ON', true],
+      ['t', true],
+      ['of', false],
+      ["'false'", false],
+      ['0', false],
+    ])('parse fastupdate=%s', (value, expected) => {
+      const indexdef = `CREATE INDEX "Task_status_idx" ON public."Task" USING gin (status) WITH (fastupdate=${value})`;
+      expect(parseIndexDefinition(indexdef).fastupdate).toBe(expected);
+    });
+
+    test.each(['o', 'maybe', ''])('invalid fastupdate value %j', (value) => {
+      const indexdef = `CREATE INDEX "Task_status_idx" ON public."Task" USING gin (status) WITH (fastupdate=${value})`;
+      expect(() => parseIndexDefinition(indexdef)).toThrow('Could not parse boolean storage parameter value');
     });
 
     test('missing index type and columns', () => {

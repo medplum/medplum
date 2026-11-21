@@ -2,11 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import {
+  getExtension,
   getPrimaryProvider,
   getReferenceString,
+  OccurrenceChangedExtensionURI,
+  RecurrenceIdExtensionURI,
   SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   setScheduleSchedulingParameter,
+  toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -15,13 +19,16 @@ import {
   ExamRoomASchedule,
   ExamRoomBSchedule,
   ImagingBenchFixtures,
+  MainClinic,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
+  SatelliteClinic,
   SchedulingFixtures,
   UltrasoundImagingService,
 } from '../stories/scheduling';
 import { buildElevatedBooking } from './buildElevatedBooking';
 import {
+  getMovedSupportingInformation,
   getRescheduleDurationMinutes,
   SchedulingRescheduledByOperationURI,
   SchedulingUnvalidatedRescheduleURI,
@@ -31,11 +38,11 @@ import {
 const START = new Date('2026-08-18T03:07:00.000Z');
 const DURATION_MS = 2220123;
 
-function proposal(schedules: WithId<Schedule>[] = [DrRiveraSchedule, ExamRoomBSchedule]): Appointment {
+function proposal(schedules: WithId<Schedule>[] = [DrRiveraSchedule, ExamRoomBSchedule], start = START): Appointment {
   return buildElevatedBooking({
     service: UltrasoundImagingService,
     schedules,
-    start: START,
+    start,
     durationMinutes: DURATION_MS / 60000,
   });
 }
@@ -143,6 +150,39 @@ describe('writeElevatedReschedule', () => {
     expect(result.appointments[0].participant.filter((p) => p.type?.length)).toHaveLength(1);
   });
 
+  test('marks an occurrence of a recurring series moved to a new start as changed, as $reschedule does', async () => {
+    const recurrenceId = { url: RecurrenceIdExtensionURI, valuePositiveInt: 2 };
+    const occurrence = await medplum.updateResource({
+      ...existing,
+      extension: [...(existing.extension ?? []), recurrenceId],
+    });
+
+    // Reassigning it to other schedules at the same start keeps it on the series' pattern
+    const reassigned = await writeElevatedReschedule(
+      medplum,
+      occurrence,
+      proposal(undefined, new Date(occurrence.start as string))
+    );
+    expect(getExtension(reassigned.appointment, OccurrenceChangedExtensionURI)).toBeUndefined();
+
+    // Marked once, however many times it is moved, and the rest of its extensions are kept
+    const moved = await writeElevatedReschedule(medplum, reassigned.appointment, proposal());
+    const movedAgain = await writeElevatedReschedule(
+      medplum,
+      moved.appointment,
+      proposal(undefined, new Date(START.valueOf() + 60 * 60000))
+    );
+    for (const { appointment } of [moved, movedAgain]) {
+      expect(appointment.extension).toEqual([
+        { url: 'https://example.org/metadata', valueString: 'keep' },
+        { url: SchedulingBookedByOperationURI, valueString: '5.1.0' },
+        recurrenceId,
+        { url: SchedulingUnvalidatedRescheduleURI, valueBoolean: true },
+        { url: OccurrenceChangedExtensionURI, valueBoolean: true },
+      ]);
+    }
+  });
+
   test('writes capacity and buffers for each schedule while preserving pending status', async () => {
     const buffered = setScheduleSchedulingParameter(
       setScheduleSchedulingParameter(DrRiveraSchedule, UltrasoundImagingService, {
@@ -169,9 +209,34 @@ describe('writeElevatedReschedule', () => {
   });
 
   test('moves the stored appointment rather than a stale copy', async () => {
-    await medplum.updateResource({ ...existing, comment: 'Edited elsewhere' });
-    const result = await writeElevatedReschedule(medplum, existing, proposal());
+    await medplum.updateResource({
+      ...existing,
+      comment: 'Edited elsewhere',
+      supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+    });
+    // Still naming the site the stale copy is at, as a facility field left alone would.
+    const atMain = { ...proposal(), supportingInformation: [toAppointmentSiteReference(MainClinic)] };
+
+    const result = await writeElevatedReschedule(medplum, existing, atMain);
+
     expect(result.appointments[0].comment).toBe('Edited elsewhere');
+    expect(result.appointments[0].supportingInformation).toEqual([toAppointmentSiteReference(SatelliteClinic)]);
+  });
+
+  test('moves the appointment to the site the proposal names, keeping its other supporting information', async () => {
+    const notes = { reference: 'DocumentReference/referral-notes' };
+    existing = await medplum.updateResource({
+      ...existing,
+      supportingInformation: [notes, toAppointmentSiteReference(MainClinic)],
+    });
+    const atSatellite = { ...proposal(), supportingInformation: [toAppointmentSiteReference(SatelliteClinic)] };
+
+    const result = await writeElevatedReschedule(medplum, existing, atSatellite);
+
+    expect(result.appointments[0].supportingInformation).toEqual([notes, toAppointmentSiteReference(SatelliteClinic)]);
+    // Naming the site already on file, or none, leaves the entries as they are.
+    expect(getMovedSupportingInformation(result.appointments[0], atSatellite)).toBeUndefined();
+    expect(getMovedSupportingInformation(result.appointments[0], proposal())).toBeUndefined();
   });
 
   test('refuses a proposal without a valid length', async () => {

@@ -44,7 +44,8 @@
             },
             "entry": [
               {
-                "reference": "MedicationRequest/1310a2d3-f888-4722-b4c4-a3c5911ac7f9"
+                "reference": "MedicationRequest/1310a2d3-f888-4722-b4c4-a3c5911ac7f9",
+                "display": "3 ML insulin glargine 100 UNT/ML Pen Injector [Lantus]"
               }
             ]
           }
@@ -123,7 +124,7 @@
         },
         "dispenseRequest": {
           "validityPeriod": {
-            "start": "2009-01-09T00:00:00Z"
+            "start": "2009-01-09"
           }
         },
         "dosageInstruction": [

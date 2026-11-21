@@ -6,7 +6,7 @@ import type { HealthcareService } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
-import { matchesFilter } from '../SchedulingConfigWorkspace.utils';
+import { pageOfServices, serviceLabel } from './serviceList';
 
 const PAGE_SIZE = 10;
 
@@ -46,7 +46,7 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
       setShown(PAGE_SIZE);
     },
   });
-  const options = useMemo(() => listOptions(services, search, shown, pinned), [services, search, shown, pinned]);
+  const options = useMemo(() => pageOfServices(services, search, shown, pinned), [services, search, shown, pinned]);
 
   if (services.length === 0) {
     return (
@@ -57,6 +57,9 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
   }
 
   const chosen = services.filter((service) => checked.has(service.id));
+  // Only while searching, so ticking every visit type at once is never a single click away.
+  const tickable = search.trim() ? options.matches : [];
+  const untickedMatch = tickable.some((service) => !checked.has(service.id));
 
   function toggle(id: string): void {
     setChecked((current) => {
@@ -66,6 +69,11 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
       }
       return next;
     });
+  }
+
+  function tickAll(): void {
+    setChecked((current) => new Set([...current, ...tickable.map((service) => service.id)]));
+    combobox.focusSearchInput();
   }
 
   function handleOffer(): void {
@@ -128,7 +136,12 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
           </Combobox.Options>
           <Combobox.Footer>
             <Stack gap="xs">
-              {!!list?.hidden && (
+              {untickedMatch && (
+                <Button variant="subtle" size="xs" onClick={tickAll}>
+                  Select all {tickable.length} matching
+                </Button>
+              )}
+              {!!list?.hiddenCount && (
                 <Button
                   variant="subtle"
                   size="xs"
@@ -137,7 +150,7 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
                     combobox.focusSearchInput();
                   }}
                 >
-                  Show more ({list.hidden} not shown)
+                  Show more ({list.hiddenCount} not shown)
                 </Button>
               )}
               <Button fullWidth size="xs" disabled={chosen.length === 0} onClick={handleOffer}>
@@ -149,21 +162,6 @@ export function OfferPicker(props: OfferPickerProps): JSX.Element {
       </Combobox>
     </Group>
   );
-}
-
-function listOptions(
-  services: readonly WithId<HealthcareService>[],
-  search: string,
-  shown: number,
-  pinned: ReadonlySet<string>
-): { rows: WithId<HealthcareService>[]; hidden: number } {
-  const first = services.filter((service) => pinned.has(service.id));
-  const matches = services.filter((service) => !pinned.has(service.id) && matchesFilter(serviceLabel(service), search));
-  return { rows: [...first, ...matches.slice(0, shown)], hidden: Math.max(matches.length - shown, 0) };
-}
-
-function serviceLabel(service: HealthcareService): string {
-  return service.name ?? 'Untitled visit type';
 }
 
 function offerLabel(count: number): string {

@@ -22,6 +22,7 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
+import { AUTH_CODE_EXPIRATION_MS } from '../constants';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from '../fhir/repo';
 import {
@@ -134,6 +135,7 @@ describe('OAuth2 Token', () => {
   let gcipMissingKeyClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
   let systemRepo: SystemRepository;
+  let userRepo: Repository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -167,6 +169,7 @@ describe('OAuth2 Token', () => {
     // Create access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
       resourceType: 'AccessPolicy',
+      meta: { project: project.id },
       resource: [{ resourceType: '*' }],
       ipAccessRule: [
         { name: 'Block test', value: '6.6.6.6', action: 'block' },
@@ -191,6 +194,7 @@ describe('OAuth2 Token', () => {
 
     // Set the test user password
     await setPassword(systemRepo, user, password);
+    userRepo = systemRepo.withOverrideConfig({ author: membership.profile });
 
     // Create a new client application with external auth
     externalAuthClient = await createClient(systemRepo, {
@@ -291,6 +295,45 @@ describe('OAuth2 Token', () => {
     expect(res).toHaveStatus(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
+
+    const loginId = decodeJwt(res.body.access_token).login_id as string;
+    const login = await systemRepo.readResource<Login>('Login', loginId);
+    expect(login.meta?.project).toBe(project.id);
+  });
+
+  test.each(['ProjectMembership', 'Project'] as const)(
+    'Token for client credentials with inactive %s',
+    async (type) => {
+      const inactive = await createTestProject({ withClient: true });
+      const target = type === 'Project' ? inactive.project : inactive.membership;
+      await withTestContext(() => systemRepo.updateResource({ ...target, active: false }));
+
+      const res = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: 'client_credentials',
+        client_id: inactive.client.id,
+        client_secret: inactive.client.secret,
+      });
+      expect(res).toHaveStatus(400);
+      expect(res.body.error).toBe('access_denied');
+      expect(res.body.error_description).toBe(type === 'Project' ? 'Project not active' : 'Profile not active');
+    }
+  );
+
+  test.each([
+    ['openid', 200],
+    ['openid system/*.rs', 400],
+  ] as const)('Token for super admin client credentials with scope %s', async (scope, status) => {
+    const superAdmin = await createTestProject({ superAdmin: true, withClient: true });
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: superAdmin.client.id,
+      client_secret: superAdmin.client.secret,
+      scope,
+    });
+    expect(res).toHaveStatus(status);
+    if (status === 400) {
+      expect(res.body.error_description).toBe('SMART scopes are not supported for super admin logins');
+    }
   });
 
   test('Token for client credentials with missing client_id', async () => {
@@ -580,6 +623,45 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid code');
   });
 
+  test('Token for authorization_code with expired code', async () => {
+    const createLogin = (lastUpdated: string): Promise<WithId<Login>> =>
+      systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        meta: { lastUpdated },
+        authMethod: 'password',
+        project: createReference(project),
+        client: createReference(client),
+        membership: createReference(adminMembership),
+        user: adminMembership.user,
+        authTime: new Date().toISOString(),
+        scope: 'openid',
+        nonce: randomUUID(),
+        code: generateSecret(16),
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+
+    const freshLogin = await createLogin(new Date().toISOString());
+    const res1 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: freshLogin.code,
+      code_verifier: 'xyz',
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.access_token).toBeDefined();
+
+    const staleLogin = await createLogin(new Date(Date.now() - AUTH_CODE_EXPIRATION_MS - 1000).toISOString());
+    expect(staleLogin.meta?.lastUpdated).not.toBe(freshLogin.meta?.lastUpdated);
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: staleLogin.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.error).toBe('invalid_grant');
+    expect(res2.body.error_description).toBe('Authorization code expired');
+  });
+
   test('Token for authorization_code with invalid client ID', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -708,6 +790,79 @@ describe('OAuth2 Token', () => {
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('Logs pkceOptional code redemption without PKCE or client authentication', async () => {
+    const codeVerifier = randomUUID();
+    const challenge = { codeChallenge: hashCode(codeVerifier), codeChallengeMethod: 'S256' };
+
+    // Each redemption uses a fresh client so the per-client log throttle does not suppress it
+    const redeem = async (
+      login: Record<string, string>,
+      token: (client: WithId<ClientApplication>) => Record<string, string | string[]>,
+      basicAuth?: (client: WithId<ClientApplication>) => string
+    ): Promise<Record<string, unknown> | undefined> => {
+      const client = await systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        secret: generateSecret(32),
+        pkceOptional: true,
+      });
+      const res = await request(app)
+        .post('/auth/login')
+        .type('json')
+        .send({ clientId: client.id, email, password, ...login });
+      expect(res).toHaveStatus(200);
+
+      const warnSpy = vi.spyOn(MedplumCore.Logger.prototype, 'warn');
+      let tokenReq = request(app).post('/oauth2/token').type('form');
+      if (basicAuth) {
+        tokenReq = tokenReq.set('Authorization', 'Basic ' + Buffer.from(basicAuth(client)).toString('base64'));
+      }
+      const res2 = await tokenReq.send({ grant_type: 'authorization_code', code: res.body.code, ...token(client) });
+      expect(res2).toHaveStatus(200);
+      const call = warnSpy.mock.calls.find(
+        ([msg]) => msg === 'Authorization code redeemed by pkceOptional client without verification'
+      );
+      warnSpy.mockRestore();
+      return call?.[1] as Record<string, unknown> | undefined;
+    };
+
+    // Client secret: not logged
+    expect(await redeem({}, (c) => ({ client_id: c.id, client_secret: c.secret as string }))).toBeUndefined();
+
+    // Valid code verifier: not logged
+    expect(await redeem(challenge, () => ({ code_verifier: codeVerifier }))).toBeUndefined();
+
+    // Code challenge without verifier or client authentication: logged
+    expect(await redeem(challenge, () => ({}))).toMatchObject({
+      reason: 'no-pkce-no-client-auth',
+      authMethod: 'none',
+      hasCodeChallenge: true,
+      hasCodeVerifier: false,
+    });
+
+    // Wrong code verifier, even with a client secret: logged
+    expect(
+      await redeem(challenge, (c) => ({ client_id: c.id, client_secret: c.secret as string, code_verifier: 'wrong' }))
+    ).toMatchObject({ reason: 'invalid-code-verifier', authMethod: 'client_secret_post', hasCodeVerifier: true });
+
+    // Non-string code verifier: logged, and does not break the request
+    expect(await redeem(challenge, () => ({ code_verifier: ['a', 'b'] }))).toMatchObject({
+      reason: 'invalid-code-verifier',
+      hasCodeVerifier: true,
+    });
+
+    // Basic auth header with a client ID but no secret is not client authentication: logged
+    expect(
+      await redeem(
+        {},
+        () => ({}),
+        (c) => c.id
+      )
+    ).toMatchObject({
+      reason: 'no-pkce-no-client-auth',
+      authMethod: 'client_secret_basic',
+    });
   });
 
   test('Authorization code token with wrong client secret', async () => {
@@ -1185,12 +1340,13 @@ describe('OAuth2 Token', () => {
     expect(res3.body.error_description).toBe('Token revoked');
   });
 
-  test('Refresh token membership inactive', async () => {
-    // Use a dedicated user so deactivating the membership does not affect other tests
+  test.each(['ProjectMembership', 'Project'] as const)('Refresh token with inactive %s', async (type) => {
+    // Use a dedicated user and project so deactivating them does not affect other tests
     const inactiveEmail = `test-${randomUUID()}@example.com`;
     const inactivePassword = 'test-password';
+    const { project: inactiveProject } = await createTestProject();
     await inviteUser({
-      project,
+      project: inactiveProject,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',
@@ -1219,17 +1375,12 @@ describe('OAuth2 Token', () => {
     const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
-    // Deactivate the membership
     const login = loginBundle.entry?.[0]?.resource as Login;
     const membership = await systemRepo.readReference<ProjectMembership>(
       login.membership as Reference<ProjectMembership>
     );
-    await withTestContext(() =>
-      systemRepo.updateResource({
-        ...membership,
-        active: false,
-      })
-    );
+    const target = type === 'Project' ? inactiveProject : membership;
+    await withTestContext(() => systemRepo.updateResource({ ...target, active: false }));
 
     const res3 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'refresh_token',
@@ -1237,7 +1388,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3).toHaveStatus(400);
     expect(res3.body.error).toBe('access_denied');
-    expect(res3.body.error_description).toBe('Profile not active');
+    expect(res3.body.error_description).toBe(type === 'Project' ? 'Project not active' : 'Profile not active');
   });
 
   test('Refresh token Basic auth success', async () => {
@@ -1978,8 +2129,9 @@ describe('OAuth2 Token', () => {
   test('Smart App Launch tokens', async () => {
     // Create a SmartAppLaunch
     const launch = await withTestContext(() =>
-      systemRepo.createResource<SmartAppLaunch>({
+      userRepo.createResource<SmartAppLaunch>({
         resourceType: 'SmartAppLaunch',
+        meta: { project: project.id },
         patient: { reference: `Patient/${randomUUID()}` },
         encounter: { reference: `Encounter/${randomUUID()}` },
       })
@@ -2008,6 +2160,31 @@ describe('OAuth2 Token', () => {
   });
 
   test.each([
+    ['another user', () => systemRepo, async () => project.id],
+    ['another project', () => userRepo, async () => (await createTestProject()).project.id],
+  ])('Smart App Launch from %s', async (_, getRepo, getProjectId) => {
+    const launchProjectId = await getProjectId();
+    const launch = await withTestContext(() =>
+      getRepo().createResource<SmartAppLaunch>({
+        resourceType: 'SmartAppLaunch',
+        meta: { project: launchProjectId },
+        patient: { reference: `Patient/${randomUUID()}` },
+      })
+    );
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      launch: launch.id,
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid launch');
+  });
+
+  test.each([
     {
       fieldName: 'patient',
       resourceType: 'Patient',
@@ -2029,8 +2206,9 @@ describe('OAuth2 Token', () => {
 
       // Create a SmartAppLaunch with both reference and identifier
       const launch = await withTestContext(() =>
-        systemRepo.createResource<SmartAppLaunch>({
+        userRepo.createResource<SmartAppLaunch>({
           resourceType: 'SmartAppLaunch',
+          meta: { project: project.id },
           [fieldName]: {
             reference: `${resourceType}/${fhirId}`,
             identifier: {

@@ -29,7 +29,9 @@ import {
 export const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 export const SchedulingEncounterCodingURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingEncounterCoding';
 export const SchedulingPlanDefinitionURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingPlanDefinition';
-export const SchedulingScheduleColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+export const SchedulingColorURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingColor';
+/** @deprecated Use SchedulingColorURI instead. */
+export const SchedulingScheduleColorURI = SchedulingColorURI;
 
 /** Code system for scheduling requirements, recorded on `HealthcareService.eligibility.code`. */
 export const SCHEDULING_ELIGIBILITY_SYSTEM = 'https://medplum.com/fhir/CodeSystem/scheduling-eligibility';
@@ -95,6 +97,12 @@ export const SchedulingBookedByOperationURI =
 /** Extension URI marking which `Appointment.supportingInformation` entry is the site. */
 export const SchedulingSiteURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingSite';
 
+/**
+ * This extension holds a `valueUrl` linking to the same `Appointment` in an external
+ * system, such as the scheduling system it is synced with.
+ */
+export const SchedulingExternalUrlURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingExternalUrl';
+
 /** Code system for `Appointment.participant.type`. */
 export const PARTICIPATION_TYPE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-ParticipationType`;
 
@@ -158,6 +166,13 @@ export const RecurrenceTemplateExtensionURI =
  */
 export const RecurrenceIdExtensionURI =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.recurrenceId';
+
+/**
+ * R5's `Appointment.occurrenceChanged`, as the R4 cross-version extension: set (valueBoolean) on an
+ * occurrence of a recurring series that has been rescheduled off the series' pattern.
+ */
+export const OccurrenceChangedExtensionURI =
+  'http://hl7.org/fhir/5.0/StructureDefinition/extension-Appointment.occurrenceChanged';
 
 /** Identifier system for the `Appointment.identifier` shared by every occurrence of one recurring series. */
 export const RecurringAppointmentSeriesIdentifierSystem = 'https://medplum.com/fhir/recurring-appointment-series';

@@ -9,6 +9,7 @@ import { getLogger } from '../logger';
 import { TEST_SHARD_ID } from '../test.setup';
 import {
   getAllShards,
+  getAllShardsExceptGlobal,
   getDefaultShardId,
   getShardConfig,
   GLOBAL_SHARD_ID,
@@ -181,11 +182,9 @@ describe('Without shards configured', () => {
     expect(getDefaultShardId()).toStrictEqual(GLOBAL_SHARD_ID);
   });
 
-  test.each<[boolean, string[]]>([
-    [false, [GLOBAL_SHARD_ID]],
-    [true, []],
-  ])('getAllShards(excludeGlobal=%s) yields %j', (excludeGlobal, expected) => {
-    expect(Array.from(getAllShards(excludeGlobal), (shard) => shard.id)).toStrictEqual(expected);
+  test('getAllShards()', () => {
+    expect(Array.from(getAllShards(), (shard) => shard.id)).toStrictEqual([GLOBAL_SHARD_ID]);
+    expect(Array.from(getAllShardsExceptGlobal(), (shard) => shard.id)).toStrictEqual([]);
   });
 });
 
@@ -251,7 +250,7 @@ describe('With shards configured', () => {
     });
 
     test('Omits the global shard when excludeGlobal is set', () => {
-      expect(Array.from(getAllShards(true), (shard) => shard.id)).toStrictEqual([TEST_SHARD_ID]);
+      expect(Array.from(getAllShardsExceptGlobal(), (shard) => shard.id)).toStrictEqual([TEST_SHARD_ID]);
     });
   });
 });

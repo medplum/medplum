@@ -76,7 +76,7 @@ describe('Change Password', () => {
     expect(res2).toHaveStatus(400);
   });
 
-  test('Old password not set', async () => {
+  test('ClientApplication cannot change password', async () => {
     // This creates a ClientApplication user
     const accessToken = await initTestAuth();
 
@@ -88,8 +88,7 @@ describe('Change Password', () => {
         newPassword: 'password!@#123',
       });
 
-    expect(res2).toHaveStatus(400);
-    expect(res2.body).toMatchObject(badRequest('Existing password not set', 'oldPassword'));
+    expect(res2).toHaveStatus(403);
   });
 
   test('Incorrect old password', async () => {

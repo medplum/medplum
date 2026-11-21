@@ -1,28 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
-import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
+import { mockTopic } from '../../test-utils/spaces';
 import { SpacesPage } from './SpacesPage';
-
-const mockTopic: Communication = {
-  resourceType: 'Communication',
-  id: 'topic-123',
-  status: 'in-progress',
-  identifier: [
-    {
-      system: 'http://medplum.com/ai-message',
-      value: 'ai-message-topic',
-    },
-  ],
-  topic: {
-    text: 'Test conversation',
-  },
-};
 
 const mockProfile = {
   resourceType: 'Practitioner' as const,
@@ -42,22 +27,19 @@ describe('SpacesPage', () => {
       .fn()
       .mockReturnValue({ resourceType: 'Project', id: 'project-123', features: ['bots', 'ai'] });
     medplum.searchResources = vi.fn().mockResolvedValue([]);
-    medplum.readReference = vi.fn().mockResolvedValue(mockTopic);
   });
 
   const setup = (initialEntries = ['/Spaces']): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={initialEntries}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/Spaces" element={<SpacesPage />}>
-                <Route index element={<SpacesPage />} />
-                <Route path="Communication" element={<SpacesPage />} />
-                <Route path="Communication/:topicId" element={<SpacesPage />} />
-              </Route>
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/Spaces" element={<SpacesPage />}>
+              <Route index element={<SpacesPage />} />
+              <Route path="Communication" element={<SpacesPage />} />
+              <Route path="Communication/:topicId" element={<SpacesPage />} />
+            </Route>
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -103,13 +85,16 @@ describe('SpacesPage', () => {
     expect(screen.getByPlaceholderText('Ask, search, or make anything...')).toBeInTheDocument();
   });
 
-  test('renders SpaceInbox with topic reference from URL', async () => {
+  test('loads the conversation named by the URL', async () => {
     await act(async () => {
       setup(['/Spaces/Communication/123']);
     });
 
     await waitFor(() => {
-      expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Communication/123' });
+      expect(medplum.searchResources).toHaveBeenCalledWith(
+        'Communication',
+        expect.objectContaining({ 'part-of': 'Communication/123' })
+      );
     });
   });
 

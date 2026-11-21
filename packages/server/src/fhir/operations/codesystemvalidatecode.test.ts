@@ -8,7 +8,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSuperAdminAccessToken, initTestAuth } from '../../test.setup';
+import { getSuperAdminTestProject, initTestAuth } from '../../test.setup';
+import type { Repository } from '../repo';
 import { validateCodings } from './codesystemvalidatecode';
 
 const app = express();
@@ -26,13 +27,13 @@ const testCodeSystem: CodeSystem = {
 describe('CodeSystem validate-code', () => {
   let codeSystem: WithId<CodeSystem>;
   let accessToken: string;
+  let repo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    accessToken = await getSuperAdminAccessToken();
-    expect(accessToken).toBeDefined();
+    ({ accessToken, repo } = await getSuperAdminTestProject());
 
     const res = await request(app)
       .post('/fhir/R4/CodeSystem')
@@ -346,7 +347,7 @@ describe('CodeSystem validate-code', () => {
   });
 
   test('validateCodings', async () => {
-    const result = await validateCodings(codeSystem, [
+    const result = await validateCodings(repo, codeSystem, [
       { system: codeSystem.url, code: '1' }, // valid
       { system: codeSystem.url, code: '2' }, // valid
       { system: codeSystem.url, code: 'invalid-code' }, // invalid

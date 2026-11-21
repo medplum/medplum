@@ -5,7 +5,7 @@ import { locationUtils } from '@medplum/core';
 import { MockClient, TestProject } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { Logo } from '../Logo/Logo';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { Header } from './Header';
 
 const medplum = new MockClient();
@@ -167,6 +167,45 @@ describe('Header', () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
+  test('Scrolls extra projects and keeps account actions pinned', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: 'abc',
+        refreshToken: 'xyz',
+        profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+        project: { reference: 'Project/456', display: 'My Project' },
+      })
+    );
+    window.localStorage.setItem(
+      'logins',
+      JSON.stringify([
+        {
+          accessToken: 'abc',
+          refreshToken: 'xyz',
+          profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+          project: { reference: 'Project/456', display: 'My Project' },
+        },
+        ...Array.from({ length: 12 }, (_, index) => ({
+          accessToken: `token-${index}`,
+          refreshToken: `refresh-${index}`,
+          profile: { reference: 'Practitioner/124', display: 'Alice Smith' },
+          project: { reference: `Project/stacked-${index}`, display: `Stacked Project ${index}` },
+        })),
+      ])
+    );
+
+    await setup();
+    await openMenu();
+
+    const projectList = screen.getByRole('group', { name: 'Projects', hidden: true });
+    expect(within(projectList).getByText('Stacked Project 0')).toBeInTheDocument();
+    expect(within(projectList).getByText('Stacked Project 11')).toBeInTheDocument();
+    expect(within(projectList).queryByText('Sign out')).not.toBeInTheDocument();
+    expect(within(projectList).queryByText('Switch to another project')).not.toBeInTheDocument();
+    expect(screen.getByText('Sign out')).toBeInTheDocument();
+  });
+
   test('Switch to another project', async () => {
     await setup();
     await openMenu();
@@ -219,6 +258,20 @@ describe('Header', () => {
     // Get the root <html> element
     const html = document.querySelector('html');
     expect(html).toHaveAttribute('data-mantine-color-scheme', 'dark');
+  });
+
+  test('Layout version toggle reloads', async () => {
+    const reloadSpy = vi.spyOn(locationUtils, 'reload').mockImplementation(() => {});
+    await setup();
+    await openMenu();
+
+    const layoutControl = screen.getByLabelText('App shell layout version');
+    await act(async () => {
+      fireEvent.click(within(layoutControl).getByText('v2'));
+    });
+
+    expect(localStorage['appShellLayoutVersion']).toBe('v2');
+    expect(reloadSpy).toHaveBeenCalled();
   });
 });
 

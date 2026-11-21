@@ -295,7 +295,7 @@ function logCmsAuditEvent(ctx: AuthenticatedRequestContext, matches: ScoredPatie
   const auditEvent = createAuditEvent(
     RestfulOperationType,
     OperationInteraction,
-    ctx.project.id,
+    ctx.project,
     ctx.profile,
     undefined,
     outcome === 'released' || outcome === 'no-match' ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,

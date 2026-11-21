@@ -30,14 +30,21 @@ export async function createMedplumClient(
     await validateBaseUrl(options.baseUrl, fetchApi);
   }
 
+  // When logging in, discard any stored session so MedplumClient does not try to resume it.
+  // Resuming an expired session fails in the background and clears the profile storage.
+  // A caller-provided storage is never resumed from, so the stored session is left alone.
+  if (!setupCredentials && !options.storage) {
+    storage.setObject('activeLogin', undefined);
+  }
+
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
     baseUrl,
     tokenUrl,
     fhirUrlPath,
     authorizeUrl,
-    storage,
-    onUnauthenticated,
+    storage: options.storage ?? storage,
+    onUnauthenticated: options.onUnauthenticated ?? onUnauthenticated,
     verbose: options.verbose,
     defaultHeaders: { 'User-Agent': CLI_USER_AGENT },
   });

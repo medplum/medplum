@@ -22,8 +22,14 @@ import { repoAccess } from '../fhir/repository/access-tracker';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import type { PostDeployJobData, PostDeployMigration, PrepareJobDataContext } from '../migrations/data/types';
-import { isFirstBootMode } from '../migrations/migration-utils';
-import { getAsyncJobTracking, getJobSystemRepo, getTrackingAsyncJobExecutor } from './base';
+import { completePostDeployMigration, isFirstBootMode } from '../migrations/migration-utils';
+import {
+  getAsyncJobTracking,
+  getJobSystemRepo,
+  getTrackingAsyncJobExecutor,
+  normalizeJobTarget,
+  requireSystemAsyncJob,
+} from './base';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -150,7 +156,8 @@ export class ReindexJob {
     };
   }
 
-  static async create(jobData: ReindexJobData): Promise<ReindexJob> {
+  static async create(dequeuedJobData: ReindexJobData): Promise<ReindexJob> {
+    const jobData = normalizeJobTarget(dequeuedJobData);
     const [systemRepo, asyncJobExecutor] = await Promise.all([
       getJobSystemRepo(jobData.target),
       getTrackingAsyncJobExecutor(jobData.tracking),
@@ -160,18 +167,25 @@ export class ReindexJob {
 
   private async maybeSkipJob(): Promise<boolean> {
     const asyncJob = this.asyncJobExecutor.getAsyncJob();
-    if (Boolean(asyncJob.dataVersion) && (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER)))) {
+    if (
+      Boolean(asyncJob.dataVersion) &&
+      (await isFirstBootMode(getDatabasePool(DatabaseMode.WRITER, this.systemRepo.shardId)))
+    ) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
       });
-      await this.asyncJobExecutor.completeJob({
+      await this.completeJob({
         resourceType: 'Parameters',
         parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
       });
       return true;
     }
     return false;
+  }
+
+  private completeJob(output?: Parameters): Promise<WithId<AsyncJob>> {
+    return completePostDeployMigration(this.asyncJobExecutor, this.jobData.target.shardId, output);
   }
 
   private async checkForQueueClosing(job: Job<ReindexJobData> | undefined, nextJobData: ReindexJobData): Promise<void> {
@@ -193,6 +207,7 @@ export class ReindexJob {
   async execute(job: Job<ReindexJobData> | undefined): Promise<ReindexExecuteResult> {
     const inputJobData = this.jobData;
     const asyncJob = this.asyncJobExecutor.getAsyncJob();
+    await requireSystemAsyncJob(this.asyncJobExecutor);
 
     if (inputJobData.minReindexWorkerVersion && inputJobData.minReindexWorkerVersion > REINDEX_WORKER_VERSION) {
       return 'ineligible';
@@ -231,7 +246,7 @@ export class ReindexJob {
       const finishedOrNextIterationData = this.nextIterationData(result, nextJobData);
       nextJobData = undefined;
       if (finishedOrNextIterationData === true) {
-        await this.asyncJobExecutor.completeJob(output);
+        await this.completeJob(output);
       } else if (finishedOrNextIterationData === false) {
         await this.asyncJobExecutor.failJob();
       } else {

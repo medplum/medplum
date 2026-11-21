@@ -3,13 +3,25 @@
 import type { WithId } from '@medplum/core';
 import { getExtension } from '@medplum/core';
 import type { AsyncJob, Parameters, Subscription } from '@medplum/fhirtypes';
-import type { ConnectionOptions, Job, Processor, Queue, QueueOptions, Worker, WorkerOptions } from 'bullmq';
-import { DelayedError } from 'bullmq';
+import type {
+  ConnectionOptions,
+  Job,
+  Processor,
+  Queue,
+  QueueOptions,
+  Worker,
+  WorkerListener,
+  WorkerOptions,
+} from 'bullmq';
+import { DelayedError, UnrecoverableError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, WorkerName } from '../config/types';
 import type { ServerConfig } from '../config/utils';
+import type { AuthenticatedContextOptions } from '../context';
+import { RevokedAuthStateError, runInAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import type { AuthState } from '../oauth/middleware';
 import { addToUpDownCounter, BASE_METRIC_OPTIONS, getQueueMetricName, incrementCounter } from '../otel/otel';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
@@ -103,6 +115,7 @@ export interface QueueRegistry {
   add(name: string, queue: Queue, worker: Worker | undefined): void;
   get<T>(name: string): Queue<T> | undefined;
   isClosing(name: string): boolean | undefined;
+  runAll(): void;
   closeAll(): Promise<void>;
 }
 
@@ -135,6 +148,12 @@ export class DefaultQueueRegistry implements QueueRegistry {
 
   get<T>(name: string): Queue<T> | undefined {
     return this.queues.find((q) => q.name === name)?.queue as Queue<T> | undefined;
+  }
+
+  runAll(): void {
+    for (const entry of this.queues) {
+      entry.worker?.run().catch((err) => globalLogger.error('Worker run failed', err));
+    }
   }
 
   async closeAll(): Promise<void> {
@@ -175,53 +194,109 @@ function getFinishedJobFieldsForLogging(job: Job): Record<string, string | numbe
     attemptsStarted: job.attemptsStarted,
   };
 }
+
+/** The worker events that {@link addVerboseQueueLogging} can log. */
+export type VerboseQueueEvent = 'active' | 'completed' | 'failed' | 'stalled' | 'error' | 'closing' | 'closed';
+
+const ALL_VERBOSE_QUEUE_EVENTS: readonly VerboseQueueEvent[] = [
+  'active',
+  'completed',
+  'failed',
+  'stalled',
+  'error',
+  'closing',
+  'closed',
+];
+
+/**
+ * Logs a worker's events at info level.
+ * @param queue - The queue the worker processes.
+ * @param worker - The worker whose events are logged.
+ * @param getJobDataLoggingFields - Extra fields to log from each job's data.
+ * @param events - The events to log; defaults to all. High-volume queues whose processor writes its
+ * own per-job summary line should omit `active` and `completed`.
+ */
 export function addVerboseQueueLogging<TDataType>(
   queue: Queue,
   worker: Worker,
-  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>
+  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | boolean | undefined>,
+  events: readonly VerboseQueueEvent[] = ALL_VERBOSE_QUEUE_EVENTS
 ): void {
-  worker.on('active', (job, prev) => {
-    globalLogger.info(`${queue.name} worker: active`, {
-      jobId: job.id,
-      attemptsMade: job.attemptsMade,
-      attemptsStarted: job.attemptsStarted,
-      ...getJobDataLoggingFields?.(job),
-      prev,
-    });
-  });
-  worker.on('closing', async (message) => {
-    globalLogger.info(`${queue.name} worker: closing`, { message });
-  });
-  worker.on('closed', async () => {
-    globalLogger.info(`${queue.name} worker: closed`);
-  });
-  worker.on('completed', async (job, result, prev) => {
-    globalLogger.info(`${queue.name} worker: completed`, {
-      ...getFinishedJobFieldsForLogging(job),
-      ...getJobDataLoggingFields?.(job),
-      result,
-      prev,
-    });
-  });
+  const listeners: { [E in VerboseQueueEvent]: WorkerListener<TDataType>[E] } = {
+    active: (job, prev) => {
+      globalLogger.info(`${queue.name} worker: active`, {
+        jobId: job.id,
+        attemptsMade: job.attemptsMade,
+        attemptsStarted: job.attemptsStarted,
+        ...getJobDataLoggingFields?.(job),
+        prev,
+      });
+    },
+    completed: (job, result, prev) => {
+      globalLogger.info(`${queue.name} worker: completed`, {
+        ...getFinishedJobFieldsForLogging(job),
+        ...getJobDataLoggingFields?.(job),
+        result,
+        prev,
+      });
+    },
+    closing: (message) => {
+      globalLogger.info(`${queue.name} worker: closing`, { message });
+    },
+    closed: () => {
+      globalLogger.info(`${queue.name} worker: closed`);
+    },
+    error: (failedReason) => {
+      globalLogger.info(`${queue.name} worker: error`, {
+        error: failedReason instanceof Error ? failedReason.message : String(failedReason),
+        stack: failedReason instanceof Error ? failedReason.stack : undefined,
+      });
+    },
+    failed: (job, error, prev) => {
+      globalLogger.info(`${queue.name} worker: failed`, {
+        ...(job && getFinishedJobFieldsForLogging(job)),
+        ...(job && getJobDataLoggingFields?.(job)),
+        prev,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    },
+    stalled: (jobId, prev) => {
+      globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
+    },
+  };
+  for (const event of events) {
+    worker.on(event, listeners[event]);
+  }
+}
 
-  worker.on('error', (failedReason) =>
-    globalLogger.info(`${queue.name} worker: error`, {
-      error: failedReason instanceof Error ? failedReason.message : String(failedReason),
-      stack: failedReason instanceof Error ? failedReason.stack : undefined,
-    })
-  );
-  worker.on('failed', (job, error, prev) =>
-    globalLogger.info(`${queue.name} worker: failed`, {
-      ...(job && getFinishedJobFieldsForLogging(job)),
-      ...(job && getJobDataLoggingFields?.(job)),
-      prev,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-  );
-  worker.on('stalled', (jobId, prev) => {
-    globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
-  });
+/**
+ * Runs a job as the user who queued it, via {@link runInAuthenticatedContext}.
+ *
+ * A {@link RevokedAuthStateError} is rethrown as an `UnrecoverableError` so BullMQ fails the job
+ * without retrying; the original is kept as its `cause`, whose outcome `AsyncJobExecutor.failJob` records.
+ * @param authState - The auth state serialized into the job data.
+ * @param requestId - The request ID that queued the job, if any.
+ * @param traceId - The trace ID that queued the job, if any.
+ * @param options - Options for the authenticated context.
+ * @param fn - The job work.
+ * @returns The result of `fn`.
+ */
+export async function runJobInAuthenticatedContext<T>(
+  authState: Readonly<AuthState>,
+  requestId: string | undefined,
+  traceId: string | undefined,
+  options: AuthenticatedContextOptions | undefined,
+  fn: () => T
+): Promise<T> {
+  try {
+    return await runInAuthenticatedContext(authState, requestId, traceId, options, fn);
+  } catch (err) {
+    if (err instanceof RevokedAuthStateError) {
+      throw Object.assign(new UnrecoverableError(err.message), { cause: err });
+    }
+    throw err;
+  }
 }
 
 /**
@@ -350,7 +425,7 @@ export function getWorkerBullmqConfig(
   // `queueOptions.defaultJobOptions` field and potentially others is not a valid `WorkerOptions`
   // property. It rides along as an inert excess key on the returned object (harmless, since `Worker`
   // ignores unrecognized options)
-  return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults) };
+  return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults), autorun: false };
 }
 
 export function getBullmqRedisConnectionOptions(config: ServerConfig): ConnectionOptions {

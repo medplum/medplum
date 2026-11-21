@@ -17,6 +17,7 @@ import type {
   Binary,
   Bot,
   DocumentReference,
+  Login,
   Observation,
   Patient,
   Practitioner,
@@ -42,7 +43,7 @@ import { tryGetRequestContext } from '../context';
 import * as projectMembershipUtils from '../fhir/projectmembership';
 import type { SystemRepository } from '../fhir/repo';
 import { Repository } from '../fhir/repo';
-import { setResourceCacheEntry } from '../fhir/repository/resource-cache';
+import { buildResourceCacheSet, writeResourceCache } from '../fhir/repository/resource-cache';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
@@ -193,6 +194,33 @@ describe('Subscription Worker', () => {
       await findAndExecSubscriptionJob(patient, 'delete');
     }));
 
+  test('Binary notification does not include embedded data', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Binary',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        data: 'SGVsbG8gV29ybGQh',
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(binary, 'create');
+
+      expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+      const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string) as Binary;
+      expect(body.id).toStrictEqual(binary.id);
+      expect(body.contentType).toStrictEqual(ContentType.TEXT);
+      expect(body.data).toBeUndefined();
+      expect(body.meta?.tag).toContainEqual({ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' });
+    }));
+
   test('Does not send subscriptions when disabled', () =>
     withTestContext(async () => {
       await repo.createResource<Subscription>({
@@ -219,6 +247,105 @@ describe('Subscription Worker', () => {
       await addSubscriptionJobs(patient, undefined, { project: repo.currentProject(), interaction: 'create' });
 
       expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
+  test('Does not send subscriptions for Login', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Login',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const project = repo.currentProject() as WithId<Project>;
+      const login: WithId<Login> = {
+        resourceType: 'Login',
+        id: randomUUID(),
+        meta: { project: project.id },
+        user: { reference: 'User/' + randomUUID() },
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        refreshSecret: randomUUID(),
+      };
+
+      const subscriptionQueue = getSubscriptionQueue();
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(login, undefined, { project, interaction: 'create' });
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
+  test('Does not send subscriptions when project is inactive', () =>
+    withTestContext(async () => {
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: 'https://example.com/subscription',
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await findAndExecDispatchJob(patient, 'create');
+      const subscriptionQueue = getSubscriptionQueue();
+      const [, jobData] = (subscriptionQueue?.add as Mock).mock.lastCall as [string, SubscriptionJobData];
+      expect(jobData.id).toBe(patient.id);
+
+      const project = await systemRepo.updateResource<Project>({
+        ...(repo.currentProject() as WithId<Project>),
+        active: false,
+      });
+
+      // A job queued before the project was deactivated is dropped
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await execSubscriptionJob({ id: '1', data: jobData, attemptsMade: 0 } as unknown as Job<SubscriptionJobData>);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      // And no new jobs are queued
+      (subscriptionQueue?.add as Mock).mockClear();
+      await addSubscriptionJobs(patient, undefined, { project, interaction: 'update' });
+      expect(subscriptionQueue?.add).not.toHaveBeenCalled();
+    }));
+
+  test("Redacts AuditEvent display text when the subscription's project redacts AuditEvents", () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: 'https://example.com/subscription' },
+      });
+      await systemRepo.updateResource<Project>({
+        ...(repo.currentProject() as WithId<Project>),
+        setting: [{ name: 'redactAuditEvents', valueBoolean: true }],
+      });
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+      await findAndExecSubscriptionJob(patient, 'create');
+
+      const auditEvent = await repo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(auditEvent?.entity?.find((e) => e.what?.reference === getReferenceString(patient))?.what).toStrictEqual({
+        reference: getReferenceString(patient),
+      });
     }));
 
   test('Status code 201', () =>
@@ -423,6 +550,54 @@ describe('Subscription Worker', () => {
       },
       { traceId: '12345678901234567890123456789012' }
     ));
+
+  test('Delete in a transaction notifies subscriptions only once committed', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+
+      // Delete the patient, then roll the delete back
+      await expect(
+        repo.withTransaction(
+          async (txRepo) => {
+            await txRepo.deleteResource('Patient', patient.id);
+            throw new Error('Roll it back!');
+          },
+          { resourceTypes: ['Patient'], source: 'test.subscription.rolledBackDelete' }
+        )
+      ).rejects.toThrow('Roll it back!');
+
+      // The patient was never deleted, so no delete job should be dispatched
+      await expect(repo.readResource('Patient', patient.id)).resolves.toMatchObject({ id: patient.id });
+      await expect(findAndExecDispatchJob(patient, 'delete')).rejects.toThrow('Job not found');
+
+      // Delete the patient again, this time committing the transaction
+      await repo.withTransaction(
+        async (txRepo) => {
+          await txRepo.deleteResource('Patient', patient.id);
+        },
+        { resourceTypes: ['Patient'], source: 'test.subscription.committedDelete' }
+      );
+
+      await findAndExecSubscriptionJob(patient, 'delete');
+      expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ method: 'POST' }));
+    }));
 
   test('Send subscriptions with signature', () =>
     withTestContext(
@@ -785,6 +960,115 @@ describe('Subscription Worker', () => {
       }
     }));
 
+  test('Server-scoped subscription executes a Bot as itself in the Bot project', () =>
+    withTestContext(async () => {
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      getConfig().serverScopedSubscriptionsEnabled = true;
+
+      const botProjectId = botRepo.currentProject()?.id;
+      assert(botProjectId);
+
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Server-scoped Bot',
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + botProjectId },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const serverSub = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: getReferenceString(bot) },
+      });
+      expect(serverSub.meta?.project).toBeUndefined();
+
+      try {
+        // The triggering project is neither the Bot's project nor one the Bot is a member of
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await findAndExecSubscriptionJob(patient, 'create', serverSub);
+
+        const auditEvents = await botRepo.searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(serverSub) }],
+        });
+        expect(auditEvents).toHaveLength(1);
+        expect(auditEvents[0].outcome).toStrictEqual(AuditEventOutcome.Success);
+        expect(auditEvents[0].meta?.project).toStrictEqual(botProjectId);
+        // Not runAsUser, so the Bot runs as its own membership
+        expect(auditEvents[0].agent?.find((a) => !a.requestor)?.who?.reference).toStrictEqual(getReferenceString(bot));
+      } finally {
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
+        await superAdminRepo.deleteResource('Subscription', serverSub.id);
+      }
+    }));
+
+  test('Server-scoped subscription executes a runAsUser Bot as the requester in the triggering project', () =>
+    withTestContext(async () => {
+      const savedConfig = getConfig().serverScopedSubscriptionsEnabled;
+      getConfig().serverScopedSubscriptionsEnabled = true;
+
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Server-scoped runAsUser Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      // The requester's membership lives here; Bots must be enabled where the Bot runs
+      const tenant = await createTestProject({ withClient: true, withRepo: true });
+
+      const serverSub = await superAdminRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: getReferenceString(bot) },
+      });
+      expect(serverSub.meta?.project).toBeUndefined();
+
+      try {
+        const patient = await tenant.repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await findAndExecSubscriptionJob(patient, 'create', serverSub);
+
+        const auditEvents = await tenant.repo.searchResources<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(serverSub) }],
+        });
+        expect(auditEvents).toHaveLength(1);
+        expect(auditEvents[0].outcome).toStrictEqual(AuditEventOutcome.Success);
+        expect(auditEvents[0].meta?.project).toStrictEqual(tenant.project.id);
+        expect(auditEvents[0].agent?.find((a) => !a.requestor)?.who?.reference).toStrictEqual(
+          getReferenceString(tenant.client)
+        );
+      } finally {
+        getConfig().serverScopedSubscriptionsEnabled = savedConfig;
+        await superAdminRepo.deleteResource('Subscription', serverSub.id);
+      }
+    }));
+
   // Skip test
   test.skip('Ignore subscriptions with missing criteria', () =>
     withTestContext(async () => {
@@ -1023,6 +1307,58 @@ describe('Subscription Worker', () => {
       expect(jobs[0].changePriority).toHaveBeenCalledWith({ priority: 1 });
       expect(jobs[1].changePriority).toHaveBeenCalledWith({ priority: 2 });
       expect(jobs[2].changePriority).not.toHaveBeenCalled();
+    }));
+
+  test('Logs one summary line per job attempt', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'rest-hook', endpoint: url },
+      });
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+      (fetch as unknown as Mock)
+        .mockImplementationOnce(() => mockFetchStatus(500))
+        .mockImplementation(() => mockFetchStatus(200));
+      const attemptLogs: unknown[] = [];
+      const logger = loggerModule.getLogger();
+      const captureAttempt = (msg: string, data?: unknown): void => {
+        if (msg === 'Subscription job attempt') {
+          attemptLogs.push(data);
+        }
+      };
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(captureAttempt);
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(captureAttempt);
+
+      await findAndExecSubscriptionJob(patient, 'create', subscription);
+      // Rerun the same job after disabling the subscription, so it is skipped
+      await repo.updateResource<Subscription>({ ...subscription, status: 'off' });
+      await findAndExecSubscriptionJob(patient, 'create', subscription);
+
+      infoSpy.mockRestore();
+      warnSpy.mockRestore();
+      expect(attemptLogs).toStrictEqual([
+        expect.objectContaining({
+          attemptsMade: 0,
+          delivery: 'rest-hook',
+          status: 500,
+          url,
+          error: 'Received status 500',
+          fetchDurationMs: expect.any(Number),
+        }),
+        expect.objectContaining({
+          attemptsMade: 1,
+          delivery: 'rest-hook',
+          status: 200,
+          error: undefined,
+          fetchDurationMs: expect.any(Number),
+        }),
+        expect.objectContaining({ attemptsMade: 0, skipReason: 'Subscription not active' }),
+      ]);
     }));
 
   test('Retry on exception', () =>
@@ -1278,6 +1614,44 @@ describe('Subscription Worker', () => {
       expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
     }));
 
+  test('Skip runAsUser bot subscriptions for system-authored resources', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: bot.meta?.project },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
+
+      await findAndExecSubscriptionJob(patient, 'create');
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(subscription) }],
+      });
+      expect(bundle.entry).toHaveLength(0);
+    }));
+
   test('Bot subscription execution AuditEvent is always emitted to logs', () =>
     withTestContext(async () => {
       const config = await loadTestConfig();
@@ -1410,6 +1784,58 @@ describe('Subscription Worker', () => {
         resourceType: 'AuditEvent',
         outcome: '0',
       });
+    }));
+
+  test('Do not execute Bot from unlinked Project', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        runAsUser: true,
+        code: `export async function handler(medplum, event) { return event.input; }`,
+      });
+
+      // No Project.link to the Bot's Project
+      const { repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot),
+        },
+      });
+      const subscriptionEvents: SearchRequest<AuditEvent> = {
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      };
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      // Attempt to trigger the Subscription
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow(
+        'Bot is not accessible from the Subscription project'
+      );
+      expect(fetch).not.toHaveBeenCalled();
+      expect(mockLambdaClient.commandCalls(InvokeCommand)).toHaveLength(0);
+
+      // The Bot must not have run
+      await expect(repo.search(subscriptionEvents)).resolves.toMatchObject({ entry: [] });
     }));
 
   test('Stop retries if Subscription status not active', () =>
@@ -1995,23 +2421,15 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
-      // This should trigger an error when the subscription is executed
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: repo.currentProject()?.id },
-        resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
-      });
-
-      const { repo: apTestRepo } = await createTestProject({
+      const { repo: apTestRepo, accessPolicy } = await createTestProject({
         withClient: true,
         withRepo: true,
         project: {
           name: 'AccessPolicy Throw Project',
           features: [],
         },
-        membership: {
-          accessPolicy: createReference(accessPolicy),
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient', readonly: false }, { resourceType: 'Subscription' }],
         },
       });
 
@@ -2067,23 +2485,15 @@ describe('Subscription Worker', () => {
 
       const url = 'https://example.com/subscription';
 
-      // Create an access policy in different project
-      // This should trigger an error when the subscription is executed
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        meta: { project: repo.currentProject()?.id },
-        resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-      });
-
-      const { repo: apTestRepo } = await createTestProject({
+      const { repo: apTestRepo, accessPolicy } = await createTestProject({
         withClient: true,
         withRepo: true,
         project: {
           name: 'AccessPolicy Not Met but Should Succeed Project',
           features: [],
         },
-        membership: {
-          accessPolicy: createReference(accessPolicy),
+        accessPolicy: {
+          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
         },
       });
 
@@ -2224,6 +2634,53 @@ describe('Subscription Worker', () => {
       );
     }));
 
+  test('Do not presign attachments from a different project', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const binary = await botRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const documentRef = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              url: `Binary/${binary.id}`,
+            },
+          },
+        ],
+      });
+      expect(documentRef).toBeDefined();
+
+      fetchMock.mockImplementation(() => mockFetchStatus(200));
+
+      await findAndExecSubscriptionJob(documentRef, 'create', subscription);
+
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining(`"url":"Binary/${binary.id}"`),
+        })
+      );
+    }));
+
   describe('WebSocket Subscriptions', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
     type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
@@ -2359,13 +2816,9 @@ describe('Subscription Worker', () => {
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
       const subRef = `Subscription/${subscription.id}`;
       const expiration = Math.floor(Date.now() / 1000) + 3600;
-      await setResourceCacheEntry(
-        {
-          ...subscription,
-          meta: { ...subscription.meta, project: projectId },
-        },
-        repo.shardId
-      );
+      await writeResourceCache([
+        buildResourceCacheSet({ ...subscription, meta: { ...subscription.meta, project: projectId } }, repo.shardId),
+      ]);
       await addUserActiveWebSocketSubscription(authorRef, subRef);
       await setActiveSubscription(projectId, criteriaResourceType, subRef, {
         criteria,
@@ -2376,6 +2829,45 @@ describe('Subscription Worker', () => {
       });
       return authorRef;
     }
+
+    test('Binary notification does not include embedded data', () =>
+      withTestContext(async () => {
+        const {
+          repo: wsSubRepo,
+          project: wsProject,
+          membership,
+          login,
+        } = await createTestProject({
+          project: { name: 'WebSocket Binary Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+          withClient: true,
+          withAccessToken: true,
+        });
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Binary',
+          channel: { type: 'websocket' },
+        });
+        await bindSubscription(subscription, wsProject.id, login.id, membership.id);
+
+        const nextArgsPromise = waitForNextSubNotification<Binary>();
+        const binary = await wsSubRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: ContentType.TEXT,
+          data: 'SGVsbG8gV29ybGQh',
+        });
+        await findAndExecDispatchJob(binary, 'create');
+
+        const [resource] = await nextArgsPromise;
+        expect(resource.id).toStrictEqual(binary.id);
+        expect(resource.data).toBeUndefined();
+        expect(resource.meta?.tag).toContainEqual({
+          system: 'http://hl7.org/fhir/v3/ObservationValue',
+          code: 'SUBSETTED',
+        });
+      }));
 
     test('Enabled', () =>
       withTestContext(async () => {
@@ -2437,6 +2929,11 @@ describe('Subscription Worker', () => {
           { includeResource: true },
         ]);
 
+        const differentCase = await wsSubRepo.updateResource<Subscription>({
+          ...subscription,
+          id: subscription.id.toUpperCase(),
+        });
+
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
         await wsSubRepo.deleteResource('Patient', updatedPatient.id);
@@ -2445,7 +2942,7 @@ describe('Subscription Worker', () => {
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id,
+          differentCase.id,
           { includeResource: true },
         ]);
       }));
@@ -2472,7 +2969,7 @@ describe('Subscription Worker', () => {
           channel: { type: 'websocket' },
         });
 
-        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Not found');
+        await expect(findAndExecSubscriptionJob(resource, 'create')).rejects.toThrow('Job not found');
 
         // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
         // if the job had made its way to the queue previously under different logic
@@ -2489,7 +2986,6 @@ describe('Subscription Worker', () => {
           requestTime: new Date().toISOString(),
           requestId: ctx?.requestId,
           traceId: ctx?.traceId,
-          authState: ctx?.authState,
         };
 
         // For a websocket subscription, this results in "not found" instead of "gone"
@@ -2567,16 +3063,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        // Create an access policy in different project
-        // This should trigger an error when the subscription is executed
-        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          meta: { project: repo.currentProject()?.id },
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
-        // Create an access policy in different project
-        // This should trigger an error when the subscription is executed
         const {
           repo: wsRepo,
           project,
@@ -2590,8 +3076,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy Denied Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
@@ -2635,16 +3121,6 @@ describe('Subscription Worker', () => {
         // allow the websocket subscription to bypass the access-policy check.
         const url = 'https://example.com/subscription';
 
-        // An access policy that restricts Patient to a specific ID that will never match our patient.
-        const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          meta: { project: repo.currentProject()?.id },
-          resource: [
-            { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
-            { resourceType: 'Subscription' },
-          ],
-        });
-
         // Create a project whose membership carries the denying access policy.
         // The project must have 'websocket-subscriptions' enabled so that the websocket
         // subscription is fetched and evaluated.
@@ -2661,8 +3137,12 @@ describe('Subscription Worker', () => {
             name: 'Access Policy Cache Channel Type Isolation Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          // An access policy that restricts Patient to a specific ID that will never match our patient.
+          accessPolicy: {
+            resource: [
+              { resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` },
+              { resourceType: 'Subscription' },
+            ],
           },
         });
 
@@ -2858,11 +3338,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
         const {
           repo: wsRepo,
           project,
@@ -2876,8 +3351,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy No Membership Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
@@ -2926,12 +3401,8 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.WARN;
         const writeSpy = vi.spyOn(globalLogger, 'write' as any).mockImplementation(() => undefined);
 
-        const accessPolicy = await superAdminRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
-        });
-
         const {
+          accessPolicy,
           repo: wsRepo,
           membership,
           project,
@@ -2944,8 +3415,8 @@ describe('Subscription Worker', () => {
             name: 'WebSockets AccessPolicy Error Project',
             features: ['websocket-subscriptions'],
           },
-          membership: {
-            accessPolicy: createReference(accessPolicy),
+          accessPolicy: {
+            resource: [{ resourceType: 'Patient' }, { resourceType: 'Subscription' }],
           },
         });
 
