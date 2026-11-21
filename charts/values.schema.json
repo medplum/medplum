@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "cloudProvider": {
+          "type": "string",
+          "enum": ["", "gcp", "azure"],
+          "description": "DEPRECATED compatibility shim; use explicit ingress/serviceAccount/podLabels values."
+        },
+        "configSource": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Comma-separated server config sources, e.g. azure:vault:secret,env"
+            }
+          },
+          "required": ["type"]
+        }
+      },
+      "required": ["configSource"]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "server": {
+          "type": "object",
+          "properties": {
+            "port": {
+              "type": "integer"
+            },
+            "baseUrl": {
+              "type": "string",
+              "minLength": 1
+            },
+            "appBaseUrl": {
+              "type": "string"
+            },
+            "binaryStorage": {
+              "type": "string"
+            },
+            "storageBaseUrl": {
+              "type": "string"
+            },
+            "vmContextBotsEnabled": {
+              "type": "boolean"
+            },
+            "defaultBotRuntimeVersion": {
+              "type": "string",
+              "enum": ["vmcontext", "awslambda", "fission"]
+            },
+            "emailProvider": {
+              "type": "string",
+              "enum": ["", "none", "smtp", "awsses"]
+            },
+            "introspectionEnabled": {
+              "type": "boolean"
+            }
+          },
+          "required": ["baseUrl"]
+        },
+        "database": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string"
+            },
+            "port": {
+              "type": ["integer", "null"]
+            },
+            "dbname": {
+              "type": "string"
+            },
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            }
+          }
+        },
+        "redis": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string"
+            },
+            "port": {
+              "type": ["integer", "null"]
+            },
+            "password": {
+              "type": "string"
+            },
+            "tls": {
+              "type": "object",
+              "description": "Rendered as JSON into MEDPLUM_REDIS_TLS. {} = TLS with public CA; {\"ca\": \"<pem>\"} = private CA."
+            }
+          }
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "automount": {
+          "type": "boolean"
+        }
+      }
+    },
+    "podLabels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "targetPort": {
+          "type": "integer"
+        },
+        "nodePort": {
+          "type": "integer"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "className": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "host": {
+          "type": "string"
+        },
+        "tls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "secretName": {
+                "type": "string"
+              },
+              "hosts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "deploy": {
+          "type": "boolean",
+          "description": "DEPRECATED: use ingress.enabled."
+        },
+        "domain": {
+          "type": "string",
+          "description": "DEPRECATED: use ingress.host."
+        },
+        "tlsSecretName": {
+          "type": "string",
+          "description": "DEPRECATED: use ingress.tls."
+        }
+      }
+    },
+    "extraObjects": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Additional manifests rendered verbatim (through tpl)."
+    },
+    "deployment": {
+      "type": "object",
+      "properties": {
+        "replicaCount": {
+          "type": "integer"
+        },
+        "autoscaling": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "minReplicas": {
+              "type": "integer"
+            },
+            "maxReplicas": {
+              "type": "integer"
+            },
+            "targetCPUUtilizationPercentage": {
+              "type": "integer"
+            },
+            "targetMemoryUtilizationPercentage": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["global", "config"]
+}
