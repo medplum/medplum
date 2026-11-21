@@ -206,9 +206,8 @@ Administrators can require new users to set up MFA during the invitation process
 
 When a user is invited with `mfaRequired: true`:
 
-1. A MFA secret is automatically generated for the user
-2. During their first login, after entering their password, they will be prompted to enroll in MFA
-3. They must complete MFA enrollment before they can access the system
+1. During their first login, after entering their password, they will be prompted to enroll in MFA
+2. They must complete MFA enrollment before they can access the system
 
 ### Example: Inviting a User with MFA Required
 

@@ -25,7 +25,8 @@ import { addMinutes, earliest, latest } from '../../util/date';
 import type { WithPath } from '../../util/withpath';
 import { copyPaths, getPath, withPath, withPaths } from '../../util/withpath';
 import { makeOperationDefinition } from './definitions';
-import { bufferTimeConflicts, findAlignedSlotTimes, overlappingIntervals } from './utils/find';
+import { alignmentFromParameters, findAlignedSlotTimes, isAlignedToGrid } from './utils/alignment';
+import { bufferTimeConflicts, overlappingIntervals } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   MAX_OCCURRENCE_COUNT,
@@ -40,7 +41,6 @@ import {
   getSchedulingParametersGroup,
   intersectIntervals,
   intervalsExceedingCapacity,
-  isAlignedToGrid,
   resolveAvailability,
   slotsOverlappingInterval,
 } from './utils/scheduling';
@@ -285,11 +285,7 @@ async function handler(params: {
       : { availability: [], hasBufferConflict: () => false };
   });
 
-  const alignment = {
-    interval: commonParameters.alignmentInterval,
-    offset: commonParameters.alignmentOffset,
-    timezone: commonParameters.alignmentTimezone,
-  };
+  const alignment = alignmentFromParameters(commonParameters);
 
   // Each later occurrence of a series starts at the same local time, whole weeks later, and must be
   // bookable just as the first is.

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
 import type { Project, User } from '@medplum/fhirtypes';
@@ -45,10 +44,8 @@ describe('RescopeUserWidget', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter>
-          <MantineProvider env="test">
-            <Notifications />
-            <RescopeUserWidget />
-          </MantineProvider>
+          <Notifications />
+          <RescopeUserWidget />
         </MemoryRouter>
       </MedplumProvider>
     );

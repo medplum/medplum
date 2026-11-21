@@ -558,6 +558,43 @@ describe('Search Utils', () => {
     expect(actual).toStrictEqual(expected);
   });
 
+  test.each<[string, string]>([
+    ['parameter injection via &', 'x&_count=1000'],
+    ['elements injection via &', 'x&_elements=id'],
+    ['include injection via &', 'x&_include=*'],
+    ['semicolon separator', 'x;_count=1000'],
+    ['newline-separated parameter', 'x\n&_count=1000'],
+    ['value/key separator via =', 'x=y'],
+    ['query delimiter via ?', 'x?_count=1000'],
+    ['fragment delimiter via #', 'x#&_count=1000'],
+    ['pre-encoded ampersand is not double-decoded', 'x%26_count=1000'],
+    ['pre-encoded percent is not double-decoded', '%2526'],
+    ['plus is not decoded as space', 'x+y'],
+    ['space', 'x y'],
+    ['comma', 'x,y'],
+    ['nested subexpression is not re-evaluated', '{{ %attack }}'],
+    ['non-ASCII', 'Zoë 💥'],
+  ])('parseXFhirQuery value is escaped: %s', (_name, attack) => {
+    const variables = { '%attack': { type: 'string', value: attack } };
+
+    const actual = parseXFhirQuery('Patient?name={{ %attack }}&_count=10', variables);
+    expect(actual).toStrictEqual({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: attack }],
+      count: 10,
+    });
+
+    // Also when the value is embedded within a larger literal, and in the first position
+    const embedded = parseXFhirQuery('Patient?name=pre-{{ %attack }}-post&active=true', variables);
+    expect(embedded).toStrictEqual({
+      resourceType: 'Patient',
+      filters: [
+        { code: 'name', operator: Operator.EQUALS, value: `pre-${attack}-post` },
+        { code: 'active', operator: Operator.EQUALS, value: 'true' },
+      ],
+    });
+  });
+
   test('Split search value on comma', () => {
     expect(splitSearchOnComma('')).toStrictEqual(['']);
     expect(splitSearchOnComma('x')).toStrictEqual(['x']);

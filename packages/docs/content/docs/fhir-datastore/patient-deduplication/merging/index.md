@@ -12,7 +12,7 @@ This section will discuss the major decisions you will need to make when designi
 
 The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.
 
-The `Patient.active` element is used to indicate the master record for the patient. When there are multiple `Patient` resources per-patient in the target system, all but the master record should be marked as "inactive."
+In this merge pattern, retain the master record as active and mark superseded source records inactive. Apply this only to records you intend to consolidate. Independently maintained [tenant-specific Patients](/docs/tenancy-design/patient-records#tenant-specific-patient-records) can remain active for the same person; sharing an identity does not make them obsolete duplicates.
 
 The `Patient.link` element is used to connect duplicate patient records via reference.
 
@@ -107,7 +107,7 @@ The downstream applications and the frequency of unmerge operations will primari
 
 Rewriting all references to point to the master record simplifies queries for client applications, and most mature implementations for patient care should target this approach. Web and mobile apps can ignore the existence of source records and simply query for clinical resources associated with the master record. For temporary source systems, this configuration also simplifies the elimination of source records over time.
 
-The most efficient way to retrieve all clinical data associated with a patient is to use the [`readPatientEverything`](/docs/sdk/core.medplumclient.readpatienteverything) operation. This operation returns all resources in the patient compartment in a single request (or paginated across multiple requests for large datasets). The operation supports pagination via the `_count` and `_offset` parameters, and the returned Bundle will include `next` links when additional pages are available. The example below demonstrates how to use `readPatientEverything` to rewrite all clinical data references, including handling pagination to process all resources.
+The most efficient way to retrieve all clinical data associated with a patient is to use the [`readPatientEverything`](/docs/sdk/core.medplumclient.readpatienteverything) operation. This operation returns all resources in the Patient's FHIR compartment in a single request (or paginated across multiple requests for large datasets). The operation supports pagination via the `_count` and `_offset` parameters, and the returned Bundle will include `next` links when additional pages are available. The example below demonstrates how to use `readPatientEverything` to rewrite all clinical data references, including handling pagination to process all resources.
 
 <details>
 <summary>Example: Update References on Clinical Data</summary>

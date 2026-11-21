@@ -29,6 +29,13 @@
   max-height: 100%;
   overflow-y: auto;
   padding-bottom: var(--mantine-spacing-sm);
+  /* Fills a host with a height of its own, such as the workspace's pane, so the controls take
+     the foot of it rather than trailing the last field. Resolves to nothing in an unbounded host. */
+  min-height: 100%;
+}
+
+.controls {
+  margin-top: auto;
 }
 
 /* Only present while the time search is open, which is what widens the panel. No wider
@@ -74,6 +81,11 @@
   .form,
   .resultsList {
     overflow-y: visible;
+  }
+
+  /* Filled, the form would push the times stacked under it out of view. */
+  .layout:has(.results) .form {
+    min-height: 0;
   }
 }
 
@@ -135,4 +147,13 @@
 
 .notes .notesCountOver {
   color: var(--mantine-color-error);
+}
+
+.addButton {
+  align-self: flex-start;
+}
+
+/* Matches the gap SearchControl's "Add Filter" leaves between its icon and label. */
+.addButton :global(.mantine-Button-section[data-position='left']) {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
 }

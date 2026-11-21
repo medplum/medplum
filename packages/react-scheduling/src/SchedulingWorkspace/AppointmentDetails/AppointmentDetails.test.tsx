@@ -16,7 +16,15 @@ import {
   setPrimaryProvider,
   toAppointmentSiteReference,
 } from '@medplum/core';
-import type { Appointment, CodeableConcept, HealthcareService, Parameters, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  CodeableConcept,
+  HealthcareService,
+  Parameters,
+  Patient,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import type { RenderResult } from '@testing-library/react';
 import type { JSX } from 'react';
@@ -247,7 +255,7 @@ describe('AppointmentDetails', () => {
   test('describes the appointment', async () => {
     renderDetails(BOOKED_APPOINTMENT);
 
-    expect(screen.getByText('booked')).toBeInTheDocument();
+    expect(screen.getByText('Status').nextElementSibling).toHaveTextContent('booked');
     expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
     expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
@@ -352,6 +360,17 @@ describe('AppointmentDetails', () => {
 
     expect(await screen.findByText('100041')).toBeInTheDocument();
     expect(screen.getByText('MRN')).toBeInTheDocument();
+  });
+
+  test('marks a patient who has died', async () => {
+    const patient = await medplum.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Lee'], family: 'Whitfield' }],
+      deceasedBoolean: true,
+    });
+    renderDetails({ ...BOOKED_APPOINTMENT, participant: [{ status: 'accepted', actor: createReference(patient) }] });
+
+    expect(await screen.findByText('Lee Whitfield (deceased)')).toBeInTheDocument();
   });
 
   test('names the primary provider apart from the other providers, rooms, and devices', async () => {
@@ -461,8 +480,18 @@ describe('AppointmentDetails', () => {
 
     await openCancellation();
 
-    expect(screen.getByPlaceholderText('Search reasons')).toBeInTheDocument();
-    expect(screen.queryByText('Bring prior films')).not.toBeInTheDocument();
+    // The visit being called off is described first, and the reason asked under it, at
+    // the foot where Cancel Appointment was.
+    const reason = screen.getByPlaceholderText('Search reasons');
+    const notes = screen.getByText('Bring prior films');
+    expect(notes.compareDocumentPosition(reason) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cancelButton()).not.toBeInTheDocument();
+    // The way back sits last, under the button that goes through with it.
+    const back = screen.getByRole('button', { name: 'Back to Appointment Details' });
+    expect(screen.getByRole('heading', { name: 'Cancel this appointment' })).toBeInTheDocument();
+    expect(
+      (confirmButton() as HTMLElement).compareDocumentPosition(back) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
   test('offers no cancellation until a reason is chosen', async () => {
@@ -607,20 +636,11 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Patient: Feeling Better')).toBeInTheDocument();
   });
 
-  test('offers no cancellation for an appointment $cancel would refuse', async () => {
-    renderDetails({ ...BOOKED_APPOINTMENT, status: 'cancelled' });
+  test.each(['cancelled', 'fulfilled'] as const)('offers no cancellation for a %s appointment', async (status) => {
+    renderDetails({ ...BOOKED_APPOINTMENT, status });
     await screen.findByText('Miles Cooper');
 
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(screen.getByText('This appointment is cancelled.')).toBeInTheDocument();
-  });
-
-  test('says why an appointment already seen cannot be cancelled', async () => {
-    renderDetails({ ...BOOKED_APPOINTMENT, status: 'fulfilled' });
-    await screen.findByText('Miles Cooper');
-
-    expect(cancelButton()).toHaveAttribute('disabled');
-    expect(screen.getByText("An appointment in 'fulfilled' status cannot be cancelled.")).toBeInTheDocument();
+    expect(cancelButton()).not.toBeInTheDocument();
   });
 
   test('links to the visit in the external system', async () => {
@@ -667,7 +687,7 @@ describe('AppointmentDetails', () => {
     );
 
     await userEvent.click(rescheduleButton() as HTMLElement);
-    await userEvent.click(await screen.findByRole('button', { name: 'Back' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Back to Appointment Details' }));
 
     expect(onToggleTimeFinder).toHaveBeenLastCalledWith(false);
   });
@@ -683,7 +703,7 @@ describe('AppointmentDetails', () => {
     expect(await screen.findByRole('textbox', { name: /visit type/i })).toHaveValue('Ultrasound Imaging');
     expect(cancelButton()).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back to Appointment Details' }));
 
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
     expect(cancelButton()).toBeInTheDocument();
@@ -1021,7 +1041,8 @@ describe('AppointmentDetails editing', () => {
     await screen.findByRole('searchbox', { name: /procedure code/i });
     await enterCode(/procedure code/i, ProcedureCodes[1]);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('heading', { name: 'Edit appointment' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Appointment Details' }));
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
     expect(update).not.toHaveBeenCalled();
 

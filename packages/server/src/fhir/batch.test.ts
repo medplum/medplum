@@ -76,10 +76,6 @@ describe('Batch and Transaction processing', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     baseUrl = config.baseUrl;
-    // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
-    // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
-    // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
-    config.asyncDelayScaling = 0;
     await initApp(app, config);
     const testProject = await createTestProject({
       withAccessToken: true,

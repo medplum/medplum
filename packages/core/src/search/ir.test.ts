@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { CodeableConcept, Coding, ContactPoint, Identifier } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
+import type { TypedValue } from '../types';
 import {
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -178,5 +179,25 @@ describe('Search IR', () => {
         { type: 'ContactPoint', value: { system: 'phone', value: '789' } satisfies ContactPoint },
       ])
     ).toStrictEqual([{ system: 'phone', value: '789' }]);
+  });
+
+  test('convertToSearchableTokens deduplicates by system and normalized value', () => {
+    const coding = (system: string | undefined, code: string): TypedValue => ({
+      type: 'Coding',
+      value: { system, code },
+    });
+    expect(
+      convertToSearchableTokens([coding('a', 'X'), coding('b', 'X'), coding(undefined, 'X'), coding('a', 'X')])
+    ).toStrictEqual([
+      { system: 'a', value: 'X' },
+      { system: 'b', value: 'X' },
+      { system: undefined, value: 'X' },
+    ]);
+    expect(
+      convertToSearchableTokens([coding('a', 'X'), coding('a', 'x'), coding('a', 'Y')], { caseInsensitive: true })
+    ).toStrictEqual([
+      { system: 'a', value: 'x' },
+      { system: 'a', value: 'y' },
+    ]);
   });
 });

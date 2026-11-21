@@ -14,9 +14,13 @@ We'll cover
 - How to model provider care teams
 - How to assign practitioners to multiple divisions and teams
 
+Organizational relationships describe the clinical model. If you need separate tenant boundaries, choose them in [Tenancy Design](/docs/decision-guides/tenancy-design). Role and care-team permissions can also apply within one organization or within each tenant; see [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access). Hierarchy and team membership alone do not grant access.
+
 ## Modeling the Organizational Hierarchy
 
 To model groups, it is recommended to use the `Organization` resource. `Organizations` model how people are grouped, and can be organized in a hierarchical structure by utilizing the `partOf` reference field.
+
+Use a separate Location hierarchy for physical places. `Location.partOf` describes physical containment, while `Location.managingOrganization` connects a place to the organization maintaining it. See [Organizations and Locations](/docs/administration/locations-and-facilities) for a worked example across scheduling, clinical care, and billing.
 
 Let's look at the example organization called "Acme Provider Group" with four clinical divisions, "Mental Health", "Dermatology", "Sexual and Reproductive Health", and "Diet and Nutrition". You would create an `Organization` for the top level Acme Provider Group.
 
@@ -127,13 +131,15 @@ The `Practitioner` resource in FHIR is used to describe the _person_ who is the 
 
 The `PractitionerRole` is used to assign practitioners to `Organizations`, `CareTeams`, and `HealthcareServices`.
 
-Each practitioner should have one `PractitionerRole` per organization. If a practitioner participates in multiple `Organizations`, multiple `PractitionerRoles` should be created. Within each `PractitionerRole`, it is possible to assign a provider to be to multiple `HealthcareServices` to indicate the full scope of work the provider performs.
+For a simple directory, start with one `PractitionerRole` per practitioner per organization. A role can reference multiple `HealthcareServices` and `Locations` when the same responsibilities and eligibility apply to those associations. Create separate roles when those associations need different responsibilities or eligibility, even within one organization. For example, the [state-by-state licensure model](/docs/scheduling/state-by-state-licensure) uses a role per service or service line so each can carry its own licensed jurisdictions.
 
 There are two additional fields that describe _how_ the provider participates in the organization:
 
 - `PractitionerRole.code` describes roles which this practitioner may perform as part of the organization, and uses the same value set as `CareTeam.participant.role` ([Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion))
 
 - `PractitionerRole.specialty` can be used to indicate which specialty a provider is performing _at a given organization._ For instance, Provider A may act as a Cardiologist at Organization 1, but as an Internal Medicine Doctor at Organization 2. The recommended terminology for this field is the [NUCC Health Care Provider Taxonomy](https://www.nucc.org/index.php/code-sets-mainmenu-41/provider-taxonomy-mainmenu-40)
+
+Alongside these directory roles, the scheduling configuration workspace can create a separate facility-assignment role without an `organization`. See [Scheduling configuration ownership](/docs/scheduling/react-components#configuration-ownership) when using it with the directory model.
 
 When adding a practitioner to a `CareTeam`, it is important to add the `PractitionerRole` resource, rather than the `Practitioner` resource itself. This approach makes it easier to keep track of in-network and out-of-network providers for billing purposes (see our guide on Modeling Insurance Networks more information on this topic).
 

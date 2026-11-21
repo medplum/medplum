@@ -50,6 +50,8 @@ The `item` element allows you to group and nest questions together by adding add
 
 To do this, you must set `item.type='group'`. This specifies that the item will not be a question, but instead a group of questions. When defining a group, the `text` property should be a description of the group instead of an actual question.
 
+Nested groups organize inline questions within one definition. To maintain sections independently and reuse them across forms, see [Modular and Composite Questionnaires](/docs/questionnaires/modular-questionnaires).
+
 <details>
 <summary>Example: A <code>Questionnaire</code> with nested questions</summary>
 
@@ -134,6 +136,8 @@ The answers on a [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnair
 ## UI Components
 
 Medplum provides React components to help you view and build [`Questionnaire`](/docs/api/fhir/resources/questionnaire) resources. You can preview the [QuestionnaireForm](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--basic) and [QuestionnaireBuilder](https://storybook.medplum.com/?path=/story/medplum-questionnairebuilder--basic) components in [Storybook](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
+
+For calculations, expression-based conditions, and multi-page forms, see [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring). For application integration, see [Saving and Resuming Responses](/docs/questionnaires/saving-and-resuming).
 
 ### Signature Required
 

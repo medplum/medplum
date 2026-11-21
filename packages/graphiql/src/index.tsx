@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { GraphiQLPlugin } from '@graphiql/react';
+import '@graphiql/react/setup-workers/vite';
 import type { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
@@ -151,7 +152,6 @@ export function App(): JSX.Element {
       defaultQuery={HELP_TEXT}
       initialQuery={parameters.query || undefined}
       initialVariables={parameters.variables || undefined}
-      operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}
       onEditVariables={onEditVariables}

@@ -6,13 +6,12 @@ import type { HealthcareService, Practitioner, Project, Schedule, Slot } from '@
 import type { Interval } from '../../../util/date';
 import { LayeredDict } from '../../../util/layereddict';
 import { withPath } from '../../../util/withpath';
-import type { Repository } from '../../repo';
+import { Repository } from '../../repo';
 import {
   applyExistingSlots,
-  eachDayOfInterval,
+  getSlotWriterRepo,
   intersectIntervals,
   intervalsExceedingCapacity,
-  isAlignedToGrid,
   normalizeIntervals,
   pairWithOverlaps,
   removeAvailability,
@@ -1031,85 +1030,39 @@ describe('applyExistingSlots', () => {
   });
 });
 
-describe('eachDayOfInterval', () => {
-  test('starts each day at its first instant, including after a day with no midnight', () => {
-    // Havana springs forward at midnight on 2026-03-08, so that day starts at 1am.
-    const days = eachDayOfInterval(
-      { start: new Date('2026-03-07T12:00:00-05:00'), end: new Date('2026-03-10T00:30:00-04:00') },
-      'America/Havana'
-    );
-    expect(days.map((day) => day.toString())).toEqual([
-      '2026-03-07T00:00:00-05:00[America/Havana]',
-      '2026-03-08T01:00:00-04:00[America/Havana]',
-      '2026-03-09T00:00:00-04:00[America/Havana]',
-      '2026-03-10T00:00:00-04:00[America/Havana]',
-    ]);
-  });
-});
-
-describe('isAlignedToGrid', () => {
-  const opts = { interval: 60, offset: 0, timezone: 'Etc/UTC' };
-
-  test('returns true for a date exactly on the hourly grid', () => {
-    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00Z'), opts)).toBe(true);
-  });
-
-  test('returns false for a date not on the grid', () => {
-    expect(isAlignedToGrid(new Date('2025-12-01T09:37:00Z'), opts)).toBe(false);
-  });
-
-  test('returns false for a date with non-zero seconds', () => {
-    expect(isAlignedToGrid(new Date('2025-12-01T09:00:30Z'), opts)).toBe(false);
-  });
-
-  test('returns false for a date with non-zero milliseconds', () => {
-    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00.500Z'), opts)).toBe(false);
-  });
-
-  test('respects alignmentOffset', () => {
-    const withOffset = { interval: 20, offset: 5, timezone: 'Etc/UTC' };
-    expect(isAlignedToGrid(new Date('2025-12-01T09:05:00Z'), withOffset)).toBe(true);
-    expect(isAlignedToGrid(new Date('2025-12-01T09:25:00Z'), withOffset)).toBe(true);
-    expect(isAlignedToGrid(new Date('2025-12-01T09:00:00Z'), withOffset)).toBe(false);
-    expect(isAlignedToGrid(new Date('2025-12-01T09:10:00Z'), withOffset)).toBe(false);
-  });
-
-  test('anchors to local midnight for non-UTC timezones', () => {
-    // America/Chicago in December is CST (UTC-6); local midnight = 06:00 UTC.
-    // With 50-min alignment, the Chicago and UTC grids differ (360 % 50 = 10).
-    // 09:20 UTC = 03:20 CST = 200 min since local midnight; 200 % 50 = 0 — on the Chicago grid
-    expect(
-      isAlignedToGrid(new Date('2025-12-01T09:20:00Z'), {
-        interval: 50,
-        offset: 0,
-        timezone: 'America/Chicago',
+describe('getSlotWriterRepo', () => {
+  test('hides only Patient identities when a client acts on behalf of a user', () => {
+    const client = { reference: 'ClientApplication/client' };
+    const patient = { reference: 'Patient/patient' };
+    const onBehalfOfPatient = getSlotWriterRepo(
+      new Repository({
+        routing: { kind: 'global-only' },
+        author: client,
+        onBehalfOf: patient,
+        accessPolicy: { resourceType: 'AccessPolicy', compartment: patient },
       })
-    ).toBe(true);
-    // 09:10 UTC = 03:10 CST = 190 min since local midnight; 190 % 50 = 40 — not on the Chicago grid
-    expect(
-      isAlignedToGrid(new Date('2025-12-01T09:10:00Z'), {
-        interval: 50,
-        offset: 0,
-        timezone: 'America/Chicago',
-      })
-    ).toBe(false);
+    ).getConfig();
+    expect(onBehalfOfPatient.author).toStrictEqual(client);
+    expect(onBehalfOfPatient.onBehalfOf).toBeUndefined();
+    expect(onBehalfOfPatient.accessPolicy?.compartment).toBeUndefined();
+
+    const practitioner = { reference: 'Practitioner/practitioner' };
+    const onBehalfOfPractitioner = getSlotWriterRepo(
+      new Repository({ routing: { kind: 'global-only' }, author: client, onBehalfOf: practitioner })
+    ).getConfig();
+    expect(onBehalfOfPractitioner.onBehalfOf).toStrictEqual(practitioner);
   });
 
-  test('re-anchors the grid at local midnight for slots spanning midnight', () => {
-    // America/Chicago in December is CST (UTC-6); local midnight = 06:00 UTC.
-    // With 50-min alignment, the last grid point on Dec 1 is 23:20 CST = 05:20 UTC Dec 2
-    // (1400 min since Dec 1 midnight; 1400 % 50 = 0).
-    const lastSlotDec1 = new Date('2025-12-02T05:20:00Z');
-    expect(isAlignedToGrid(lastSlotDec1, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
-
-    // Naïve continuation past Dec 1's grid would land at 00:10 CST Dec 2 = 06:10 UTC Dec 2
-    // (10 min since Dec 2 midnight; 10 % 50 = 10) — not on the re-anchored Dec 2 grid.
-    const naiveContinuation = new Date('2025-12-02T06:10:00Z');
-    expect(isAlignedToGrid(naiveContinuation, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(false);
-
-    // The actual first slot on Dec 2 is 00:00 CST = 06:00 UTC Dec 2
-    // (0 min since Dec 2 midnight; 0 % 50 = 0).
-    const firstSlotDec2 = new Date('2025-12-02T06:00:00Z');
-    expect(isAlignedToGrid(firstSlotDec2, { interval: 50, offset: 0, timezone: 'America/Chicago' })).toBe(true);
+  test('hides a RelatedPerson booking for a patient', () => {
+    const relatedPerson = { reference: 'RelatedPerson/caregiver' };
+    const config = getSlotWriterRepo(
+      new Repository({
+        routing: { kind: 'global-only' },
+        author: relatedPerson,
+        accessPolicy: { resourceType: 'AccessPolicy', compartment: relatedPerson },
+      })
+    ).getConfig();
+    expect(config.author).toStrictEqual({ reference: 'system' });
+    expect(config.accessPolicy?.compartment).toBeUndefined();
   });
 });

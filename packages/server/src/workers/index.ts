@@ -57,6 +57,13 @@ export async function initWorkers(config: ServerConfig): Promise<void> {
 }
 
 /**
+ * Starts all background workers. Call after everything the job handlers depend on is initialized.
+ */
+export function runWorkers(): void {
+  queueRegistry.runAll();
+}
+
+/**
  * Shuts down all background workers.
  */
 export async function closeWorkers(): Promise<void> {

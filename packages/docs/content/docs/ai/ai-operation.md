@@ -21,7 +21,7 @@ Before using the `$ai` operation, you need:
 
 1. **Enable AI Feature**: The `ai` feature must be enabled on your Medplum project
 2. **Configure OpenAI API Key**: Add your OpenAI API key as a project secret named `OPENAI_API_KEY` in your project settings
-3. **Use a Supported Account**: `$ai` is intended for practitioners, bots and client applications. For patient-facing AI features, call `$ai` from a Bot
+3. **Use a Supported Account**: `$ai` is intended for practitioners, bots and client applications. For patient-facing AI features, call `$ai` from a Bot that does not [run as the user](/docs/bots/bot-run-as-user). A Bot with `runAsUser` calls `$ai` as the patient, so the call is rejected. A Bot without it runs with its own access, so it should read only the requesting patient's data (`event.requester`)
 
 ### Using a LiteLLM Proxy (or other OpenAI-compatible endpoint)
 

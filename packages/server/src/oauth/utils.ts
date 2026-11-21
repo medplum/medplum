@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Filter, JWTPayload, ProfileResource, SearchRequest, WithId } from '@medplum/core';
+import type { Filter, JWTPayload, Operation, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
   badRequest,
   ContentType,
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   escapeSearchValue,
   forbidden,
   getDateProperty,
   getReferenceString,
+  getStatus,
   isJwt,
   isString,
   isUUID,
@@ -40,9 +42,9 @@ import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
-import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
+import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
@@ -51,7 +53,7 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
-import { getPartialPermissionScopes, parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
+import { parseSmartScopes, parseSmartScopeString } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 import {
@@ -61,7 +63,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
+import { getProjectIdFromUrl, getProjectScopedUrl, matchesIpAccessRule, safeFetch } from '../util/url';
 import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -163,12 +165,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
       }
     }
     if (request.redirectUri && !getClientRedirectUri(client, request.redirectUri)) {
-      getLogger().warn('Login redirect URI is not registered for client', {
-        clientId: client.id,
-        authMethod: request.authMethod,
-        redirectUri: request.redirectUri,
-        partialMatch: !!getClientRedirectUri(client, request.redirectUri, true),
-      });
+      throw new OperationOutcomeError(badRequest('Invalid redirect URI'));
     }
   }
 
@@ -180,7 +177,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
   }
 
-  let user: User | undefined = undefined;
+  let user: WithId<User> | undefined = undefined;
   if (request.externalId) {
     user = await getUserByExternalId(systemRepo, request.externalId, request.projectId as string);
   } else if (request.email) {
@@ -221,6 +218,23 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
     userAgent: request.userAgent,
     pictureUrl: request.pictureUrl,
   });
+
+  if (request.password) {
+    // The password was checked against `user` as read above. A password change commits the new hash
+    // and then revokes the logins it finds (see setPassword). This re-read must come after the login
+    // is stored, so that either the change is visible here or this login is visible to its
+    // revocation; checked before, a change committing in between would be seen by neither.
+    // Until it is revoked below, the login is unusable: its code, cookie and refresh secret are only
+    // returned on success. Searched rather than read, so it comes from the database, not the cache.
+    const current = await systemRepo.searchOne<User>({
+      resourceType: 'User',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: user.id }],
+    });
+    if (current?.passwordHash !== user.passwordHash) {
+      await systemRepo.patchResource<Login>('Login', login.id, [{ op: 'add', path: '/revoked', value: true }]);
+      throw new OperationOutcomeError(badRequest(INVALID_CREDENTIALS_MESSAGE));
+    }
+  }
 
   // Try to get user memberships
   // If they only have one membership, set it now
@@ -324,24 +338,31 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * Verifies the MFA token for a login.
  * Ensures that the login is valid.
  * Ensures that the token is valid.
- * On success, updates the login with the MFA status.
+ * On success, enrolls the user in TOTP if `enrollSecret` is given, then updates the login with the MFA status.
  * On error, throws an error.
  * @param login - The login resource.
  * @param token - The user supplied MFA token.
+ * @param enrollSecret - The authenticator (TOTP) secret offered to this login, when the token confirms an enrollment.
  * @returns The updated login resource.
  */
-export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
+export async function verifyMfaToken(login: Login, token: string, enrollSecret?: string): Promise<Login> {
   assertMfaLoginActive(login);
 
-  if (login.emailMfa && new Date(login.emailMfa.expiresAt).getTime() < Date.now()) {
+  // A code that confirms an enrollment must be for the offered secret, not an emailed code
+  const emailMfa = enrollSecret ? undefined : login.emailMfa;
+  if (emailMfa && new Date(emailMfa.expiresAt).getTime() < Date.now()) {
     throw new OperationOutcomeError(badRequest('MFA code expired'));
   }
 
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference(login.user as Reference<User>);
+  if (enrollSecret && user.mfaEnrolled) {
+    throw new OperationOutcomeError(badRequest('Already enrolled'));
+  }
 
-  const secret = user.mfaSecret;
-  if (!login.emailMfa && !secret) {
+  // The stored authenticator secret is only a factor once TOTP is enrolled
+  const secret = enrollSecret ?? (getEnrolledMfaMethods(user).includes('totp') ? user.mfaSecret : undefined);
+  if (!emailMfa && !secret) {
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
@@ -353,15 +374,14 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
   // user. login.emailMfa holds a bcrypt hash of that code and its expiration;
   // clear it on success.
 
-  if (login.emailMfa) {
-    emailCodeVerified = await bcrypt.compare(token, login.emailMfa.codeHash);
+  if (emailMfa) {
+    emailCodeVerified = await bcrypt.compare(token, emailMfa.codeHash);
     verified = emailCodeVerified;
   }
 
   // TOTP authenticator application
   if (!verified && secret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    verified = authenticator.verify({ token, secret });
+    verified = await verifyTotpToken(user.id, secret, token);
   }
 
   if (!verified) {
@@ -377,11 +397,18 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     await systemRepo.patchResource<User>('User', user.id, [{ op: 'add', path: '/emailVerified', value: true }]);
   }
 
-  const result = await systemRepo.updateResource<Login>({
-    ...login,
-    mfaVerified: true,
-    emailMfa: emailCodeVerified ? undefined : login.emailMfa, // clear emailMfa on successful verification
-  });
+  if (enrollSecret) {
+    // Enroll before verifying the login, so a login whose enrollment lost a race is not verified
+    await enrollTotp(login, user, enrollSecret);
+  }
+
+  // Patched rather than written from `login`, so that a revocation since it was read is kept
+  const patch: Operation[] = [{ op: 'add', path: '/mfaVerified', value: true }];
+  if (emailCodeVerified) {
+    // The emailed code is single-use
+    patch.push({ op: 'remove', path: '/emailMfa' });
+  }
+  const result = await systemRepo.patchResource<Login>('Login', login.id as string, patch);
   await tryReleaseMfaAttempt(getLogger(), login);
   return result;
 }
@@ -554,6 +581,9 @@ export async function setLoginMembership(
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
   // Include the SMART App Launch context, which patient scopes in the login require to build a policy
   const smartAppLaunch = login.launch ? await projectSystemRepo.readReference<SmartAppLaunch>(login.launch) : undefined;
+  if (smartAppLaunch && !isValidLaunchForMembership(smartAppLaunch, membership)) {
+    throw new OperationOutcomeError(badRequest('Invalid launch'));
+  }
   const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig, smartAppLaunch });
   await checkIpAccessRules(login, accessPolicy);
 
@@ -579,7 +609,34 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource(updatedLogin);
+  try {
+    // `ifMatch` makes this a compare-and-swap: all of the checks above were made on `login`,
+    // so of several concurrent requests for the same login, exactly one gets to set the membership
+    return await globalSystemRepo.updateResource(updatedLogin, { ifMatch: login.meta?.versionId });
+  } catch (err) {
+    if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+      throw new OperationOutcomeError(badRequest('Login profile already set'));
+    }
+    throw err;
+  }
+}
+
+/**
+ * Returns true if a SMART App Launch context can be used to sign in with a project membership.
+ * The launch must be in the membership's project, and either started by the membership's profile
+ * (directly or on behalf of) or for the membership's profile as the patient.
+ * @param launch - The SMART App Launch context.
+ * @param membership - The project membership of the user that is signing in.
+ * @returns True if the launch can be used with the membership; false otherwise.
+ */
+export function isValidLaunchForMembership(launch: SmartAppLaunch, membership: ProjectMembership): boolean {
+  const profile = membership.profile?.reference;
+  const launchedBy = (launch.meta?.onBehalfOf ?? launch.meta?.author)?.reference;
+  return (
+    !!profile &&
+    launch.meta?.project === resolveId(membership.project) &&
+    (launchedBy === profile || launch.patient?.reference === profile)
+  );
 }
 
 /**
@@ -604,16 +661,6 @@ export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolic
       }
     }
   }
-}
-
-/**
- * Returns true if the remote address matches the rule value.
- * @param remoteAddress - The login remote address.
- * @param ruleValue - The IP Access Rule value.
- * @returns True if the remote address matches the rule value; otherwise false.
- */
-function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
-  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
 function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {
@@ -741,8 +788,8 @@ export async function setLoginScope(systemRepo: SystemRepository, login: Login, 
     }
   }
 
-  // Otherwise update scope
-  return systemRepo.updateResource<Login>({ ...login, scope });
+  // Patched rather than written from `login`, so that a revocation since it was read is kept
+  return systemRepo.patchResource<Login>('Login', login.id as string, [{ op: 'add', path: '/scope', value: scope }]);
 }
 
 export async function getAuthTokens(
@@ -761,23 +808,6 @@ export async function getAuthTokens(
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
-  }
-
-  const partialPermissionScopes = getPartialPermissionScopes(login.scope);
-  if (partialPermissionScopes.length > 0) {
-    let projectId = resolveId(login.project);
-    if (!projectId) {
-      // A logging lookup must not prevent token issuance.
-      const membership = await getGlobalSystemRepo()
-        .readReference(login.membership)
-        .catch(() => undefined);
-      projectId = resolveId(membership?.project);
-    }
-    getLogger().warn('SMART scopes with partial permissions', {
-      clientId,
-      projectId,
-      scopes: partialPermissionScopes,
-    });
   }
 
   if (!login.granted) {
@@ -853,7 +883,7 @@ export async function getUserByExternalId(
   systemRepo: SystemRepository,
   externalId: string,
   projectId: string
-): Promise<User | undefined> {
+): Promise<WithId<User> | undefined> {
   const membership = await systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -1186,11 +1216,14 @@ export async function verifyMultipleMatchingException(
  * Handles "on behalf of" requests if the "x-medplum-on-behalf-of" header is present.
  * @param req - The incoming HTTP request.
  * @param accessToken - The access token as provided by the client.
+ * @param options - Optional verification options.
+ * @param options.audience - The expected audience, for tokens issued to a specific endpoint. Defaults to the (project-scoped) issuer.
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(
   req: Request | undefined,
-  accessToken: string
+  accessToken: string,
+  options?: { audience?: string }
 ): Promise<AuthenticationResult | undefined> {
   const globalSystemRepo = getGlobalSystemRepo();
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
@@ -1214,7 +1247,8 @@ export async function getLoginForAccessToken(
   // ID tokens are audienced to the client rather than to the issuer, and refresh tokens carry a refresh secret.
   // Without these checks, either one is accepted as an access token. See RFC 8725 sections 3.9 and 3.12.
   const config = getConfig();
-  const expectedAudience = req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer;
+  const expectedAudience =
+    options?.audience ?? (req ? getProjectScopedUrl(req.originalUrl, config.issuer) : config.issuer);
   if (claims.aud !== expectedAudience || claims.refresh_secret !== undefined) {
     return undefined;
   }
@@ -1460,6 +1494,16 @@ async function tryExternalAuth(
     return undefined;
   }
 
+  // The token is only verified on a cache miss, so the cached login must not outlive the token.
+  // The cache key hashes the whole token, so on a cache hit this `exp` is the one that was verified.
+  let cacheSeconds = 3600;
+  if (typeof claims.exp === 'number') {
+    cacheSeconds = Math.min(cacheSeconds, Math.ceil(claims.exp - Date.now() / 1000));
+  }
+  if (cacheSeconds <= 0) {
+    return undefined;
+  }
+
   const redis = getCacheRedis();
   const redisKey = `medplum:ext-auth:${issuer}:${projectId ?? ''}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
@@ -1479,7 +1523,7 @@ async function tryExternalAuth(
       return undefined;
     }
     ({ login, project, membership } = externalAuthState);
-    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
+    await redis.set(redisKey, JSON.stringify(login), 'EX', cacheSeconds);
   }
 
   return { login, project, membership };
@@ -1511,6 +1555,9 @@ async function tryExternalAuthLogin(
   let membership: WithId<ProjectMembership> | undefined;
   if (client) {
     membership = await getClientApplicationMembership(systemRepo, client, projectId);
+    if (!isClientSubjectAllowed(membership, claims)) {
+      return undefined;
+    }
   } else if (isString(profileString)) {
     // Path A: fhirUser claim present - look up profile, then find membership
     // Profile string can be either a reference or a search string
@@ -1549,7 +1596,23 @@ async function tryExternalAuthLogin(
       return undefined;
     }
     client = await getExternalBearerClient(projectId, claims.iss);
+    // The server-wide provider verified the token; the client's audience binds it to this project.
+    const audience = client?.identityProvider?.audience;
+    if (
+      client &&
+      !(audience && (Array.isArray(claims.aud) ? claims.aud.includes(audience) : claims.aud === audience))
+    ) {
+      getLogger().warn('External token audience does not match ClientApplication', {
+        issuer: claims.iss,
+        projectId,
+        clientId: client.id,
+      });
+      return undefined;
+    }
     membership = client ? await getClientApplicationMembership(systemRepo, client, projectId) : undefined;
+    if (!isClientSubjectAllowed(membership, claims)) {
+      return undefined;
+    }
   } else {
     // Path B: sub claim fallback - look up ProjectMembership by externalId
     // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous
@@ -1614,6 +1677,39 @@ async function tryExternalAuthLogin(
   return { login, project, membership };
 }
 
+// An allow-list, not a deny-list: a new IdentityProvider setting must never make a client eligible for bearer tokens.
+const externalBearerIdpFields = ['issuer', 'jwksUrl', 'audience'];
+
+function isExternalBearerIdentityProvider(idp: IdentityProvider | undefined): boolean {
+  return (
+    !!idp?.issuer &&
+    !!idp.jwksUrl &&
+    !!idp.audience &&
+    Object.keys(idp).every((key) => externalBearerIdpFields.includes(key))
+  );
+}
+
+/**
+ * A client membership that names an externalId admits only tokens whose `sub` equals it, so a
+ * workload-identity issuer can be trusted for one principal rather than for everything it signs.
+ * A membership without an externalId keeps the issuer-only behavior.
+ * @param membership - The client application membership, if found.
+ * @param claims - The verified external token claims.
+ * @returns True if the token subject is allowed for the membership.
+ */
+function isClientSubjectAllowed(membership: WithId<ProjectMembership> | undefined, claims: JWTPayload): boolean {
+  if (!membership?.externalId || membership.externalId === claims.sub) {
+    return true;
+  }
+  getLogger().warn('External token subject does not match client membership externalId', {
+    sub: claims.sub,
+    iss: claims.iss,
+    membership: membership.id,
+    externalId: membership.externalId,
+  });
+  return false;
+}
+
 /**
  * Resolves an identity-less external bearer token to the client application configured for its issuer.
  * The project-scoped URL supplies the tenant, while the issuer identifies the client within that project.
@@ -1634,16 +1730,29 @@ async function getExternalBearerClient(
       { code: '_project', operator: Operator.EQUALS, value: projectId },
       { code: 'identity-provider-issuer', operator: Operator.EXACT, value: escapeSearchValue(issuer) },
     ],
-    count: 2,
+    // Server max; projects normally have one or two clients per issuer, so this only bounds pathological configs
+    count: DEFAULT_MAX_SEARCH_COUNT,
   });
-  if (clients.length !== 1) {
-    if (clients.length > 1) {
+  // Eligibility is filtered after the search, so a full page may hide clients and the decision would be unsound
+  if (clients.length === DEFAULT_MAX_SEARCH_COUNT) {
+    getLogger().warn('Too many ClientApplications found for external auth issuer in project', { issuer, projectId });
+    return undefined;
+  }
+  const bearerClients = clients.filter((client) => isExternalBearerIdentityProvider(client.identityProvider));
+  if (bearerClients.length !== 1) {
+    if (bearerClients.length > 1) {
       getLogger().warn('Multiple ClientApplications found for external auth issuer in project', { issuer, projectId });
+    } else if (clients.length > 0) {
+      getLogger().warn('External auth issuer matched ClientApplication not configured for bearer tokens', {
+        issuer,
+        projectId,
+        clientIds: clients.map((client) => client.id),
+      });
     }
     return undefined;
   }
 
-  return clients[0];
+  return bearerClients[0];
 }
 
 /**

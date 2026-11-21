@@ -9,8 +9,12 @@ import packageJson from './package.json' with { type: 'json' };
 
 const serverDir = dirname(fileURLToPath(import.meta.url));
 
-// These files book Slots in SERIALIZABLE transactions, which abort with 40001 when another file
-// books at the same time. They run after everything else, one file at a time.
+// These files run after everything else, one file at a time:
+// - The booking tests book Slots in SERIALIZABLE transactions, which abort with 40001 when another
+//   file books at the same time.
+// - The user-heavy tests invite many users. Each invite runs conditionalCreate on User and the
+//   profile resource in SERIALIZABLE transactions, which can fail all of their retries under load
+//   (see #11473).
 const serialTestFiles = [
   'src/fhir/operations/book.recurring.test.ts',
   'src/fhir/operations/book.test.ts',
@@ -18,6 +22,16 @@ const serialTestFiles = [
   'src/fhir/operations/confirm.test.ts',
   'src/fhir/operations/hold.test.ts',
   'src/fhir/operations/reschedule.test.ts',
+
+  // User-heavy tests (10+ invites per file)
+  'src/admin/invite.test.ts',
+  'src/admin/project.test.ts',
+  'src/auth/mfa.test.ts',
+  'src/fhir/accesspolicy.test.ts',
+  'src/fhir/onbehalfof.test.ts',
+  'src/fhir/operations/rescope.test.ts',
+  'src/fhir/operations/update-user-email.test.ts',
+  'src/oauth/token.test.ts',
 ];
 
 /**

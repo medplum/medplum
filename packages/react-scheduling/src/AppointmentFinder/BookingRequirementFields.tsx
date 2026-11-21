@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Checkbox, Group, Input, Pill, Stack, Text } from '@mantine/core';
+import { ActionIcon, Box, Checkbox, Group, Input, Pill, Stack, Text } from '@mantine/core';
 import type { SchedulingRequirement } from '@medplum/core';
 import { REQUIRES_DIAGNOSIS_CODE, REQUIRES_MEDICAL_NECESSITY_CODE, REQUIRES_PROCEDURE_CODE } from '@medplum/core';
 import type { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { CodeableConceptInput } from '@medplum/react';
-import { IconCheck, IconPlus, IconX } from '@tabler/icons-react';
+import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
+import { AddRowButton } from './AddRowButton';
 import classes from './AppointmentFinder.module.css';
 import type { BookingRequirementValues } from './AppointmentFinder.requirements';
 import { toCodedConcept } from './AppointmentFinder.requirements';
@@ -177,15 +178,10 @@ function ConceptRows(props: ConceptRowsProps): JSX.Element {
       ))}
 
       {!!rows.at(-1)?.concept && (
-        <Button
-          variant="subtle"
-          size="compact-sm"
-          leftSection={<IconPlus size={14} stroke={1.8} />}
-          style={{ alignSelf: 'flex-start' }}
+        <AddRowButton
+          label={`Add another ${lowercaseRowLabel}`}
           onClick={() => change([...rows, createConceptRow()])}
-        >
-          Add another {lowercaseRowLabel}
-        </Button>
+        />
       )}
 
       {error && (

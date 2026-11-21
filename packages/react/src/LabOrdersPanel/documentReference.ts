@@ -5,30 +5,59 @@ import type { Attachment, DocumentReference, Observation, Reference, ServiceRequ
 
 const HEALTH_GORILLA_REQUEST_SYSTEM = 'https://www.healthgorilla.com';
 
+/** DocumentReference.category code for a lab order's requisition PDF. */
+export const LAB_ORDER_REQUISITION_CATEGORY = 'LabOrderRequisition';
+
+/** DocumentReference.category code for a lab order's specimen label PDF. */
+export const LAB_ORDER_SPECIMEN_LABEL_CATEGORY = 'SpecimenLabel';
+
+/** DocumentReference.category code for a Medicare Advance Beneficiary Notice PDF. */
+export const LAB_ORDER_ABN_CATEGORY = 'ABN';
+
+/** The PDFs attached to a lab order, grouped by DocumentReference.category. */
+export interface LabOrderDocuments {
+  readonly requisition: DocumentReference[];
+  readonly specimenLabel: DocumentReference[];
+  /** Advance Beneficiary Notice. Only present for Medicare orders once one has been generated. */
+  readonly abn: DocumentReference[];
+}
+
+export const EMPTY_LAB_ORDER_DOCUMENTS: LabOrderDocuments = { requisition: [], specimenLabel: [], abn: [] };
+
+function hasCategory(doc: DocumentReference, code: string): boolean {
+  return !!doc.category?.some((category) => category.coding?.some((coding) => coding.code === code));
+}
+
 /**
- * Fetches DocumentReference resources with LabOrderRequisition category that match a ServiceRequest's Health Gorilla Requisition ID
+ * Fetches the requisition, specimen label, and ABN DocumentReferences that match a ServiceRequest's
+ * requisition ID in a single search, grouped by category.
  * @param medplum - The Medplum client
- * @param serviceRequest - The ServiceRequest to fetch the DocumentReference for
- * @returns The DocumentReference resources
+ * @param serviceRequest - The ServiceRequest to fetch the DocumentReferences for
+ * @returns The DocumentReferences grouped by category, each sorted most recently updated first
  */
-export async function fetchLabOrderRequisitionDocuments(
+export async function fetchLabOrderDocuments(
   medplum: MedplumClient,
   serviceRequest: ServiceRequest
-): Promise<DocumentReference[]> {
+): Promise<LabOrderDocuments> {
   const healthGorillaRequisitionId = getHealthGorillaRequisitionId(serviceRequest);
 
   if (!healthGorillaRequisitionId) {
-    return [];
+    return EMPTY_LAB_ORDER_DOCUMENTS;
   }
 
   const searchParams = new URLSearchParams({
-    category: 'LabOrderRequisition',
+    category: [LAB_ORDER_REQUISITION_CATEGORY, LAB_ORDER_SPECIMEN_LABEL_CATEGORY, LAB_ORDER_ABN_CATEGORY].join(','),
     identifier: `${HEALTH_GORILLA_REQUEST_SYSTEM}|${healthGorillaRequisitionId}`,
     _sort: '-_lastUpdated',
   });
 
-  const results = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
-  return results;
+  const docs = await medplum.searchResources('DocumentReference', searchParams, { cache: 'no-cache' });
+
+  return {
+    requisition: docs.filter((doc) => hasCategory(doc, LAB_ORDER_REQUISITION_CATEGORY)),
+    specimenLabel: docs.filter((doc) => hasCategory(doc, LAB_ORDER_SPECIMEN_LABEL_CATEGORY)),
+    abn: docs.filter((doc) => hasCategory(doc, LAB_ORDER_ABN_CATEGORY)),
+  };
 }
 
 /**

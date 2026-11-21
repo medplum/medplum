@@ -14,6 +14,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
+import { logUnverifiedEmailMatch } from '../../admin/invite';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
 import { getConfig } from '../../config/loader';
@@ -67,10 +68,12 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
 
   let ownerRef: Reference | undefined;
+  let existingOwnerByEmail: WithId<User> | undefined;
   if (params.owner) {
     ownerRef = params.owner;
   } else if (params.ownerEmail) {
     let user = await getUserByEmailWithoutProject(params.ownerEmail);
+    existingOwnerByEmail = user;
     user ??= await createUser({
       email: params.ownerEmail,
       password: randomUUID(),
@@ -88,7 +91,10 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
       return [badRequest('Project owner must not belong to another Project')];
     }
   }
-  const { project } = await createProject(params.name, owner);
+  const { project, membership } = await createProject(params.name, owner);
+  if (existingOwnerByEmail && membership) {
+    logUnverifiedEmailMatch(existingOwnerByEmail, membership, 'project-init');
+  }
   return [created, buildOutputParameters(projectInitOperation, project)];
 }
 
