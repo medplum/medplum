@@ -7,9 +7,10 @@ import { ResourceName } from '@medplum/react';
 import type { JSX } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
+import { formatZonedTime, isViewerTimezone } from '../timezones';
 import classes from './AppointmentFinder.module.css';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
-import { formatZonedTime, getAppointmentKey, isViewerTimezone } from './AppointmentFinder.times';
+import { getAppointmentKey } from './AppointmentFinder.times';
 
 export interface AppointmentSlotGroupCardProps {
   readonly group: AppointmentSlotGroup;
