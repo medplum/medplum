@@ -1,0 +1,31 @@
+.bucket {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--mantine-spacing-md);
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  border-radius: var(--mantine-radius-md);
+  transition: border-color 150ms ease;
+
+  &:hover {
+    border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-2));
+  }
+
+  &[data-active],
+  &[data-active]:hover {
+    border-color: var(--mantine-color-blue-4);
+  }
+}
+
+.label {
+  font-weight: 450;
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+}
+
+.bucket[data-active] .label {
+  color: light-dark(var(--mantine-primary-color-light-color), var(--mantine-primary-color-5));
+}
+
+.amount {
+  margin: -2px 0 2px;
+}

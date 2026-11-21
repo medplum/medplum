@@ -38,6 +38,10 @@ export interface AppShellProps {
   readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
   readonly spotlightActions?: SpotlightLinkAction[];
+  /** When set, the user menu shows a "Settings" item linking here instead of "Account settings". */
+  readonly settingsHref?: string;
+  /** Hides the navbar search (layout v2), e.g. on pages with their own navigation like settings. */
+  readonly spotlightDisabled?: boolean;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -124,12 +128,13 @@ export function AppShell(props: AppShellProps): JSX.Element {
         displayAddBookmark={props.displayAddBookmark}
         resourceTypeSearchDisabled={true}
         opened={navbarOpen}
-        spotlightEnabled={true}
+        spotlightEnabled={!props.spotlightDisabled}
         patientsOnly={props.spotlightPatientsOnly}
         spotlightActions={props.spotlightActions}
         userMenuEnabled={true}
         version={props.version}
         showLayoutVersionToggle={props.showLayoutVersionToggle}
+        settingsHref={props.settingsHref}
       />
     ) : undefined;
   } else {
@@ -153,6 +158,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         navbarOpen={navbarOpen}
         navbarToggle={toggleNavbar}
         notifications={props.notifications}
+        settingsHref={props.settingsHref}
         announcements={visibleAnnouncements}
         onDismissAnnouncement={dismissAnnouncement}
       />

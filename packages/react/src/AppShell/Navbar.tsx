@@ -68,6 +68,7 @@ export interface NavbarProps {
   readonly opened?: boolean;
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  readonly settingsHref?: string;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -112,7 +113,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             </UnstyledButton>
           </MantineAppShell.Section>
         )}
-        <ScrollArea px="xs" pb="xs" pt="sm" h="100%">
+        <ScrollArea px="xs" pb="xs" pt={props.logo ? 'sm' : 'xs'} h="100%">
           <MantineAppShell.Section grow>
             {props.spotlightEnabled && (
               <Box mb={2}>
@@ -247,7 +248,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown className={headerDropdownClasses.dropdown}>
-                <HeaderDropdown version={props.version} showLayoutVersionToggle={props.showLayoutVersionToggle} />
+                <HeaderDropdown
+                  version={props.version}
+                  showLayoutVersionToggle={props.showLayoutVersionToggle}
+                  settingsHref={props.settingsHref}
+                />
               </Menu.Dropdown>
             </Menu>
           </MantineAppShell.Section>

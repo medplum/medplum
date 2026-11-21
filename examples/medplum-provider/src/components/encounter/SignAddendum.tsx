@@ -9,6 +9,7 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { ChartNoteStatus } from '../../types/encounter';
 import { showErrorNotification } from '../../utils/notifications';
+import sectionClasses from '../billing/DetailSection.module.css';
 
 interface SignAddendumProps {
   provenances: Provenance[];
@@ -141,7 +142,7 @@ export const SignAddendum = ({ provenances, chartNoteStatus, encounter }: SignAd
   }
 
   return (
-    <Card withBorder shadow="sm">
+    <Card withBorder shadow="sm" p="md" className={sectionClasses.card}>
       <Stack gap="md">
         {provenanceDisplays.map((display, index) => (
           <Stack key={`prov-${index}`}>

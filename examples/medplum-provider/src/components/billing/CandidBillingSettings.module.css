@@ -1,0 +1,20 @@
+.root {
+  flex: 1;
+  display: flex;
+  min-height: 100%;
+}
+
+.list {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  flex: 0 0 240px;
+  padding-inline-end: var(--mantine-spacing-md);
+}
+
+.panel {
+  flex: 1;
+  min-width: 0;
+  padding-inline-start: var(--mantine-spacing-lg);
+  border-inline-start: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}

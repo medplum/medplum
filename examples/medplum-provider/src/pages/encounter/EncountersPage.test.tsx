@@ -95,15 +95,15 @@ describe('EncountersPage', () => {
     const encounter = await createVisit(patient);
     setup(encounter.id);
 
-    expect(await screen.findByText('Note & Tasks')).toBeInTheDocument();
-    expect(screen.getByText('Details & Billing')).toBeInTheDocument();
+    expect(await screen.findByText('Notes & Tasks')).toBeInTheDocument();
+    expect(screen.getByText('Billing & Details')).toBeInTheDocument();
   });
 
   test('Auto-selects the first encounter and opens its chart', async () => {
     await createVisit(patient);
     setup();
 
-    expect(await screen.findByText('Note & Tasks')).toBeInTheDocument();
+    expect(await screen.findByText('Notes & Tasks')).toBeInTheDocument();
   });
 
   test('Shows the empty state when the patient has no encounters', async () => {
