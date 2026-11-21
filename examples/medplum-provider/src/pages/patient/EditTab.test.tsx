@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
-import { loadDataType } from '@medplum/core';
+import { badRequest, loadDataType, OperationOutcomeError } from '@medplum/core';
 import type { StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -123,6 +123,17 @@ describe('EditTab', () => {
       expect(medplum.updateResource).toHaveBeenCalled();
       expect(screen.getByText(/failed to update patient/i)).toBeInTheDocument();
     });
+  });
+
+  test('Shows the missing-profile alert when the US Core Patient profile is not installed', async () => {
+    vi.spyOn(medplum, 'requestProfileSchema').mockRejectedValue(
+      new OperationOutcomeError(badRequest('StructureDefinition profile not found'))
+    );
+
+    setup(`/Patient/${HomerSimpson.id}/edit`);
+
+    expect(await screen.findByText('Not found')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'US Core Patient Profile' })).toBeInTheDocument();
   });
 
   test('Handles load error', async () => {
