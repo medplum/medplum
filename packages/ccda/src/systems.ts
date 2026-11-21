@@ -747,7 +747,7 @@ export function mapCcdaEncounterClass(code: CcdaCode | undefined): Coding {
 
 export const PROCEDURE_STATUS_MAPPER = new EnumMapper({}, [
   { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
-  { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
+  { ccdaValue: 'active', fhirValue: 'in-progress', displayName: 'In Progress' },
   { ccdaValue: 'aborted', fhirValue: 'stopped', displayName: 'Stopped' },
   { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Not Done' },
   { ccdaValue: 'new', fhirValue: 'not-done', displayName: 'Draft' },

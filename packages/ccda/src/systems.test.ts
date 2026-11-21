@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { LOINC, SNOMED } from '@medplum/core';
 import { OID_SNOMED_CT_CODE_SYSTEM } from './oids';
-import { EnumMapper, mapCcdaCodeToCodeableConcept, mapCodeableConceptToCcdaCode } from './systems';
+import {
+  EnumMapper,
+  mapCcdaCodeToCodeableConcept,
+  mapCodeableConceptToCcdaCode,
+  PROCEDURE_STATUS_MAPPER,
+} from './systems';
 
 describe('EnumMapper', () => {
   const mapper = new EnumMapper<string, string>(
@@ -189,5 +194,28 @@ describe('EnumMapper', () => {
       expect(result?.coding?.[1]?.code).toBe('trans1');
       expect(result?.coding?.[2]?.code).toBe('trans2');
     });
+  });
+});
+
+describe('PROCEDURE_STATUS_MAPPER', () => {
+  test('maps C-CDA active to FHIR in-progress and back', () => {
+    expect(PROCEDURE_STATUS_MAPPER.mapCcdaToFhir('active')).toBe('in-progress');
+    expect(PROCEDURE_STATUS_MAPPER.mapFhirToCcda('in-progress')).toBe('active');
+  });
+
+  test('only produces valid FHIR R4 Procedure status values', () => {
+    const validStatuses = [
+      'preparation',
+      'in-progress',
+      'not-done',
+      'on-hold',
+      'stopped',
+      'completed',
+      'entered-in-error',
+      'unknown',
+    ];
+    for (const ccdaStatus of ['completed', 'active', 'aborted', 'cancelled', 'new', 'unknown'] as const) {
+      expect(validStatuses).toContain(PROCEDURE_STATUS_MAPPER.mapCcdaToFhir(ccdaStatus));
+    }
   });
 });
