@@ -38,6 +38,9 @@ export interface AppShellProps {
   readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
   readonly spotlightActions?: SpotlightLinkAction[];
+  readonly settingsHref?: string;
+  readonly navbarSearchHidden?: boolean;
+  readonly navbarHeader?: ReactNode;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -125,11 +128,14 @@ export function AppShell(props: AppShellProps): JSX.Element {
         resourceTypeSearchDisabled={true}
         opened={navbarOpen}
         spotlightEnabled={true}
+        searchHidden={props.navbarSearchHidden}
         patientsOnly={props.spotlightPatientsOnly}
         spotlightActions={props.spotlightActions}
         userMenuEnabled={true}
         version={props.version}
         showLayoutVersionToggle={props.showLayoutVersionToggle}
+        settingsHref={props.settingsHref}
+        header={props.navbarHeader}
       />
     ) : undefined;
   } else {
@@ -153,6 +159,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         navbarOpen={navbarOpen}
         navbarToggle={toggleNavbar}
         notifications={props.notifications}
+        settingsHref={props.settingsHref}
         announcements={visibleAnnouncements}
         onDismissAnnouncement={dismissAnnouncement}
       />
