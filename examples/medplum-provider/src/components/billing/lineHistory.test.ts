@@ -75,7 +75,13 @@ describe('lineHistory', () => {
       item: [line, added],
     });
     // The line moves down, which isn't a change to it, and its units go up, which is.
-    await medplum.updateResource<Claim>({ ...claim, item: [{ ...added, sequence: 1 }, { ...line, sequence: 2, quantity: { value: 2 } }] });
+    await medplum.updateResource<Claim>({
+      ...claim,
+      item: [
+        { ...added, sequence: 1 },
+        { ...line, sequence: 2, quantity: { value: 2 } },
+      ],
+    });
 
     const history = await loadLineHistory(medplum, line, claim.id);
     expect(history.map((h) => h.changes)).toEqual([

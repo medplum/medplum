@@ -23,13 +23,13 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconBan,
-  IconTrash,
   IconCheck,
   IconClock,
   IconDots,
   IconExternalLink,
   IconFileDiff,
   IconRefresh,
+  IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
@@ -52,8 +52,6 @@ import classes from './ClaimDetailPane.module.css';
 import { getLineCharge } from './claimEditing';
 import { ClaimDiagnosesEditor, ClaimLinesEditor, ClaimVisitDetails } from './ClaimEditor';
 import { ClaimFollowUpModal } from './ClaimFollowUpModal';
-import { canDiscardClaim } from './discardClaim';
-import { DiscardClaimModal } from './DiscardClaimModal';
 import { ClaimInsurance } from './ClaimInsurance';
 import { getClaimIssues, getPatientResponsibility } from './claimIssues';
 import { ClaimNoteInput } from './ClaimNoteInput';
@@ -67,6 +65,8 @@ import {
   sumAdjudicationAmount,
 } from './claimStatus';
 import { DetailSection, MetaItem } from './DetailSection';
+import { canDiscardClaim } from './discardClaim';
+import { DiscardClaimModal } from './DiscardClaimModal';
 import pillTabs from './PillTabs.module.css';
 import type { ClaimIssue } from './preSubmitChecks';
 import { RelatedClaims } from './RelatedClaims';

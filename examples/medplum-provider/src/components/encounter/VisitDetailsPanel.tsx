@@ -20,8 +20,8 @@ import { BillingOrganizationOption } from '../billing/BillingOrganizationOption'
 import { CodeNamePill, makeCodeOption } from '../billing/ClaimEditor';
 import { DetailSection } from '../billing/DetailSection';
 import sectionClasses from '../billing/DetailSection.module.css';
-import { VisitTimeInput } from './VisitTimeInput';
 import { ServiceFacilityOption } from '../billing/ServiceFacilityOption';
+import { VisitTimeInput } from './VisitTimeInput';
 
 // Laid out like the claim's procedure and diagnosis codes: the two-digit code, then what it means.
 const PlaceOfServiceOption = makeCodeOption('1.5rem');

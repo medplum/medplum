@@ -10,8 +10,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { NewClaimModal } from './NewClaimModal';
 import { render } from '../../test-utils/render';
+import { NewClaimModal } from './NewClaimModal';
 
 describe('NewClaimModal', () => {
   let medplum: MockClient;
@@ -35,10 +35,10 @@ describe('NewClaimModal', () => {
     const onCreated = vi.fn();
     render(
       <MedplumProvider medplum={medplum}>
-          <Notifications />
-          <MemoryRouter>
-            <NewClaimModal opened onClose={vi.fn()} onCreated={onCreated} />
-          </MemoryRouter>
+        <Notifications />
+        <MemoryRouter>
+          <NewClaimModal opened onClose={vi.fn()} onCreated={onCreated} />
+        </MemoryRouter>
       </MedplumProvider>
     );
     return onCreated;

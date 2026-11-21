@@ -8,9 +8,9 @@ import { MedplumProvider } from '@medplum/react';
 import { screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { pinClaimEncounter } from './claimConditions';
 import { RelatedClaims } from './RelatedClaims';
-import { render } from '../../test-utils/render';
 
 describe('RelatedClaims', () => {
   const setup = async (): Promise<{ visitClaim: WithId<Claim>; related: WithId<Claim>; medplum: MockClient }> => {
@@ -55,7 +55,7 @@ describe('RelatedClaims', () => {
     render(
       <MemoryRouter initialEntries={[`/Billing/Claims/open/${claim.id}`]}>
         <MedplumProvider medplum={medplum}>
-            <RelatedClaims claim={claim} />
+          <RelatedClaims claim={claim} />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -86,7 +86,7 @@ describe('RelatedClaims', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-            <RelatedClaims claim={{ resourceType: 'Claim', id: 'x', patient: {} } as WithId<Claim>} />
+          <RelatedClaims claim={{ resourceType: 'Claim', id: 'x', patient: {} } as WithId<Claim>} />
         </MedplumProvider>
       </MemoryRouter>
     );

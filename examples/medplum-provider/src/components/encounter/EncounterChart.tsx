@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Stack, Textarea } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
 import { useDebouncedCallback } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';

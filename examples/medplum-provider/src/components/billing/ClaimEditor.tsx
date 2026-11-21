@@ -78,8 +78,8 @@ import {
 } from './claimEditing';
 import classes from './ClaimEditor.module.css';
 import { DetailSection, MetaItem } from './DetailSection';
-import { DiagnosisHistoryPopover, LineHistoryPopover } from './LineHistoryPopover';
 import sectionClasses from './DetailSection.module.css';
+import { DiagnosisHistoryPopover, LineHistoryPopover } from './LineHistoryPopover';
 
 const ICD10_BINDING = 'http://hl7.org/fhir/sid/icd-10-cm/vs/billable';
 const CPT_BINDING = 'http://www.ama-assn.org/go/cpt/vs';
@@ -1065,9 +1065,7 @@ function DiagnosisInput(props: {
  * @param patient - The patient; none to skip loading.
  * @returns Each condition with its ICD-10 coding, as a claim diagnosis carries it.
  */
-function usePatientConditions(
-  patient: Reference | undefined
-): PatientCondition[] {
+function usePatientConditions(patient: Reference | undefined): PatientCondition[] {
   const medplum = useMedplum();
   const [found, setFound] = useState<WithId<Condition>[]>([]);
   const patientRef = patient?.reference;

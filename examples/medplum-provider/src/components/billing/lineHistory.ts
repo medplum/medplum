@@ -160,7 +160,9 @@ export async function loadLineHistory(
   return changes.sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')).reverse();
 }
 
-function oldestFirst<T extends ChargeItem | Claim | Condition>(bundle: Bundle<T> | undefined): NonNullable<Bundle<T>['entry']> {
+function oldestFirst<T extends ChargeItem | Claim | Condition>(
+  bundle: Bundle<T> | undefined
+): NonNullable<Bundle<T>['entry']> {
   return [...(bundle?.entry ?? [])].reverse();
 }
 

@@ -9,9 +9,9 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { CANDID_CLAIM_STATUS_SYSTEM, SOURCE_CLAIM_STATUS_EXTENSION_URL, toLocalCalendarDate } from '../../utils/candid';
 import { BillingPage } from './BillingPage';
-import { render } from '../../test-utils/render';
 
 function daysAgo(days: number): string {
   const date = new Date();
@@ -56,8 +56,8 @@ describe('BillingPage', () => {
     );
     render(
       <MedplumProvider medplum={medplum} navigate={router.navigate}>
-          <Notifications />
-          <RouterProvider router={router} />
+        <Notifications />
+        <RouterProvider router={router} />
       </MedplumProvider>
     );
     return { router };

@@ -18,9 +18,9 @@ import {
 import type { JSX } from 'react';
 import { Link } from 'react-router';
 import { isClaimEditable } from '../billing/claimStatus';
-import { canDiscardClaim } from '../billing/discardClaim';
 import { DetailSection } from '../billing/DetailSection';
 import sectionClasses from '../billing/DetailSection.module.css';
+import { canDiscardClaim } from '../billing/discardClaim';
 import { ClaimRows } from '../billing/RelatedClaims';
 import relatedClasses from '../billing/RelatedClaims.module.css';
 import type { VisitClaim } from '../billing/visitDetails';

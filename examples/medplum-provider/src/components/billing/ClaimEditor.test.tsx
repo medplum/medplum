@@ -10,10 +10,10 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { getLineAuthor, withLineAuthor } from '../../utils/claims';
 import { pinClaimEncounter } from './claimConditions';
 import { ClaimDiagnosesEditor, ClaimLinesEditor, ClaimVisitDetails } from './ClaimEditor';
-import { render } from '../../test-utils/render';
 
 const baseClaim: Claim = {
   resourceType: 'Claim',
@@ -59,7 +59,7 @@ function setup(initial: Claim = baseClaim, medplum = new MockClient()): ReturnTy
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-          <Harness initial={initial} onChange={onChange} />
+        <Harness initial={initial} onChange={onChange} />
       </MedplumProvider>
     </MemoryRouter>
   );
@@ -213,8 +213,9 @@ describe('ClaimEditor', () => {
     expect(await screen.findByText('Primary care')).toBeInTheDocument();
     // The date shows once, as the date of service, and check in and out are just times, to the minute.
     expect(screen.getByText(formatDate('2025-04-07T09:30:15'))).toBeInTheDocument();
-    expect(screen.getByText(formatDateTime('2025-04-07T09:30:15', undefined, { hour: 'numeric', minute: '2-digit' })))
-      .toBeInTheDocument();
+    expect(
+      screen.getByText(formatDateTime('2025-04-07T09:30:15', undefined, { hour: 'numeric', minute: '2-digit' }))
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Office visit/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View Visit' })).toHaveAttribute(
       'href',
@@ -302,7 +303,7 @@ describe('ClaimEditor', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={new MockClient()}>
-            <ClaimDiagnosesEditor claim={baseClaim} onChange={vi.fn()} readOnly />
+          <ClaimDiagnosesEditor claim={baseClaim} onChange={vi.fn()} readOnly />
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -329,7 +330,7 @@ describe('ClaimEditor', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-            <ClaimLinesEditor lineName="Charge Item" claim={{ ...baseClaim, item: [line] }} onChange={vi.fn()} />
+          <ClaimLinesEditor lineName="Charge Item" claim={{ ...baseClaim, item: [line] }} onChange={vi.fn()} />
         </MedplumProvider>
       </MemoryRouter>
     );

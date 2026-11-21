@@ -9,6 +9,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import {
   CANDID_CLAIM_STATUS_SYSTEM,
   CANDID_CLAIM_URL_BOT_IDENTIFIER,
@@ -17,7 +18,6 @@ import {
   SOURCE_CLAIM_STATUS_EXTENSION_URL,
 } from '../../utils/candid';
 import { ClaimDetailPane } from './ClaimDetailPane';
-import { render } from '../../test-utils/render';
 
 describe('ClaimDetailPane', () => {
   let medplum: MockClient;
@@ -103,10 +103,10 @@ describe('ClaimDetailPane', () => {
     const onChanged = vi.fn();
     render(
       <MedplumProvider medplum={medplum}>
-          <Notifications />
-          <MemoryRouter>
-            <ClaimDetailPane claimId={claimId} onClose={onClose} onChanged={onChanged} />
-          </MemoryRouter>
+        <Notifications />
+        <MemoryRouter>
+          <ClaimDetailPane claimId={claimId} onClose={onClose} onChanged={onChanged} />
+        </MemoryRouter>
       </MedplumProvider>
     );
     return { onClose, onChanged };

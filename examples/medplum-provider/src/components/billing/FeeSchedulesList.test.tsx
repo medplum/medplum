@@ -7,9 +7,9 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { FEE_SCHEDULE_TAG, PAYER_USAGE_CONTEXT } from './feeSchedules';
 import { FeeSchedulesList } from './FeeSchedulesList';
-import { render } from '../../test-utils/render';
 
 describe('FeeSchedulesList', () => {
   test("lists the payers' fee schedules and opens one", async () => {
@@ -28,7 +28,7 @@ describe('FeeSchedulesList', () => {
     const router = createMemoryRouter([{ path: '*', element: <FeeSchedulesList /> }]);
     render(
       <MedplumProvider medplum={medplum}>
-          <RouterProvider router={router} />
+        <RouterProvider router={router} />
       </MedplumProvider>
     );
 

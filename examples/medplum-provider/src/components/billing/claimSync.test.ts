@@ -50,7 +50,11 @@ describe('syncClaimLines', () => {
     const changes: ChargeItemChanges = { previous: new Map([['a', before]]), current: [after], created: new Set() };
 
     // The claim kept the visit's code but set its own price: the code follows the visit, the price stays.
-    const synced = syncClaimLines(claim([lineFor('a', '99213', { net: { value: 80, currency: 'USD' } })]), encounter, changes);
+    const synced = syncClaimLines(
+      claim([lineFor('a', '99213', { net: { value: 80, currency: 'USD' } })]),
+      encounter,
+      changes
+    );
     expect(codes(synced)).toEqual(['99214']);
     expect(synced.item?.[0].net?.value).toBe(80);
 
@@ -67,9 +71,7 @@ describe('syncClaimLines', () => {
       created: new Set(),
     };
     const own: ClaimItem = { sequence: 2, productOrService: { coding: [{ code: 'J1885' }] } };
-    const synced = syncClaimLines(claim([lineFor('a', '99213'), own]), encounter, changes, [
-      chargeItem('b', '36415'),
-    ]);
+    const synced = syncClaimLines(claim([lineFor('a', '99213'), own]), encounter, changes, [chargeItem('b', '36415')]);
     expect(codes(synced)).toEqual(['J1885', '36415']);
     expect(synced.item?.map((i) => i.sequence)).toEqual([1, 2]);
   });
@@ -93,7 +95,8 @@ describe('syncVisitClaims', () => {
     const medplum = new MockClient();
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     const visit = await medplum.createResource<Encounter>({ ...encounter, id: undefined });
-    const onVisit = (): Claim => pinClaimEncounter({ ...claim([]), patient: createReference(patient) }, createReference(visit));
+    const onVisit = (): Claim =>
+      pinClaimEncounter({ ...claim([]), patient: createReference(patient) }, createReference(visit));
     const first = await medplum.createResource(onVisit());
     const created = chargeItem('n', '36415');
     const changes: ChargeItemChanges = { previous: new Map(), current: [created], created: new Set(['n']) };

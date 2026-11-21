@@ -8,8 +8,8 @@ import { MedplumProvider } from '@medplum/react';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi } from 'vitest';
-import { NewVisitClaimModal } from './NewVisitClaimModal';
 import { render } from '../../test-utils/render';
+import { NewVisitClaimModal } from './NewVisitClaimModal';
 
 const condition = (code: string): Condition => ({
   resourceType: 'Condition',
@@ -45,16 +45,16 @@ describe('NewVisitClaimModal', () => {
     ];
     render(
       <MedplumProvider medplum={new MockClient()}>
-          <NewVisitClaimModal
-            opened
-            onClose={onClose}
-            chargeItems={items}
-            conditions={[condition('I10'), condition('E11.9')]}
-            coverages={[coverage]}
-            defaultCoverage={coverage}
-            unavailable={new Map([['c', 'On another claim']])}
-            onCreate={onCreate}
-          />
+        <NewVisitClaimModal
+          opened
+          onClose={onClose}
+          chargeItems={items}
+          conditions={[condition('I10'), condition('E11.9')]}
+          coverages={[coverage]}
+          defaultCoverage={coverage}
+          unavailable={new Map([['c', 'On another claim']])}
+          onCreate={onCreate}
+        />
       </MedplumProvider>
     );
 

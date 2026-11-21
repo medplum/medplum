@@ -26,6 +26,13 @@ describe('settingsMenus', () => {
         ?.links?.map((l) => l.label ?? '') ?? [];
 
     expect(labels(false)).toEqual(['Charge Items', 'Fee Schedules']);
-    expect(labels(true)).toEqual(['Organizations', 'Practitioners', 'Payers', 'Eligibility', 'Charge Items', 'Fee Schedules']);
+    expect(labels(true)).toEqual([
+      'Organizations',
+      'Practitioners',
+      'Payers',
+      'Eligibility',
+      'Charge Items',
+      'Fee Schedules',
+    ]);
   });
 });

@@ -7,9 +7,9 @@ import { MedplumProvider } from '@medplum/react';
 import { screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ClaimInsurance } from './ClaimInsurance';
 import { FEE_SCHEDULE_TAG, PAYER_USAGE_CONTEXT } from './feeSchedules';
-import { render } from '../../test-utils/render';
 
 describe('ClaimInsurance', () => {
   let medplum: MockClient;
@@ -49,9 +49,9 @@ describe('ClaimInsurance', () => {
   const setup = (value: Claim): void => {
     render(
       <MedplumProvider medplum={medplum}>
-          <MemoryRouter>
-            <ClaimInsurance claim={value} />
-          </MemoryRouter>
+        <MemoryRouter>
+          <ClaimInsurance claim={value} />
+        </MemoryRouter>
       </MedplumProvider>
     );
   };

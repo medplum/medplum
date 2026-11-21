@@ -26,11 +26,11 @@ import { IconAlertTriangle, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { PatientContentWidth } from '../../pages/patient/PatientContentWidth';
 import { ChartNoteStatus } from '../../types/encounter';
 import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
 import { getClaimChargeItemIds } from '../../utils/claims';
-import { PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { getBotErrorMessage } from '../../utils/errors';
 import { showErrorNotification } from '../../utils/notifications';
@@ -39,8 +39,10 @@ import {
   isCustomOperationAvailable,
   STEDI_SUBMIT_CLAIM_OPERATION,
 } from '../../utils/operations';
+import { PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import type { ConditionsByCode } from '../billing/claimConditions';
 import { getConditionCode } from '../billing/claimConditions';
+import { ClaimDetailPane } from '../billing/ClaimDetailPane';
 import { ClaimDiagnosesEditor, ClaimLinesEditor } from '../billing/ClaimEditor';
 import { isClaimEditable } from '../billing/claimStatus';
 import {
@@ -50,17 +52,6 @@ import {
   removeChargeItemsFromClaims,
   syncVisitClaims,
 } from '../billing/claimSync';
-import type { VisitClaim, VisitDetailsChange } from '../billing/visitDetails';
-import {
-  findClaimRemittances,
-  findVisitClaims,
-  syncVisitDetails,
-} from '../billing/visitDetails';
-import { getPointedConditions, NewVisitClaimModal } from './NewVisitClaimModal';
-import { SubmitClaimModal } from './SubmitClaimModal';
-import { VisitClaimsSection } from './VisitClaimsSection';
-import { ClaimDetailPane } from '../billing/ClaimDetailPane';
-import { WorklistDrawer } from '../billing/WorklistDrawer';
 import { DiscardClaimModal } from '../billing/DiscardClaimModal';
 import {
   createVisitClaim,
@@ -68,10 +59,14 @@ import {
   findPatientCoverages,
   getPrimaryCoverage,
 } from '../billing/visitClaim';
-import { PatientContentWidth } from '../../pages/patient/PatientContentWidth';
+import type { VisitClaim, VisitDetailsChange } from '../billing/visitDetails';
+import { findClaimRemittances, findVisitClaims, syncVisitDetails } from '../billing/visitDetails';
+import { WorklistDrawer } from '../billing/WorklistDrawer';
+import { getPointedConditions, NewVisitClaimModal } from './NewVisitClaimModal';
+import { SubmitClaimModal } from './SubmitClaimModal';
+import { VisitClaimsSection } from './VisitClaimsSection';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 import { buildVisitSheet, saveVisitLines } from './visitSheet';
-
 
 export interface BillingTabProps {
   patient: WithId<Patient>;
@@ -87,8 +82,16 @@ export interface BillingTabProps {
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const { encounter, setEncounter, onEncounterSaved, patient, practitioner, setPractitioner, chartNoteStatus, claimsKey } =
-    props;
+  const {
+    encounter,
+    setEncounter,
+    onEncounterSaved,
+    patient,
+    practitioner,
+    setPractitioner,
+    chartNoteStatus,
+    claimsKey,
+  } = props;
   const medplum = useMedplum();
   // The visit's claims, oldest first: the claim made from the visit, then any related claims made from it.
   const [visitClaims, setVisitClaims] = useState<VisitClaim[]>();
@@ -316,7 +319,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
   // The visit's charge items on a claim, open or submitted, and the open claims that can still take more.
   const billedIds = getBilledChargeItemIds(visitClaims ?? []);
-  const openClaims = (visitClaims ?? []).filter((v) => isBillingClaim(v.claim) && isClaimEditable(v.claim, v.responses));
+  const openClaims = (visitClaims ?? []).filter(
+    (v) => isBillingClaim(v.claim) && isClaimEditable(v.claim, v.responses)
+  );
   const unbilled = chargeItems.filter((c) => !billedIds.has(c.id) && c.code?.coding?.some((cd) => cd.system === CPT));
 
   // Makes the visit's first claim, from its charge items, when exporting or submitting before it has one.
@@ -453,7 +458,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [flushEncounterOps]
   );
 
-
   const exportClaimAsCMS1500 = useCallback(
     async (target?: WithId<Claim>): Promise<void> => {
       try {
@@ -486,13 +490,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       try {
         const saved = submitTarget
           ? await medplum.updateResource({
-                ...submitTarget,
-                insurance: coverageRefs.map((ref, index) => ({
-                  sequence: index + 1,
-                  focal: index === 0,
-                  coverage: ref,
-                })),
-              })
+              ...submitTarget,
+              insurance: coverageRefs.map((ref, index) => ({
+                sequence: index + 1,
+                focal: index === 0,
+                coverage: ref,
+              })),
+            })
           : await createFirstClaim(coverageRefs);
         await medplum.post(medplum.fhirUrl('Claim', saved.id, operation), {
           resourceType: 'Parameters',

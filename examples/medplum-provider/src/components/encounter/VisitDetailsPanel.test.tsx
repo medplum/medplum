@@ -8,8 +8,8 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { PLACE_OF_SERVICE_SYSTEM, PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import { render } from '../../test-utils/render';
+import { PLACE_OF_SERVICE_SYSTEM, PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const mockEncounter: WithId<Encounter> = {
@@ -414,6 +414,8 @@ describe('VisitDetailsPanel', () => {
     expect(screen.getByLabelText('Check Out')).toBeDisabled();
     expect(document.querySelector('input[name="billingOrganization"]')).toBeEnabled();
     expect(document.querySelector('input[name="serviceFacility"]')).toBeEnabled();
-    expect(screen.getByText('Changes apply to open claims. Submitted claims need a corrected claim.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Changes apply to open claims. Submitted claims need a corrected claim.')
+    ).toBeInTheDocument();
   });
 });

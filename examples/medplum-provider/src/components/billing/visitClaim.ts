@@ -162,11 +162,12 @@ async function findPrimaryCoverage(medplum: MedplumClient, patient: WithId<Patie
 
 function getVisitPractitioner(encounter: Encounter): Reference<Practitioner> | undefined {
   return encounter.participant?.find((p) => p.individual?.reference?.startsWith('Practitioner/'))?.individual as
-    | Reference<Practitioner>
-    | undefined;
+    Reference<Practitioner> | undefined;
 }
 
-function createPractitionerReference(practitioner: WithId<Practitioner> | Reference<Practitioner>): Reference<Practitioner> {
+function createPractitionerReference(
+  practitioner: WithId<Practitioner> | Reference<Practitioner>
+): Reference<Practitioner> {
   return 'resourceType' in practitioner ? createReference(practitioner) : practitioner;
 }
 

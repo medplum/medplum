@@ -317,11 +317,11 @@ describe('BillingTab', () => {
     };
     mockChargeItems([mockChargeItem, labLine]);
     const create = medplum.createResource.bind(medplum);
-    const createSpy = vi.spyOn(medplum, 'createResource').mockImplementation((async (resource: Resource) => {
+    const createSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: Resource) => {
       const created = await create(resource);
       openClaims.push(created);
       return created;
-    }));
+    });
     const updateSpy = vi.spyOn(medplum, 'updateResource');
 
     await setup();
@@ -1249,14 +1249,8 @@ describe('BillingTab', () => {
       await setup();
 
       const [visitLink, relatedLink] = await screen.findAllByText(/^Claim ·/);
-      expect(visitLink.closest('a')).toHaveAttribute(
-        'href',
-        '/Billing/Claims/all/claim-123'
-      );
-      expect(relatedLink.closest('a')).toHaveAttribute(
-        'href',
-        '/Billing/Claims/all/related-123'
-      );
+      expect(visitLink.closest('a')).toHaveAttribute('href', '/Billing/Claims/all/claim-123');
+      expect(relatedLink.closest('a')).toHaveAttribute('href', '/Billing/Claims/all/related-123');
       expect(screen.getByText('99214 · $80.00')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /Remit · .* · \$60\.00/ })).toHaveAttribute(
         'href',
@@ -1293,7 +1287,9 @@ describe('BillingTab', () => {
       await user.click(await screen.findByRole('button', { name: 'Discard Claim' }));
 
       await waitFor(() =>
-        expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 'related-123', status: 'entered-in-error' }))
+        expect(updateSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ id: 'related-123', status: 'entered-in-error' })
+        )
       );
     });
 

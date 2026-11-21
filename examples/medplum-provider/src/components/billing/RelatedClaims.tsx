@@ -59,11 +59,7 @@ export function RelatedClaims(props: {
 
   return (
     <DetailSection title="Related Claims" description="Other claims for this visit">
-      <ClaimRows
-        claims={others}
-        toClaimUrl={toClaimUrl}
-        onOpenClaim={onOpenClaim}
-      />
+      <ClaimRows claims={others} toClaimUrl={toClaimUrl} onOpenClaim={onOpenClaim} />
     </DetailSection>
   );
 }

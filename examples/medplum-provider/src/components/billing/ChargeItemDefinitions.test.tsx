@@ -10,8 +10,8 @@ import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { RouterProvider, createMemoryRouter, useNavigate, useParams } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { ChargeItemDefinitions } from './ChargeItemDefinitions';
 import { render } from '../../test-utils/render';
+import { ChargeItemDefinitions } from './ChargeItemDefinitions';
 
 const BASE_URL = '/Billing/Settings/ChargeItems';
 
@@ -47,8 +47,8 @@ describe('ChargeItemDefinitions', () => {
     });
     render(
       <MedplumProvider medplum={medplum} navigate={router.navigate}>
-          <Notifications />
-          <RouterProvider router={router} />
+        <Notifications />
+        <RouterProvider router={router} />
       </MedplumProvider>
     );
     return { router };
