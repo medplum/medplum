@@ -115,6 +115,7 @@ export interface QueueRegistry {
   add(name: string, queue: Queue, worker: Worker | undefined): void;
   get<T>(name: string): Queue<T> | undefined;
   isClosing(name: string): boolean | undefined;
+  runAll(): void;
   closeAll(): Promise<void>;
 }
 
@@ -147,6 +148,12 @@ export class DefaultQueueRegistry implements QueueRegistry {
 
   get<T>(name: string): Queue<T> | undefined {
     return this.queues.find((q) => q.name === name)?.queue as Queue<T> | undefined;
+  }
+
+  runAll(): void {
+    for (const entry of this.queues) {
+      entry.worker?.run().catch((err) => globalLogger.error('Worker run failed', err));
+    }
   }
 
   async closeAll(): Promise<void> {
@@ -418,7 +425,7 @@ export function getWorkerBullmqConfig(
   // `queueOptions.defaultJobOptions` field and potentially others is not a valid `WorkerOptions`
   // property. It rides along as an inert excess key on the returned object (harmless, since `Worker`
   // ignores unrecognized options)
-  return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults) };
+  return { ...queueOptions, ...getMedplumBullmqConfig(config, workerName, workerDefaults), autorun: false };
 }
 
 export function getBullmqRedisConnectionOptions(config: ServerConfig): ConnectionOptions {

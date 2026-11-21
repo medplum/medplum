@@ -48,6 +48,17 @@ import {
 } from '../test.setup';
 import { inviteUser } from './invite';
 
+const { mockCreateTransport } = vi.hoisted(() => {
+  const mockSendMail = vi.fn().mockResolvedValue(undefined);
+  const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+  return { mockCreateTransport };
+});
+
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
+
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
@@ -433,6 +444,49 @@ describe('Admin Invite', () => {
     expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
+  });
+
+  test.each([
+    ['server', false],
+    ['project', true],
+  ])('Invite email for %s-scoped user uses project SMTP: %s', async (scope, useProjectSmtp) => {
+    mockCreateTransport.mockClear();
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const secretsRes = await request(app)
+      .post('/admin/projects/' + project.id + '/secrets')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+      ]);
+    expect(secretsRes).toHaveStatus(200);
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        scope,
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@example.com`,
+      });
+    expect(res).toHaveStatus(200);
+
+    expect(mockCreateTransport).toHaveBeenCalledTimes(useProjectSmtp ? 1 : 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(useProjectSmtp ? 0 : 1);
   });
 
   test('Invite by externalId', async () => {

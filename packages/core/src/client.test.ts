@@ -4674,8 +4674,8 @@ describe('Client', () => {
   test('Do not use cache with on-behalf-of header object', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const request1 = await client.get('Practitioner/123', { headers: { 'x-medplum-on-behalf-of': 'Patient/123' } });
-    const request2 = client.get('Practitioner/123', { headers: { 'x-medplum-on-behalf-of': 'Patient/456' } });
+    const request1 = await client.get('Practitioner/123', { headers: { 'X-Medplum-On-Behalf-Of': 'Patient/123' } });
+    const request2 = client.get('Practitioner/123', { headers: { 'X-Medplum-On-Behalf-Of': 'Patient/456' } });
     expect(request2).not.toBe(request1);
 
     const response1 = await request1;
