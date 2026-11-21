@@ -87,6 +87,12 @@ describe('ClaimDetailPane', () => {
     ],
   });
 
+  const openLines = async (): Promise<void> =>
+    userEvent.setup().click(await screen.findByRole('tab', { name: 'Lines & Details' }));
+
+  const openOverview = async (): Promise<void> =>
+    userEvent.setup().click(await screen.findByRole('tab', { name: 'Overview' }));
+
   const actions = (): HTMLElement => screen.getByRole('group', { name: 'Claim actions' });
 
   const subtitle = (text: RegExp): HTMLElement =>
@@ -118,10 +124,8 @@ describe('ClaimDetailPane', () => {
     expect(within(nextStep).getByText('Next Steps')).toBeInTheDocument();
     expect(subtitle(/^DOS /)).toBeInTheDocument();
     expect(screen.getByText('Ready', { selector: '.mantine-Button-label' })).toBeInTheDocument();
-    expect(within(actions()).getByRole('button', { name: 'Edit claim' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'More actions' }));
-    expect(await screen.findByRole('menuitem', { name: 'Edit claim' })).toBeInTheDocument();
-    expect(screen.getByText('Open encounter').closest('a')).toHaveAttribute(
+    expect((await screen.findByText('Open Encounter')).closest('a')).toHaveAttribute(
       'href',
       `/Patient/${HomerSimpson.id}/Encounter/e1`
     );
@@ -133,51 +137,51 @@ describe('ClaimDetailPane', () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
   });
 
-  test('edits the diagnoses and service lines in place', async () => {
+  test('shows an open claim as editable cards that save as you edit', async () => {
     const claim = await createClaim({ status: 'draft' });
     const user = userEvent.setup();
     const { onChanged } = setup(claim.id);
 
     await screen.findByRole('region', { name: 'Ready to submit' });
-    await user.click(within(actions()).getByRole('button', { name: 'Edit claim' }));
-    expect(screen.getByRole('group', { name: 'Edit actions' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Remove E11.9' }));
-    expect(screen.queryByText(/Type 2 diabetes/)).not.toBeInTheDocument();
+    await openLines();
+    expect(screen.getByRole('region', { name: 'Visit Details' })).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Visit Details' })).getByRole('link')).toHaveAttribute(
+      'href',
+      `/Patient/${HomerSimpson.id}/Encounter/e1`
+    );
     expect(screen.getByRole('button', { name: 'Add a Diagnosis' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Service Lines' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Edit|Save changes/ })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add a Service Line' }));
-    expect(screen.getByRole('button', { name: 'Remove line 2' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Remove line 2' }));
+    await user.click(screen.getByRole('button', { name: 'Move line 2' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Remove' }));
+    const price = screen.getByRole('textbox', { name: 'Unit Price' });
+    await user.clear(price);
+    await user.type(price, '100');
+    const units = screen.getByRole('textbox', { name: 'Units' });
+    await user.clear(units);
+    await user.type(units, '2');
+    expect(within(screen.getByRole('region', { name: 'Service Lines' })).getByText('$200.00')).toBeInTheDocument();
 
-    const charge = screen.getByRole('textbox', { name: 'Charge' });
-    await user.clear(charge);
-    await user.type(charge, '200');
-    expect(screen.getByText('$200.00')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    await waitFor(async () => expect((await medplum.readResource('Claim', claim.id)).total?.value).toBe(200));
     const saved = await medplum.readResource('Claim', claim.id);
-    expect(saved.diagnosis?.map((d) => d.diagnosisCodeableConcept?.coding?.[0]?.code)).toEqual(['I10']);
     expect(saved.item).toHaveLength(1);
-    expect(saved.item?.[0].diagnosisSequence).toEqual([1]);
+    expect(saved.item?.[0].quantity?.value).toBe(2);
+    expect(saved.item?.[0].unitPrice?.value).toBe(100);
     expect(saved.item?.[0].net?.value).toBe(200);
-    expect(saved.total?.value).toBe(200);
-    expect(screen.queryByRole('group', { name: 'Edit actions' })).not.toBeInTheDocument();
   });
 
-  test('cancels an edit without saving', async () => {
-    const claim = await createClaim({ status: 'draft' });
-    const user = userEvent.setup();
+  test('shows a submitted claim read-only', async () => {
+    const claim = await createClaim({});
+    await createResponse(claim, {});
     setup(claim.id);
 
-    const [edit] = await screen.findAllByRole('button', { name: 'Edit' });
-    await user.click(edit);
-    await user.click(screen.getByRole('button', { name: 'Remove I10' }));
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await openLines();
     expect(await screen.findByText('Hypertension')).toBeInTheDocument();
-    expect((await medplum.readResource('Claim', claim.id)).diagnosis).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Add a Diagnosis' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add a Service Line' })).not.toBeInTheDocument();
   });
 
   test('shows the lines with what the payer allowed and paid', async () => {
@@ -205,11 +209,13 @@ describe('ClaimDetailPane', () => {
     const nextStep = await screen.findByRole('region', { name: 'Patient balance' });
     expect(nextStep).toHaveTextContent('The patient owes $20.00');
     expect(screen.getByText('Patient').nextElementSibling).toHaveTextContent('$20.00');
+    await openLines();
     const row = screen.getByText('99214').closest('tr') as HTMLElement;
     expect(within(row).getByText('A, B')).toBeInTheDocument();
     expect(within(row).getByText('$245.00')).toBeInTheDocument();
     expect(within(row).getByText('$196.40')).toBeInTheDocument();
     expect(within(row).getByText(/PR-3/)).toBeInTheDocument();
+    await openOverview();
     expect(screen.getByText('Amount Paid').nextElementSibling).toHaveTextContent('$176.40');
     expect(screen.getByText('Payment Date').nextElementSibling).toHaveTextContent('10/6/2026');
     expect(screen.queryByRole('link', { name: 'Edit claim' })).not.toBeInTheDocument();
@@ -244,8 +250,9 @@ describe('ClaimDetailPane', () => {
     expect(nextStep).toHaveTextContent("Add the patient's coverage to the claim.");
     expect(nextStep).toHaveTextContent('1 line has no diagnosis pointer: 36415.');
     expect(nextStep).toHaveTextContent('1 diagnosis is on no line: R51.');
-    expect(within(actions()).getByRole('button', { name: 'Fix claim' })).toBeInTheDocument();
     expect(within(actions()).getByRole('button', { name: 'Submit to Candid' })).toBeDisabled();
+    await openLines();
+    expect(screen.getByRole('button', { name: 'Add a Diagnosis' })).toBeInTheDocument();
   });
 
   test('links to the remittances that pay the claim', async () => {
@@ -309,7 +316,8 @@ describe('ClaimDetailPane', () => {
     const noDiagnoses = await createClaim({ diagnosis: undefined });
     setup(claim.id);
 
-    const diagnoses = await screen.findByLabelText('Diagnoses');
+    await openLines();
+    const diagnoses = await screen.findByRole('region', { name: 'Diagnoses' });
     const unpointed = within(diagnoses).getByText('I10').closest('div') as HTMLElement;
     expect(within(unpointed).getByText('Not on any line')).toBeInTheDocument();
     expect(
@@ -320,6 +328,7 @@ describe('ClaimDetailPane', () => {
 
     cleanup();
     setup(noDiagnoses.id);
+    await openLines();
     expect(await screen.findByText(/No diagnoses on this claim/)).toBeInTheDocument();
   });
 
@@ -356,14 +365,16 @@ describe('ClaimDetailPane', () => {
 
     expect(await screen.findByRole('region', { name: 'Paid' })).toBeInTheDocument();
     expect(subtitle(/^Aetna • DOS 9\/4\/2026$/)).toBeInTheDocument();
+    await openLines();
     const row = screen.getByText('99214').closest('tr') as HTMLElement;
     expect(within(row).getByText('$589.20')).toBeInTheDocument();
     expect(within(row).getByText('$150.00')).toBeInTheDocument();
-    expect(screen.getAllByText('Amount Paid')).toHaveLength(3);
-    const diagnoses = screen.getByLabelText('Diagnoses');
+    const diagnoses = screen.getByRole('region', { name: 'Diagnoses' });
     expect(within(diagnoses).getByText('E11.9')).toBeInTheDocument();
     expect(within(diagnoses).getByText('Hypertension')).toBeInTheDocument();
     expect(within(diagnoses).queryByText('Not on any line')).not.toBeInTheDocument();
+    await openOverview();
+    expect(screen.getAllByText('Amount Paid')).toHaveLength(3);
     expect(screen.getByText('PCN').nextElementSibling).toHaveTextContent('PCN123');
     expect(screen.getByText('Candid Encounter ID').nextElementSibling).toHaveTextContent('enc-1');
 
@@ -386,7 +397,7 @@ describe('ClaimDetailPane', () => {
 
     const alert = await screen.findByRole('region', { name: 'With the payer' });
     expect(alert).toHaveTextContent('Clearinghouse status: Submitted To Payer.');
-    await user.click(within(actions()).getByRole('button', { name: 'Refresh status' }));
+    await user.click(within(actions()).getByRole('button', { name: 'Refresh Status' }));
     await waitFor(() =>
       expect(executeBot).toHaveBeenCalledWith(expect.any(String), { encounterId: 'enc-1' }, 'application/json')
     );
@@ -399,8 +410,9 @@ describe('ClaimDetailPane', () => {
     setup(claim.id);
 
     expect(await screen.findByRole('region', { name: 'Rejected before adjudication' })).toBeInTheDocument();
-    expect(within(actions()).getByRole('button', { name: 'Fix claim' })).toBeInTheDocument();
-    await user.click(within(actions()).getByRole('button', { name: 'Refresh status' }));
+    await openLines();
+    expect(screen.getByRole('region', { name: 'Service Lines' })).toBeInTheDocument();
+    await user.click(within(actions()).getByRole('button', { name: 'Refresh Status' }));
     expect(await screen.findByText('The Candid status bot is not deployed in this project')).toBeInTheDocument();
   });
 
@@ -411,15 +423,15 @@ describe('ClaimDetailPane', () => {
     setup(claim.id);
 
     expect(await screen.findByRole('region', { name: 'With the payer' })).toBeInTheDocument();
-    await user.click(within(actions()).getByRole('button', { name: 'Set follow-up' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Set follow-up' });
-    const save = within(dialog).getByRole('button', { name: 'Set follow-up' });
+    await user.click(within(actions()).getByRole('button', { name: 'Set Follow-Up' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Set Follow-Up' });
+    const save = within(dialog).getByRole('button', { name: 'Set Follow-Up' });
     expect(save).toBeDisabled();
     await user.type(within(dialog).getByLabelText(/Note/), 'Appeal sent');
     await user.click(save);
 
     expect(await screen.findByText(/Appeal sent/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Change follow-up' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change Follow-Up' })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Notes & Activity' }));
     expect(screen.getByText(/Follow-up set for/)).toBeInTheDocument();
     expect(screen.getByText('Submitted to the clearinghouse')).toBeInTheDocument();
@@ -427,7 +439,7 @@ describe('ClaimDetailPane', () => {
 
   test.each([
     ['paid_incorrectly', 'Paid incorrectly', 'Appeal underpayment'],
-    ['denied', 'Denied', 'Corrected claim'],
+    ['denied', 'Denied', 'Corrected Claim'],
   ])('shows %s actions as coming soon', async (code, title, action) => {
     const claim = await createClaim({});
     await createResponse(claim, {
@@ -446,17 +458,17 @@ describe('ClaimDetailPane', () => {
     setup(claim.id);
 
     expect(await screen.findByRole('region', { name: 'Voided' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Refresh status' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Refresh Status' })).not.toBeInTheDocument();
   });
 
-  test('has Lines & Remits and Notes & Activity tabs, with notes in the activity timeline', async () => {
+  test('has Overview, Lines & Details, Insurance and Notes & Activity tabs, with notes in the activity timeline', async () => {
     const claim = await createClaim({});
     const user = userEvent.setup();
     setup(claim.id);
 
     const tabs = await screen.findAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['Lines & Remits', 'Notes & Activity']);
-    expect(screen.getByRole('tab', { name: 'Lines & Remits' })).toHaveAttribute('aria-selected', 'true');
+    expect(tabs.map((t) => t.textContent)).toEqual(['Overview', 'Lines & Details', 'Insurance', 'Notes & Activity']);
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Remittance')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Add a note...')).not.toBeInTheDocument();
 
@@ -487,7 +499,7 @@ describe('ClaimDetailPane', () => {
 
     await screen.findByRole('region', { name: 'Waiting for the remit' });
     await user.click(screen.getByRole('button', { name: 'More actions' }));
-    expect((await screen.findByText('Void claim')).closest('button')).toBeDisabled();
+    expect((await screen.findByText('Void Claim')).closest('button')).toBeDisabled();
     await user.click(screen.getByText('View on Candid'));
     await waitFor(() => expect(open).toHaveBeenCalledWith('https://app.joincandidhealth.com/claims/1', '_blank'));
 

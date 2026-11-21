@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Drawer } from '@mantine/core';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useRef } from 'react';
 import classes from './WorklistDrawer.module.css';
 
 export interface WorklistDrawerProps {
@@ -11,37 +10,21 @@ export interface WorklistDrawerProps {
   readonly label: string;
   /** The width of the worklist area the drawer opens over. */
   readonly areaWidth: number;
+  /** An exact width instead, e.g. to cover just the content area beside a sidebar. */
+  readonly width?: number;
   readonly onClose: () => void;
   readonly children?: ReactNode;
 }
 
 /**
- * A worklist item's detail in a drawer over the list. It leaves the list's first 300px in view and clickable, so
- * picking another row swaps the drawer's contents, and closes on a click anywhere else.
+ * A worklist item's detail in a drawer over the list, leaving the list's first 300px in view. Like a modal, its
+ * overlay blocks the page behind it, and a click on the overlay closes it.
  * @param props - The WorklistDrawer React props.
  * @returns The WorklistDrawer React node.
  */
 export function WorklistDrawer(props: WorklistDrawerProps): JSX.Element {
   const { opened, label, areaWidth, onClose, children } = props;
-  const contentRef = useRef<HTMLDivElement>(null);
-  const width = areaWidth ? Math.max(areaWidth - 300, 400) : undefined;
-
-  useEffect(() => {
-    if (!opened) {
-      return undefined;
-    }
-    const onPointerDown = (e: PointerEvent): void => {
-      const target = e.target as Element;
-      if (
-        !contentRef.current?.contains(target) &&
-        !target.closest?.('[data-portal], [data-testid="search-control-row"], [data-worklist-row]')
-      ) {
-        onClose();
-      }
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [opened, onClose]);
+  const width = props.width || (areaWidth ? Math.max(areaWidth - 300, 400) : undefined);
 
   return (
     <Drawer.Root
@@ -49,11 +32,9 @@ export function WorklistDrawer(props: WorklistDrawerProps): JSX.Element {
       onClose={onClose}
       position="right"
       styles={width ? { content: { '--drawer-flex': `0 0 ${width}px` } } : undefined}
-      trapFocus={false}
-      lockScroll={false}
     >
-      <Drawer.Overlay className={classes.overlay} />
-      <Drawer.Content aria-label={label} ref={contentRef}>
+      <Drawer.Overlay />
+      <Drawer.Content aria-label={label}>
         <Drawer.Body className={classes.body}>{children}</Drawer.Body>
       </Drawer.Content>
     </Drawer.Root>

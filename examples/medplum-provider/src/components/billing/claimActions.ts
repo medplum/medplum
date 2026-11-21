@@ -29,12 +29,12 @@ export const CLAIM_ACTIONS: ClaimAction[] = [
   },
   {
     id: 'refresh',
-    label: 'Refresh status',
+    label: 'Refresh Status',
     check: (claim) => (getCandidEncounterId(claim) ? undefined : 'Not submitted to Candid'),
   },
-  { id: 'follow-up', label: 'Set follow-up', check: () => undefined },
-  { id: 'rerun-edits', label: 'Re-run edits', comingSoon: true, check: () => undefined },
-  { id: 'write-off', label: 'Write off', comingSoon: true, check: () => undefined },
+  { id: 'follow-up', label: 'Set Follow-Up', check: () => undefined },
+  { id: 'rerun-edits', label: 'Re-Run Edits', comingSoon: true, check: () => undefined },
+  { id: 'write-off', label: 'Write Off', comingSoon: true, check: () => undefined },
 ];
 
 /**

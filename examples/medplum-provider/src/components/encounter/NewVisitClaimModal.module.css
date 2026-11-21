@@ -1,0 +1,12 @@
+.card {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+
+  &[data-checked] {
+    border-color: var(--mantine-primary-color-filled);
+  }
+
+  &[data-disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}

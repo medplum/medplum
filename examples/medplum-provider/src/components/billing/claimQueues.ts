@@ -37,7 +37,7 @@ export const AGING_BUCKETS: AgingBucket[] = [
   { id: 'aging-over-90', label: 'Over 90 Days', minDays: 91 },
 ];
 
-const AGING_COLORS = ['gray', 'yellow', 'orange', 'red'];
+const AGING_COLORS = ['gray.6', 'gray.5', 'gray.4', 'gray.3'];
 
 const OPEN: Filter = { code: 'status', operator: Operator.EQUALS, value: 'draft,active' };
 const ACTIVE: Filter = { code: 'status', operator: Operator.EQUALS, value: 'active' };
@@ -94,8 +94,8 @@ export function getClaimIdFilter(ids: string[]): Filter {
 }
 
 export const CLAIM_QUEUES: ClaimQueue[] = [
-  { id: ALL_OPEN_QUEUE_ID, label: 'All Open', color: 'dark', filters: () => [OPEN] },
   { id: ALL_ISSUES_QUEUE_ID, label: 'All Issues', color: ['yellow', 'red'], scanned: true },
+  { id: ALL_OPEN_QUEUE_ID, label: 'All Open', color: 'dark', filters: () => [OPEN] },
   ...AGING_BUCKETS.map((bucket, i): ClaimQueue => ({
     id: bucket.id,
     label: bucket.label,
@@ -171,7 +171,10 @@ export const CLAIM_QUEUES: ClaimQueue[] = [
  * @returns The queue.
  */
 export function getClaimQueue(id: string | undefined): ClaimQueue {
-  return CLAIM_QUEUES.find((q) => q.id === id?.toLowerCase()) ?? CLAIM_QUEUES[0];
+  return (
+    CLAIM_QUEUES.find((q) => q.id === id?.toLowerCase()) ??
+    (CLAIM_QUEUES.find((q) => q.id === ALL_OPEN_QUEUE_ID) as ClaimQueue)
+  );
 }
 
 /**

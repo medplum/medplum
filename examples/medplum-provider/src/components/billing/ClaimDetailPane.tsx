@@ -15,7 +15,7 @@ import {
   Timeline,
   Tooltip,
 } from '@mantine/core';
-import type { MedplumClient, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import { formatDate, formatDateTime, formatMoney } from '@medplum/core';
 import type { Annotation, Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
 import { Loading, ResourceName, useMedplum } from '@medplum/react';
@@ -23,12 +23,12 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconBan,
+  IconTrash,
   IconCheck,
   IconClock,
   IconDots,
   IconExternalLink,
   IconFileDiff,
-  IconPencil,
   IconRefresh,
   IconX,
 } from '@tabler/icons-react';
@@ -47,10 +47,14 @@ import {
   setClaimFollowUp,
   submitClaim,
 } from './claimActions';
+import { getClaimEncounter } from './claimConditions';
 import classes from './ClaimDetailPane.module.css';
-import { finishClaimEdit, getLineCharge } from './claimEditing';
-import { ClaimDiagnosesEditor, ClaimLinesEditor } from './ClaimEditor';
+import { getLineCharge } from './claimEditing';
+import { ClaimDiagnosesEditor, ClaimLinesEditor, ClaimVisitDetails } from './ClaimEditor';
 import { ClaimFollowUpModal } from './ClaimFollowUpModal';
+import { canDiscardClaim } from './discardClaim';
+import { DiscardClaimModal } from './DiscardClaimModal';
+import { ClaimInsurance } from './ClaimInsurance';
 import { getClaimIssues, getPatientResponsibility } from './claimIssues';
 import { ClaimNoteInput } from './ClaimNoteInput';
 import type { ClaimDisplayStatus } from './claimStatus';
@@ -58,19 +62,28 @@ import {
   getAdjustmentReasons,
   getClaimDisplayStatus,
   getClaimStatus,
+  isClaimEditable,
   isRemitResponse,
   sumAdjudicationAmount,
 } from './claimStatus';
+import { DetailSection, MetaItem } from './DetailSection';
 import pillTabs from './PillTabs.module.css';
 import type { ClaimIssue } from './preSubmitChecks';
+import { RelatedClaims } from './RelatedClaims';
+import { useClaimAutosave } from './useClaimAutosave';
+import { findClaimRemittances } from './visitDetails';
 
-type DetailTab = 'lines' | 'activity';
+type DetailTab = 'overview' | 'lines' | 'insurance' | 'activity';
 
 export interface ClaimDetailPaneProps {
   readonly claimId: string;
   readonly onClose: () => void;
   /** Called after the claim changes, e.g. once submitted, so lists can reload. */
   readonly onChanged: () => void;
+  /** Opens a related claim in place of this one; without it, related claims link to Billing. */
+  readonly onOpenClaim?: (id: string) => void;
+  /** Whether the pane opens over the claim's own visit, so it needn't link to it. */
+  readonly onVisit?: boolean;
 }
 
 /**
@@ -80,19 +93,19 @@ export interface ClaimDetailPaneProps {
  * @returns The ClaimDetailPane React node.
  */
 export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
-  const { claimId, onClose, onChanged } = props;
+  const { claimId, onClose, onChanged, onOpenClaim, onVisit } = props;
   const medplum = useMedplum();
   const [claim, setClaim] = useState<WithId<Claim>>();
   const [responses, setResponses] = useState<WithId<ClaimResponse>[]>();
   const [remittances, setRemittances] = useState<WithId<PaymentReconciliation>[]>();
   const [version, setVersion] = useState(0);
-  const [tab, setTab] = useState<DetailTab>('lines');
+  const [tab, setTab] = useState<DetailTab>('overview');
   const [notes, setNotes] = useState<Annotation[]>(() => getClaimNotes(claimId));
   const [followUp, setFollowUp] = useState<ClaimFollowUp | undefined>(() => getClaimFollowUp(claimId));
   const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
   const [busy, setBusy] = useState(false);
-  /** The claim being edited, while the diagnoses and lines are in edit mode. */
-  const [draft, setDraft] = useState<WithId<Claim>>();
+  const autosave = useClaimAutosave(onChanged);
 
   useEffect(() => {
     let active = true;
@@ -118,7 +131,7 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
 
   useEffect(() => {
     let active = true;
-    findClaimRemittances(medplum, claimId)
+    findClaimRemittances(medplum, [claimId])
       .then((found) => active && setRemittances(found))
       .catch(console.error);
     return () => {
@@ -154,29 +167,25 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
   const remits = responses.filter(isRemitResponse);
   const response = responses.findLast((r) => !isRemitResponse(r)) ?? remits.at(-1);
   const status = getClaimStatus(claim, responses);
-  const editable = status.stage === 'ready' || status.stage === 'needs-fixing' || status.stage === 'rejected';
+  const editable = isClaimEditable(claim, responses);
   const encounterUrl = getEncounterUrl(claim);
-  const startEdit = editable ? () => setDraft(structuredClone(claim)) : undefined;
-  const saveEdit = (): Promise<void> =>
-    run(async () => {
-      if (draft) {
-        setClaim(await medplum.updateResource({ ...finishClaimEdit(draft), id: claim.id }));
-        setDraft(undefined);
-      }
-    }, 'Claim saved');
-  const editAction = startEdit && !draft && (
-    <Button variant="subtle" size="compact-sm" leftSection={<IconPencil size={14} />} onClick={startEdit}>
-      Edit
-    </Button>
-  );
+  const editClaim = (next: Claim): void => {
+    const edited = { ...next, id: claim.id };
+    setClaim(edited);
+    autosave.queue(edited);
+  };
+
   const nextAction = getNextAction({
     response,
     status,
-    issues: getClaimIssues(draft ?? claim, responses),
+    issues: getClaimIssues(claim, responses),
     followUp,
     busy,
-    onEdit: startEdit,
-    onSubmit: () => run(() => submitClaim(medplum, claim), 'Claim submitted to Candid'),
+    onSubmit: () =>
+      run(async () => {
+        await autosave.flush();
+        await submitClaim(medplum, claim);
+      }, 'Claim submitted to Candid'),
     onRefresh: () => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid'),
     onFollowUp: () => setFollowUpOpen(true),
     onCollected: () => {
@@ -200,13 +209,13 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
           </Stack>
           <Group gap="xs" wrap="nowrap">
             {status.stage !== 'ready' && status.stage !== 'needs-fixing' && status.stage !== 'voided' && (
-              <Tooltip label="Refresh status" position="bottom" openDelay={500}>
+              <Tooltip label="Refresh Status" position="bottom" openDelay={500}>
                 <ActionIcon
                   variant="transparent"
                   radius="xl"
                   size={32}
                   className="outline-icon-button"
-                  aria-label="Refresh status"
+                  aria-label="Refresh Status"
                   loading={busy}
                   onClick={() => run(() => refreshClaim(medplum, claim), 'Status refreshed from Candid')}
                 >
@@ -217,9 +226,10 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
             <ClaimMoreMenu
               claim={claim}
               response={responses.find(isCandidClaimResponse) ?? null}
-              encounterUrl={encounterUrl}
-              onEdit={draft ? undefined : startEdit}
+              encounterUrl={onVisit ? undefined : encounterUrl}
+              showPatientLink={!onVisit}
               onFollowUp={() => setFollowUpOpen(true)}
+              onDiscard={canDiscardClaim(claim, responses) ? () => setDiscarding(true) : undefined}
             />
             <ActionIcon
               variant="transparent"
@@ -242,7 +252,9 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
             className={pillTabs.root}
           >
             <Tabs.List>
-              <Tabs.Tab value="lines">Lines & Remits</Tabs.Tab>
+              <Tabs.Tab value="overview">Overview</Tabs.Tab>
+              <Tabs.Tab value="lines">Lines & Details</Tabs.Tab>
+              <Tabs.Tab value="insurance">Insurance</Tabs.Tab>
               <Tabs.Tab value="activity">Notes & Activity</Tabs.Tab>
             </Tabs.List>
           </Tabs>
@@ -253,53 +265,38 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
         <Divider />
       </Stack>
       <Stack className={classes.body} gap="md">
-        {tab === 'lines' && (
+        {tab === 'overview' && (
           <>
-            <section aria-label={nextAction.title}>
-              <Stack gap={4}>
-                <Text fz="md" fw={800}>
-                  Next Steps
-                </Text>
-                {nextAction.message}
-              </Stack>
-            </section>
-            <Divider className={classes.sectionDivider} />
-            <ClaimTotals claim={claim} remits={remits} />
-            <Divider className={classes.sectionDivider} />
-            {draft ? (
-              <DetailSection title="Diagnoses" description="The first diagnosis is the principal one.">
-                <ClaimDiagnosesEditor claim={draft} onChange={(next) => setDraft({ ...next, id: claim.id })} />
-              </DetailSection>
-            ) : (
-              <ClaimDiagnoses claim={claim} action={editAction} />
-            )}
-            <Divider className={classes.sectionDivider} />
-            {draft ? (
-              <DetailSection title="Service Lines">
-                <ClaimLinesEditor claim={draft} onChange={(next) => setDraft({ ...next, id: claim.id })} />
-              </DetailSection>
-            ) : (
-              <ClaimLines claim={claim} remits={remits} action={editAction} />
-            )}
-            <Divider className={classes.sectionDivider} />
-            <RemittanceDetails claimId={claimId} remits={remits} remittances={remittances} />
-            <Divider className={classes.sectionDivider} />
+            <ClaimTotals claim={claim} remits={remits}>
+              <RemittanceDetails claimId={claimId} remits={remits} remittances={remittances} />
+            </ClaimTotals>
+            <DetailSection title="Next Steps" label={nextAction.title}>
+              {nextAction.message}
+            </DetailSection>
+            <RelatedClaims claim={claim} onOpenClaim={onOpenClaim} />
             <ClaimIdentifiers claim={claim} />
           </>
         )}
+        {tab === 'lines' && (
+          <>
+            <ClaimVisitDetails claim={claim} showVisitLink={!onVisit} />
+            {editable ? (
+              <>
+                <ClaimDiagnosesEditor claim={claim} onChange={editClaim} />
+                <ClaimLinesEditor claim={claim} onChange={editClaim} />
+              </>
+            ) : (
+              <>
+                <ClaimDiagnoses claim={claim} />
+                <ClaimLines claim={claim} remits={remits} />
+              </>
+            )}
+          </>
+        )}
+        {tab === 'insurance' && <ClaimInsurance claim={claim} />}
         {tab === 'activity' && <ClaimActivity claim={claim} responses={responses} notes={notes} followUp={followUp} />}
       </Stack>
-      {tab === 'lines' && draft && (
-        <Group grow gap="sm" className={classes.footer} role="group" aria-label="Edit actions">
-          <Button variant="default" disabled={busy} onClick={() => setDraft(undefined)}>
-            Cancel
-          </Button>
-          <Button loading={busy} onClick={saveEdit}>
-            Save changes
-          </Button>
-        </Group>
-      )}
-      {tab === 'lines' && !draft && nextAction.actions && (
+      {(tab === 'overview' || tab === 'lines') && nextAction.actions && (
         <Stack gap="sm" className={classes.footer} role="group" aria-label="Claim actions">
           {nextAction.actions}
         </Stack>
@@ -309,6 +306,14 @@ export function ClaimDetailPane(props: ClaimDetailPaneProps): JSX.Element {
           <ClaimNoteInput autoFocus onAdd={(note) => setNotes(addClaimNote(claimId, note))} />
         </div>
       )}
+      <DiscardClaimModal
+        claim={discarding ? claim : undefined}
+        onClose={() => setDiscarding(false)}
+        onDiscarded={() => {
+          onChanged();
+          onClose();
+        }}
+      />
       <ClaimFollowUpModal
         opened={followUpOpen}
         count={1}
@@ -327,13 +332,16 @@ function ClaimMoreMenu(props: {
   readonly claim: WithId<Claim>;
   readonly response: WithId<ClaimResponse> | null;
   readonly encounterUrl?: string;
-  /** Puts the diagnoses and lines in edit mode, while the claim can still be edited. */
-  readonly onEdit?: () => void;
+  /** Whether to link to the patient's chart; off when the claim is already open over it. */
+  readonly showPatientLink?: boolean;
   readonly onFollowUp: () => void;
+  /** Discards the claim; offered only for a claim that can be discarded. */
+  readonly onDiscard?: () => void;
 }): JSX.Element {
-  const { claim, response, encounterUrl, onEdit, onFollowUp } = props;
+  const { claim, response, encounterUrl, showPatientLink = true, onFollowUp, onDiscard } = props;
   const medplum = useMedplum();
-  const patientRef = claim.patient?.reference;
+  const patientRef = showPatientLink ? claim.patient?.reference : undefined;
+  const candidLink = !!response && isCandidClaimResponse(response);
 
   const openInCandid = async (): Promise<void> => {
     if (!response) {
@@ -365,22 +373,22 @@ function ClaimMoreMenu(props: {
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
-        {onEdit && (
-          <Menu.Item leftSection={<IconPencil size={16} color="var(--mantine-color-dimmed)" />} onClick={onEdit}>
-            <Text size="sm">Edit claim</Text>
-          </Menu.Item>
-        )}
         <Menu.Item leftSection={<IconClock size={16} color="var(--mantine-color-dimmed)" />} onClick={onFollowUp}>
-          <Text size="sm">Set follow-up</Text>
+          <Text size="sm">Set Follow-Up</Text>
         </Menu.Item>
         <Menu.Item disabled leftSection={<IconFileDiff size={16} color="var(--mantine-color-dimmed)" />}>
-          <Text size="sm">Corrected claim</Text>
+          <Text size="sm">Corrected Claim</Text>
         </Menu.Item>
         <Menu.Item disabled leftSection={<IconBan size={16} color="var(--mantine-color-dimmed)" />}>
-          <Text size="sm">Void claim</Text>
+          <Text size="sm">Void Claim</Text>
         </Menu.Item>
-        <Menu.Divider />
-        {response && isCandidClaimResponse(response) && (
+        {onDiscard && (
+          <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={onDiscard}>
+            <Text size="sm">Discard Claim</Text>
+          </Menu.Item>
+        )}
+        {(candidLink || encounterUrl || patientRef) && <Menu.Divider />}
+        {candidLink && (
           <Menu.Item
             leftSection={<IconExternalLink size={16} color="var(--mantine-color-dimmed)" />}
             onClick={() => openInCandid().catch(showErrorNotification)}
@@ -394,7 +402,7 @@ function ClaimMoreMenu(props: {
             component="a"
             href={encounterUrl}
           >
-            <Text size="sm">Open encounter</Text>
+            <Text size="sm">Open Encounter</Text>
           </Menu.Item>
         )}
         {patientRef && (
@@ -403,7 +411,7 @@ function ClaimMoreMenu(props: {
             component="a"
             href={`/${patientRef}`}
           >
-            <Text size="sm">Open patient chart</Text>
+            <Text size="sm">Open Patient Chart</Text>
           </Menu.Item>
         )}
       </Menu.Dropdown>
@@ -418,8 +426,6 @@ interface NextActionProps {
   readonly issues: ClaimIssue[];
   readonly followUp?: ClaimFollowUp;
   readonly busy: boolean;
-  /** Puts the claim in edit mode, while it can still be edited. */
-  readonly onEdit?: () => void;
   readonly onSubmit: () => void;
   readonly onRefresh: () => void;
   readonly onFollowUp: () => void;
@@ -440,7 +446,7 @@ interface NextAction {
  * @returns The alert and the actions.
  */
 function getNextAction(props: NextActionProps): NextAction {
-  const { response, status, issues, followUp, busy, onEdit, onSubmit, onRefresh, onFollowUp, onCollected } = props;
+  const { response, status, issues, followUp, busy, onSubmit, onRefresh, onFollowUp, onCollected } = props;
   const comingSoon = (...labels: string[]): ReactNode => (
     <Group grow gap="sm">
       {labels.map((label) => (
@@ -475,16 +481,9 @@ function getNextAction(props: NextActionProps): NextAction {
           </Stack>
         ),
         actions: (
-          <>
-            {onEdit && (
-              <Button fullWidth onClick={onEdit}>
-                Fix claim
-              </Button>
-            )}
-            <Button fullWidth variant="default" disabled>
-              Submit to Candid
-            </Button>
-          </>
+          <Button fullWidth disabled>
+            Submit to Candid
+          </Button>
         ),
       };
     case 'ready':
@@ -498,11 +497,6 @@ function getNextAction(props: NextActionProps): NextAction {
             <Button fullWidth loading={busy} onClick={onSubmit}>
               Submit to Candid
             </Button>
-            {onEdit && (
-              <Button fullWidth variant="default" onClick={onEdit}>
-                Edit claim
-              </Button>
-            )}
           </>
         ),
       };
@@ -519,13 +513,8 @@ function getNextAction(props: NextActionProps): NextAction {
         ),
         actions: (
           <>
-            {onEdit && (
-              <Button fullWidth onClick={onEdit}>
-                Fix claim
-              </Button>
-            )}
             <Button fullWidth variant="default" loading={busy} onClick={onRefresh}>
-              Refresh status
+              Refresh Status
             </Button>
           </>
         ),
@@ -540,7 +529,7 @@ function getNextAction(props: NextActionProps): NextAction {
             {followUpLine}
           </Stack>
         ),
-        actions: comingSoon('Appeal', 'Corrected claim', 'Write off'),
+        actions: comingSoon('Appeal', 'Corrected Claim', 'Write Off'),
       };
     case 'paid-incorrectly':
       return {
@@ -586,10 +575,10 @@ function getNextAction(props: NextActionProps): NextAction {
         actions: (
           <Group grow gap="sm">
             <Button variant="default" loading={busy} onClick={onRefresh}>
-              Refresh status
+              Refresh Status
             </Button>
             <Button variant="default" onClick={onFollowUp}>
-              {followUp ? 'Change follow-up' : 'Set follow-up'}
+              {followUp ? 'Change Follow-Up' : 'Set Follow-Up'}
             </Button>
           </Group>
         ),
@@ -614,10 +603,10 @@ function getNextAction(props: NextActionProps): NextAction {
         actions: (
           <Group grow gap="sm">
             <Button variant="default" loading={busy} onClick={onRefresh}>
-              Refresh status
+              Refresh Status
             </Button>
             <Button variant="default" onClick={onFollowUp}>
-              {followUp ? 'Change follow-up' : 'Set follow-up'}
+              {followUp ? 'Change Follow-Up' : 'Set Follow-Up'}
             </Button>
           </Group>
         ),
@@ -625,88 +614,40 @@ function getNextAction(props: NextActionProps): NextAction {
   }
 }
 
-/**
- * A titled section of the tab, styled like the SMART Health Link import steps: a heavy subhead with an optional
- * dimmed line under it.
- * @param props - The section props.
- * @param props.title - The subhead.
- * @param props.description - The dimmed line under it.
- * @param props.action - A button at the right of the subhead.
- * @param props.children - The section content.
- * @returns The section.
- */
-function DetailSection(props: {
-  readonly title: string;
-  readonly description?: ReactNode;
-  /** A button at the right of the subhead. */
-  readonly action?: ReactNode;
-  readonly children: ReactNode;
-}): JSX.Element {
-  return (
-    <Stack gap="md">
-      <div>
-        <Group justify="space-between" wrap="nowrap">
-          <Text fz="md" fw={800}>
-            {props.title}
-          </Text>
-          {props.action}
-        </Group>
-        {props.description && (
-          <Text size="sm" c="dimmed">
-            {props.description}
-          </Text>
-        )}
-      </div>
-      {props.children}
-    </Stack>
-  );
-}
-
-function MetaItem(props: { readonly label: string; readonly value: ReactNode }): JSX.Element {
-  return (
-    <div>
-      <Text size="xs" c="dimmed" fw={500}>
-        {props.label}
-      </Text>
-      <Text size="sm">{props.value}</Text>
-    </div>
-  );
-}
-
 function money(value: number | undefined): string {
   return value === undefined ? '—' : formatMoney({ value, currency: 'USD' });
 }
 
-function ClaimTotals(props: { readonly claim: Claim; readonly remits: ClaimResponse[] }): JSX.Element {
+function ClaimTotals(props: {
+  readonly claim: Claim;
+  readonly remits: ClaimResponse[];
+  readonly children?: ReactNode;
+}): JSX.Element {
   const { claim, remits } = props;
   const items = remits.flatMap((r) => r.item ?? []);
   const sum = (...categories: string[]): number | undefined => sumAdjudicationAmount(items, ...categories);
   const payments = remits.map((r) => r.payment?.amount?.value).filter((v) => v !== undefined);
   const paid = payments.length ? payments.reduce((a, b) => a + b, 0) : sum('benefit');
   return (
-    <DetailSection title="Claim Totals">
+    <DetailSection title="Totals">
       <div className={classes.metaGrid}>
         <MetaItem label="Billed" value={money(claim.total?.value)} />
         <MetaItem label="Allowed" value={money(sum('eligible'))} />
         <MetaItem label="Paid" value={money(paid)} />
         <MetaItem label="Patient" value={money(getPatientResponsibility(remits))} />
       </div>
+      {props.children}
     </DetailSection>
   );
 }
 
-function ClaimLines(props: {
-  readonly claim: Claim;
-  readonly remits: ClaimResponse[];
-  readonly action?: ReactNode;
-}): JSX.Element {
-  const { claim, remits, action } = props;
+function ClaimLines(props: { readonly claim: Claim; readonly remits: ClaimResponse[] }): JSX.Element {
+  const { claim, remits } = props;
   const lines = claim.item ?? [];
   const remitItems = remits.flatMap((r) => r.item ?? []);
   return (
     <DetailSection
       title="Service Lines"
-      action={action}
       description={`${lines.length} ${lines.length === 1 ? 'line' : 'lines'}, with the payer's adjudication`}
     >
       <Table horizontalSpacing="sm" verticalSpacing="xs" className={classes.table}>
@@ -785,20 +726,18 @@ function toDiagnosisLetter(sequence: number): string {
  * Flags a diagnosis that no line points to, and a claim with no diagnoses.
  * @param props - The component props.
  * @param props.claim - The claim.
- * @param props.action - A button at the right of the subhead.
  * @returns The diagnoses section.
  */
-function ClaimDiagnoses(props: { readonly claim: Claim; readonly action?: ReactNode }): JSX.Element {
+function ClaimDiagnoses(props: { readonly claim: Claim }): JSX.Element {
   const diagnoses = props.claim.diagnosis ?? [];
   const pointed = new Set((props.claim.item ?? []).flatMap((item) => item.diagnosisSequence ?? []));
   return (
     <DetailSection
       title="Diagnoses"
-      action={props.action}
       description={diagnoses.length ? undefined : 'No diagnoses on this claim. Payers reject a claim without one.'}
     >
       {diagnoses.length > 0 && (
-        <Stack gap={6} aria-label="Diagnoses">
+        <Stack gap={6}>
           {diagnoses.map((d) => {
             const coding = d.diagnosisCodeableConcept?.coding?.[0];
             return (
@@ -842,10 +781,17 @@ function RemittanceDetails(props: {
   const payments = remits.map((r) => r.payment).filter((p) => p !== undefined);
   const hasAny = !!remittances?.length || payments.length > 0;
   return (
-    <DetailSection
-      title="Remittance"
-      description={hasAny ? undefined : 'No remittance yet. When the 835 arrives, its payment shows here.'}
-    >
+    <Stack gap="sm" component="section" aria-label="Remittance" className={classes.subsection}>
+      <div>
+        <Text size="sm" fw={700}>
+          Remittance
+        </Text>
+        {!hasAny && (
+          <Text size="sm" c="dimmed">
+            No remittance yet. When the 835 arrives, its payment shows here.
+          </Text>
+        )}
+      </div>
       {remittances?.length
         ? remittances.map((remit) => {
             const lines = (remit.detail ?? []).filter((d) => d.request?.reference === `Claim/${claimId}`);
@@ -876,24 +822,8 @@ function RemittanceDetails(props: {
               <MetaItem label="Payment ID" value={payment.identifier?.value ?? '—'} />
             </div>
           ))}
-    </DetailSection>
+    </Stack>
   );
-}
-
-/**
- * Finds the remittances that pay a claim. A remittance names its claims only in `detail.request`, which has no search
- * parameter, so this reads the most recent remittances and keeps the ones that name the claim.
- * @param medplum - The Medplum client.
- * @param claimId - The claim ID.
- * @returns The claim's remittances, newest first.
- */
-async function findClaimRemittances(medplum: MedplumClient, claimId: string): Promise<WithId<PaymentReconciliation>[]> {
-  const recent = await medplum.searchResources(
-    'PaymentReconciliation',
-    { _sort: '-created', _count: '200' },
-    { cache: 'no-cache' }
-  );
-  return recent.filter((r) => r.detail?.some((d) => d.request?.reference === `Claim/${claimId}`));
 }
 
 const IDENTIFIER_LABELS: Record<string, string> = {
@@ -913,19 +843,17 @@ function ClaimIdentifiers(props: { readonly claim: WithId<Claim> }): JSX.Element
   const pcn = getClaimNumber(claim);
   const others = (claim.identifier ?? []).filter((id) => id.value && !isPatientControlNumber(id.system));
   return (
-    <DetailSection title="Identifiers">
-      <div className={classes.metaGrid}>
-        <MetaItem label="PCN" value={pcn ?? '—'} />
-        {others.map((id) => (
-          <MetaItem
-            key={`${id.system}|${id.value}`}
-            label={IDENTIFIER_LABELS[id.system ?? ''] ?? 'Identifier'}
-            value={id.value}
-          />
-        ))}
-        <MetaItem label="Medplum ID" value={claim.id} />
-      </div>
-    </DetailSection>
+    <section aria-label="Identifiers" className={`${classes.metaGrid} ${classes.subsection} ${classes.pinnedBottom}`}>
+      <MetaItem label="Medplum ID" value={claim.id} />
+      {others.map((id) => (
+        <MetaItem
+          key={`${id.system}|${id.value}`}
+          label={IDENTIFIER_LABELS[id.system ?? ''] ?? 'Identifier'}
+          value={id.value}
+        />
+      ))}
+      <MetaItem label="PCN" value={pcn ?? '—'} />
+    </section>
   );
 }
 
@@ -1014,7 +942,7 @@ function formatActivityTime(time: string): string {
 }
 
 function getEncounterUrl(claim: Claim): string | undefined {
-  const encounter = claim.item?.[0]?.encounter?.[0]?.reference;
+  const encounter = getClaimEncounter(claim)?.reference;
   const patient = claim.patient?.reference;
   return encounter && patient ? `/${patient}/${encounter}` : undefined;
 }

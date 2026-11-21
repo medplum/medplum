@@ -11,6 +11,7 @@ import {
   IconCalendarCog,
   IconListCheck,
   IconReceipt2,
+  IconReportMoney,
   IconShieldLock,
   IconStethoscope,
   IconUserCircle,
@@ -81,6 +82,7 @@ export function getSettingsMenus(options: SettingsMenuOptions): NavbarMenu[] {
             ]
           : []),
         { icon: <IconReceipt2 />, label: 'Charge Items', href: `${SETTINGS_PATH}/billing/charge-items` },
+        { icon: <IconReportMoney />, label: 'Fee Schedules', href: `${SETTINGS_PATH}/billing/fee-schedules` },
       ],
     },
     {

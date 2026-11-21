@@ -41,6 +41,17 @@ const STAGES: Record<ClaimStage, Omit<ClaimDisplayStatus, 'stage' | 'detail'>> =
 };
 
 /**
+ * Whether a claim can still be edited: it hasn't gone out, or it came back to be fixed.
+ * @param claim - The claim.
+ * @param responses - Its claim responses.
+ * @returns True when the claim is ready, needs fixing, or was rejected.
+ */
+export function isClaimEditable(claim: Claim, responses: ClaimResponse[]): boolean {
+  const { stage } = getClaimStatus(claim, responses);
+  return stage === 'ready' || stage === 'needs-fixing' || stage === 'rejected';
+}
+
+/**
  * Works out a claim's stage from the claim and the response the clearinghouse sync bots keep up to date. The
  * Candid or Stedi status wins when present, since it is more precise than the FHIR outcome.
  * @param claim - The claim.

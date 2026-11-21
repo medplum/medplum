@@ -7,6 +7,7 @@ import { CandidBillingPractitioners } from '../../components/billing/CandidBilli
 import { CandidImportedPayers } from '../../components/billing/CandidImportedPayers';
 import { ChargeItemDefinitions } from '../../components/billing/ChargeItemDefinitions';
 import { EligibilityServiceTypeSettings } from '../../components/billing/EligibilityServiceTypeSettings';
+import { FeeSchedulesList } from '../../components/billing/FeeSchedulesList';
 import { SettingsPage, SettingsPanel } from '../../components/settings/SettingsLayout';
 import { useCandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 
@@ -63,6 +64,19 @@ export function ChargeItemsSettingsPage(): JSX.Element {
     >
       <SettingsPanel>
         <ChargeItemDefinitions resourceId={resourceId} onNavigate={setResourceId} />
+      </SettingsPanel>
+    </SettingsPage>
+  );
+}
+
+export function FeeSchedulesSettingsPage(): JSX.Element {
+  return (
+    <SettingsPage
+      title="Fee Schedules"
+      description="What each payer agreed to pay per code, used to check the allowed amounts on remits."
+    >
+      <SettingsPanel>
+        <FeeSchedulesList />
       </SettingsPanel>
     </SettingsPage>
   );

@@ -3,14 +3,13 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import type { ChargeItemDefinition, Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
+import type { Claim, ClaimResponse, PaymentReconciliation } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { FEE_SCHEDULE_TAG, PAYER_USAGE_CONTEXT } from '../../components/billing/feeSchedules';
 import { CANDID_CLAIM_STATUS_SYSTEM, SOURCE_CLAIM_STATUS_EXTENSION_URL, toLocalCalendarDate } from '../../utils/candid';
 import { BillingPage } from './BillingPage';
 
@@ -162,7 +161,7 @@ describe('BillingPage', () => {
     await user.click(await within(await screen.findByRole('table')).findByText('$125.50'));
     expect(router.state.location.pathname).toBe(`/Billing/Claims/all/${claim.id}`);
     const drawer = await screen.findByRole('dialog', { name: 'Claim' });
-    expect(within(drawer).getByText('Lines & Remits')).toBeInTheDocument();
+    expect(within(drawer).getByText('Overview')).toBeInTheDocument();
     const activeRows = screen.getAllByTestId('search-control-row').filter((row) => row.hasAttribute('data-active'));
     expect(activeRows).toHaveLength(1);
     expect(activeRows[0]).toHaveTextContent('$125.50');
@@ -175,15 +174,13 @@ describe('BillingPage', () => {
     expect(router.state.location.pathname).toBe('/Billing/Claims/all');
   });
 
-  test('closes the claim drawer on a click outside it, but not on another claim', async () => {
+  test('closes the claim drawer on a click on its overlay', async () => {
     const user = userEvent.setup();
     const { router } = setup(`/Billing/Claims/all/${claim.id}`);
 
     await screen.findByRole('dialog', { name: 'Claim' });
-    await user.click(screen.getAllByTestId('search-control-row')[0]);
-    expect(router.state.location.pathname).toMatch(/^\/Billing\/Claims\/all\/.+/);
-    await user.click(screen.getByRole('button', { name: 'Fields' }));
-    expect(router.state.location.pathname).toBe('/Billing/Claims/all');
+    await user.click(document.querySelector('.mantine-Drawer-overlay') as HTMLElement);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/Billing/Claims/all'));
   });
 
   test('adds a note to a claim', async () => {
@@ -232,14 +229,14 @@ describe('BillingPage', () => {
     await user.click(screen.getByRole('button', { name: 'Actions' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Bulk Apply' }));
     const dialog = await screen.findByRole('dialog', { name: 'Claim actions · 1 selected' });
-    expect(within(dialog).getByRole('radio', { name: /Write off/ })).toBeDisabled();
-    await user.click(within(dialog).getByRole('radio', { name: 'Refresh status' }));
+    expect(within(dialog).getByRole('radio', { name: /Write Off/ })).toBeDisabled();
+    await user.click(within(dialog).getByRole('radio', { name: 'Refresh Status' }));
     expect(await within(dialog).findByText('Not submitted to Candid')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Refresh status 0 claims' })).toBeDisabled();
+    expect(within(dialog).getByRole('button', { name: 'Refresh Status 0 claims' })).toBeDisabled();
 
-    await user.click(within(dialog).getByRole('radio', { name: 'Set follow-up' }));
+    await user.click(within(dialog).getByRole('radio', { name: 'Set Follow-Up' }));
     await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByRole('dialog', { name: 'Set follow-up' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Set Follow-Up' })).toBeInTheDocument();
   });
 
   test('loads the claims table once, not on every render', async () => {
@@ -310,10 +307,10 @@ describe('BillingPage', () => {
     setup('/Billing/Claims/all');
 
     const links = within(nav()).getAllByRole('link');
-    expect(links[0]).toHaveTextContent('All Open');
-    expect(links[1]).toHaveTextContent('All Issues');
-    await waitFor(() => expect(links[1]).toHaveTextContent('All Issues2'));
-    await user.click(links[1]);
+    expect(links[0]).toHaveTextContent('All Issues');
+    expect(links[1]).toHaveTextContent('All Open');
+    await waitFor(() => expect(links[0]).toHaveTextContent('All Issues2'));
+    await user.click(links[0]);
 
     const table = await screen.findByRole('table');
     await waitFor(() => expect(table.querySelectorAll('tbody tr')).toHaveLength(2));
@@ -444,32 +441,6 @@ describe('BillingPage', () => {
       await user.click(within(drawer).getByRole('button', { name: 'Close' }));
       expect(router.state.location.pathname).toBe('/Billing/Remits/partial');
     });
-  });
-
-  test("lists the payers' fee schedules in a modal from the header", async () => {
-    const schedule = await medplum.createResource<ChargeItemDefinition>({
-      resourceType: 'ChargeItemDefinition',
-      url: 'https://example.com/fee-schedules/aetna-2026',
-      title: 'Aetna 2026',
-      status: 'active',
-      meta: { tag: [FEE_SCHEDULE_TAG] },
-      useContext: [
-        { code: PAYER_USAGE_CONTEXT, valueReference: { reference: 'Organization/aetna', display: 'Aetna' } },
-      ],
-      effectivePeriod: { start: '2026-01-01', end: '2026-12-31' },
-    });
-    const user = userEvent.setup();
-    const { router } = setup('/Billing/Claims/all');
-
-    await user.click(screen.getByRole('button', { name: 'Fee Schedules' }));
-    const modal = await screen.findByRole('dialog', { name: 'Fee Schedules' });
-    const row = (await within(modal).findByText('Aetna 2026')).closest('tr') as HTMLElement;
-    expect(within(row).getByText('Aetna')).toBeInTheDocument();
-    expect(within(row).getByText('active')).toBeInTheDocument();
-    expect(within(row).getByText('1/1/2026 – 12/31/2026')).toBeInTheDocument();
-
-    await user.click(within(row).getByText('Aetna 2026'));
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/ChargeItemDefinition/${schedule.id}`));
   });
 
   test('sends the configuration gear and old settings links to the app settings', async () => {

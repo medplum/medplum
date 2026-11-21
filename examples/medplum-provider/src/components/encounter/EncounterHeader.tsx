@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, Button, Flex, Group, Menu, Modal, Paper, SegmentedControl, Stack, Text } from '@mantine/core';
+import { ActionIcon, Button, Divider, Group, Menu, Modal, Paper, Stack, Tabs, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
@@ -8,7 +8,9 @@ import { IconChevronDown, IconLock, IconLockOpen, IconShieldCheck } from '@table
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { ChartNoteStatus } from '../../types/encounter';
+import pillTabs from '../billing/PillTabs.module.css';
 import { EncounterCoverageEligibilityModal } from './EncounterCoverageEligibilityModal';
+import classes from './EncounterHeader.module.css';
 import { SignLockDialog } from './SignLockDialog';
 
 interface EncounterHeaderProps {
@@ -87,7 +89,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
-          <Menu.Divider />
         </>
       );
     }
@@ -98,7 +99,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
-          <Menu.Divider />
         </>
       );
     }
@@ -117,63 +117,91 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
 
   return (
     <>
-      <Paper shadow="sm" p={0}>
-        <Flex justify="space-between" align="center" gap="lg" p="lg">
-          <Stack gap={0} flex={1} miw={0} maw="40rem">
-            <Text fw={800} size="lg">
-              {encounter.type?.[0]?.text || 'Visit'}
-            </Text>
-            <Text fw={500} size="xs" c="dimmed">
-              {encounterDetail}
-            </Text>
-          </Stack>
-          <Group wrap="nowrap" flex="0 0 auto">
-            <Button
-              variant="light"
-              color="blue"
-              radius="xl"
-              size="sm"
-              leftSection={<IconShieldCheck size={16} />}
-              onClick={handleCheckEligibility}
-            >
-              Insurance Eligibility
-            </Button>
-            {status === 'cancelled' || status === 'finished' ? (
-              <>
-                {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
+      <Paper shadow="sm" p={0} className={classes.root}>
+        <Stack className={classes.header} gap="md">
+          <Group justify="space-between" wrap="nowrap" gap="sm" align="center">
+            <Stack gap={0} className={classes.title}>
+              <Text size="xl" fw={800} truncate>
+                {encounter.type?.[0]?.text || 'Visit'}
+              </Text>
+              <Text size="sm" c="gray.7" truncate>
+                {encounterDetail}
+              </Text>
+            </Stack>
+            <Group gap="xs" wrap="nowrap">
+              <Tooltip label="Insurance Eligibility" position="bottom" openDelay={500}>
+                <ActionIcon
+                  variant="transparent"
+                  radius="xl"
+                  size={32}
+                  className="outline-icon-button"
+                  aria-label="Insurance Eligibility"
+                  onClick={handleCheckEligibility}
+                >
+                  <IconShieldCheck size={16} />
+                </ActionIcon>
+              </Tooltip>
+              {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
+                <Tooltip label="Sign & Lock" position="bottom" openDelay={500}>
                   <ActionIcon
                     radius="xl"
                     variant="transparent"
                     size={32}
                     className="outline-icon-button"
+                    aria-label="Sign"
                     onClick={handleSign}
                   >
                     <IconLock size={16} />
                   </ActionIcon>
-                )}
-
-                {status === 'finished' && chartNoteStatus === ChartNoteStatus.Signed && (
+                </Tooltip>
+              )}
+              {status === 'finished' && chartNoteStatus === ChartNoteStatus.Signed && (
+                <Tooltip label="Sign and lock" position="bottom" openDelay={500}>
                   <ActionIcon
                     radius="xl"
                     variant="transparent"
                     size={32}
                     className="outline-icon-button"
+                    aria-label="Sign and lock"
                     onClick={handleSign}
                   >
                     <IconLockOpen size={16} />
                   </ActionIcon>
-                )}
-
-                {status === 'finished' && chartNoteStatus === ChartNoteStatus.SignedAndLocked && (
-                  <ActionIcon radius="xl" variant="filled" color="blue" onClick={handleSign}>
+                </Tooltip>
+              )}
+              {status === 'finished' && chartNoteStatus === ChartNoteStatus.SignedAndLocked && (
+                <Tooltip label="Signed and locked" position="bottom" openDelay={500}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="filled"
+                    color="blue"
+                    size={32}
+                    aria-label="Signed and locked"
+                    onClick={handleSign}
+                  >
                     <IconLock size={16} />
                   </ActionIcon>
-                )}
-
-                <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
-                  {getStatusDisplay(status)}
-                </Button>
-              </>
+                </Tooltip>
+              )}
+            </Group>
+          </Group>
+          <Divider />
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <Tabs
+              value={activeTab}
+              onChange={(value) => value && handleTabChange(value)}
+              variant="unstyled"
+              className={pillTabs.root}
+            >
+              <Tabs.List>
+                <Tabs.Tab value="notes">Notes & Tasks</Tabs.Tab>
+                <Tabs.Tab value="billing">Billing & Details</Tabs.Tab>
+              </Tabs.List>
+            </Tabs>
+            {status === 'cancelled' || status === 'finished' ? (
+              <Button component="div" variant="light" color={getStatusColor(status)} radius="xl" size="sm">
+                {getStatusDisplay(status)}
+              </Button>
             ) : (
               <Menu position="bottom-end" shadow="md">
                 <Menu.Target>
@@ -192,21 +220,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
               </Menu>
             )}
           </Group>
-        </Flex>
-
-        <Box px="md" pb="md">
-          <SegmentedControl
-            value={activeTab}
-            onChange={handleTabChange}
-            data={[
-              { label: 'Note & Tasks', value: 'notes' },
-              { label: 'Details & Billing', value: 'details' },
-            ]}
-            fullWidth
-            radius="md"
-            size="md"
-          />
-        </Box>
+        </Stack>
       </Paper>
 
       <Modal opened={confirmOpened} onClose={closeConfirm}>

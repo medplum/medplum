@@ -69,7 +69,7 @@ describe('NewClaimModal', () => {
     expect(encounter.id).toBeDefined();
   });
 
-  test('opens the existing claim of an encounter that has one', async () => {
+  test('makes a related claim for an encounter that already has one', async () => {
     const encounter = await createEncounter('2026-10-02T10:00:00Z');
     const existing = await medplum.createResource<Claim>({
       resourceType: 'Claim',
@@ -88,13 +88,13 @@ describe('NewClaimModal', () => {
 
     await pickPatient(user);
     const select = screen.getByRole('textbox', { name: 'Encounter' });
-    await waitFor(() => expect(select).toBeEnabled());
-    await user.click(select);
-    await user.click(await screen.findByText(/has a claim/));
-    expect(screen.getByText(/already has an open claim/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Open claim' }));
+    await waitFor(() => expect((select as HTMLInputElement).value).toMatch(/has a claim/));
+    expect(screen.getByText(/already has a claim/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Create related claim' }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
-    expect((onCreated.mock.calls[0][0] as WithId<Claim>).id).toBe(existing.id);
+    const created = onCreated.mock.calls[0][0] as WithId<Claim>;
+    expect(created.id).not.toBe(existing.id);
+    expect(created.related?.[0].claim?.reference).toBe(`Claim/${existing.id}`);
   });
 });

@@ -42,8 +42,8 @@ describe('claimQueues', () => {
     expect(rejected).toContainEqual({ code: 'status', operator: Operator.NOT, value: 'draft,cancelled' });
   });
 
-  test('All Issues sits right below All Open and lists the scanned claims by ID', () => {
-    expect(CLAIM_QUEUES.slice(0, 2).map((q) => q.label)).toEqual(['All Open', 'All Issues']);
+  test('All Issues sits right above All Open and lists the scanned claims by ID', () => {
+    expect(CLAIM_QUEUES.slice(0, 2).map((q) => q.label)).toEqual(['All Issues', 'All Open']);
     expect(getClaimQueue('issues').scanned).toBe(true);
     expect(getClaimQueue('issues').filters).toBeUndefined();
     expect(getClaimIdFilter(['a', 'b'])).toEqual({ code: '_id', operator: Operator.EQUALS, value: 'a,b' });

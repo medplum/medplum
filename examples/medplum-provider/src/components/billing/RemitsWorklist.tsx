@@ -252,7 +252,7 @@ function RemitSummaryRow(props: { readonly remit: PaymentReconciliation; readonl
   const status = getRemitStatus(remit);
   return (
     <Group justify="space-between" wrap="nowrap">
-      <Anchor component="button" type="button" onClick={onOpen} c="inherit" underline="never" data-worklist-row>
+      <Anchor component="button" type="button" onClick={onOpen} c="inherit" underline="never">
         <Group gap="md" wrap="nowrap">
           <Text size="sm">{formatDate(remit.paymentDate)}</Text>
           <Text size="sm" fw={600}>

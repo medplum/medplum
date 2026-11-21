@@ -5,7 +5,7 @@ import { isAuxClick } from '@medplum/react';
 import type { CSSProperties, JSX, ReactNode } from 'react';
 import classes from './BillingNavLink.module.css';
 
-/** A Mantine color, or two that the dot fades between. */
+/** A Mantine color (shade 6 unless given, as in `gray.4`), or two that the dot fades between. */
 export type DotColor = string | readonly [string, string];
 
 export interface BillingNavLinkProps {
@@ -77,7 +77,12 @@ export function BillingNavDivider(): JSX.Element {
 
 function getDotStyle(color: DotColor): CSSProperties {
   if (typeof color === 'string') {
-    return { backgroundColor: `var(--mantine-color-${color}-6)` };
+    return { backgroundColor: toCssColor(color) };
   }
-  return Object.fromEntries(color.map((c, i) => [`--dot-color-${i}`, `var(--mantine-color-${c}-6)`]));
+  return Object.fromEntries(color.map((c, i) => [`--dot-color-${i}`, toCssColor(c)]));
+}
+
+function toCssColor(color: string): string {
+  const [name, shade = '6'] = color.split('.');
+  return `var(--mantine-color-${name}-${shade})`;
 }

@@ -3,30 +3,35 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
+import { CPT } from '@medplum/core';
 import type {
   Bot,
   ChargeItem,
-  ChargeItemDefinition,
   Claim,
+  ClaimItem,
   ClaimResponse,
-  CodeableConcept,
   Coverage,
   Encounter,
   Location,
   Organization,
   Patient,
+  PaymentReconciliation,
   Practitioner,
+  Resource,
 } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CPT_COPYRIGHT_NOTICE, SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
+import { LINE_CHARGE_ITEM_URL } from '../../utils/claims';
 import * as operationsUtils from '../../utils/operations';
+import { pinClaimEncounter } from '../billing/claimConditions';
 import { BillingTab } from './BillingTab';
 
 vi.mock('@mantine/notifications', async () => {
@@ -96,7 +101,7 @@ const mockChargeItem: WithId<ChargeItem> = {
 const mockClaim: WithId<Claim> = {
   resourceType: 'Claim',
   id: 'claim-123',
-  status: 'active',
+  status: 'draft',
   type: { coding: [{ code: 'professional' }] },
   use: 'claim',
   created: new Date().toISOString(),
@@ -104,41 +109,63 @@ const mockClaim: WithId<Claim> = {
   insurance: [],
   patient: { reference: 'Patient/patient-123' },
   provider: { reference: 'Practitioner/practitioner-123' },
+  diagnosis: [{ sequence: 1, diagnosisCodeableConcept: { coding: [{ code: 'R51' }] } }],
 };
+
+// A claim line billing a charge item.
+const lineFor = (chargeItemId: string, code: string, sequence = 1): ClaimItem => ({
+  sequence,
+  productOrService: { coding: [{ system: CPT, code }] },
+  extension: [{ url: LINE_CHARGE_ITEM_URL, valueReference: { reference: `ChargeItem/${chargeItemId}` } }],
+});
 
 describe('BillingTab', () => {
   let medplum: MockClient;
+  // The claims generating the visit's claim finds: those the test seeds with mockSearchOne, unless it lists its own.
+  let openClaims: unknown[] = [];
 
   beforeEach(async () => {
+    openClaims = [];
     medplum = new MockClient();
     vi.clearAllMocks();
+    // The diagnoses section reads the visit to find its Conditions.
+    await medplum.createResource(mockEncounter);
     // BillingTab fetches its own charge items; default to a single CPT charge item.
     vi.spyOn(chargeItemsUtils, 'getChargeItemsForEncounter').mockResolvedValue([mockChargeItem]);
     // Both claim submission operations are deployed unless a test says otherwise.
     vi.spyOn(operationsUtils, 'isCustomOperationAvailable').mockResolvedValue(true);
   });
 
-  const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
-    return act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <BillingTab
-                patient={mockPatient}
-                encounter={mockEncounter}
-                setEncounter={vi.fn()}
-                practitioner={mockPractitioner}
-                setPractitioner={vi.fn()}
-                chartNoteStatus={ChartNoteStatus.SignedAndLocked}
-                {...props}
-              />
-            </MantineProvider>
-          </MedplumProvider>
-        </MemoryRouter>
-      );
+  type TabProps = Partial<Parameters<typeof BillingTab>[0]>;
+  const tree = (props: TabProps): JSX.Element => (
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <MantineProvider>
+          <Notifications />
+          <BillingTab
+            patient={mockPatient}
+            encounter={mockEncounter}
+            setEncounter={vi.fn()}
+            practitioner={mockPractitioner}
+            setPractitioner={vi.fn()}
+            chartNoteStatus={ChartNoteStatus.SignedAndLocked}
+            {...props}
+          />
+        </MantineProvider>
+      </MedplumProvider>
+    </MemoryRouter>
+  );
+
+  // Renders the tab, and returns a function that re-renders the same tab with other props, e.g. another section.
+  const setup = async (props: TabProps = {}): Promise<(next: TabProps) => Promise<void>> => {
+    let rerender: ((ui: JSX.Element) => void) | undefined;
+    await act(async () => {
+      rerender = render(tree(props)).rerender;
     });
+    return (next) =>
+      act(async () => {
+        rerender?.(tree({ ...props, ...next }));
+      });
   };
 
   // Override the charge items BillingTab loads for the encounter.
@@ -151,12 +178,50 @@ describe('BillingTab', () => {
   // go through searchOne. Dispatch by resource type so tests can seed each independently.
   const mockSearchResources = (resources: Record<string, unknown[]> = {}): void => {
     vi.spyOn(medplum, 'searchResources').mockImplementation(((resourceType: string) =>
-      Promise.resolve(resources[resourceType] ?? [])) as any);
+      Promise.resolve(resources[resourceType] ?? (resourceType === 'Claim' ? openClaims : []))) as any);
   };
 
   const mockSearchOne = (resources: { Claim?: WithId<Claim>; ClaimResponse?: WithId<ClaimResponse> } = {}): void => {
     vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) =>
       Promise.resolve(resources[resourceType as 'Claim' | 'ClaimResponse'])) as any);
+    openClaims = resources.Claim ? [resources.Claim] : [];
+    mockClaimSearch(() => [
+      ...(resources.Claim ? [resources.Claim] : []),
+      ...(resources.ClaimResponse ? [resources.ClaimResponse] : []),
+    ]);
+  };
+
+  // The claims section finds the visit's claims, with their responses, through Claim searches. Claims are pinned to
+  // the visit and responses point at the first claim, so they count as the visit's.
+  const mockClaimSearch = (get: () => Resource[]): void => {
+    const search = medplum.search.bind(medplum);
+    vi.spyOn(medplum, 'search').mockImplementation((async (resourceType: string, ...rest: unknown[]) => {
+      if (resourceType !== 'Claim') {
+        return (search as any)(resourceType, ...rest);
+      }
+      const resources = get();
+      const firstClaim = resources.find((r) => r.resourceType === 'Claim');
+      return {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: resources.map((r) => ({
+          resource:
+            r.resourceType === 'Claim'
+              ? pinClaimEncounter(r, { reference: 'Encounter/encounter-123' })
+              : { ...r, request: { reference: `Claim/${firstClaim?.id}` } },
+        })),
+      };
+    }) as any);
+  };
+
+  // Opens a claim's menu in the Claims section: the first row's unless another is given.
+  const openClaimMenu = async (user: ReturnType<typeof userEvent.setup>, index = 0): Promise<void> => {
+    await user.click((await screen.findAllByRole('button', { name: 'Claim actions' }))[index]);
+  };
+
+  const clickSubmitClaim = async (user: ReturnType<typeof userEvent.setup>, index = 0): Promise<void> => {
+    await openClaimMenu(user, index);
+    await user.click(await screen.findByRole('menuitem', { name: 'Submit Claim' }));
   };
 
   test('renders visit details panel', async () => {
@@ -178,6 +243,7 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
 
     await setup({
+      chartNoteStatus: ChartNoteStatus.Signed,
       encounter: {
         ...mockEncounter,
         diagnosis: [
@@ -188,25 +254,34 @@ describe('BillingTab', () => {
       },
     });
 
-    expect(screen.getByText('Diagnosis')).toBeInTheDocument();
-    expect(screen.getByText('Add Diagnosis')).toBeInTheDocument();
+    expect(screen.getByText('Diagnoses')).toBeInTheDocument();
+    expect(screen.getByText('Add a Diagnosis')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Headache')).toBeInTheDocument();
+      expect(screen.getByText(/Headache/)).toBeInTheDocument();
     });
   });
 
   test('renders condition list when there are NO conditions', async () => {
     await setup({
+      chartNoteStatus: ChartNoteStatus.Signed,
       encounter: {
         ...mockEncounter,
         diagnosis: [],
       },
     });
 
-    expect(screen.getByText('Diagnosis')).toBeInTheDocument();
-    expect(screen.getByText('Add Diagnosis')).toBeInTheDocument();
-    expect(screen.queryByText('Headache')).not.toBeInTheDocument();
+    expect(screen.getByText('Diagnoses')).toBeInTheDocument();
+    expect(screen.getByText('Add a Diagnosis')).toBeInTheDocument();
+    expect(screen.queryByText(/Headache/)).not.toBeInTheDocument();
+  });
+
+  test('locks the diagnoses with the signed note', async () => {
+    await setup({ encounter: { ...mockEncounter, diagnosis: [] } });
+
+    expect(screen.getByText('Diagnoses')).toBeInTheDocument();
+    expect(screen.getByText('No diagnoses were added before the note was locked.')).toBeInTheDocument();
+    expect(screen.queryByText('Add a Diagnosis')).not.toBeInTheDocument();
   });
 
   test('renders the AMA CPT copyright notice', async () => {
@@ -220,24 +295,92 @@ describe('BillingTab', () => {
     mockChargeItems([mockChargeItem]);
     await setup();
 
-    expect(screen.getByText('Charge Items')).toBeInTheDocument();
-    expect(screen.getByText('Add Charge Item')).toBeInTheDocument();
+    expect(await screen.findByText('Charge Items')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add a Charge Item' })).toBeInTheDocument();
   });
 
-  test('does not render export claim button when there are no CPT charge items', async () => {
-    mockChargeItems([]);
-    await setup();
+  test('hides the claims section until the visit is signed and locked', async () => {
+    await setup({ chartNoteStatus: ChartNoteStatus.Signed });
 
-    expect(screen.queryByText('Export Claim')).not.toBeInTheDocument();
+    expect(screen.queryByText('Claims')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Claim actions' })).not.toBeInTheDocument();
   });
 
-  test('renders export claim button when CPT charge items exist', async () => {
-    // The card is now gated on billable (CPT) charge items, not on a persisted claim.
+  test('makes a new claim from picked charge items, moving them off the open claim they were on', async () => {
+    const user = userEvent.setup();
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({
+      Claim: { ...mockClaim, item: [lineFor('charge-123', '99214'), lineFor('charge-456', '36415', 2)] },
+    });
+    const labLine: WithId<ChargeItem> = {
+      ...mockChargeItem,
+      id: 'charge-456',
+      code: { coding: [{ system: CPT, code: '36415', display: 'Venipuncture' }] },
+    };
+    mockChargeItems([mockChargeItem, labLine]);
+    const create = medplum.createResource.bind(medplum);
+    const createSpy = vi.spyOn(medplum, 'createResource').mockImplementation((async (resource: Resource) => {
+      const created = await create(resource);
+      openClaims.push(created);
+      return created;
+    }));
+    const updateSpy = vi.spyOn(medplum, 'updateResource');
+
     await setup();
+    await user.click(await screen.findByRole('button', { name: 'New Claim' }));
+    expect((await screen.findAllByText(/Moves from Claim/, {}, { timeout: 3000 })).length).toBe(2);
+    await user.click(await screen.findByRole('checkbox', { name: /36415/ }));
+    await user.click(screen.getByRole('button', { name: /^Create Claim/ }));
 
     await waitFor(() => {
-      expect(screen.getByText('Export Claim')).toBeInTheDocument();
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Claim',
+          item: [
+            expect.objectContaining({
+              productOrService: expect.objectContaining({ coding: [expect.objectContaining({ code: '36415' })] }),
+            }),
+          ],
+        })
+      );
     });
+    // The claim it was on keeps only the charge item that wasn't picked.
+    await waitFor(() => {
+      const from = updateSpy.mock.calls.map(([r]) => r as Claim).find((r) => r.id === 'claim-123');
+      expect(from?.item?.map((i) => i.productOrService.coding?.[0]?.code)).toEqual(['99214']);
+    });
+    // The new claim opens in the drawer over the visit.
+    expect(await screen.findByRole('dialog', { name: 'Claim' })).toBeInTheDocument();
+  });
+
+  test("calls out charge items that aren't on a claim, and adds them to an open one", async () => {
+    const user = userEvent.setup();
+    mockSearchResources({ Coverage: [mockCoverage] });
+    mockSearchOne({ Claim: { ...mockClaim, item: [] } });
+    mockChargeItems([mockChargeItem]);
+    const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (r) => r as any);
+
+    await setup();
+    expect(await screen.findByText("1 charge item isn't on a claim: 99214")).toBeInTheDocument();
+    expect(screen.getByText('Not on a claim')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add to Claim' }));
+    await user.click(await screen.findByRole('menuitem', { name: /^Claim/ }));
+
+    await waitFor(() => {
+      const target = updateSpy.mock.calls.map(([r]) => r as Claim).find((r) => r.id === 'claim-123');
+      expect(target?.item?.map((i) => i.productOrService.coding?.[0]?.code)).toEqual(['99214']);
+    });
+  });
+
+  test("shows the visit's claim before it is made, with its actions", async () => {
+    await setup();
+
+    expect(
+      await screen.findByText("Made from the visit's charge items and diagnoses when you export or submit it")
+    ).toBeInTheDocument();
+    expect(screen.getByText('Claim')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Claim actions' })).toBeInTheDocument();
   });
 
   test('shows export menu options when export button is clicked', async () => {
@@ -246,8 +389,7 @@ describe('BillingTab', () => {
     mockSearchOne({ Claim: mockClaim });
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
@@ -270,8 +412,7 @@ describe('BillingTab', () => {
 
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
@@ -293,10 +434,11 @@ describe('BillingTab', () => {
     mockSearchOne({ Claim: mockClaim });
     await setup();
 
-    const button = await screen.findByText('Submit Claim');
-    await waitFor(() => expect(button.closest('[data-disabled]')).toBeInTheDocument());
-    await userEvent.setup().hover(button);
-    expect(await screen.findByText('Claim submission is not enabled for this project')).toBeInTheDocument();
+    const user = userEvent.setup();
+    await openClaimMenu(user);
+
+    expect(await screen.findByRole('menuitem', { name: 'Submit Claim' })).toBeDisabled();
+    expect(screen.getByText('Claim submission is not enabled for this project')).toBeInTheDocument();
   });
 
   test('only offers the deployed claim submission operations', async () => {
@@ -313,27 +455,23 @@ describe('BillingTab', () => {
     await setup({
       encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
     });
-    await screen.findByText('Headache');
+    await screen.findByText(/Headache/);
 
     const user = userEvent.setup();
-    await user.click(await screen.findByText('Submit Claim'));
+    await clickSubmitClaim(user);
 
     expect(await screen.findByRole('button', { name: /Submit to Candid/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Submit to Stedi/i })).not.toBeInTheDocument();
   });
 
-  test('shows missing diagnosis notification when submitting without conditions', async () => {
+  test('shows missing diagnosis notification when submitting a claim without diagnoses', async () => {
     const user = userEvent.setup();
 
     mockSearchResources({ Coverage: [mockCoverage] });
-    mockSearchOne({ Claim: mockClaim });
+    mockSearchOne({ Claim: { ...mockClaim, diagnosis: undefined } });
     await setup();
 
-    await waitFor(() => {
-      expect(screen.getByText('Submit Claim')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Submit Claim'));
+    await clickSubmitClaim(user);
 
     await waitFor(() => {
       expect(vi.mocked(showNotification)).toHaveBeenCalledWith({
@@ -380,11 +518,10 @@ describe('BillingTab', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Headache')).toBeInTheDocument();
-      expect(screen.getByText('Submit Claim')).toBeInTheDocument();
+      expect(screen.getByText(/Headache/)).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('Submit Claim'));
+    await clickSubmitClaim(user);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Submit to Candid/i })).toBeInTheDocument();
@@ -414,7 +551,7 @@ describe('BillingTab', () => {
     await waitFor(() => {
       expect(medplum.searchResources).toHaveBeenCalledWith(
         'Coverage',
-        expect.stringContaining('patient=Patient/patient-123')
+        expect.objectContaining({ patient: 'Patient/patient-123', status: 'active' })
       );
     });
   });
@@ -425,8 +562,7 @@ describe('BillingTab', () => {
     mockSearchOne({ Claim: mockClaim });
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('EDI X12')).toBeInTheDocument();
@@ -449,8 +585,7 @@ describe('BillingTab', () => {
     mockSearchOne({ Claim: mockClaim });
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('NUCC Crosswalk CSV')).toBeInTheDocument();
@@ -467,177 +602,44 @@ describe('BillingTab', () => {
     });
   });
 
-  test('creates a charge item and updates the charge items list when added', async () => {
+  test("saves the visit's service lines as its charge items", async () => {
     const user = userEvent.setup();
+    mockSearchResources({ Coverage: [mockCoverage] });
+    const createSpy = vi
+      .spyOn(medplum, 'createResource')
+      .mockImplementation(async (r: any) => ({ ...r, id: r.resourceType === 'ChargeItem' ? 'charge-new' : 'x' }));
+    const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (r: any) => r);
+    const deleteSpy = vi.spyOn(medplum, 'deleteResource').mockResolvedValue(undefined as any);
 
-    const mockCptCode: CodeableConcept = {
-      coding: [
-        {
-          system: 'http://www.ama-assn.org/go/cpt',
-          code: '99214',
-          display: 'Office Visit Level 4',
-        },
-      ],
-    };
-    const mockDefinition: ChargeItemDefinition & { id: string } = {
-      resourceType: 'ChargeItemDefinition',
-      id: 'def-123',
-      status: 'active',
-      url: 'http://example.com/charge-item-def',
-      title: 'Test Definition',
-    };
-    const newChargeItem: ChargeItem & { id: string } = {
-      resourceType: 'ChargeItem',
-      id: 'charge-new',
-      status: 'planned',
-      subject: { reference: 'Patient/patient-123' },
-      code: mockCptCode,
-    };
-    const appliedChargeItem: ChargeItem & { id: string } = {
-      ...newChargeItem,
-      priceOverride: { value: 200, currency: 'USD' },
-    };
+    await setup();
+    expect(await screen.findByText('Charge Items')).toBeInTheDocument();
 
-    // Mock valueSetExpand for CPT code search
-    medplum.valueSetExpand = vi.fn().mockResolvedValue({
-      resourceType: 'ValueSet',
-      expansion: {
-        contains: [
-          {
-            system: 'http://www.ama-assn.org/go/cpt',
-            code: '99214',
-            display: 'Office Visit Level 4',
-          },
-        ],
-      },
-    });
-
-    // Mock searchResources for ChargeItemDefinition search (Claim/Coverage fetches return empty)
-    mockSearchResources({ ChargeItemDefinition: [mockDefinition], Coverage: [mockCoverage] });
-    mockChargeItems([]);
-    vi.spyOn(medplum, 'createResource').mockResolvedValue(newChargeItem);
-    vi.spyOn(chargeItemsUtils, 'applyChargeItemDefinition').mockResolvedValue(appliedChargeItem);
-
-    await setup({
-      encounter: mockEncounter,
-    });
-
-    // Open modal
-    await user.click(screen.getByText('Add Charge Item'));
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-
-    // Find CPT Code input
-    const cptInputs = screen.getAllByRole('searchbox');
-    const cptInput = cptInputs.find((input) => {
-      const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-      return label?.textContent?.includes('CPT Code');
-    }) as HTMLInputElement;
-
-    expect(cptInput).toBeDefined();
-
-    // Type in CPT code input
-    await user.type(cptInput, '99214');
-
-    // Wait for the search result to render before selecting
-    await screen.findByText('Office Visit Level 4', undefined, { timeout: 3000 });
-
-    // Select the CPT code option
-    await act(async () => {
-      fireEvent.keyDown(cptInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      fireEvent.keyDown(cptInput, { key: 'Enter', code: 'Enter' });
-    });
-
-    // Wait for CPT code to be selected
+    // A new line is saved as a charge item once it has a code.
+    await user.click(screen.getByRole('button', { name: 'Add a Charge Item' }));
+    await user.type(screen.getByPlaceholderText('Search CPT codes'), 'Test');
+    await user.click(await screen.findByText('Test Display 2'));
     await waitFor(
-      () => {
-        const selectedItems = document.querySelector('[data-testid="selected-items"]');
-        const hasCode =
-          selectedItems?.textContent?.includes('99214') || selectedItems?.textContent?.includes('Office Visit Level 4');
-        return hasCode === true;
-      },
-      { timeout: 3000 }
-    );
-
-    // Find Charge Item Definition input
-    const definitionInputs = screen.getAllByRole('searchbox');
-    const definitionInput = definitionInputs.find((input) => {
-      const placeholder = (input as HTMLInputElement).placeholder;
-      return placeholder?.toLowerCase().includes('charge item definition');
-    }) as HTMLInputElement;
-
-    expect(definitionInput).toBeDefined();
-
-    // Type in definition input
-    await user.type(definitionInput, 'Test');
-
-    // Wait for searchResources to be called
-    await waitFor(
-      () => {
-        expect(medplum.searchResources).toHaveBeenCalledWith(
-          'ChargeItemDefinition',
-          expect.any(URLSearchParams),
-          expect.any(Object)
-        );
-      },
-      { timeout: 3000 }
-    );
-
-    // Select the definition option
-    await act(async () => {
-      fireEvent.keyDown(definitionInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      fireEvent.keyDown(definitionInput, { key: 'Enter', code: 'Enter' });
-    });
-
-    // Wait for definition to be selected and button to be enabled
-    await waitFor(
-      () => {
-        const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
-        const submitButton = addButtons.find((btn) => {
-          const htmlBtn = btn as HTMLButtonElement;
-          return htmlBtn.type === 'button' && !htmlBtn.disabled;
-        });
-        return submitButton !== undefined;
-      },
-      { timeout: 5000 }
-    );
-
-    // Submit the form
-    const addButtons = screen.getAllByRole('button', { name: 'Add Charge Item' });
-    const submitButton = addButtons.find((btn) => {
-      const htmlBtn = btn as HTMLButtonElement;
-      return htmlBtn.type === 'button' && !htmlBtn.disabled;
-    });
-
-    expect(submitButton).toBeDefined();
-    if (submitButton) {
-      await user.click(submitButton);
-
-      // Verify charge item was created and the list (now BillingTab-local state) was updated.
-      await waitFor(() => {
-        expect(medplum.createResource).toHaveBeenCalledWith(
+      () =>
+        expect(createSpy).toHaveBeenCalledWith(
           expect.objectContaining({
             resourceType: 'ChargeItem',
-            status: 'planned',
-            code: mockCptCode,
-            definitionCanonical: ['http://example.com/charge-item-def'],
+            context: { reference: 'Encounter/encounter-123' },
+            code: expect.objectContaining({ coding: [expect.objectContaining({ code: 'test-code-2' })] }),
+            quantity: { value: 1 },
           })
-        );
-        expect(chargeItemsUtils.applyChargeItemDefinition).toHaveBeenCalled();
-      });
+        ),
+      { timeout: SAVE_TIMEOUT_MS + 2000 }
+    );
 
-      // The added charge item appears in the list, so the totals card renders (it only shows when
-      // there is at least one charge item).
-      await waitFor(() => {
-        expect(screen.getByText('Total Calculated Price to Bill')).toBeInTheDocument();
-      });
-
-      // The claim is no longer created or updated when a charge item is added; it is only
-      // persisted at export/submit time.
-    }
-  });
+    // Removing the first line deletes its charge item; the existing one is renumbered, not recreated.
+    await user.click(screen.getByRole('button', { name: 'Move line 1' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Remove' }));
+    await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith('ChargeItem', 'charge-123'), {
+      timeout: SAVE_TIMEOUT_MS + 2000,
+    });
+    expect(createSpy.mock.calls.filter(([r]) => r.resourceType === 'ChargeItem')).toHaveLength(1);
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 'charge-new' }));
+  }, 15000);
 
   test('updates the encounter and resolves the practitioner when the practitioner is changed', async () => {
     const setEncounter = vi.fn();
@@ -692,8 +694,9 @@ describe('BillingTab', () => {
     vi.spyOn(medplum, 'patchResource').mockResolvedValue(updatedEncounter as any);
     vi.spyOn(medplum, 'readReference').mockResolvedValue(mockPractitioner2 as any);
 
-    // Setup with charge items but no claim initially
+    // Setup with charge items but no claim initially, before the note is locked
     await setup({
+      chartNoteStatus: ChartNoteStatus.Signed,
       setEncounter,
       setPractitioner,
       onEncounterSaved,
@@ -788,8 +791,7 @@ describe('BillingTab', () => {
     // No persisted claim yet; CPT charge items (default) drive the card.
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
@@ -852,7 +854,7 @@ describe('BillingTab', () => {
     expect(await screen.findByText('Test Medical Practice')).toBeInTheDocument();
     expect(document.querySelector('.mantine-Pill-remove')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Export Claim'));
+    await openClaimMenu(user);
     await user.click(await screen.findByText('CMS 1500 Form'));
 
     // The generated claim bills through the role's organization instead of the practitioner.
@@ -865,64 +867,6 @@ describe('BillingTab', () => {
       );
     });
 
-    windowOpenSpy.mockRestore();
-  });
-
-  test('re-fetches the existing claim at persist time and updates it instead of creating a duplicate', async () => {
-    const user = userEvent.setup();
-
-    mockSearchResources({ Coverage: [mockCoverage] });
-
-    // No claim is in local state on mount (first lookup returns nothing), but one already exists by
-    // the time we export (second lookup), so generateClaim must update it rather than create another.
-    let claimLookups = 0;
-    vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string) => {
-      if (resourceType === 'Claim') {
-        claimLookups += 1;
-        return Promise.resolve(claimLookups === 1 ? undefined : mockClaim);
-      }
-      return Promise.resolve(undefined);
-    }) as any);
-
-    const updateSpy = vi.spyOn(medplum, 'updateResource');
-    const createSpy = vi.spyOn(medplum, 'createResource');
-    vi.spyOn(medplum, 'post').mockResolvedValue({
-      resourceType: 'Media',
-      content: { url: 'https://example.com/claim.pdf' },
-    });
-    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-
-    await setup();
-
-    await user.click(await screen.findByText('Export Claim'));
-    await user.click(await screen.findByText('CMS 1500 Form'));
-
-    await waitFor(() => {
-      // Pulled the existing claim and updated it (matched by its id), with no duplicate create.
-      expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Claim', id: 'claim-123' }));
-    });
-    expect(createSpy).not.toHaveBeenCalled();
-
-    windowOpenSpy.mockRestore();
-  });
-
-  test('clears a stale service facility from the stored claim when the encounter has no location', async () => {
-    const user = userEvent.setup();
-    mockSearchResources({ Coverage: [mockCoverage] });
-    mockSearchOne({ Claim: { ...mockClaim, facility: { reference: 'Location/stale' } } });
-    const updateSpy = vi.spyOn(medplum, 'updateResource');
-    vi.spyOn(medplum, 'post').mockResolvedValue({
-      resourceType: 'Media',
-      content: { url: 'https://example.com/c.pdf' },
-    });
-    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-
-    await setup();
-    await user.click(await screen.findByText('Export Claim'));
-    await user.click(await screen.findByText('CMS 1500 Form'));
-
-    await waitFor(() => expect(updateSpy).toHaveBeenCalled());
-    expect(updateSpy.mock.calls[0][0]).toEqual(expect.objectContaining({ id: 'claim-123', facility: undefined }));
     windowOpenSpy.mockRestore();
   });
 
@@ -982,8 +926,7 @@ describe('BillingTab', () => {
 
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
@@ -991,9 +934,7 @@ describe('BillingTab', () => {
 
     await user.click(screen.getByText('CMS 1500 Form'));
 
-    await waitFor(() => {
-      expect(screen.getByText('Failed to download PDF')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Failed to download PDF', {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
   test('creates self-pay coverage when no coverage exists', async () => {
@@ -1019,8 +960,7 @@ describe('BillingTab', () => {
 
     await setup();
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
@@ -1082,9 +1022,8 @@ describe('BillingTab', () => {
         encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
       });
 
-      await waitFor(() => expect(screen.getByText('Submit Claim')).toBeInTheDocument());
-
-      await user.click(screen.getByText('Submit Claim'));
+      await screen.findByText(/Headache/);
+      await clickSubmitClaim(user);
 
       await waitFor(() => expect(screen.getByRole('button', { name: /Submit to Candid/i })).toBeInTheDocument());
 
@@ -1115,7 +1054,7 @@ describe('BillingTab', () => {
       const mockCondition = {
         resourceType: 'Condition' as const,
         id: 'condition-1',
-        code: { text: 'Headache' },
+        code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'R51', display: 'Headache' }] },
       };
 
       mockSearchResources({ Coverage: [mockCoverage] });
@@ -1133,9 +1072,7 @@ describe('BillingTab', () => {
         encounter: { ...mockEncounter, diagnosis: [{ condition: { reference: 'Condition/condition-1' } }] },
       });
 
-      await waitFor(() => expect(screen.getByText('Submit Claim')).toBeInTheDocument());
-
-      await user.click(screen.getByText('Submit Claim'));
+      await clickSubmitClaim(user);
 
       await waitFor(() => {
         expect(createSpy).toHaveBeenCalledWith(
@@ -1166,32 +1103,23 @@ describe('BillingTab', () => {
       total: [{ category: { coding: [{ code: 'submitted' }] }, amount: { value: 100 } }],
     };
 
-    const candidUrlBot: WithId<Bot> = {
-      resourceType: 'Bot',
-      id: 'candid-url-bot',
-      identifier: [{ system: 'https://medplum.com/integrations/candid-health', value: 'get-candid-claim-portal-url' }],
-    };
-
     const getEncountersBot: WithId<Bot> = {
       resourceType: 'Bot',
       id: 'get-encounter-bot',
       identifier: [{ system: 'https://medplum.com/integrations/candid-health', value: 'get-encounter' }],
     };
 
-    const candidClaimUrl = 'https://app-staging.joincandidhealth.com/claims/candid-encounter-123';
-
     // A claim that has been submitted to Candid: the submit operation writes the Candid encounter
     // id back onto the Claim, which is what triggers the refresh on load.
+    const submittedClaim: WithId<Claim> = { ...mockClaim, status: 'active' };
     const candidClaim: WithId<Claim> = {
-      ...mockClaim,
+      ...submittedClaim,
       identifier: [{ system: 'https://candidhealth.com/encounter-id', value: 'candid-encounter-123' }],
     };
 
-    // The Candid card requires BillingTab to find an existing Claim (searchOne), its ClaimResponse
-    // (searchOne), and the deployed bots (searchOne on Bot, dispatched by identifier). BillingTab
-    // executes get-encounter with the Claim's Candid encounter id before fetching the ClaimResponse,
-    // and ClaimSubmittedPanel executes the URL bot to resolve the portal URL, so stub executeBot per bot.
-    const mockSearchOneWithClaimResponse = (
+    // The claims section finds the claim and its ClaimResponse through Claim searches, and the get-encounter bot through
+    // searchOne on Bot. BillingTab runs get-encounter with the claim's Candid encounter id, then searches again.
+    const mockClaimWithResponse = (
       claimResponse: WithId<ClaimResponse>,
       options?: {
         claim?: WithId<Claim>;
@@ -1201,44 +1129,21 @@ describe('BillingTab', () => {
     ): void => {
       let currentClaimResponse = claimResponse;
       vi.spyOn(medplum, 'searchOne').mockImplementation(((resourceType: string, query?: Record<string, string>) => {
-        if (resourceType === 'Claim') {
-          return Promise.resolve(options?.claim ?? mockClaim);
+        if (resourceType === 'Bot' && String(query?.identifier ?? '').endsWith('get-encounter')) {
+          return Promise.resolve(options?.getEncounterDeployed ? getEncountersBot : undefined);
         }
-        if (resourceType === 'Bot') {
-          const identifier = String(query?.identifier ?? '');
-          if (identifier.endsWith('get-candid-claim-portal-url')) {
-            return Promise.resolve(candidUrlBot);
-          }
-          if (identifier.endsWith('get-encounter')) {
-            return Promise.resolve(options?.getEncounterDeployed ? getEncountersBot : undefined);
-          }
-          return Promise.resolve(undefined);
-        }
-        return Promise.resolve(currentClaimResponse);
+        return Promise.resolve(resourceType === 'Claim' ? (options?.claim ?? submittedClaim) : undefined);
       }) as any);
-      vi.spyOn(medplum, 'executeBot').mockImplementation((async (botId: string) => {
-        if (botId === getEncountersBot.id) {
-          currentClaimResponse = options?.refreshedClaimResponse ?? currentClaimResponse;
-          return {};
-        }
-        return { encounterId: 'candid-encounter-123', url: candidClaimUrl };
+      mockClaimSearch(() => [options?.claim ?? submittedClaim, currentClaimResponse]);
+      vi.spyOn(medplum, 'executeBot').mockImplementation((async () => {
+        currentClaimResponse = options?.refreshedClaimResponse ?? currentClaimResponse;
+        return {};
       }) as typeof medplum.executeBot);
     };
 
-    test('shows Candid claim card when a ClaimResponse exists', async () => {
+    test('shows the claim with the status from its ClaimResponse', async () => {
       mockSearchResources({ Coverage: [mockCoverage] });
-      mockSearchOneWithClaimResponse(candidClaimResponse);
-
-      await setup();
-
-      await waitFor(() => {
-        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
-        expect(screen.getByText('View Claim on Candid')).toBeInTheDocument();
-      });
-    });
-
-    test('displays status badge and submission date from ClaimResponse', async () => {
-      mockSearchOneWithClaimResponse({
+      mockClaimWithResponse({
         ...candidClaimResponse,
         extension: [
           {
@@ -1252,21 +1157,11 @@ describe('BillingTab', () => {
 
       await setup();
 
-      await waitFor(() => {
-        expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
-        expect(screen.getByText(/Submitted on/)).toBeInTheDocument();
-      });
-    });
-
-    test('hides submission date when ClaimResponse has no created', async () => {
-      mockSearchOneWithClaimResponse({ ...candidClaimResponse, created: '' });
-
-      await setup();
-
-      await waitFor(() => {
-        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
-      });
-      expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
+      expect((await screen.findByText('Awaiting payer')).closest('[title]')).toHaveAttribute(
+        'title',
+        'Waiting For Provider'
+      );
+      expect(screen.getByText(/^Claim ·/)).toBeInTheDocument();
     });
 
     test('executes the get-encounter bot to refresh a Candid ClaimResponse on load', async () => {
@@ -1276,7 +1171,7 @@ describe('BillingTab', () => {
       };
 
       mockSearchResources({ Coverage: [mockCoverage] });
-      mockSearchOneWithClaimResponse(candidClaimResponse, {
+      mockClaimWithResponse(candidClaimResponse, {
         claim: candidClaim,
         getEncounterDeployed: true,
         refreshedClaimResponse,
@@ -1284,18 +1179,17 @@ describe('BillingTab', () => {
 
       await setup();
 
-      // The bot ran with the claim's Candid encounter ID as input, and the (already refreshed)
-      // ClaimResponse was fetched once.
+      // The bot ran with the claim's Candid encounter ID as input, then the claims were searched again.
       await waitFor(() => {
         expect(medplum.executeBot).toHaveBeenCalledWith(
           'get-encounter-bot',
           { encounterId: 'candid-encounter-123' },
           'application/json'
         );
-        expect(screen.getByText('$150')).toBeInTheDocument();
       });
-      const claimResponseSearches = vi.mocked(medplum.searchOne).mock.calls.filter((c) => c[0] === 'ClaimResponse');
-      expect(claimResponseSearches).toHaveLength(1);
+      await screen.findAllByText(/^Claim ·/);
+      const claimSearches = vi.mocked(medplum.search).mock.calls.filter((c) => c[0] === 'Claim');
+      expect(claimSearches.length).toBeGreaterThan(2);
     });
 
     test('does not run get-encounter when the claim was not submitted to Candid', async () => {
@@ -1303,49 +1197,187 @@ describe('BillingTab', () => {
 
       mockSearchResources({ Coverage: [mockCoverage] });
       // The claim (default mockClaim) has no Candid encounter id, so there is nothing to refresh.
-      mockSearchOneWithClaimResponse(nonCandidClaimResponse, { getEncounterDeployed: true });
+      mockClaimWithResponse(nonCandidClaimResponse, { getEncounterDeployed: true });
 
       await setup();
 
-      await waitFor(() => {
-        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
-      });
-      // Neither the refresh bot nor the Candid URL bot runs for a non-Candid claim.
+      await screen.findAllByText(/^Claim ·/);
+      // The refresh bot doesn't run for a non-Candid claim.
       expect(medplum.executeBot).not.toHaveBeenCalled();
     });
 
     test('skips the refresh when the get-encounter bot is not deployed', async () => {
       mockSearchResources({ Coverage: [mockCoverage] });
-      mockSearchOneWithClaimResponse(candidClaimResponse, { claim: candidClaim });
+      mockClaimWithResponse(candidClaimResponse, { claim: candidClaim });
 
       await setup();
 
-      await waitFor(() => {
-        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
-      });
+      await screen.findAllByText(/^Claim ·/);
       expect(medplum.executeBot).not.toHaveBeenCalledWith('get-encounter-bot', expect.anything(), expect.anything());
     });
+  });
 
-    test('View Claim on Candid button opens the correct Candid URL', async () => {
-      const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
-      const user = userEvent.setup();
+  describe('related claims', () => {
+    const relatedClaim: WithId<Claim> = {
+      ...mockClaim,
+      id: 'related-123',
+      created: new Date(Date.now() + 1000).toISOString(),
+      related: [{ claim: { reference: 'Claim/claim-123' } }],
+      diagnosis: [
+        {
+          sequence: 1,
+          diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'R51' }] },
+        },
+      ],
+      item: [{ sequence: 1, productOrService: { coding: [{ code: '99214' }] }, net: { value: 80 } }],
+      total: { value: 80, currency: 'USD' },
+    };
+    const remit: WithId<PaymentReconciliation> = {
+      resourceType: 'PaymentReconciliation',
+      id: 'remit-1',
+      status: 'active',
+      created: '2026-11-01',
+      paymentDate: '2026-11-01',
+      paymentAmount: { value: 60, currency: 'USD' },
+      detail: [
+        { type: { coding: [{ code: 'payment' }] }, request: { reference: 'Claim/related-123' }, amount: { value: 60 } },
+      ],
+    };
 
-      mockSearchOneWithClaimResponse(candidClaimResponse);
+    test('lists the visit claim and its related claims, with links to each claim and its remittances', async () => {
+      mockSearchResources({ Coverage: [mockCoverage], PaymentReconciliation: [remit] });
+      mockClaimSearch(() => [mockClaim, relatedClaim]);
 
       await setup();
 
-      await waitFor(() => {
-        expect(screen.getByText('View Claim on Candid')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText('View Claim on Candid'));
-
-      expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://app-staging.joincandidhealth.com/claims/candid-encounter-123',
-        '_blank'
+      const [visitLink, relatedLink] = await screen.findAllByText(/^Claim ·/);
+      expect(visitLink.closest('a')).toHaveAttribute(
+        'href',
+        '/Billing/Claims/all/claim-123'
+      );
+      expect(relatedLink.closest('a')).toHaveAttribute(
+        'href',
+        '/Billing/Claims/all/related-123'
+      );
+      expect(screen.getByText('99214 · $80.00')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Remit · .* · \$60\.00/ })).toHaveAttribute(
+        'href',
+        '/Billing/Remits/all/remit-1'
       );
 
+      // Claims open in a drawer over the visit, from the row or its menu, rather than in Billing.
+      const user = userEvent.setup();
+      await user.click(relatedLink);
+      expect(await screen.findByRole('dialog', { name: 'Claim' })).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Claim' })).not.toBeInTheDocument());
+
+      await openClaimMenu(user, 1);
+      const items = await screen.findAllByRole('menuitem');
+      expect(items.find((i) => i.textContent === 'Open in Billing')).toHaveAttribute(
+        'href',
+        '/Billing/Claims/all/related-123'
+      );
+      await user.click(items.find((i) => i.textContent === 'Open Claim') as HTMLElement);
+      expect(await screen.findByRole('dialog', { name: 'Claim' })).toBeInTheDocument();
+    });
+
+    test('discards a claim that was never submitted, after confirming', async () => {
+      const picked = relatedClaim;
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockClaimSearch(() => [mockClaim, picked]);
+      const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (r) => r as any);
+
+      await setup();
+      const user = userEvent.setup();
+      await openClaimMenu(user, 1);
+      await user.click(await screen.findByRole('menuitem', { name: 'Discard Claim' }));
+      await user.click(await screen.findByRole('button', { name: 'Discard Claim' }));
+
+      await waitFor(() =>
+        expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 'related-123', status: 'entered-in-error' }))
+      );
+    });
+
+    test('exports a related claim as it is, without rebuilding it from the visit', async () => {
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockClaimSearch(() => [mockClaim, relatedClaim]);
+      const updateSpy = vi.spyOn(medplum, 'updateResource');
+      const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue({
+        resourceType: 'Media',
+        content: { url: 'https://example.com/related.pdf' },
+      });
+      const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+      await setup();
+      const user = userEvent.setup();
+      await openClaimMenu(user, 1);
+      await user.click(await screen.findByText('CMS 1500 Form'));
+
+      await waitFor(() => expect(windowOpenSpy).toHaveBeenCalledWith('https://example.com/related.pdf', '_blank'));
+      expect(postSpy.mock.calls[0][1]).toEqual(
+        expect.objectContaining({
+          parameter: [{ name: 'resource', resource: expect.objectContaining({ id: 'related-123' }) }],
+        })
+      );
+      expect(updateSpy).not.toHaveBeenCalled();
       windowOpenSpy.mockRestore();
+    });
+
+    test('submits a related claim with the chosen coverage', async () => {
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockClaimSearch(() => [mockClaim, relatedClaim]);
+      const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (r) => r as any);
+      const postSpy = vi.spyOn(medplum, 'post').mockResolvedValue({ resourceType: 'ClaimResponse', id: 'cr-2' });
+
+      await setup();
+      const user = userEvent.setup();
+      // The related claim has its own diagnoses, so the visit having none doesn't stop it.
+      await clickSubmitClaim(user, 1);
+      await user.click(await screen.findByRole('button', { name: /Submit to Candid/i }));
+
+      await waitFor(() => {
+        expect(updateSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: 'related-123',
+            insurance: [
+              expect.objectContaining({
+                sequence: 1,
+                focal: true,
+                coverage: expect.objectContaining({ reference: 'Coverage/coverage-123' }),
+              }),
+            ],
+          })
+        );
+        expect(
+          postSpy.mock.calls.find((c) => c[0]?.toString().includes('/Claim/related-123/$candid-submit-claim'))
+        ).toBeDefined();
+      });
+    });
+
+    test("won't submit a related claim with no diagnoses", async () => {
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockClaimSearch(() => [mockClaim, { ...relatedClaim, diagnosis: undefined }]);
+
+      await setup();
+      await clickSubmitClaim(userEvent.setup(), 1);
+
+      await waitFor(() =>
+        expect(vi.mocked(showNotification)).toHaveBeenCalledWith(
+          expect.objectContaining({ title: 'Missing Diagnosis' })
+        )
+      );
+    });
+
+    test("won't submit a claim that has already gone out", async () => {
+      mockSearchResources({ Coverage: [mockCoverage] });
+      mockClaimSearch(() => [{ ...mockClaim, status: 'active' }]);
+
+      await setup();
+      await openClaimMenu(userEvent.setup());
+
+      expect(await screen.findByRole('menuitem', { name: 'Submit Claim' })).toBeDisabled();
+      expect(screen.getByText('This claim has already been submitted')).toBeInTheDocument();
     });
   });
 
@@ -1389,11 +1421,10 @@ describe('BillingTab', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Headache')).toBeInTheDocument();
+      expect(screen.getByText(/Headache/)).toBeInTheDocument();
     });
 
-    const exportButton = screen.getByText('Export Claim');
-    await user.click(exportButton);
+    await openClaimMenu(user);
 
     await waitFor(() => {
       expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();

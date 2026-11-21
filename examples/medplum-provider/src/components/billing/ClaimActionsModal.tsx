@@ -21,7 +21,7 @@ export interface ClaimActionsModalProps {
   readonly onClose: () => void;
   /** Called after an action ran, so lists can reload. */
   readonly onDone: () => void;
-  /** Called with the eligible claims when the user continues with Set follow-up. */
+  /** Called with the eligible claims when the user continues with Set Follow-Up. */
   readonly onFollowUp: (claimIds: string[]) => void;
 }
 

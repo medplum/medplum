@@ -5,7 +5,9 @@ import { CPT, createReference } from '@medplum/core';
 import type { Condition, Coverage, Encounter } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test } from 'vitest';
-import { createClaimFromEncounter, findEncounterClaim } from './newClaim';
+import { getClaimEncounter } from './claimConditions';
+import { finishClaimEdit } from './claimEditing';
+import { createClaimFromEncounter, createRelatedClaim, findEncounterClaim } from './newClaim';
 
 describe('newClaim', () => {
   let medplum: MockClient;
@@ -61,6 +63,39 @@ describe('newClaim', () => {
     });
     expect(claim.item?.[0].productOrService?.coding?.[0].code).toBe('99213');
     expect((await findEncounterClaim(medplum, encounter))?.id).toBe(claim.id);
+  });
+
+  test('makes a related claim that shares the visit, leaving the visit claim as it is', async () => {
+    const encounter = await createEncounter();
+    await medplum.createResource({
+      resourceType: 'ChargeItem',
+      status: 'billable',
+      subject: createReference(HomerSimpson),
+      context: createReference(encounter),
+      code: { coding: [{ system: CPT, code: '99213', display: 'Office visit' }] },
+    });
+    const visitClaim = await createClaimFromEncounter(medplum, encounter);
+    const related = await createRelatedClaim(medplum, visitClaim);
+
+    expect(related.id).not.toBe(visitClaim.id);
+    expect(related).toMatchObject({
+      status: 'draft',
+      provider: visitClaim.provider,
+      insurance: visitClaim.insurance,
+      diagnosis: visitClaim.diagnosis,
+      related: [{ claim: { reference: `Claim/${visitClaim.id}` }, relationship: { coding: [{ code: 'associated' }] } }],
+    });
+    expect(related.item ?? []).toHaveLength(0);
+    expect(getClaimEncounter(related)?.reference).toBe(`Encounter/${encounter.id}`);
+    expect((await findEncounterClaim(medplum, encounter))?.id).toBe(visitClaim.id);
+  });
+
+  test('keeps a claim on its visit after its last line is removed', async () => {
+    const encounter = await createEncounter();
+    const claim = await createClaimFromEncounter(medplum, encounter);
+    const edited = finishClaimEdit({ ...claim, item: [{ sequence: 1, productOrService: {} }] });
+    expect(edited.item).toEqual([]);
+    expect(getClaimEncounter(edited)?.reference).toBe(`Encounter/${encounter.id}`);
   });
 
   test('bills under the signed-in practitioner when the encounter has none', async () => {

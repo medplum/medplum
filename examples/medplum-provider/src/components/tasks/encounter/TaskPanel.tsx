@@ -11,6 +11,7 @@ import { IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../../config/constants';
+import sectionClasses from '../../billing/DetailSection.module.css';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskServiceRequest } from './TaskServiceRequest';
@@ -88,7 +89,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   };
 
   return (
-    <Card withBorder shadow="sm" p={0}>
+    <Card withBorder shadow="sm" p={0} className={sectionClasses.card}>
       <Stack gap="xs">
         <Stack p="md">
           {task.focus?.reference?.startsWith('Questionnaire/') && (

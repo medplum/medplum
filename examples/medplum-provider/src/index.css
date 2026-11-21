@@ -66,3 +66,8 @@
 .grecaptcha-badge {
   visibility: hidden;
 }
+
+/* Every button's leading icon sits close to its label. */
+.mantine-Button-section[data-position='left'] {
+  margin-inline-end: calc(var(--mantine-spacing-xs) * 0.5);
+}

@@ -1,34 +1,36 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Card, Flex, Group, Menu, Skeleton, Stack, Tooltip } from '@mantine/core';
-import { useDebouncedCallback } from '@mantine/hooks';
+import { Group, Stack, Text } from '@mantine/core';
+import { useDebouncedCallback, useViewportSize } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import type { PatchOperation, WithId } from '@medplum/core';
-import { CPT, createReference, getReferenceString } from '@medplum/core';
+import { CPT, createReference, formatDate, formatMoney } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
-  ClaimResponse,
   Condition,
   Coverage,
   Encounter,
-  EncounterDiagnosis,
+  EncounterLocation,
+  EncounterParticipant,
+  Extension,
   Media,
   Organization,
   Patient,
+  PaymentReconciliation,
   Practitioner,
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCircleOff } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { ChartNoteStatus } from '../../types/encounter';
-import { BILLING_ORGANIZATION_IDENTIFIER } from '../../utils/billing';
 import { refreshCandidClaimResponse } from '../../utils/candid';
 import { getChargeItemsForEncounter } from '../../utils/chargeitems';
-import { buildClaimFromEncounter } from '../../utils/claims';
+import { getClaimChargeItemIds } from '../../utils/claims';
+import { PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import { createSelfPayCoverage, isSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import {
@@ -36,11 +38,39 @@ import {
   isCustomOperationAvailable,
   STEDI_SUBMIT_CLAIM_OPERATION,
 } from '../../utils/operations';
-import { ChargeItemList } from '../ChargeItem/ChargeItemList';
-import { ConditionList } from '../Conditions/ConditionList';
-import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
+import type { ConditionsByCode } from '../billing/claimConditions';
+import { getConditionCode } from '../billing/claimConditions';
+import { ClaimDiagnosesEditor, ClaimLinesEditor } from '../billing/ClaimEditor';
+import { isClaimEditable } from '../billing/claimStatus';
+import {
+  addChargeItemsToClaim,
+  getBilledChargeItemIds,
+  isBillingClaim,
+  removeChargeItemsFromClaims,
+  syncVisitClaims,
+} from '../billing/claimSync';
+import type { VisitClaim, VisitDetailsChange } from '../billing/visitDetails';
+import {
+  findClaimRemittances,
+  findVisitClaims,
+  syncVisitDetails,
+} from '../billing/visitDetails';
+import { getPointedConditions, NewVisitClaimModal } from './NewVisitClaimModal';
 import { SubmitClaimModal } from './SubmitClaimModal';
+import { VisitClaimsSection } from './VisitClaimsSection';
+import { ClaimDetailPane } from '../billing/ClaimDetailPane';
+import { WorklistDrawer } from '../billing/WorklistDrawer';
+import { DiscardClaimModal } from '../billing/DiscardClaimModal';
+import {
+  createVisitClaim,
+  findBillingOrganization,
+  findPatientCoverages,
+  getPrimaryCoverage,
+} from '../billing/visitClaim';
+import { PatientContentWidth } from '../../pages/patient/PatientContentWidth';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
+import { buildVisitSheet, saveVisitLines } from './visitSheet';
+
 
 export interface BillingTabProps {
   patient: WithId<Patient>;
@@ -51,20 +81,32 @@ export interface BillingTabProps {
   practitioner: WithId<Practitioner> | undefined;
   setPractitioner: (practitioner: WithId<Practitioner>) => void;
   chartNoteStatus: ChartNoteStatus;
+  /** Changes when the visit's claims change outside this tab, e.g. made on signing, so it reloads them. */
+  claimsKey?: number;
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const { encounter, setEncounter, onEncounterSaved, patient, practitioner, setPractitioner, chartNoteStatus } = props;
+  const { encounter, setEncounter, onEncounterSaved, patient, practitioner, setPractitioner, chartNoteStatus, claimsKey } =
+    props;
   const medplum = useMedplum();
-  const [claim, setClaim] = useState<WithId<Claim> | undefined>();
+  // The visit's claims, oldest first: the claim made from the visit, then any related claims made from it.
+  const [visitClaims, setVisitClaims] = useState<VisitClaim[]>();
+  const [remittances, setRemittances] = useState<WithId<PaymentReconciliation>[]>();
+  const [claimsVersion, setClaimsVersion] = useState(0);
+  const [openClaimId, setOpenClaimId] = useState<string>();
+  const [discardTarget, setDiscardTarget] = useState<WithId<Claim>>();
+  const { width: viewportWidth } = useViewportSize();
+  const contentWidth = useContext(PatientContentWidth);
+  // Charge items picked when the New Claim dialog opens; undefined while it's closed.
+  const [newClaimPicks, setNewClaimPicks] = useState<string[]>();
   const [chargeItems, setChargeItems] = useState<WithId<ChargeItem>[]>([]);
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverages, setCoverages] = useState<WithId<Coverage>[]>([]);
   const [coverage, setCoverage] = useState<WithId<Coverage> | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [claimResponse, setClaimResponse] = useState<WithId<ClaimResponse> | null | undefined>(undefined);
-  const [claimResponseLoading, setClaimResponseLoading] = useState(false);
+  // The claim the submit dialog is for; undefined for the visit's first claim, which is made first.
+  const [submitTarget, setSubmitTarget] = useState<WithId<Claim>>();
   const [billingOrganization, setBillingOrganization] = useState<Reference<Organization> | undefined>();
   // Which claim submission operations are deployed in this project; undefined until resolved.
   const [submitOperations, setSubmitOperations] = useState<{ candid: boolean; stedi: boolean } | undefined>();
@@ -78,70 +120,188 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(showErrorNotification);
   }, [medplum]);
 
+  const patientId = patient.id;
+  const encounterId = encounter.id;
   useEffect(() => {
-    const fetchClaim = async (): Promise<void> => {
-      const response = await medplum.searchOne(
-        'Claim',
-        { encounter: getReferenceString(encounter), status: 'active,draft' },
-        { cache: 'no-cache' }
+    let active = true;
+    const load = async (): Promise<void> => {
+      const patientRef = { reference: `Patient/${patientId}` };
+      const encounterRef = { reference: `Encounter/${encounterId}` };
+      let found = await findVisitClaims(medplum, patientRef, encounterRef);
+      // Candid claims are refreshed on load: the get-encounter bot pulls the latest state onto their ClaimResponses.
+      const refreshed = await Promise.all(
+        found.map((v) =>
+          refreshCandidClaimResponse(medplum, v.claim).catch((err) => {
+            showErrorNotification(err);
+            return false;
+          })
+        )
       );
-      if (response) {
-        setClaim(response);
+      if (refreshed.some(Boolean)) {
+        found = await findVisitClaims(medplum, patientRef, encounterRef);
+      }
+      const remits = await findClaimRemittances(
+        medplum,
+        found.map((v) => v.claim.id)
+      );
+      if (active) {
+        setVisitClaims(found);
+        setRemittances(remits);
       }
     };
+    load().catch(showErrorNotification);
+    return () => {
+      active = false;
+    };
+  }, [medplum, patientId, encounterId, claimsVersion, claimsKey]);
 
-    fetchClaim().catch((err) => showErrorNotification(err));
-  }, [encounter, medplum]);
+  // The visit's diagnoses and charge items, edited with the claim editor's sections as if they were a claim's.
+  const [sheet, setSheet] = useState<Claim>();
+  const sheetRef = useRef<Claim>(undefined);
+  const encounterRef = useRef(encounter);
+  const patientRef = useRef(patient);
+  useEffect(() => {
+    encounterRef.current = encounter;
+    patientRef.current = patient;
+  }, [encounter, patient]);
+  // The charge items as last saved, by id; the codes of the visit's diagnoses as last saved, in order.
+  const savedChargeItemsRef = useRef(new Map<string, WithId<ChargeItem>>());
+  const visitCodesRef = useRef<string[]>([]);
+  // The charge item id each new line got, by the line's temporary id.
+  const lineIdsRef = useRef(new Map<string, string>());
+  const savingRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
-    const loadChargeItems = async (): Promise<void> => {
-      const chargeItemsResult = await getChargeItemsForEncounter(medplum, encounter);
-      setChargeItems(chargeItemsResult);
+    let active = true;
+    const load = async (): Promise<void> => {
+      const visit = encounterRef.current;
+      const refs = (visit.diagnosis ?? []).map((d) => d.condition).filter((ref) => !!ref?.reference);
+      const [items, loaded] = await Promise.all([
+        getChargeItemsForEncounter(medplum, visit),
+        Promise.all(refs.map((ref) => medplum.readReference(ref as Reference<Condition>).catch(() => undefined))),
+      ]);
+      if (!active) {
+        return;
+      }
+      const visitConditions = loaded.filter((c): c is WithId<Condition> => !!c);
+      const built = buildVisitSheet(patientRef.current, visit, visitConditions, items);
+      savedChargeItemsRef.current = new Map(items.map((c) => [c.id, c]));
+      visitCodesRef.current = getSheetCodes(built);
+      sheetRef.current = built;
+      setChargeItems(items);
+      setConditions(visitConditions);
+      setSheet(built);
     };
+    load().catch(showErrorNotification);
+    return () => {
+      active = false;
+    };
+  }, [medplum, encounterId]);
 
-    loadChargeItems().catch((err) => showErrorNotification(err));
-  }, [encounter, medplum]);
+  // Saves the edited lines as the visit's charge items, one save at a time.
+  const saveLines = useDebouncedCallback(
+    (): void => {
+      savingRef.current = savingRef.current
+        .then(async () => {
+          const current = sheetRef.current;
+          if (!current) {
+            return;
+          }
+          const lineIds = lineIdsRef.current;
+          const withSavedIds = {
+            ...current,
+            item: current.item?.map((item) => ({ ...item, id: (item.id && lineIds.get(item.id)) ?? item.id })),
+          };
+          const result = await saveVisitLines(
+            medplum,
+            withSavedIds,
+            savedChargeItemsRef.current,
+            patientRef.current,
+            encounterRef.current
+          );
+          result.createdIds.forEach((id, lineId) => lineIds.set(lineId, id));
+          const previous = savedChargeItemsRef.current;
+          savedChargeItemsRef.current = new Map(result.chargeItems.map((c) => [c.id, c]));
+          setChargeItems(result.chargeItems);
+          // The visit's open claims follow its charge items.
+          const claimsChanged = await syncVisitClaims(medplum, patientRef.current, encounterRef.current, {
+            previous,
+            current: result.chargeItems,
+            created: new Set(result.createdIds.values()),
+          });
+          if (claimsChanged) {
+            setClaimsVersion((v) => v + 1);
+          }
+        })
+        .catch(showErrorNotification);
+    },
+    { delay: SAVE_TIMEOUT_MS, flushOnUnmount: true }
+  );
+
+  const changeSheet = useCallback(
+    (next: Claim): void => {
+      // A new line gets a temporary id, so its charge item can be matched to it once saved.
+      const withIds = {
+        ...next,
+        item: next.item?.map((item) => (item.id ? item : { ...item, id: `new-${crypto.randomUUID()}` })),
+      };
+      sheetRef.current = withIds;
+      setSheet(withIds);
+      saveLines();
+    },
+    [saveLines]
+  );
+
+  // The diagnoses section saves its changes to the visit itself. Once one lands, follow it here, and put diagnoses new
+  // to the visit on its claims too; removing one from the visit leaves the claims alone.
+  const handleVisitConditions = useCallback(
+    (byCode: ConditionsByCode): void => {
+      const codes = sheetRef.current ? getSheetCodes(sheetRef.current) : [];
+      // A code the update didn't bring keeps the Condition already known for it.
+      setConditions((prev) =>
+        codes
+          .map((code) => byCode.get(code) ?? prev.find((c) => getConditionCode(c) === code))
+          .filter((c): c is Condition => !!c)
+      );
+      // A new diagnosis reaches a claim once one of its lines points to it, as the charge items save.
+      if (codes.join('|') === visitCodesRef.current.join('|')) {
+        return;
+      }
+      visitCodesRef.current = codes;
+      medplum
+        .readResource('Encounter', encounterRef.current.id, { cache: 'no-cache' })
+        .then((saved) => {
+          setEncounter(saved);
+          onEncounterSaved?.(saved);
+        })
+        .catch(showErrorNotification);
+    },
+    [medplum, setEncounter, onEncounterSaved]
+  );
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
       if (!patient) {
         return;
       }
-      const results = await medplum.searchResources(
-        'Coverage',
-        `patient=${getReferenceString(patient)}&status=active&_sort=-_lastUpdated`
-      );
-      if (results.length > 0) {
-        setCoverages(results);
-        setCoverage(results.find((c) => !isSelfPayCoverage(c)) ?? results[0]);
-      } else {
-        const selfPay = await createSelfPayCoverage(medplum, patient);
-        const selfPayWithId = selfPay as WithId<Coverage>;
-        setCoverages([selfPayWithId]);
-        setCoverage(selfPayWithId);
-      }
+      const results = await findPatientCoverages(medplum, patient);
+      setCoverages(results);
+      setCoverage(getPrimaryCoverage(results));
     };
 
     fetchCoverage().catch((err) => showErrorNotification(err));
   }, [medplum, patient]);
 
+  const claimProvider = visitClaims?.[0]?.claim.provider?.reference;
   // Default the billing organization: an existing draft claim records the previous choice;
   // otherwise use the billing organization on the practitioner's active PractitionerRole, looked up
   // the same way the visit's insurance eligibility check does. The picker stays editable either way.
   useEffect(() => {
     const resolveBillingOrganization = async (): Promise<Reference<Organization> | undefined> => {
-      if (claim?.provider?.reference?.startsWith('Organization/')) {
-        return claim.provider as Reference<Organization>;
+      if (claimProvider?.startsWith('Organization/')) {
+        return { reference: claimProvider };
       }
-      if (!practitioner) {
-        return undefined;
-      }
-      const role = await medplum.searchOne('PractitionerRole', {
-        practitioner: getReferenceString(practitioner),
-        active: 'true',
-        'organization.identifier': BILLING_ORGANIZATION_IDENTIFIER,
-      });
-      return role?.organization;
+      return practitioner ? findBillingOrganization(medplum, createReference(practitioner)) : undefined;
     };
 
     resolveBillingOrganization()
@@ -151,93 +311,101 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         }
       })
       .catch((err) => showErrorNotification(err));
-  }, [claim, practitioner, medplum]);
+  }, [claimProvider, practitioner, medplum]);
 
-  const fetchClaimResponse = useCallback(async (): Promise<void> => {
-    if (!claim?.id) {
-      setClaimResponse(null);
-      return;
-    }
-    setClaimResponseLoading(true);
-    try {
-      // Candid claims are refreshed on load: the claim carries the Candid encounter id, so the
-      // get-encounter bot can pull the latest state onto the stored ClaimResponse
-      try {
-        await refreshCandidClaimResponse(medplum, claim);
-      } catch (err) {
-        showErrorNotification(err);
-      }
-      const result = await medplum.searchOne(
-        'ClaimResponse',
-        { request: getReferenceString(claim) },
-        { cache: 'no-cache' }
-      );
-      setClaimResponse(result ?? null);
-    } finally {
-      setClaimResponseLoading(false);
-    }
-  }, [claim, medplum]);
+  // The visit's charge items on a claim, open or submitted, and the open claims that can still take more.
+  const billedIds = getBilledChargeItemIds(visitClaims ?? []);
+  const openClaims = (visitClaims ?? []).filter((v) => isBillingClaim(v.claim) && isClaimEditable(v.claim, v.responses));
+  const unbilled = chargeItems.filter((c) => !billedIds.has(c.id) && c.code?.coding?.some((cd) => cd.system === CPT));
 
-  // Refetch the ClaimResponse whenever the resolved claim changes (e.g. after the claim loads or is
-  // (re)persisted). The synchronous clear in fetchClaimResponse is intentional, so suppress the rule.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchClaimResponse().catch((err) => showErrorNotification(err));
-  }, [fetchClaimResponse]);
-
-  const debouncedPatchDiagnosis = useDebouncedCallback(async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
-    try {
-      const savedEncounter = await medplum.patchResource('Encounter', encounter.id, [
-        { op: 'add', path: '/diagnosis', value: diagnosis },
-      ]);
-      onEncounterSaved?.(savedEncounter);
-    } catch (err) {
-      showErrorNotification(err);
-    }
-  }, SAVE_TIMEOUT_MS);
-
-  const handleDiagnosisChange = useCallback(
-    async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
-      setEncounter({ ...encounter, diagnosis });
-      debouncedPatchDiagnosis(diagnosis);
-    },
-    [encounter, setEncounter, debouncedPatchDiagnosis]
-  );
-
-  const generateClaim = useCallback(
+  // Makes the visit's first claim, from its charge items, when exporting or submitting before it has one.
+  const createFirstClaim = useCallback(
     async (insuranceRefs?: Reference<Coverage>[]): Promise<WithId<Claim>> => {
-      if (!practitioner) {
-        throw new Error('A practitioner is required to create a claim');
-      }
-      const insurance = insuranceRefs ?? (coverage ? [{ reference: getReferenceString(coverage) }] : undefined);
-      const built = buildClaimFromEncounter({
+      saveLines.flush();
+      await savingRef.current;
+      const saved = await createVisitClaim(medplum, {
         patient,
         encounter,
-        practitioner,
         chargeItems,
         conditions,
-        insurance,
-        billingOrganization,
+        insurance: insuranceRefs ?? (coverage ? [createReference(coverage)] : []),
+        practitioner,
+        billingOrganization: billingOrganization ?? null,
       });
-
-      const existingClaim = await medplum.searchOne(
-        'Claim',
-        { encounter: getReferenceString(encounter), status: 'active,draft' },
-        { cache: 'no-cache' }
-      );
-
-      const saved = existingClaim?.id
-        ? await medplum.updateResource({
-            ...existingClaim,
-            ...built,
-            status: existingClaim.status ?? built.status,
-            created: existingClaim.created ?? built.created,
-          })
-        : await medplum.createResource(built);
-      setClaim(saved);
+      setClaimsVersion((v) => v + 1);
       return saved;
     },
-    [patient, encounter, practitioner, chargeItems, conditions, coverage, billingOrganization, medplum, setClaim]
+    [patient, encounter, practitioner, chargeItems, conditions, coverage, billingOrganization, medplum, saveLines]
+  );
+
+  // Charge items on a submitted claim can't go on a new one; those on an open claim move to it.
+  const unavailableLines = new Map<string, string>();
+  const movingLines = new Map<string, string>();
+  for (const { claim: c, responses } of visitClaims ?? []) {
+    if (!isBillingClaim(c)) {
+      continue;
+    }
+    const from = `Claim${c.created ? ` · ${formatDate(c.created)}` : ''}`;
+    for (const id of getClaimChargeItemIds(c)) {
+      if (isClaimEditable(c, responses)) {
+        movingLines.set(id, `Moves from ${from}`);
+      } else {
+        unavailableLines.set(id, 'On a submitted claim');
+      }
+    }
+  }
+
+  const createClaimFromPicked = useCallback(
+    async (picked: WithId<ChargeItem>[], billTo: WithId<Coverage> | undefined): Promise<void> => {
+      saveLines.flush();
+      await savingRef.current;
+      const created = await createVisitClaim(medplum, {
+        patient,
+        encounter,
+        chargeItems: picked,
+        conditions: getPointedConditions(picked, conditions),
+        insurance: billTo ? [createReference(billTo)] : [],
+        practitioner,
+        billingOrganization: billingOrganization ?? null,
+      });
+      // Picked charge items on another open claim move here, so they aren't billed twice.
+      await removeChargeItemsFromClaims(medplum, visitClaims ?? [], new Set(picked.map((c) => c.id)), created.id);
+      setClaimsVersion((v) => v + 1);
+      setOpenClaimId(created.id);
+      showNotification({
+        color: 'green',
+        title: 'Claim created',
+        message: `${picked.length} ${picked.length === 1 ? 'line' : 'lines'} · ${formatMoney(created.total ?? { value: 0 })}`,
+      });
+    },
+    [patient, encounter, practitioner, conditions, billingOrganization, medplum, saveLines, visitClaims]
+  );
+
+  const addUnbilledToClaim = useCallback(
+    async (target: WithId<Claim>): Promise<void> => {
+      saveLines.flush();
+      await savingRef.current;
+      await addChargeItemsToClaim(medplum, target, encounter, unbilled);
+      setClaimsVersion((v) => v + 1);
+      showNotification({
+        color: 'green',
+        title: 'Added to claim',
+        message: `${unbilled.length} ${unbilled.length === 1 ? 'charge item' : 'charge items'}`,
+      });
+    },
+    [medplum, encounter, unbilled, saveLines]
+  );
+
+  // The visit's claims share its details: a change here reaches every claim for the visit that can still change.
+  const shareVisitDetails = useCallback(
+    async (change: VisitDetailsChange): Promise<void> => {
+      if (Object.keys(change).length) {
+        await syncVisitDetails(medplum, createReference(patient), createReference(encounter), change, {
+          skipEncounter: true,
+        });
+      }
+    },
+    [medplum, patient, encounter]
   );
 
   // Visit-details edits accumulate here (keyed by path, latest edit per field wins) so rapid
@@ -263,6 +431,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       const savedEncounter = await medplum.patchResource('Encounter', encounter.id, ops);
       setEncounter(savedEncounter);
       onEncounterSaved?.(savedEncounter);
+      await shareVisitDetails(getVisitDetailsChange(ops));
 
       if (savedEncounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
@@ -283,23 +452,27 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [flushEncounterOps]
   );
 
-  const exportClaimAsCMS1500 = useCallback(async (): Promise<void> => {
-    try {
-      const saved = await generateClaim();
-      const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
-        resourceType: 'Parameters',
-        parameter: [{ name: 'resource', resource: saved }],
-      });
 
-      if (response.resourceType === 'Media' && response.content?.url) {
-        window.open(response.content.url, '_blank');
-      } else {
-        showErrorNotification('Failed to download PDF');
+  const exportClaimAsCMS1500 = useCallback(
+    async (target?: WithId<Claim>): Promise<void> => {
+      try {
+        const saved = target ?? (await createFirstClaim());
+        const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'resource', resource: saved }],
+        });
+
+        if (response.resourceType === 'Media' && response.content?.url) {
+          window.open(response.content.url, '_blank');
+        } else {
+          showErrorNotification('Failed to download PDF');
+        }
+      } catch (err) {
+        showErrorNotification(err);
       }
-    } catch (err) {
-      showErrorNotification(err);
-    }
-  }, [generateClaim, medplum]);
+    },
+    [createFirstClaim, medplum]
+  );
 
   const runClaimSubmit = useCallback(
     async (
@@ -310,17 +483,22 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     ): Promise<void> => {
       setSubmitting(true);
       try {
-        const saved = await generateClaim(coverageRefs);
-        const result = await medplum.post(medplum.fhirUrl('Claim', saved.id, operation), {
+        const saved = submitTarget
+          ? await medplum.updateResource({
+                ...submitTarget,
+                insurance: coverageRefs.map((ref, index) => ({
+                  sequence: index + 1,
+                  focal: index === 0,
+                  coverage: ref,
+                })),
+              })
+          : await createFirstClaim(coverageRefs);
+        await medplum.post(medplum.fhirUrl('Claim', saved.id, operation), {
           resourceType: 'Parameters',
           parameter: [],
         });
         showNotification({ title: successTitle, message: successMessage, color: 'green' });
-        if (result?.resourceType === 'ClaimResponse') {
-          setClaimResponse(result as WithId<ClaimResponse>);
-        } else {
-          await fetchClaimResponse();
-        }
+        setClaimsVersion((v) => v + 1);
       } catch (err) {
         try {
           const parsed = JSON.parse((err as Error).message);
@@ -337,7 +515,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         setSubmitting(false);
       }
     },
-    [generateClaim, fetchClaimResponse, medplum]
+    [createFirstClaim, submitTarget, medplum]
   );
 
   const submitToCandid = useCallback(
@@ -374,171 +552,166 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     return created;
   }, [coverages, medplum, patient]);
 
-  const LOCKED_TOOLTIP = 'Sign and Lock the encounter in order to enable this action';
-  const NO_SUBMIT_OPERATION_TOOLTIP = 'Claim submission is not enabled for this project';
-
-  const exportClaimMenu = (disabled?: boolean): JSX.Element => (
-    <Menu shadow="md" width={200}>
-      <Menu.Target>
-        <Tooltip label={LOCKED_TOOLTIP} disabled={!disabled}>
-          <Button
-            component="div"
-            variant="outline"
-            leftSection={<IconDownload size={16} />}
-            disabled={disabled}
-            data-disabled={disabled || undefined}
-          >
-            Export Claim
-          </Button>
-        </Tooltip>
-      </Menu.Target>
-      <Menu.Dropdown>
-        <Menu.Label>Export Options</Menu.Label>
-        <Menu.Item
-          leftSection={<IconFileText size={14} />}
-          onClick={async () => {
-            await exportClaimAsCMS1500();
-          }}
-        >
-          CMS 1500 Form
-        </Menu.Item>
-        <Menu.Item
-          leftSection={<IconFileText size={14} />}
-          onClick={() => {
-            showNotification({
-              title: 'EDI X12',
-              message: 'Please contact sales to enable EDI X12 export',
-              color: 'blue',
-            });
-          }}
-        >
-          EDI X12
-        </Menu.Item>
-        <Menu.Item
-          leftSection={<IconFileText size={14} />}
-          onClick={() => {
-            showNotification({
-              title: 'NUCC Crosswalk',
-              message: 'Please contact sales to enable NUCC Crosswalk export',
-              color: 'blue',
-            });
-          }}
-        >
-          NUCC Crosswalk CSV
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+  const handleSubmitClaimClick = useCallback(
+    async (target?: WithId<Claim>): Promise<void> => {
+      const hasDiagnoses = target ? !!target.diagnosis?.length : conditions.length > 0;
+      if (!hasDiagnoses) {
+        showNotification({
+          title: 'Missing Diagnosis',
+          message: 'Please add at least one diagnosis before submitting a claim',
+          color: 'red',
+        });
+        return;
+      }
+      if (!coverages.find(isSelfPayCoverage)) {
+        const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
+        setCoverages((prev) => [...prev, created]);
+      }
+      setSubmitTarget(target);
+      setConfirmModalOpen(true);
+    },
+    [conditions, coverages, medplum, patient]
   );
-
-  const handleSubmitClaimClick = useCallback(async (): Promise<void> => {
-    if (!conditions.length) {
-      showNotification({
-        title: 'Missing Diagnosis',
-        message: 'Please add at least one diagnosis before submitting a claim',
-        color: 'red',
-      });
-      return;
-    }
-    if (!coverages.find(isSelfPayCoverage)) {
-      const created = (await createSelfPayCoverage(medplum, patient)) as WithId<Coverage>;
-      setCoverages((prev) => [...prev, created]);
-    }
-    setConfirmModalOpen(true);
-  }, [conditions, coverages, medplum, patient]);
-
-  const renderClaimCard = (): JSX.Element | null => {
-    const hasCptItems = chargeItems.some((item) => item.code?.coding?.some((c) => c.system === CPT));
-    if (!hasCptItems && !claim && !claimResponse) {
-      return null;
-    }
-
-    if (claimResponseLoading) {
-      return (
-        <Card withBorder shadow="sm" p="md">
-          <Skeleton height={20} width="60%" mb="sm" />
-          <Skeleton height={14} width="40%" />
-        </Card>
-      );
-    }
-
-    if (claimResponse) {
-      return <ClaimSubmittedPanel claimResponse={claimResponse} exportMenu={exportClaimMenu()} />;
-    }
-    const isLocked = chartNoteStatus === ChartNoteStatus.SignedAndLocked;
-    const canSubmitClaim = Boolean(submitOperations?.candid || submitOperations?.stedi);
-    let submitTooltip: string | undefined;
-    if (!isLocked) {
-      submitTooltip = LOCKED_TOOLTIP;
-    } else if (!canSubmitClaim) {
-      submitTooltip = NO_SUBMIT_OPERATION_TOOLTIP;
-    }
-    return (
-      <Card withBorder shadow="sm">
-        <Flex justify="space-between">
-          {exportClaimMenu(!isLocked)}
-
-          <SubmitClaimModal
-            opened={confirmModalOpen}
-            coverages={coverages}
-            selectedCoverage={coverage}
-            patient={patient}
-            conditions={conditions}
-            practitioner={practitioner}
-            onClose={() => setConfirmModalOpen(false)}
-            onSubmitClaim={submitOperations?.candid ? submitToCandid : undefined}
-            onSubmitToStedi={submitOperations?.stedi ? submitToStedi : undefined}
-            ensureSelfPayCoverage={ensureSelfPayCoverage}
-          />
-          <Tooltip label={submitTooltip} disabled={!submitTooltip}>
-            <Button
-              component="div"
-              variant="outline"
-              leftSection={<IconSend size={16} />}
-              loading={submitting}
-              onClick={isLocked && canSubmitClaim ? handleSubmitClaimClick : undefined}
-              disabled={!isLocked || !canSubmitClaim || submitting}
-              data-disabled={!isLocked || !canSubmitClaim || undefined}
-            >
-              Submit Claim
-            </Button>
-          </Tooltip>
-        </Flex>
-      </Card>
-    );
-  };
 
   return (
     <Stack gap="md">
-      {renderClaimCard()}
-
-      <Group grow align="flex-start">
-        <VisitDetailsPanel
-          practitioner={practitioner}
-          encounter={encounter}
-          billingOrganization={billingOrganization}
-          onEncounterChange={handleEncounterChange}
-          onBillingOrganizationChange={(organization) =>
-            setBillingOrganization(organization ? createReference(organization) : undefined)
+      {chartNoteStatus === ChartNoteStatus.SignedAndLocked && (
+        <VisitClaimsSection
+          claims={visitClaims}
+          unbilledCodes={
+            visitClaims?.length ? unbilled.map((c) => c.code?.coding?.find((cd) => cd.system === CPT)?.code ?? '?') : []
           }
-        />
-      </Group>
-
-      {encounter && (
-        <ConditionList
-          patient={patient}
-          encounter={encounter}
-          conditions={conditions}
-          setConditions={setConditions}
-          onDiagnosisChange={handleDiagnosisChange}
+          openClaims={openClaims.map((v) => v.claim)}
+          onAddUnbilled={(target) => {
+            addUnbilledToClaim(target).catch(showErrorNotification);
+          }}
+          onOpenClaim={setOpenClaimId}
+          onNewClaim={(withUnbilled) => setNewClaimPicks(withUnbilled ? unbilled.map((c) => c.id) : [])}
+          remittances={remittances}
+          canSubmit={Boolean(submitOperations?.candid || submitOperations?.stedi)}
+          submitting={submitting}
+          onExport={(target) => {
+            exportClaimAsCMS1500(target).catch(showErrorNotification);
+          }}
+          onSubmit={(target) => {
+            handleSubmitClaimClick(target).catch(showErrorNotification);
+          }}
+          onDiscard={setDiscardTarget}
         />
       )}
-
-      <ChargeItemList
-        patient={patient}
-        encounter={encounter}
-        chargeItems={chargeItems}
-        updateChargeItems={setChargeItems}
+      <WorklistDrawer
+        opened={!!openClaimId}
+        label="Claim"
+        areaWidth={viewportWidth}
+        width={contentWidth}
+        onClose={() => setOpenClaimId(undefined)}
+      >
+        {openClaimId && (
+          <ClaimDetailPane
+            key={openClaimId}
+            claimId={openClaimId}
+            onVisit
+            onClose={() => setOpenClaimId(undefined)}
+            onChanged={() => setClaimsVersion((v) => v + 1)}
+            onOpenClaim={setOpenClaimId}
+          />
+        )}
+      </WorklistDrawer>
+      <DiscardClaimModal
+        claim={discardTarget}
+        onClose={() => setDiscardTarget(undefined)}
+        onDiscarded={() => setClaimsVersion((v) => v + 1)}
       />
+      <NewVisitClaimModal
+        opened={!!newClaimPicks}
+        onClose={() => setNewClaimPicks(undefined)}
+        preselected={newClaimPicks}
+        moving={movingLines}
+        chargeItems={chargeItems}
+        conditions={conditions}
+        coverages={coverages}
+        defaultCoverage={coverage}
+        unavailable={unavailableLines}
+        onCreate={createClaimFromPicked}
+      />
+      <SubmitClaimModal
+        opened={confirmModalOpen}
+        coverages={coverages}
+        selectedCoverage={coverage}
+        patient={patient}
+        conditions={conditions}
+        practitioner={practitioner}
+        onClose={() => setConfirmModalOpen(false)}
+        onSubmitClaim={submitOperations?.candid ? submitToCandid : undefined}
+        onSubmitToStedi={submitOperations?.stedi ? submitToStedi : undefined}
+        ensureSelfPayCoverage={ensureSelfPayCoverage}
+      />
+
+      <VisitDetailsPanel
+        practitioner={practitioner}
+        encounter={encounter}
+        billingOrganization={billingOrganization}
+        locked={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
+        hasSubmittedClaim={!!visitClaims?.some((v) => !isClaimEditable(v.claim, v.responses))}
+        onEncounterChange={handleEncounterChange}
+        onBillingOrganizationChange={(organization) => {
+          const reference = organization ? createReference(organization) : undefined;
+          setBillingOrganization(reference);
+          shareVisitDetails({ billingOrganization: reference ?? null }).catch(showErrorNotification);
+        }}
+      />
+
+      {sheet && (
+        <>
+          <ClaimDiagnosesEditor
+            claim={sheet}
+            onChange={changeSheet}
+            onConditionsChange={handleVisitConditions}
+            readOnly={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
+          />
+          <ClaimLinesEditor
+            lineName="Charge Item"
+            claim={sheet}
+            onChange={changeSheet}
+            lineNotice={(item) =>
+              visitClaims?.length && unbilled.some((c) => c.id === item.id) ? (
+                <Group gap={6} wrap="nowrap">
+                  <IconAlertTriangle size={16} color="var(--mantine-color-orange-7)" style={{ flex: 'none' }} />
+                  <Text size="sm" c="var(--mantine-color-orange-7)">
+                    Not on a claim
+                  </Text>
+                </Group>
+              ) : null
+            }
+          />
+        </>
+      )}
     </Stack>
   );
 };
+
+function getVisitDetailsChange(ops: PatchOperation[]): VisitDetailsChange {
+  const change: { -readonly [K in keyof VisitDetailsChange]: VisitDetailsChange[K] } = {};
+  for (const op of ops) {
+    if (op.path === '/participant' && op.op === 'add') {
+      change.practitioner = (op.value as EncounterParticipant[])[0]?.individual as Reference<Practitioner> | undefined;
+    } else if (op.path === '/location') {
+      change.facility = op.op === 'add' ? (op.value as EncounterLocation[])[0]?.location : null;
+    } else if (op.path === '/extension' && op.op === 'add') {
+      change.placeOfService =
+        (op.value as Extension[]).find((e) => e.url === PLACE_OF_SERVICE_URL)?.valueCoding ?? null;
+    }
+  }
+  return change;
+}
+
+/**
+ * The codes of the visit's diagnoses, in order.
+ * @param sheet - The visit, as a claim.
+ * @returns The ICD-10 codes.
+ */
+function getSheetCodes(sheet: Claim): string[] {
+  return (sheet.diagnosis ?? [])
+    .map((d) => d.diagnosisCodeableConcept?.coding?.[0]?.code)
+    .filter((code): code is string => !!code);
+}

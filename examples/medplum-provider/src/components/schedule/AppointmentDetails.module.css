@@ -1,7 +1,7 @@
 .AppointmentDetails {
   /* If we have two adjacent `<Divider>` elements (such as when an interior
    * component rendered `null`), hide the second divider */
-  > [role="separator"] + [role="separator"] {
+  > [role='separator'] + [role='separator'] {
     display: none;
   }
 }

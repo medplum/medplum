@@ -3,13 +3,12 @@
 import { ActionIcon, Anchor, Group, Tabs, Tooltip } from '@mantine/core';
 import { useElementSize } from '@mantine/hooks';
 import { isAuxClick } from '@medplum/react';
-import { IconPlus, IconReportMoney, IconSettings } from '@tabler/icons-react';
+import { IconPlus, IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router';
 import { ClaimQueueNav } from '../../components/billing/ClaimQueueNav';
 import { ClaimsWorklist } from '../../components/billing/ClaimsWorklist';
-import { FeeSchedulesModal } from '../../components/billing/FeeSchedulesModal';
 import { NewClaimModal } from '../../components/billing/NewClaimModal';
 import pillTabs from '../../components/billing/PillTabs.module.css';
 import { RemitNav, RemitsWorklist } from '../../components/billing/RemitsWorklist';
@@ -61,7 +60,6 @@ export function BillingPage(): JSX.Element {
   const [version, setVersion] = useState(0);
   const agingTotals = useClaimsAging(version);
   const issues = useClaimIssues(version);
-  const [feeSchedulesOpen, setFeeSchedulesOpen] = useState(false);
   const [newClaimOpen, setNewClaimOpen] = useState(false);
   const { ref: contentRef, width: contentWidth } = useElementSize<HTMLElement>();
 
@@ -110,34 +108,6 @@ export function BillingPage(): JSX.Element {
             </Tabs.List>
           </Tabs>
           <Group gap="xs" wrap="nowrap">
-            {section === 'Claims' && (
-              <Tooltip label="New claim" position="bottom" openDelay={500}>
-                <ActionIcon
-                  variant="transparent"
-                  color="gray"
-                  radius="xl"
-                  size={32}
-                  className="outline-icon-button"
-                  aria-label="New claim"
-                  onClick={() => setNewClaimOpen(true)}
-                >
-                  <IconPlus size={16} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-            <Tooltip label="Fee Schedules" position="bottom" openDelay={500}>
-              <ActionIcon
-                variant="transparent"
-                color="gray"
-                radius="xl"
-                size={32}
-                className="outline-icon-button"
-                aria-label="Fee Schedules"
-                onClick={() => setFeeSchedulesOpen(true)}
-              >
-                <IconReportMoney size={16} />
-              </ActionIcon>
-            </Tooltip>
             <Tooltip label="Configuration" position="bottom" openDelay={500}>
               <ActionIcon
                 component="a"
@@ -158,9 +128,21 @@ export function BillingPage(): JSX.Element {
                 <IconSettings size={16} />
               </ActionIcon>
             </Tooltip>
+            {section === 'Claims' && (
+              <Tooltip label="New claim" position="bottom" openDelay={500}>
+                <ActionIcon
+                  variant="filled"
+                  radius="xl"
+                  size={32}
+                  aria-label="New claim"
+                  onClick={() => setNewClaimOpen(true)}
+                >
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
           </Group>
         </Group>
-        <FeeSchedulesModal opened={feeSchedulesOpen} onClose={() => setFeeSchedulesOpen(false)} />
         <NewClaimModal
           opened={newClaimOpen}
           onClose={() => setNewClaimOpen(false)}

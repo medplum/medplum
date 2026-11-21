@@ -9,6 +9,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { PLACE_OF_SERVICE_SYSTEM, PLACE_OF_SERVICE_URL } from '../../utils/placeOfService';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const mockEncounter: WithId<Encounter> = {
@@ -52,6 +53,47 @@ describe('VisitDetailsPanel', () => {
       </MemoryRouter>
     );
   };
+
+  test('shows the place of service and saves a new one as an encounter extension', async () => {
+    const user = userEvent.setup();
+    const onEncounterChange = vi.fn();
+    setup({
+      onEncounterChange,
+      encounter: {
+        ...mockEncounter,
+        extension: [
+          {
+            url: PLACE_OF_SERVICE_URL,
+            valueCoding: { system: PLACE_OF_SERVICE_SYSTEM, code: '11', display: 'Office' },
+          },
+        ],
+      },
+    });
+
+    // The chosen place shows as a pill, like a claim's procedure code.
+    expect(screen.getByText('11: Office')).toBeInTheDocument();
+
+    await user.click(document.querySelector('.mantine-Pill-remove') as HTMLElement);
+    await user.type(screen.getByRole('searchbox', { name: 'Place of Service' }), 'telehealth provided in');
+    await user.click(await screen.findByText('Telehealth Provided in Patient’s Home'));
+
+    expect(onEncounterChange).toHaveBeenLastCalledWith([
+      {
+        op: 'add',
+        path: '/extension',
+        value: [
+          {
+            url: PLACE_OF_SERVICE_URL,
+            valueCoding: {
+              system: PLACE_OF_SERVICE_SYSTEM,
+              code: '10',
+              display: 'Telehealth Provided in Patient’s Home',
+            },
+          },
+        ],
+      },
+    ]);
+  });
 
   test('renders visit details title', () => {
     setup();
@@ -363,5 +405,17 @@ describe('VisitDetailsPanel', () => {
     const value = (checkoutInput as HTMLInputElement).value;
     expect(value).toMatch(/2024-01-01/);
     expect(value).toBeTruthy();
+  });
+
+  test('locks the practitioner and times with a signed note, and notes when a claim was submitted', () => {
+    setup({ locked: true, hasSubmittedClaim: true });
+
+    // A disabled picker shows its value with no search box.
+    expect(document.querySelector('input[name="practitioner"]')).toBeNull();
+    expect(screen.getByLabelText('Check In')).toBeDisabled();
+    expect(screen.getByLabelText('Check Out')).toBeDisabled();
+    expect(document.querySelector('input[name="billingOrganization"]')).toBeEnabled();
+    expect(document.querySelector('input[name="serviceFacility"]')).toBeEnabled();
+    expect(screen.getByText('Changes apply to open claims. Submitted claims need a corrected claim.')).toBeInTheDocument();
   });
 });

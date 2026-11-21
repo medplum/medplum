@@ -169,11 +169,11 @@ describe('EncounterHeader', () => {
     const onTabChange = vi.fn();
     setup({ onTabChange });
 
-    const detailsTab = screen.getByText('Details & Billing');
+    const detailsTab = screen.getByText('Billing & Details');
     await user.click(detailsTab);
 
     await waitFor(() => {
-      expect(onTabChange).toHaveBeenCalledWith('details');
+      expect(onTabChange).toHaveBeenCalledWith('billing');
     });
   });
 
@@ -197,7 +197,7 @@ describe('EncounterHeader', () => {
     setup({ encounter: finishedEncounter, chartNoteStatus: ChartNoteStatus.Unsigned });
 
     const signButtons = screen.getAllByRole('button');
-    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
+    const signButton = signButtons.find((btn) => (btn.getAttribute('aria-label') ?? '').startsWith('Sign'));
     if (signButton) {
       await user.click(signButton);
     }
@@ -217,7 +217,7 @@ describe('EncounterHeader', () => {
     setup({ encounter: finishedEncounter, chartNoteStatus: ChartNoteStatus.Unsigned, onSign });
 
     const signButtons = screen.getAllByRole('button');
-    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
+    const signButton = signButtons.find((btn) => (btn.getAttribute('aria-label') ?? '').startsWith('Sign'));
     if (signButton) {
       await user.click(signButton);
     }
@@ -401,7 +401,7 @@ describe('EncounterHeader', () => {
     setup({ encounter: { ...mockEncounter, status: 'finished' }, chartNoteStatus: ChartNoteStatus.Signed });
 
     const signButtons = screen.getAllByRole('button');
-    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
+    const signButton = signButtons.find((btn) => (btn.getAttribute('aria-label') ?? '').startsWith('Sign'));
     expect(signButton).toBeDefined();
     await user.click(signButton as HTMLElement);
 
@@ -415,7 +415,7 @@ describe('EncounterHeader', () => {
     setup({ encounter: { ...mockEncounter, status: 'finished' }, chartNoteStatus: ChartNoteStatus.SignedAndLocked });
 
     const signButtons = screen.getAllByRole('button');
-    const signButton = signButtons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim());
+    const signButton = signButtons.find((btn) => (btn.getAttribute('aria-label') ?? '').startsWith('Sign'));
     expect(signButton).toBeDefined();
     await user.click(signButton as HTMLElement);
 

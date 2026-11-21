@@ -6,10 +6,11 @@ import { createReference } from '@medplum/core';
 import type { ClinicalImpression, Encounter, Practitioner, Provenance, Task } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import * as visitClaimUtils from '../billing/visitClaim';
 import { EncounterChart } from './EncounterChart';
 
 const mockPractitioner: WithId<Practitioner> = {
@@ -96,10 +97,10 @@ describe('EncounterChart', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      expect(screen.getByText('Chart Note')).toBeInTheDocument();
     });
 
-    const textarea = screen.getByRole('textbox');
+    const textarea = within(screen.getByRole('region', { name: 'Chart Note' })).getByRole('textbox');
     expect(textarea).toBeInTheDocument();
     expect(textarea).toHaveValue('Test clinical note');
   });
@@ -111,10 +112,10 @@ describe('EncounterChart', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      expect(screen.getByText('Chart Note')).toBeInTheDocument();
     });
 
-    const textarea = screen.getByRole('textbox');
+    const textarea = within(screen.getByRole('region', { name: 'Chart Note' })).getByRole('textbox');
     await user.clear(textarea);
     await user.type(textarea, 'Updated note');
 
@@ -148,7 +149,7 @@ describe('EncounterChart', () => {
 
     // The notes tab should be active by default
     await waitFor(() => {
-      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      expect(screen.getByText('Chart Note')).toBeInTheDocument();
     });
   });
 
@@ -161,14 +162,14 @@ describe('EncounterChart', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      expect(screen.getByText('Chart Note')).toBeInTheDocument();
     });
 
-    const detailsTab = screen.getByText('Details & Billing');
+    const detailsTab = screen.getByText('Billing & Details');
     await user.click(detailsTab);
 
     await waitFor(() => {
-      expect(screen.queryByText('Fill chart note')).not.toBeInTheDocument();
+      expect(screen.queryByText('Chart Note')).not.toBeInTheDocument();
     });
   });
 
@@ -180,22 +181,22 @@ describe('EncounterChart', () => {
       expect(screen.getByText('Visit')).toBeInTheDocument();
     });
 
-    const detailsTab = screen.getByText('Details & Billing');
+    const detailsTab = screen.getByText('Billing & Details');
     await user.click(detailsTab);
 
     await waitFor(() => {
-      expect(screen.queryByText('Fill chart note')).not.toBeInTheDocument();
+      expect(screen.queryByText('Chart Note')).not.toBeInTheDocument();
     });
 
-    const notesTab = screen.getByText('Note & Tasks');
+    const notesTab = screen.getByText('Notes & Tasks');
     await user.click(notesTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      expect(screen.getByText('Chart Note')).toBeInTheDocument();
     });
   });
 
-  test('displays billing tab content when details tab is active', async () => {
+  test('shows the visit details with its billing on the Billing & Details tab', async () => {
     const user = userEvent.setup();
     setup();
 
@@ -203,12 +204,11 @@ describe('EncounterChart', () => {
       expect(screen.getByText('Visit')).toBeInTheDocument();
     });
 
-    const detailsTab = screen.getByText('Details & Billing');
-    await user.click(detailsTab);
+    expect(screen.queryByText('Visit Details')).not.toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.queryByText('Fill chart note')).not.toBeInTheDocument();
-    });
+    await user.click(screen.getByRole('tab', { name: 'Billing & Details' }));
+    expect(await screen.findByText('Visit Details')).toBeInTheDocument();
+    expect(await screen.findByText('Charge Items')).toBeInTheDocument();
   });
 
   test('fetches provenances on mount', async () => {
@@ -241,10 +241,10 @@ describe('EncounterChart', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      expect(screen.getByText('Chart Note')).toBeInTheDocument();
     });
 
-    const textarea = screen.getByRole('textbox');
+    const textarea = within(screen.getByRole('region', { name: 'Chart Note' })).getByRole('textbox');
     expect(textarea).not.toBeDisabled();
   });
 
@@ -316,7 +316,7 @@ describe('EncounterChart', () => {
 
     const getSignButton = (): HTMLElement | null => {
       const buttons = screen.getAllByRole('button');
-      return buttons.find((btn) => btn.querySelector('svg') && !btn.textContent?.trim()) || null;
+      return buttons.find((btn) => (btn.getAttribute('aria-label') ?? '').startsWith('Sign')) || null;
     };
 
     test('signs without locking - textarea remains enabled', async () => {
@@ -360,7 +360,7 @@ describe('EncounterChart', () => {
       setup({ encounter: finishedEncounter });
 
       await waitFor(() => {
-        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+        expect(screen.getByText('Chart Note')).toBeInTheDocument();
       });
 
       await waitFor(() => {
@@ -392,7 +392,7 @@ describe('EncounterChart', () => {
       // Textarea should still be enabled after signing without locking
       await waitFor(
         () => {
-          const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+          const chartNoteCard = screen.getByText('Chart Note').closest('.mantine-Card-root');
           const textarea = chartNoteCard?.querySelector('textarea');
           expect(textarea).not.toBeDisabled();
         },
@@ -441,11 +441,12 @@ describe('EncounterChart', () => {
         return resource;
       });
 
+      const createClaim = vi.spyOn(visitClaimUtils, 'createVisitClaimOnSign').mockResolvedValue(undefined);
       await medplum.createResource(finishedEncounter);
       setup({ encounter: finishedEncounter });
 
       await waitFor(() => {
-        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+        expect(screen.getByText('Chart Note')).toBeInTheDocument();
       });
 
       await waitFor(() => {
@@ -477,11 +478,18 @@ describe('EncounterChart', () => {
       // Textarea should be disabled after signing with locking
       await waitFor(
         () => {
-          const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+          const chartNoteCard = screen.getByText('Chart Note').closest('.mantine-Card-root');
           const textarea = chartNoteCard?.querySelector('textarea');
           expect(textarea).toBeDisabled();
         },
         { timeout: 3000 }
+      );
+      // Locking makes the visit's claim, so the visit shows up in Billing.
+      expect(createClaim).toHaveBeenCalledWith(
+        medplum,
+        expect.anything(),
+        expect.objectContaining({ id: finishedEncounter.id }),
+        expect.anything()
       );
     });
 
@@ -542,7 +550,7 @@ describe('EncounterChart', () => {
       setup({ encounter: finishedEncounter });
 
       await waitFor(() => {
-        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+        expect(screen.getByText('Chart Note')).toBeInTheDocument();
       });
 
       await waitFor(() => {
@@ -623,7 +631,7 @@ describe('EncounterChart', () => {
       setup({ encounter: finishedEncounter });
 
       await waitFor(() => {
-        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+        expect(screen.getByText('Chart Note')).toBeInTheDocument();
       });
 
       await waitFor(() => {
@@ -686,12 +694,12 @@ describe('EncounterChart', () => {
       setup({ encounter: finishedEncounter });
 
       await waitFor(() => {
-        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+        expect(screen.getByText('Chart Note')).toBeInTheDocument();
       });
 
       // Textarea should be disabled when signed and locked
       await waitFor(() => {
-        const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+        const chartNoteCard = screen.getByText('Chart Note').closest('.mantine-Card-root');
         const textarea = chartNoteCard?.querySelector('textarea');
         expect(textarea).toBeDisabled();
       });
@@ -723,12 +731,12 @@ describe('EncounterChart', () => {
       setup({ encounter: finishedEncounter });
 
       await waitFor(() => {
-        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+        expect(screen.getByText('Chart Note')).toBeInTheDocument();
       });
 
       // Textarea should be enabled when signed but not locked
       await waitFor(() => {
-        const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+        const chartNoteCard = screen.getByText('Chart Note').closest('.mantine-Card-root');
         const textarea = chartNoteCard?.querySelector('textarea');
         expect(textarea).not.toBeDisabled();
       });

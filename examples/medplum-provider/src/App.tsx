@@ -68,6 +68,7 @@ import {
   BillingPractitionersSettingsPage,
   ChargeItemsSettingsPage,
   EligibilitySettingsPage,
+  FeeSchedulesSettingsPage,
 } from './pages/settings/BillingSettingsPages';
 import { IntegrationsSettingsPage } from './pages/settings/IntegrationsSettingsPage';
 import { MembersSettingsPage } from './pages/settings/MembersSettingsPage';
@@ -352,6 +353,7 @@ export function App(): JSX.Element | null {
                   </>
                 )}
                 <Route path="billing/charge-items" element={<ChargeItemsSettingsPage />} />
+                <Route path="billing/fee-schedules" element={<FeeSchedulesSettingsPage />} />
                 <Route path="schedule/visit-service-types" element={<VisitServiceTypesSettingsPage />} />
                 <Route path="*" element={<Navigate to={`${SETTINGS_PATH}/account`} replace />} />
               </Route>

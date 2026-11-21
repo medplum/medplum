@@ -38,10 +38,10 @@ export function ClaimFollowUpModal(props: ClaimFollowUpModalProps): JSX.Element 
     <Modal
       opened={opened}
       onClose={onClose}
-      title={count === 1 ? 'Set follow-up' : `Set follow-up on ${count} claims`}
+      title={count === 1 ? 'Set Follow-Up' : `Set Follow-Up on ${count} Claims`}
       actions={
         <Button disabled={!note.trim()} onClick={() => onSave({ date, note: note.trim() })}>
-          Set follow-up
+          Set Follow-Up
         </Button>
       }
     >

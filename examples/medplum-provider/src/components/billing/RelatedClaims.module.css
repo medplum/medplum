@@ -1,0 +1,16 @@
+.row {
+  padding-block: 4px;
+}
+
+.row + .row {
+  border-top: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  padding-top: var(--mantine-spacing-xs);
+}
+
+.badge {
+  flex-shrink: 0;
+}
+
+.end {
+  flex-shrink: 0;
+}

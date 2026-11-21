@@ -7,10 +7,13 @@ import {
   addLine,
   finishClaimEdit,
   getLineCharge,
+  getLineUnitPrice,
   MAX_CLAIM_DIAGNOSES,
   moveDiagnosis,
+  moveLine,
   removeDiagnosis,
   removeLine,
+  replaceDiagnosis,
   updateLine,
 } from './claimEditing';
 
@@ -121,5 +124,28 @@ describe('claimEditing', () => {
     expect(result.item).toHaveLength(2);
     expect(result.total).toEqual({ value: 300, currency: 'USD' });
     expect(finishClaimEdit(removeLine(claim, 1)).total?.value).toBe(50);
+  });
+  test('replaces a diagnosis code in place, as ICD-10', () => {
+    const next = replaceDiagnosis(claim, 2, { code: 'E78.5', display: 'Hyperlipidemia' });
+    expect(next.diagnosis?.[1].sequence).toBe(2);
+    expect(next.diagnosis?.[1].diagnosisCodeableConcept?.coding?.[0]).toMatchObject({
+      code: 'E78.5',
+      system: 'http://hl7.org/fhir/sid/icd-10',
+    });
+  });
+
+  test('gets a unit price from the line, or its charge over its units', () => {
+    expect(getLineUnitPrice({ sequence: 1, productOrService: {}, unitPrice: { value: 50 } })).toBe(50);
+    expect(getLineUnitPrice({ sequence: 1, productOrService: {}, net: { value: 90 }, quantity: { value: 3 } })).toBe(
+      30
+    );
+    expect(getLineUnitPrice({ sequence: 1, productOrService: {}, net: { value: 90 } })).toBe(90);
+    expect(getLineUnitPrice({ sequence: 1, productOrService: {} })).toBeUndefined();
+  });
+  test('moves a line to a new position and renumbers the lines', () => {
+    const next = moveLine(claim, 2, 1);
+    expect(next.item?.map((item) => item.productOrService.coding?.[0]?.code)).toEqual(['80053', '99214']);
+    expect(next.item?.map((item) => item.sequence)).toEqual([1, 2]);
+    expect(moveLine(claim, 9, 1)).toBe(claim);
   });
 });

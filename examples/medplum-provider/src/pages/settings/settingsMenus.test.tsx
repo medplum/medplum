@@ -25,7 +25,7 @@ describe('settingsMenus', () => {
         .find((m) => m.title === 'Billing')
         ?.links?.map((l) => l.label ?? '') ?? [];
 
-    expect(labels(false)).toEqual(['Charge Items']);
-    expect(labels(true)).toEqual(['Organizations', 'Practitioners', 'Payers', 'Eligibility', 'Charge Items']);
+    expect(labels(false)).toEqual(['Charge Items', 'Fee Schedules']);
+    expect(labels(true)).toEqual(['Organizations', 'Practitioners', 'Payers', 'Eligibility', 'Charge Items', 'Fee Schedules']);
   });
 });
