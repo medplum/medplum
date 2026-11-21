@@ -58,6 +58,7 @@ import {
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
+  verifyExternalToken,
   verifyMultipleMatchingException,
 } from './utils';
 
@@ -689,6 +690,14 @@ async function tryGetExternalUserInfo(
     sendTokenError(res, 'invalid_request', 'Missing user info URL', 400);
     return undefined;
   }
+  if (idp.audience && idp.jwksUrl) {
+    try {
+      await verifyExternalToken(idp, subjectToken);
+    } catch (err) {
+      sendTokenError(res, 'invalid_request', 'Invalid subject_token: ' + normalizeErrorString(err), 400);
+      return undefined;
+    }
+  }
   try {
     return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
@@ -720,7 +729,7 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
   );
   if (externalAuthConfig) {
     if (externalAuthConfig.identityProvider) {
-      return externalAuthConfig.identityProvider;
+      return { issuer: externalAuthConfig.issuer, ...externalAuthConfig.identityProvider };
     }
 
     const userInfoUrl = externalAuthConfig.userInfoUrl;
