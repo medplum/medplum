@@ -155,7 +155,10 @@ export interface MedplumServerConfig {
    */
   cacheResourcesOnWrite?: boolean;
 
-  /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
+  /**
+   * Flag to enable pre-commit subscriptions for the interceptor pattern (default: false)
+   * @deprecated Pre-commit subscriptions will be removed in the next major version.
+   */
   preCommitSubscriptionsEnabled?: boolean;
 
   /**

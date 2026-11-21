@@ -5,7 +5,7 @@ import { isValidCronString } from '../cron';
 import type { Atom, AtomContext } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType, isResource } from '../types';
-import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
+import { calculateAge, getExtensions, isEmpty, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import {
@@ -1938,16 +1938,23 @@ export const functions: Record<string, FhirPathFunction> = {
     return applyStringFunc(isValidCronString, context, input);
   },
 
+  /**
+   * Returns every extension with the given URL on every item in the input collection.
+   *
+   * Equivalent to `.extension.where(url = string)`.
+   *
+   * See: https://hl7.org/fhir/fhirpath.html#functions
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param urlAtom - The extension URL.
+   * @returns All matching extensions.
+   */
   extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {
     const url = urlAtom.eval(context, input)[0].value as string;
-    const resource = input?.[0]?.value;
-    if (resource) {
-      const extension = getExtension(resource, url);
-      if (extension) {
-        return [{ type: PropertyType.Extension, value: extension }];
-      }
-    }
-    return [];
+    return input.flatMap((e) =>
+      getExtensions(e.value, url).map((extension) => ({ type: PropertyType.Extension, value: extension }))
+    );
   },
 };
 
