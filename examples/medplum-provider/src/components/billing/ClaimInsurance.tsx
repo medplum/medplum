@@ -179,7 +179,7 @@ function FeeScheduleSection(props: {
       description={
         <Group gap={4} component="span">
           <Anchor component={Link} to={`/ChargeItemDefinition/${schedule.id}`} size="sm">
-            {schedule.title ?? schedule.name ?? 'Fee schedule'}
+            {schedule.title ?? 'Fee schedule'}
           </Anchor>
           {period && <span>• {[formatDate(period.start), formatDate(period.end)].filter(Boolean).join(' – ')}</span>}
         </Group>
