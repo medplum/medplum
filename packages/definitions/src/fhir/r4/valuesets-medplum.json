@@ -249,6 +249,11 @@
             "definition": "AI"
           },
           {
+            "code": "ai-gateway",
+            "display": "AI Gateway",
+            "definition": "Enable the AI gateway at /ai/anthropic, which uses the server's AWS Bedrock credentials"
+          },
+          {
             "code": "ai-realtime",
             "display": "AI Realtime",
             "definition": "Enable the OpenAI realtime transcription proxy at /ws/ai-realtime"
