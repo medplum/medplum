@@ -30,7 +30,7 @@ const QUERIES: { alias: Field; text: string; pages: string[] }[] = [
   { alias: 'mrn', text: "What is the patient's medical record number?", pages: ['*'] },
 ];
 
-// Starting points only: tune these against labeled documents.
+// Placeholders: replace with cutoffs chosen from testing on your own documents.
 // `use`: below this, the value is not sent to $match. `auto`: below this, a match that relies on it needs review.
 const CUTOFFS: Record<Field, { use: number; auto: number }> = {
   firstName: { use: 80, auto: 95 },

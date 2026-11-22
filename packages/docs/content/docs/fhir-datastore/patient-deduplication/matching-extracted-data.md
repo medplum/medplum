@@ -7,7 +7,7 @@ keywords:
   - patient matching
   - fax intake
   - OCR
-  - Textract
+  - confidence score
   - document filing
 ---
 
@@ -21,22 +21,23 @@ This guide doesn't repeat the [`$match` reference](/docs/api/fhir/operations/pat
 
 Every automated filing decision depends on two different measures of confidence:
 
-|                  | Extraction confidence                                                   | Match grade                                                                     |
-| ---------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Question         | Was this value read correctly from the document?                        | Do these values identify exactly one patient?                                   |
-| Applies to       | Each extracted value                                                    | Each candidate patient                                                          |
-| Where it's found | The extractor's output, such as a Textract Queries `Confidence` (0–100) | The `match-grade` and `cms-match-combination` extensions in the `$match` result |
+|                  | Extraction confidence                            | Match grade                                                                     |
+| ---------------- | ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Question         | Was this value read correctly from the document? | Do these values identify exactly one patient?                                   |
+| Applies to       | Each extracted value                             | Each candidate patient                                                          |
+| Where it's found | The extraction tool's output                     | The `match-grade` and `cms-match-combination` extensions in the `$match` result |
 
-Neither is a calibrated probability. A Textract confidence of 95 doesn't mean the value is wrong 5% of the time, and the `$match` score is a ranking value, not a probability. A `certain` match means that an approved CMS combination of fields agreed with exactly one patient. It doesn't mean that those fields were read correctly. You need both measures: a `certain` match on a misread value is a confident wrong answer, and correctly read values may still not identify anyone.
+Neither is a calibrated probability. An extraction confidence of 95 doesn't mean the value is wrong 5% of the time, and the `$match` score is a ranking value, not a probability. A `certain` match means that an approved CMS combination of fields agreed with exactly one patient. It doesn't mean that those fields were read correctly. You need both measures: a `certain` match on a misread value is a confident wrong answer, and correctly read values may still not identify anyone.
 
-### Extraction sources
+### Extraction confidence scores
 
-How you get an extraction confidence depends on the tool:
+Most OCR and data extraction tools, including AI models, report a confidence score for each value they extract. Use these scores to decide which values to trust, but don't take their meaning from the tool's documentation alone:
 
-- **[Textract Queries](/docs/ai/aws#queries)**: you ask questions such as "What is the patient's date of birth?" and get each answer as a `QUERY_RESULT` block with a `Confidence` from 0 to 100. Because the question names the patient, Textract tries to pick the patient's value rather than any date on the page.
-- **Textract text detection** (without `queries`): you get lines of text, each with a confidence for the OCR, and your code finds the values, for example by looking for labels such as `DOB:`. The confidence says the characters were read correctly, not that your code picked the right line.
-- **Comprehend Medical** (`comprehend: true`): detects entities such as names, dates, IDs, and phone numbers, each with a `Score` from 0 to 1. Medplum saves the result as a `comprehend.json` `Media` resource rather than returning it. An entity is labeled as a name, but not as _whose_ name, and a fax usually also names the sender, the referring provider, and the recipient.
-- **An LLM through [`$ai`](/docs/ai/ai-operation)**: handles unusual layouts well, but returns no confidence. A confidence you ask the model to report about itself is not reliable. An LLM can also return a plausible value that isn't in the document. Check that each value appears in the document's OCR text, and treat values that don't as low confidence. If you run two extractors, agreement between them is another useful signal.
+- **Scores aren't comparable across tools.** Tools use different scales, such as 0 to 100 or 0 to 1, and a score of 90 from one tool, or one version of a model, doesn't mean the same as 90 from another.
+- **Cutoffs come from your own data.** Which scores are reliable depends on your documents, senders, and scan quality, as well as the tool. Run your pipeline on real documents, compare the scores of values that were extracted correctly with those that weren't, and choose the cutoffs from those results. Expect different cutoffs for different fields, and different scores for the cutoff at which a value counts as low confidence and the cutoff at which it can be trusted for automatic filing. See [Tune the cutoffs](#tune-the-cutoffs).
+- **Tune again when things change.** Check your cutoffs again when you switch tools or model versions, or start receiving documents from new senders or templates.
+- **Check what the score measures.** A score may only say that the characters were read correctly, not that the value belongs to the patient. A fax often also names the sender, the referring provider, and the recipient.
+- **Handle values without a score.** Some tools, including many LLMs, don't report a confidence. A confidence that you ask a model to report about itself is not reliable, and a model can return a plausible value that isn't in the document. Check that each value appears in the document's text, and treat values that don't as low confidence. If you run two extractors, agreement between them is another useful signal.
 
 ## Why `onlyCertainMatches` is the main safeguard
 
@@ -73,7 +74,7 @@ Give each field its own cutoffs, based on how much a misread value of that field
 - A **use** cutoff: values below it are not sent to `$match` at all.
 - An **auto-file** cutoff: a match that relies on a value below it needs a person to confirm it.
 
-Set both higher for identifiers that can match alone or in pairs. Start strict, then [tune the cutoffs](#tune-the-cutoffs) against your own documents.
+Set both higher for identifiers that can match alone or in pairs. Start strict, then [tune the cutoffs](#tune-the-cutoffs) against your own documents. The right values depend on your extraction tool and documents, so don't reuse cutoffs from another tool or project.
 
 ### Drop low-confidence values
 
@@ -109,7 +110,7 @@ For every document, record what was extracted, how confident the extractor was, 
 - **Audit**: if a document is ever filed to the wrong patient, you can see why.
 - **Tuning**: when a reviewer confirms or corrects a patient, that `Task` becomes a labeled example.
 
-One approach is to create a `Task` for every document, with the document as the `focus` and the extracted values and confidences in `Task.input`. Create the `Task` for an auto-filed document with a status of `completed`, so it doesn't appear in work queues but still has the same record as the documents people review. You can also create a `Provenance` that links the filed document to the bot and to the extractor's output. `$aws-textract` already saves the raw Textract output as a `Media` resource whose `subject` is the document.
+One approach is to create a `Task` for every document, with the document as the `focus` and the extracted values and confidences in `Task.input`. Create the `Task` for an auto-filed document with a status of `completed`, so it doesn't appear in work queues but still has the same record as the documents people review. You can also create a `Provenance` that links the filed document to the bot and to the extractor's raw output. For example, `$aws-textract` saves the raw Textract output as a `Media` resource whose `subject` is the document.
 
 Avoid logging demographics to the console from a bot, since bot logs are stored with each execution.
 
@@ -125,9 +126,9 @@ The goal is for auto-filed documents to almost never be wrong. To choose cutoffs
 
 ## Example
 
-The following bot handles a `DocumentReference` for an inbound fax. It extracts demographics with Textract Queries, calls `$match` with `onlyCertainMatches: true`, and routes the document to auto-file, suggest, or triage. It uses the [`queries` option of `$aws-textract`](/docs/ai/aws#queries).
+The following bot handles a `DocumentReference` for an inbound fax. It extracts demographics with Textract Queries, calls `$match` with `onlyCertainMatches: true`, and routes the document to auto-file, suggest, or triage. It uses the [`queries` option of `$aws-textract`](/docs/ai/aws#queries), but the same approach works with any extraction tool that reports a confidence for each value.
 
-The cutoffs are starting points, the MRN system is an example, and the date parsing assumes U.S. dates. Adapt all three to your documents. `$aws-textract` waits for Textract to finish, which can take a while for long documents, so give the bot enough time to run.
+The cutoffs are placeholders to replace with values from your own testing, the MRN system is an example, and the date parsing assumes U.S. dates. Adapt all three to your documents. `$aws-textract` waits for Textract to finish, which can take a while for long documents, so give the bot enough time to run.
 
 {{< code-example file="packages/examples/src/fhir-datastore/patient-deduplication/matching-extracted-data.ts" language="ts" blocks="setup" >}}
 
