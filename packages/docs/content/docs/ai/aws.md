@@ -14,7 +14,7 @@ The workflow is as follows:
 
 1.  A `Media` or `DocumentReference` resource is created, referencing a `Binary` resource that contains the document (e.g., a PDF, JPEG, or PNG).
 2.  A `POST` request is sent to the `$aws-textract` operation on the `Media` or `DocumentReference` resource.
-3.  Medplum sends the document to AWS Textract for text detection (or for document analysis, if the request includes `queries`). Textract processes the document and returns a job ID.
+3.  Medplum sends the document to AWS Textract for text detection. Textract processes the document and returns a job ID.
 4.  Medplum polls Textract using the job ID until the processing is complete.
 5.  Once Textract successfully processes the document, Medplum stores the raw JSON output as a new `Binary` and `Media` resource.
 6.  If the request includes the `comprehend: true` option, Medplum extracts the text from the Textract output and sends it to AWS Comprehend Medical for entity detection.
@@ -27,7 +27,7 @@ This approach ensures that the original document remains untouched while the pro
 
 To use this feature, your Medplum project must have the `aws-textract` feature flag enabled. This can be configured in your project settings. Additionally, your Medplum server must be configured to use **AWS S3 storage** for binaries, as Textract requires an S3 object location to process documents.
 
-If you self-host Medplum, the server's IAM role needs `textract:StartDocumentTextDetection` and `textract:GetDocumentTextDetection`. To use [Queries](#queries), it also needs `textract:StartDocumentAnalysis` and `textract:GetDocumentAnalysis`; without them, query requests fail with an `AccessDenied` error. Deployments created with the Medplum CDK stack include all four actions.
+If you self-host Medplum, the server's IAM role needs `textract:StartDocumentTextDetection` and `textract:GetDocumentTextDetection`. To use [Queries](#queries), it also needs `textract:StartDocumentAnalysis` and `textract:GetDocumentAnalysis`. Deployments created with the Medplum CDK stack include all four actions.
 
 ### Usage
 
@@ -60,7 +60,7 @@ The request body is optional and can be used to enable the AWS Comprehend Medica
 
 #### Queries
 
-Plain text detection returns every line of text, and your code has to find the values it needs. With [Textract Queries](https://docs.aws.amazon.com/textract/latest/dg/API_Query.html), you instead ask natural-language questions such as "What is the patient's date of birth?", and Textract returns the answer with a confidence score. Queries are opt-in: add a `queries` array to the request body.
+Instead of parsing values out of the detected text, you can ask Textract natural-language questions with [Queries](https://docs.aws.amazon.com/textract/latest/dg/API_Query.html). Queries are opt-in: add a `queries` array to the request body.
 
 ```json
 {
@@ -71,51 +71,17 @@ Plain text detection returns every line of text, and your code has to find the v
 }
 ```
 
-Each query has:
+Each query needs a `text` question and can have an `alias` and the `pages` to apply it to, such as `["2-4"]` or `["*"]` for all pages. If `pages` is omitted, Textract only applies the query to page 1. A request can include up to 30 queries, and `queries` can be combined with `comprehend: true`.
 
-- `text` (required): the question to ask.
-- `alias` (optional): a short name to find the answer by.
-- `pages` (optional): which pages to apply the query to, such as `["1"]`, `["2-4"]`, or `["*"]` for all pages. If omitted, Textract only applies the query to **page 1**.
+With `queries`, Medplum runs Textract document analysis instead of plain text detection. The response still includes the `LINE` and `WORD` blocks, plus a `QUERY` block for each question and a `QUERY_RESULT` block for each answer, with the answer's `Text` and `Confidence` (0 to 100). Each `QUERY` block links to its answers through a `Relationships` entry of type `ANSWER`. See [Textract query response objects](https://docs.aws.amazon.com/textract/latest/dg/queryresponse.html) for the full format.
 
-A request can include at most 30 queries. Medplum returns `400 Bad Request` if `queries` is not a non-empty array of objects with a non-empty `text` string. `queries` can be combined with `comprehend: true`.
-
-When `queries` is present, Medplum runs Textract document analysis (`StartDocumentAnalysis` with the `QUERIES` feature) instead of plain text detection. The response still includes the full `Blocks` array, including the `LINE` and `WORD` blocks, so code that reads text from `Blocks` keeps working. Textract adds `QUERY` and `QUERY_RESULT` blocks, and Medplum adds a `QueryAnswers` array that pairs each query with its answers:
-
-```json
-{
-  "JobStatus": "SUCCEEDED",
-  "Blocks": [{ "BlockType": "PAGE" }, { "BlockType": "LINE", "Text": "Patient Name: Jane Doe" }],
-  "QueryAnswers": [
-    {
-      "Alias": "name",
-      "Text": "What is the patient's full name?",
-      "Answers": [{ "Text": "Jane Doe", "Confidence": 98.2 }]
-    },
-    {
-      "Alias": "dob",
-      "Text": "What is the patient's date of birth?"
-    }
-  ]
-}
-```
-
-The `Blocks` array above is abbreviated; a real response contains every block Textract returned.
-
-When Textract found no answer, `Answers` is omitted, because Medplum removes empty arrays from API responses. Read it as `queryAnswer.Answers ?? []`. `Confidence` is a percentage from 0 to 100; use it to decide which values to trust automatically and which to send for human review.
-
-{{< note title="Pricing" >}}
-
-AWS charges more per page for Queries than for plain text detection. See [Amazon Textract pricing](https://aws.amazon.com/textract/pricing/) for current rates.
-
-{{< /note >}}
+AWS charges a different per-page price for Queries than for plain text detection. See [Amazon Textract pricing](https://aws.amazon.com/textract/pricing/).
 
 #### Response
 
 The API will return the raw JSON response from AWS Textract. The response will be a JSON object that includes an array of `Blocks` representing the detected text, tables, and forms in the document.
 
 A successful response will have a status code of `200 OK`.
-
-If the request included `queries`, the response also includes a `QueryAnswers` array (see [Queries](#queries)).
 
 Simultaneously, Medplum will have created new `Binary` and `Media` resources for the Textract output. If Comprehend was enabled, additional resources will be created for its output as well. These resources will have a `subject` field that references the original `Media` or `DocumentReference` resource, creating a clear link between the input document and its processed outputs.
 
@@ -171,9 +137,12 @@ import { DocumentReference } from '@medplum/fhirtypes';
 export async function processDocumentReference(medplum: MedplumClient, docRefId: string): Promise<string> {
   // Post the DocumentReference to the `$aws-textract` operation.
   // The second argument is the request body, here we enable Comprehend.
-  const textractResponse = await medplum.post(medplum.fhirUrl('DocumentReference', docRefId, '$aws-textract'), {
-    comprehend: true,
-  });
+  const textractResponse = await medplum.post(
+    medplum.fhirUrl('DocumentReference', docRefId, '$aws-textract'), 
+    {
+      comprehend: true,
+    }
+  );
 
   // The response contains the raw AWS Textract output.
   // You can now process this output as needed.

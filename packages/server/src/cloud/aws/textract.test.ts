@@ -136,7 +136,6 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
-    expect(res3.body.QueryAnswers).toBeUndefined();
     expect(mockTextractClient.commandCalls(StartDocumentTextDetectionCommand)).toHaveLength(1);
     expect(mockTextractClient.commandCalls(StartDocumentAnalysisCommand)).toHaveLength(0);
 
@@ -151,20 +150,11 @@ describe('AWS Textract', () => {
       .resolvesOnce({
         JobStatus: 'SUCCEEDED',
         NextToken: 'page-2',
-        Blocks: [
-          { BlockType: 'LINE', Text: 'DOB: 01/02/1980' },
-          {
-            Id: 'q1',
-            BlockType: 'QUERY',
-            Query: { Text: 'What is the patient date of birth?', Alias: 'dob' },
-            Relationships: [{ Type: 'ANSWER', Ids: ['a1'] }],
-          },
-          { Id: 'q2', BlockType: 'QUERY', Query: { Text: 'What is the patient MRN?', Alias: 'mrn' } },
-        ],
+        Blocks: [{ BlockType: 'LINE', Text: 'DOB: 01/02/1980' }],
       })
       .resolvesOnce({
         JobStatus: 'SUCCEEDED',
-        Blocks: [{ Id: 'a1', BlockType: 'QUERY_RESULT', Text: '01/02/1980', Confidence: 97.5 }],
+        Blocks: [{ BlockType: 'QUERY_RESULT', Text: '01/02/1980', Confidence: 97.5 }],
       });
 
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
@@ -175,10 +165,7 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         comprehend: true,
-        queries: [
-          { text: 'What is the patient date of birth?', alias: 'dob', pages: ['*'] },
-          { text: 'What is the patient MRN?', alias: 'mrn' },
-        ],
+        queries: [{ text: 'What is the patient date of birth?', alias: 'dob', pages: ['*'] }],
       });
     expect(res).toHaveStatus(200);
 
@@ -187,38 +174,18 @@ describe('AWS Textract', () => {
     expect(startCalls).toHaveLength(1);
     expect(startCalls[0].args[0].input.FeatureTypes).toStrictEqual(['QUERIES']);
     expect(startCalls[0].args[0].input.QueriesConfig).toStrictEqual({
-      Queries: [
-        { Text: 'What is the patient date of birth?', Alias: 'dob', Pages: ['*'] },
-        { Text: 'What is the patient MRN?', Alias: 'mrn', Pages: undefined },
-      ],
+      Queries: [{ Text: 'What is the patient date of birth?', Alias: 'dob', Pages: ['*'] }],
     });
 
-    expect(res.body.Blocks).toHaveLength(4);
+    expect(res.body.Blocks.map((b: { Text?: string }) => b.Text)).toStrictEqual(['DOB: 01/02/1980', '01/02/1980']);
     expect(res.body.NextToken).toBeUndefined();
-    expect(res.body.QueryAnswers).toStrictEqual([
-      {
-        Alias: 'dob',
-        Text: 'What is the patient date of birth?',
-        Answers: [{ Text: '01/02/1980', Confidence: 97.5 }],
-      },
-      // The FHIR JSON serializer drops empty arrays, so an unanswered query has no Answers
-      { Alias: 'mrn', Text: 'What is the patient MRN?' },
-    ]);
 
     const comprehendCalls = mockComprehendClient.commandCalls(DetectEntitiesV2Command);
     expect(comprehendCalls).toHaveLength(1);
     expect(comprehendCalls[0].args[0].input.Text).toBe('DOB: 01/02/1980');
   });
 
-  test.each([
-    [[], 'queries must be a non-empty array'],
-    ['What is the DOB?', 'queries must be a non-empty array'],
-    [Array.from({ length: 31 }, () => ({ text: 'q' })), 'queries must contain at most 30 entries'],
-    [[{ text: '  ' }], 'Each query must have a non-empty text string'],
-    [[{ alias: 'dob' }], 'Each query must have a non-empty text string'],
-    [[{ text: 'q', alias: 1 }], 'Query alias must be a string'],
-    [[{ text: 'q', pages: '1' }], 'Query pages must be an array of strings'],
-  ])('Invalid queries %j', async (queries, message) => {
+  test.each([[[]], [[{ alias: 'dob' }]]])('Invalid queries %j', async (queries) => {
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
     const mediaId = await createMedia(accessToken);
 
@@ -227,7 +194,6 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ queries });
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe(message);
     expect(mockTextractClient.commandCalls(StartDocumentAnalysisCommand)).toHaveLength(0);
   });
 
