@@ -30,6 +30,7 @@ packages/storybook/build-storybook.log
 
 # Vitest code coverage
 coverage/
+.vitest/
 .vitest-reports/
 
 # TypeScript incremental build
