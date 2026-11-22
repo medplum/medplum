@@ -448,6 +448,8 @@ export class BackEnd extends Construct {
             'textract:AnalyzeDocument',
             'textract:StartDocumentTextDetection',
             'textract:GetDocumentTextDetection',
+            'textract:StartDocumentAnalysis',
+            'textract:GetDocumentAnalysis',
           ],
           resources: ['*'],
         }),
