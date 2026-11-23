@@ -63,14 +63,10 @@ export interface SecurityCheckInput {
 /**
  * Returns true for findings about admin privileges, which are also shown on the Admins tab.
  * @param finding - A security finding.
- * @returns True for the staff admin count, client admin and admin client Bot deploy findings.
+ * @returns True for the staff admin count and client admin findings.
  */
 export function isAdminFinding(finding: SecurityFinding): boolean {
-  return (
-    finding.id === STAFF_ADMINS_FINDING_ID ||
-    finding.id.startsWith(`${CLIENT_ADMIN_FINDING_PREFIX}/`) ||
-    finding.id.startsWith('client-deploys-bots/')
-  );
+  return finding.id === STAFF_ADMINS_FINDING_ID || finding.id.startsWith(`${CLIENT_ADMIN_FINDING_PREFIX}/`);
 }
 
 /**
@@ -208,7 +204,12 @@ function checkMembership(
   const findings: SecurityFinding[] = [];
 
   if (profileType === 'ClientApplication') {
-    if (!resolved) {
+    if (membership.admin) {
+      findings.push(getClientAdminFinding(membership, resolved));
+      if (resolved && !resolved.complete) {
+        findings.push(getUnresolvedPolicyFinding(membership));
+      }
+    } else if (!resolved) {
       findings.push({
         id: `client-no-policy/${membership.id}`,
         severity: 'critical',
@@ -223,7 +224,7 @@ function checkMembership(
     } else {
       const ipRestricted = hasIpRestriction(resolved.policies);
       const canWriteBots = canWrite(resolved.policies, 'Bot');
-      if (canWriteBots && !membership.admin) {
+      if (canWriteBots) {
         findings.push({
           id: `client-writes-bots/${membership.id}`,
           severity: ipRestricted ? 'medium' : 'high',
@@ -247,30 +248,6 @@ function checkMembership(
           link,
         });
       }
-    }
-
-    if (membership.admin && (!resolved || canWrite(resolved.policies, 'Bot'))) {
-      findings.push({
-        id: `client-deploys-bots/${membership.id}`,
-        severity: 'critical',
-        title: `Client "${name}" is a project admin and can deploy Bots`,
-        description:
-          'Bots run code inside your project. An admin client that can write Bots can deploy code with access to all project data. Give this client an access policy without Bot write access.',
-        target,
-        link,
-      });
-    }
-
-    if (membership.admin) {
-      findings.push({
-        id: `${CLIENT_ADMIN_FINDING_PREFIX}/${membership.id}`,
-        severity: 'critical',
-        title: `Client "${name}" is a project admin`,
-        description:
-          'Admin clients can manage memberships, access policies and project settings. Remove admin unless this client needs to administer the project.',
-        target,
-        link,
-      });
     }
 
     const secretAge = getSecretAge(target, input);
@@ -444,6 +421,60 @@ function resolvePolicies(
   }
   const policies = refs.map((r) => policiesByRef.get(r.reference as string)).filter((p): p is AccessPolicy => !!p);
   return { policies, complete: policies.length === refs.length };
+}
+
+/**
+ * Builds the single finding for an admin client, ranked by what its access policy still allows.
+ * - No access policy: critical, since the client can also read and write every resource from any IP address.
+ * - Bot write access: high, or medium when IP restricted.
+ * - No IP restriction: medium.
+ * - Otherwise, or when a policy could not be loaded: low.
+ * @param membership - The admin client's membership.
+ * @param resolved - The client's resolved access policies.
+ * @returns The admin client finding.
+ */
+function getClientAdminFinding(
+  membership: ProjectMembership,
+  resolved: ResolvedPolicies | undefined
+): SecurityFinding {
+  const name = getMembershipName(membership);
+  const base = {
+    id: `${CLIENT_ADMIN_FINDING_PREFIX}/${membership.id}`,
+    target: membership.profile,
+    link: getMembershipLink(membership),
+  };
+  const adminRisk =
+    'Admin clients can manage memberships, access policies and project settings. Remove admin unless this client needs to administer the project.';
+
+  if (!resolved) {
+    return {
+      ...base,
+      severity: 'critical',
+      title: `Client "${name}" is a project admin with no access policy`,
+      description: `${adminRisk} Without an access policy it can also read and write every resource, including Bots, from any IP address. Assign an access policy with IP restrictions.`,
+    };
+  }
+
+  const ipRestricted = resolved.complete && hasIpRestriction(resolved.policies);
+  if (resolved.complete && canWrite(resolved.policies, 'Bot')) {
+    return {
+      ...base,
+      severity: ipRestricted ? 'medium' : 'high',
+      title: ipRestricted
+        ? `Client "${name}" is a project admin and can deploy Bots`
+        : `Client "${name}" is a project admin and can deploy Bots from any IP address`,
+      description: `${adminRisk} Bots run code with access to all project data, so remove Bot write access from its access policy unless it deploys Bots.`,
+    };
+  }
+  if (resolved.complete && !ipRestricted) {
+    return {
+      ...base,
+      severity: 'medium',
+      title: `Client "${name}" is a project admin with no IP restriction`,
+      description: `${adminRisk} If it runs on known infrastructure, add IP access rules to its access policy.`,
+    };
+  }
+  return { ...base, severity: 'low', title: `Client "${name}" is a project admin`, description: adminRisk };
 }
 
 function getUnresolvedPolicyFinding(membership: ProjectMembership): SecurityFinding {

@@ -135,7 +135,7 @@ describe('security checks', () => {
     const input = makeInput(clientMembership({ admin: true, accessPolicy: { reference: 'AccessPolicy/a1' } }), [
       policy('a1', { ipAccessRule: [{ value: '*', action: 'block' }] }),
     ]);
-    expect(findingIds(input)).toEqual(['client-admin']);
+    expect(analyzeProjectSecurity(input)).toMatchObject([{ id: 'client-admin/m1', severity: 'low' }]);
   });
 
   test('policy that cannot be loaded', () => {
@@ -169,30 +169,33 @@ describe('security checks', () => {
   test.each<[string, AccessPolicyIpAccessRule[], boolean, string]>([
     ['without IP restriction', [], false, 'high'],
     ['with IP restriction', [{ value: '*', action: 'block' }], false, 'medium'],
-    ['for an admin with IP restriction', [{ value: '*', action: 'block' }], true, 'critical'],
+    ['for an admin without IP restriction', [], true, 'high'],
+    ['for an admin with IP restriction', [{ value: '*', action: 'block' }], true, 'medium'],
   ])('Bot write severity %s', (_name, ipAccessRule, admin, severity) => {
     const input = makeInput(clientMembership({ admin, accessPolicy: { reference: 'AccessPolicy/a1' } }), [
       policy('a1', { resource: [{ resourceType: 'Bot' }], ipAccessRule }),
     ]);
     expect(
       analyzeProjectSecurity(input).find(
-        (f) => f.id.startsWith('client-writes-bots/') || f.id.startsWith('client-deploys-bots/')
+        (f) => f.id.startsWith('client-writes-bots/') || f.id.startsWith('client-admin/')
       )?.severity
     ).toBe(severity);
   });
 
-  test.each<[string, ProjectMembership['accessPolicy'], AccessPolicy[], string[]]>([
-    ['no access policy', undefined, [], ['client-admin', 'client-deploys-bots', 'client-no-policy']],
+  test.each<[string, ProjectMembership['accessPolicy'], AccessPolicy[], string[], string]>([
+    ['no access policy', undefined, [], ['client-admin'], 'critical'],
+    ['no IP restriction', { reference: 'AccessPolicy/a1' }, [policy('a1')], ['client-admin'], 'medium'],
     [
-      'Bot write access',
-      { reference: 'AccessPolicy/a1' },
-      [policy('a1', { resource: [{ resourceType: 'Bot' }] })],
-      ['client-admin', 'client-deploys-bots'],
+      'a policy that cannot be loaded',
+      { reference: 'AccessPolicy/linked' },
+      [],
+      ['client-admin', 'policy-unresolved'],
+      'low',
     ],
-    ['a policy that cannot be loaded', { reference: 'AccessPolicy/linked' }, [], ['client-admin', 'policy-unresolved']],
-  ])('admin client with %s', (_name, accessPolicy, policies, expected) => {
+  ])('admin client with %s', (_name, accessPolicy, policies, expected, severity) => {
     const input = makeInput(clientMembership({ admin: true, accessPolicy }), policies);
     expect(findingIds(input).sort((a, b) => a.localeCompare(b))).toEqual(expected);
+    expect(analyzeProjectSecurity(input).find((f) => f.id === 'client-admin/m1')?.severity).toBe(severity);
   });
 
   test.each<[string, string]>([

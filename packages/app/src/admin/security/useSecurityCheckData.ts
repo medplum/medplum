@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient, MedplumRequestOptions, QueryTypes, WithId } from '@medplum/core';
-import { isReference, normalizeErrorString, resolveId } from '@medplum/core';
+import type { MedplumClient, MedplumRequestOptions, WithId } from '@medplum/core';
+import { DEFAULT_MAX_SEARCH_COUNT, isReference, normalizeErrorString, resolveId } from '@medplum/core';
 import type { ClientApplication, ExtractResource, Project, ResourceType, User } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
@@ -107,13 +107,22 @@ async function runSecurityCheck(medplum: MedplumClient): Promise<SecurityCheckRe
   };
 }
 
+/**
+ * Loads every matching resource. Sorting by `_lastUpdated` ascending makes the server return cursor links,
+ * which are not subject to the search offset limit.
+ * @param medplum - The Medplum client.
+ * @param resourceType - The resource type to search.
+ * @param query - Additional search parameters.
+ * @returns All matching resources.
+ */
 async function searchAll<RT extends ResourceType>(
   medplum: MedplumClient,
   resourceType: RT,
-  query?: QueryTypes
+  query?: Record<string, string>
 ): Promise<WithId<ExtractResource<RT>>[]> {
   const results: WithId<ExtractResource<RT>>[] = [];
-  for await (const page of medplum.searchResourcePages(resourceType, query, NO_CACHE)) {
+  const pagedQuery = { ...query, _sort: '_lastUpdated', _count: String(DEFAULT_MAX_SEARCH_COUNT) };
+  for await (const page of medplum.searchResourcePages(resourceType, pagedQuery, NO_CACHE)) {
     results.push(...page);
   }
   return results;

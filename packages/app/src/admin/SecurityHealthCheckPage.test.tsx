@@ -54,18 +54,18 @@ describe('SecurityHealthCheckPage', () => {
 
     renderAppRoutes(medplum, '/admin/security');
 
-    expect(await screen.findByText('Client "Test Client" has no access policy or IP restriction')).toBeInTheDocument();
-    expect(screen.getByText('Client "Test Client" is a project admin')).toBeInTheDocument();
-    expect(screen.getByText('Client "Test Client" is a project admin and can deploy Bots')).toBeInTheDocument();
+    const title = 'Client "Test Client" is a project admin with no access policy';
+    expect(await screen.findByText(title)).toBeInTheDocument();
+    expect(screen.getByText('Critical (1)')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('High (0)'));
-    expect(screen.queryByText('Client "Test Client" is a project admin')).not.toBeInTheDocument();
+    expect(screen.queryByText(title)).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('tab', { name: /^Clients \(/ }));
     expect(await screen.findByText('0 days')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('tab', { name: /^Admins \(/ }));
-    expect(await screen.findByRole('alert', { name: 'Client "Test Client" is a project admin' })).toBeInTheDocument();
+    expect(await screen.findByRole('alert', { name: title })).toBeInTheDocument();
   });
 
   test('saves a report after each run', async () => {

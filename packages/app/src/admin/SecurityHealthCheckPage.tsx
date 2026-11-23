@@ -154,7 +154,7 @@ function FindingsPanel({ findings }: FindingsPanelProps): JSX.Element {
           {visible.map((finding) => (
             <Table.Tr key={finding.id}>
               <Table.Td valign="top">
-                <Badge color={SEVERITY_COLORS[finding.severity]}>{SEVERITY_LABELS[finding.severity]}</Badge>
+                <Badge color={SEVERITY_COLORS[finding.severity]} miw="max-content">{SEVERITY_LABELS[finding.severity]}</Badge>
               </Table.Td>
               <Table.Td>
                 <Text fw={500}>{finding.title}</Text>
