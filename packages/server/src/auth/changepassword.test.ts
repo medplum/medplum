@@ -190,7 +190,7 @@ describe('Change Password', () => {
       expect(resetStatus).toBe(200);
       expect(res).toHaveStatus(400);
       expect(res.body).toMatchObject(badRequest('Incorrect password', 'oldPassword'));
-      expect(warnSpy).toHaveBeenCalledWith('Password change rejected because the password changed during the request', {
+      expect(warnSpy).toHaveBeenCalledWith('Password change rejected because the user changed during the request', {
         userId: user.id,
       });
       warnSpy.mockRestore();
@@ -215,33 +215,32 @@ describe('Change Password', () => {
       expect(await loginStatus(email, 'password!@#admin')).toBe(200);
     });
 
-    test('Password set between the check and the write in the transaction is kept', async () => {
+    test('Password set during the change transaction is kept', async () => {
       const { email, user, accessToken } = await register();
 
-      // Commit the admin change right after the change request's in-transaction read of the User
+      // Commit the admin change after the change request's transaction has started, right before its write
       let armed = false;
       (pwnedPassword as unknown as Mock).mockImplementationOnce(async () => {
         armed = true;
         return 0;
       });
-      const readResource = Repository.prototype.readResource;
-      const readSpy = vi.spyOn(Repository.prototype, 'readResource').mockImplementation(async function (
+      const patchResource = Repository.prototype.patchResource;
+      const patchSpy = vi.spyOn(Repository.prototype, 'patchResource').mockImplementation(async function (
         this: Repository,
         ...args
       ) {
-        const result = await readResource.apply(this, args);
         if (armed && args[0] === 'User' && args[1] === user.id) {
           armed = false;
           await setPassword(getGlobalSystemRepo(), user, 'password!@#admin');
         }
-        return result;
+        return patchResource.apply(this, args);
       });
       try {
         const res = await changePassword(accessToken, 'password!@#123');
         expect(res).toHaveStatus(400);
         expect(res.body).toMatchObject(badRequest('Incorrect password', 'oldPassword'));
       } finally {
-        readSpy.mockRestore();
+        patchSpy.mockRestore();
       }
 
       expect(await loginStatus(email, 'password!@#123')).toBe(400);
