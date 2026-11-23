@@ -260,7 +260,7 @@ describe('AppointmentDetails', () => {
 
     expect(screen.getByText('Status').nextElementSibling).toHaveTextContent('booked');
     expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
-    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
     // Everyone but the patient, named from their own resources rather than the references' displays.
     expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
