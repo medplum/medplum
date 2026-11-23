@@ -23,6 +23,7 @@ export class Queue {
 export const Worker = vi.fn().mockImplementation(function Worker() {
   return {
     on: vi.fn().mockReturnThis(),
+    run: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   };
 }) as Mock;

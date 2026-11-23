@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getResourceTypes, projectAdminResourceTypes, protectedResourceTypes } from '@medplum/core';
+import {
+  AccessPolicyInteraction,
+  getResourceTypes,
+  projectAdminResourceTypes,
+  protectedResourceTypes,
+} from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyResource,
@@ -18,6 +23,10 @@ export type DefaultAccessPolicy = Pick<AccessPolicy, 'name' | 'compartment' | 'r
 const CLIENT_SECRET_FIELDS = ['secret', 'retiringSecret'];
 
 /** Knowledge, terminology, and conformance resources managed by admins rather than front-line users. */
+// Content such as Bot code lives in Binaries, so replacing one in place would bypass the access rules of the
+// resource that references it
+const CREATE_ONLY_RESOURCE_TYPES: ResourceType[] = ['Binary'];
+
 const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'MedicationKnowledge',
   'PlanDefinition',
@@ -38,10 +47,17 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
   }),
   RelatedPerson: () => ({
     name: 'Default RelatedPerson Access Policy',
-    // Same criteria as the patient policy. %patient is the associated Patient, supplied by
-    // ProjectMembership.access.parameter on invite. The profile is the RelatedPerson, so it
-    // cannot fill %patient.
-    resource: patientCompartmentResources(),
+    // %patient is the associated Patient, supplied by ProjectMembership.access.parameter on
+    // invite. The profile is the RelatedPerson, so it cannot fill %patient.
+    resource: [
+      // A caregiver may update their own profile, but not point it at another patient
+      {
+        resourceType: 'RelatedPerson',
+        criteria: 'RelatedPerson?_id=%profile.id&patient=%patient',
+        interaction: [AccessPolicyInteraction.UPDATE],
+      },
+      ...patientCompartmentResources(),
+    ],
   }),
   Admin: () => ({
     name: 'Default Admin Access Policy',
@@ -51,6 +67,7 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
     name: 'Default Practitioner Access Policy',
     resource: writableExcept({
       readonly: [...PRACTITIONER_READONLY_RESOURCE_TYPES, 'Bot', 'ClientApplication'],
+      createOnly: CREATE_ONLY_RESOURCE_TYPES,
       hiddenFields: { ClientApplication: CLIENT_SECRET_FIELDS },
     }),
   }),
@@ -58,6 +75,7 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
     name: 'Default Bot Access Policy',
     resource: writableExcept({
       readonly: ['AccessPolicy', 'Bot', 'ClientApplication'],
+      createOnly: CREATE_ONLY_RESOURCE_TYPES,
       hiddenFields: { ClientApplication: CLIENT_SECRET_FIELDS },
     }),
   }),
@@ -65,6 +83,7 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
     name: 'Default ClientApplication Access Policy',
     resource: writableExcept({
       readonly: ['AccessPolicy', 'Bot', 'ClientApplication'],
+      createOnly: CREATE_ONLY_RESOURCE_TYPES,
       hiddenFields: { ClientApplication: CLIENT_SECRET_FIELDS },
     }),
   }),
@@ -109,14 +128,16 @@ export function getDefaultPatientAccessPolicy(project: Project): Reference<Acces
  *   for super admins.
  * @param options - The restrictions.
  * @param options.readonly - Resource types that can be read but not written.
+ * @param options.createOnly - Resource types that can be read and created, but not updated or deleted.
  * @param options.hiddenFields - Fields hidden from reads (and preserved on writes), by resource type.
  * @returns The access policy entries.
  */
 function writableExcept(options: {
   readonly?: ResourceType[];
+  createOnly?: ResourceType[];
   hiddenFields?: Partial<Record<ResourceType, string[]>>;
 }): AccessPolicyResource[] {
-  const readonly = options.readonly ?? [];
+  const readonly = [...(options.readonly ?? []), ...(options.createOnly ?? [])];
   const hiddenFields = options.hiddenFields ?? {};
 
   const fieldEntries = Object.entries(hiddenFields).map(([resourceType, fields]) => ({
@@ -143,11 +164,16 @@ function writableExcept(options: {
         !protectedResourceTypes.includes(resourceType)
     )
     .map((resourceType) => ({ resourceType }));
+  const createOnlyEntries = (options.createOnly ?? []).map((resourceType) => ({
+    resourceType,
+    interaction: [AccessPolicyInteraction.CREATE],
+  }));
   return [
     ...fieldEntries,
     { resourceType: '*', readonly: true },
     ...projectAdminReadonlyEntries, // not overshadowed by the '*' entry above since '*' doesn't match `projectAdminResourceTypes`
     ...writableEntries,
+    ...createOnlyEntries, // read comes from the '*' entry above
   ];
 }
 
@@ -172,7 +198,7 @@ function patientCompartmentResources(): AccessPolicyResource[] {
     { resourceType: 'Observation', criteria: 'Observation?_compartment=%patient' },
     { resourceType: 'Procedure', criteria: 'Procedure?_compartment=%patient' },
     { resourceType: 'QuestionnaireResponse', criteria: 'QuestionnaireResponse?_compartment=%patient' },
-    { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient' },
+    { resourceType: 'RelatedPerson', criteria: 'RelatedPerson?_compartment=%patient', readonly: true },
     { resourceType: 'ServiceRequest', criteria: 'ServiceRequest?_compartment=%patient' },
     { resourceType: 'Task', criteria: 'Task?_compartment=%patient' },
   ];

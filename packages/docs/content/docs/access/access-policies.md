@@ -5,15 +5,19 @@ weight: 20
 docs_tags: [auth]
 ---
 
+{{< tip title="Planning access control?" >}}
+Use the [Access Control Decision Guide](/docs/decision-guides/access-control) to define roles, permissions, and administration. For a multi-tenant application, first choose the project and Patient boundaries in the [Tenancy Design Decision Guide](/docs/decision-guides/tenancy-design).
+{{< /tip >}}
+
 ## Introduction
 
 This document describes the core concepts of Medplum Access Controls. Security and access controls are notoriously difficult. Complex business and regulatory requirements often lead to a mess of incomprehensible rules. Medplum strives to create a simple and understandable model, which is flexible enough to handle all unique security needs.
 
 ## Core Model
 
-All resources exist within a "Project". A project is a top-level container. In general, each healthcare organization will have one project for all of their resources.
+Resources belong to a Project, a top-level container. An application can represent multiple customer organizations or service lines within one project, with access policies enforcing their permissions. Self-hosted applications can also use [a project per customer](/docs/access/projects#project-per-customer-tenancy).
 
-Every user account can have one or more "Project Memberships". A project membership represents access to resources within a project. The user can either be granted access to all resources within the project, or limited access to a set of compartments.
+Every user account can have one or more "Project Memberships". A project membership represents access to resources within a project. The user can either be granted access to all resources within the project, or limited access through policy criteria, including criteria that match Patient or tenant references in `meta.compartment`.
 
 ## Access Policies
 
@@ -27,7 +31,7 @@ Access policies allow you to:
 - Grant read only access to any property
 - Grant read/write access to any property
 
-Access policies also allow you to grant access by "Compartment".
+Access policies can grant access to resources in a Patient's FHIR compartment, or to resources with an approved tenant reference in `meta.compartment`.
 
 ## Examples
 
@@ -241,19 +245,15 @@ For example, an access policy with write constraints could be used to manage sta
 
 [fhirpath]: https://hl7.org/fhirpath/#expressions
 
-### Compartments
+### FHIR compartments and `meta.compartment` {#compartments}
 
-All resources can be tagged with one or more "Compartments". A compartment is simply a group of resources. Importantly, compartments are not mutually exclusive. A resource can (and often will) exist in multiple compartments.
+A FHIR compartment groups resources related to an anchor resource. A resource can belong to several FHIR compartments. Medplum determines FHIR Patient compartment membership from defined references, such as an Observation's `subject`. See the [FHIR Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html).
 
-For example, consider an "Observation" resource representing a blood pressure measurement. That Observation resource will fall into the following Compartments:
+Using `_compartment` in an application search narrows that request's results; using it in policy criteria restricts permitted access. UI filtering can also use ordinary [search parameters](/docs/search/basic-search), such as owner or status where supported, without tenant or care-team assignments in `meta.compartment`. Choose policies when the restriction must apply to direct API access.
 
-- "Patient" - for the "subject" of the observation
-- "Practitioner" - for the "performer" of the observation
-- "Encounter" - for the "encounter" of the observation
+For application tenants or finer access groups within a project, Medplum also includes explicit `meta.accounts` references in its computed `meta.compartment`. Assign them with [`$set-accounts`](/docs/api/fhir/operations/set-accounts), then grant access through matching policy criteria. Organization, HealthcareService, and CareTeam can represent these groups. A resource can have several tenant or care-team references in `meta.compartment`; those references do not create an automatic hierarchy. See [Layering tenant and care-team access](/docs/access/multi-tenant-access-policy#layering-tenant-and-care-team-access). Patient-wide assignment is appropriate when the Patient and its clinical records share the intended audience.
 
-Resources are automatically assigned to compartments based on rules. Currently, the Medplum server automatically assigns resources to the "Patient" compartment. You can find the full definition of the patient compartment [here](https://hl7.org/fhir/R4/compartmentdefinition-patient.html).
-
-You can use compartments to succinctly create an [AccessPolicy](/docs/api/fhir/medplum/accesspolicy) for resources related to a single patient.
+You can use the Patient's FHIR compartment to create an [AccessPolicy](/docs/api/fhir/medplum/accesspolicy) for related resources, such as Observations and Tasks.
 
 The AccessPolicy below grants access to all `Observation` resources that belong to `Patient/xyz`. The example takes advantage of the [`_compartment` search parameter](/docs/search/advanced-search-parameters#_compartment). To reuse one policy across patients, write `%patient` in the criteria and set the Patient on the user's membership. See [Caregiver access](#caregiver-access).
 
@@ -284,10 +284,10 @@ For more advanced access control configurations, You can use `%` variables to pa
 
 Medplum provides the following built-in variables:
 
-| Variable      | Description                                                                                                                                                          |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                         |
-| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                          |
+| Variable      | Description                                                                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`)                                                                          |
+| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                                                                                           |
 | `%patient`    | The patient this policy is scoped to. Defaults to the user's profile. A membership parameter named `patient` overrides it. See [Caregiver access](#caregiver-access). |
 
 <details open>
@@ -433,11 +433,13 @@ For support workflows, use a parameterized policy to grant access to one tenant 
 }
 ```
 
-### Migrating from top-level compartments
+### Migrating from `AccessPolicy.compartment` {#migrating-from-top-level-compartments}
 
-Older access policies may use the top-level `compartment` element to describe a broad compartment rule. For new policies, prefer resource-level `criteria` with parameterized values. This keeps each resource rule explicit and lets the same policy template be reused with different `ProjectMembership.access.parameter` values.
+Older access policies may use the top-level `AccessPolicy.compartment` field for account assignment. For new policies, prefer resource-level `criteria` with parameterized values. This keeps each resource rule explicit and lets the same policy template be reused with different `ProjectMembership.access.parameter` values.
 
-For example, instead of relying on a top-level compartment rule, define the tenant filter on each resource that should be visible:
+`AccessPolicy.compartment` can stamp account references in `meta.accounts` on new resources; Medplum includes those references in `meta.compartment`. Resource-level criteria only restrict access; preserve the intended assignment behavior through a controlled [$set-accounts workflow](/docs/api/fhir/operations/set-accounts) when migrating.
+
+For example, define the tenant filter on each resource that should be visible:
 
 ```json
 {
@@ -485,76 +487,37 @@ A patient or caregiver policy uses the same two-part setup. The criteria refer t
 
 ### Healthcare Partnerships
 
-A common need is to grant access to a subset of resources for a healthcare partnership. For example, a lab provider may want to grant access to all patient records that _originated from a specific client organization_.
+A lab provider may need read access to Patients assigned to a specific client organization. This example uses an **Organization tenant** within one project:
 
-This can be achieved using Access Policy compartments.
-
-Assume that we have an Organization resource representing the customer:
+1. Create the Organization representing the client.
+2. Assign the intended Patients to it using [`$set-accounts`](/docs/api/fhir/operations/set-accounts). The operation sets `meta.accounts`; Medplum includes those tenant references in `meta.compartment`.
+3. Grant the lab's membership the read-only policy below, replacing `<organization-id>` with the stored Organization ID.
 
 ```json
 {
-  "resourceType": "Organization",
-  "name": "Example Customer Organization",
-  "id": "abc-123"
-}
-```
-
-This access policy grants read-only access to all Patients that are within that customer's "account" compartment:
-
-```js
-{
   "resourceType": "AccessPolicy",
-  "name": "Patient Example",
-  // Any resource created will be tagged with `meta.account` set to `Organization/abc-123`
-  "compartment": {
-    "reference": "Organization/abc-123",
-    "display": "Example Customer Organization"
-  },
+  "name": "Client Organization Patients",
   "resource": [
-  // Any read or search operation will filter on `meta.account` equals `Organization/abc-123`
     {
       "resourceType": "Patient",
-      "criteria": "Patient?_compartment=Organization/abc-123"
+      "criteria": "Patient?_compartment=Organization/<organization-id>",
       "readonly": true
     }
   ]
 }
 ```
 
-The `meta.account` property is not FHIR standard. It is an extra `Reference` property in the `Meta` section.
+The rule grants Patient reads. Grant access to selected clinical resource types separately if required. For reuse across clients, replace the Organization reference with a [membership policy parameter](#parameterized-policies).
 
-For example, here's how the Patient resource would look:
-
-```json
-{
-  "resourceType": "Patient",
-  "id": "54aa8595-e3a7-48ae-af91-9c7cb940149b",
-  "meta": {
-    "versionId": "02900c57-4da8-498f-85d5-5077077e3e2c",
-    "lastUpdated": "2022-01-13T16:21:11.870Z",
-    "account": {
-      "reference": "Organization/abc-123",
-      "display": "Example Customer Organization"
-    }
-  },
-  "name": [
-    {
-      "given": ["Homer"],
-      "family": "Simpson"
-    }
-  ]
-}
-```
-
-Because the account-tagging is handled within the resource, project administrators and API users can set the account directly.
+Older implementations may use the singular `meta.account` field and top-level `AccessPolicy.compartment`. Use `meta.accounts`, `$set-accounts`, and resource-level criteria for the patterns in this guide; see [Migrating from `AccessPolicy.compartment`](#migrating-from-top-level-compartments).
 
 ### Patient Access
 
-If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. Use a templated access policy whose criteria are limited to that patient's compartment.
+If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. Use a templated access policy whose criteria are limited to that Patient's FHIR compartment.
 
 {{< warning title="Open Patient Registration" >}}
 
-Patient Access is disabled by default. See our article on [enabling open patient registration](/docs/user-management/open-patient-registration) for instructions on enabling this functionality.
+Open patient self-registration is disabled by default. You can invite patients without enabling it. See [Open Patient Registration](/docs/user-management/open-patient-registration) to configure self-registration and the required default policy.
 
 {{< /warning >}}
 
@@ -564,7 +527,7 @@ The default Patient policy does not set `AccessPolicy.compartment`. Each resourc
 
 {{< warning title="Binary Security Context" >}}
 
-`Binary` resources cannot use compartment-based access controls. Access is restricted by matching the `securityContext` field to the patient. When creating a `Binary` in a patient context, always set `securityContext` to the patient reference — otherwise the patient will not be able to access it:
+`Binary` access follows the permissions on its `securityContext` resource. Use a Patient reference when the file should be available to readers authorized for that Patient, as in this example:
 
 ```json
 {
@@ -576,7 +539,7 @@ The default Patient policy does not set `AccessPolicy.compartment`. Each resourc
 }
 ```
 
-See [Binary Security Context](/docs/access/binary-security-context) for more details.
+For a file restricted to one tenant or care team, choose a context with that same audience. A shared Patient may be too broad even when the file's clinical record has narrower permissions. See [Binary Security Context](/docs/access/binary-security-context) for details.
 
 {{< /warning >}}
 
@@ -588,7 +551,7 @@ A caregiver, such as a parent or guardian, logs in as a [`RelatedPerson`](/docs/
 
 Limit that user with resource `criteria` and a parameter on their [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The policy names the patient as `%patient`. The membership supplies the Patient reference. One policy template then works for every caregiver; only the parameter changes. The project's [default RelatedPerson access policy](#default-access-policies) is this template.
 
-`AccessPolicy.compartment` is a different mechanism. When it is set, Medplum adds that reference to `meta.accounts` on resources the user creates. It does not decide which existing records the user can read. The server already places a resource in the [patient compartment](#compartments) from the patient references on the resource. Criteria such as `Observation?_compartment=%patient` match that compartment. The default Patient and RelatedPerson policies leave `compartment` unset and rely on those criteria.
+`AccessPolicy.compartment` is a different mechanism. When it is set, Medplum adds that reference to `meta.accounts` on resources the user creates. It does not decide which existing records the user can read. The server already places a resource in the [FHIR Patient compartment](#compartments) from the patient references on the resource. Criteria such as `Observation?_compartment=%patient` match that FHIR Patient compartment. The default Patient and RelatedPerson policies leave `compartment` unset and rely on those criteria.
 
 #### 1. Write criteria that use `%patient`
 
@@ -613,7 +576,9 @@ Limit that user with resource `criteria` and a parameter on their [`ProjectMembe
 }
 ```
 
-The default Patient and RelatedPerson policies follow this shape for the clinical resource types in the patient compartment. `Patient` is matched by id. `Communication` is matched on `sender` and `recipient`, because those are the references that place it in the patient compartment. The other clinical types are matched with `_compartment=%patient`, as `Observation` and `Condition` are above.
+The default Patient and RelatedPerson policies follow this shape for the clinical resource types in the FHIR Patient compartment. `Patient` is matched by id. `Communication` is matched on `sender` and `recipient`, because those are the references that place it in the FHIR Patient compartment. The other clinical types are matched with `_compartment=%patient`, as `Observation` and `Condition` are above.
+
+`RelatedPerson` records are read-only in both policies, so a patient or caregiver cannot add a contact or change which Patient one points at. The one exception is that a caregiver can update their own `RelatedPerson` profile, as long as its `patient` stays the same.
 
 #### 2. Put the Patient on the membership
 
@@ -734,20 +699,26 @@ This update allows for more granular control and visibility in RBAC implementati
 
 New projects are created with a set of **default access policies**, one per profile type. These are stored on the [`Project.defaultAccessPolicies`](/docs/api/fhir/medplum/project) element, which maps a `profileType` to the `AccessPolicy` applied when a user of that type is invited without an explicit policy:
 
-| Profile type        | Default policy grants                                                                                                                                                 |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden. |
-| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                 |
-| `Patient`           | Access scoped to the patient's own compartment. `%patient` is the Patient profile. See [Patient access](#patient-access).                                             |
-| `RelatedPerson`     | Access scoped to the associated patient's compartment. The invite stores that Patient on the membership. See [Caregiver access](#caregiver-access).                    |
-| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
-| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, and no access to `ClientApplication` secrets. |
+| Profile type        | Default policy grants                                                                                                                                                                                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Practitioner`      | Read/write access to all resource types, **except** read-only access to a curated set of knowledge, terminology, and conformance resource types, plus read-only `Bot` and `ClientApplication` with `ClientApplication` secrets hidden, and create-only `Binary`. |
+| `Admin`             | Full read/write access to all resource types (equivalent to having no access policy).                                                                                                                                                                            |
+| `Patient`           | Access scoped to the Patient's own FHIR compartment. `%patient` is the Patient profile. `RelatedPerson` records are read-only. See [Patient access](#patient-access).                                                                                            |
+| `RelatedPerson`     | Access scoped to the associated Patient's FHIR compartment. The invite stores that Patient on the membership. `RelatedPerson` records are read-only, except the caregiver's own profile. See [Caregiver access](#caregiver-access).                              |
+| `Bot`               | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, create-only `Binary`, and no access to `ClientApplication` secrets.                                                                      |
+| `ClientApplication` | Read/write access to all resource types, **except** read-only access to `AccessPolicy`, `Bot`, and `ClientApplication`, create-only `Binary`, and no access to `ClientApplication` secrets.                                                                      |
 
 When you [invite a user](/docs/app/invite) without specifying an access policy, Medplum applies the matching default for that profile type. Practitioners invited with the **admin** flag receive the `Admin` default; all other practitioners receive the `Practitioner` default. Likewise, when you [create a Bot](/docs/bots/bot-basics) or [create a ClientApplication](/docs/auth/client-credentials) without specifying an access policy, it receives the `Bot` or `ClientApplication` default. This includes the default client created with each new project.
 
 {{< note title="Deploying Bots with a ClientApplication" >}}
 
 Because the `ClientApplication` default makes `Bot` read-only, a client with that policy cannot save or deploy Bots, for example with `medplum bot save` or `medplum bot deploy` (`Bot/$deploy` returns `403 Forbidden`). This applies to the default client of new projects. To deploy Bots from the CLI or a CI/CD pipeline, use a ClientApplication whose access policy grants write access to `Bot`.
+
+{{< /note >}}
+
+{{< note title="Create-only Binary" >}}
+
+The `Practitioner`, `Bot`, and `ClientApplication` defaults can create and read `Binary` resources, but not update or delete them, or request an upload URL for an existing one (`Binary/$presigned-url?upload=true`). To change a file, upload a new `Binary` and update the reference to it. If your application replaces Binary content in place, give those users an access policy that grants write access to `Binary`.
 
 {{< /note >}}
 

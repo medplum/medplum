@@ -14,7 +14,7 @@ import type { AccessPolicy, Bundle, Resource, ResourceType } from '@medplum/fhir
 import type { DefaultAccessPolicyProfileType } from './default-access-policies';
 import { DEFAULT_ACCESS_POLICIES } from './default-access-policies';
 
-type Access = 'write' | 'read' | 'none';
+type Access = 'write' | 'create' | 'read' | 'none';
 
 function buildPolicy(profileType: DefaultAccessPolicyProfileType): AccessPolicy {
   return { resourceType: 'AccessPolicy', ...DEFAULT_ACCESS_POLICIES[profileType]() };
@@ -23,6 +23,9 @@ function buildPolicy(profileType: DefaultAccessPolicyProfileType): AccessPolicy 
 function getAccess(policy: AccessPolicy, resourceType: ResourceType): Access {
   if (accessPolicySupportsInteraction(policy, AccessPolicyInteraction.UPDATE, resourceType)) {
     return 'write';
+  }
+  if (accessPolicySupportsInteraction(policy, AccessPolicyInteraction.CREATE, resourceType)) {
+    return 'create';
   }
   return accessPolicySupportsInteraction(policy, AccessPolicyInteraction.READ, resourceType) ? 'read' : 'none';
 }
@@ -82,13 +85,14 @@ describe('Default access policies', () => {
     DefaultAccessPolicyProfileType,
     { others: Access; except: Partial<Record<ResourceType, Access>> }
   > = {
-    Patient: { others: 'none', except: patientCompartmentAccess },
+    Patient: { others: 'none', except: { ...patientCompartmentAccess, RelatedPerson: 'read' } },
     RelatedPerson: { others: 'none', except: patientCompartmentAccess },
     Admin: { others: 'write', except: {} },
     Practitioner: {
       others: 'write',
       except: {
         ActivityDefinition: 'read',
+        Binary: 'create',
         Bot: 'read',
         ClientApplication: 'read',
         CodeSystem: 'read',
@@ -99,8 +103,8 @@ describe('Default access policies', () => {
         ValueSet: 'read',
       },
     },
-    Bot: { others: 'write', except: { Bot: 'read', ClientApplication: 'read' } },
-    ClientApplication: { others: 'write', except: { Bot: 'read', ClientApplication: 'read' } },
+    Bot: { others: 'write', except: { Binary: 'create', Bot: 'read', ClientApplication: 'read' } },
+    ClientApplication: { others: 'write', except: { Binary: 'create', Bot: 'read', ClientApplication: 'read' } },
   };
 
   test.each(Object.entries(expectedAccess))('%s default resource type access', (profileType, { others, except }) => {

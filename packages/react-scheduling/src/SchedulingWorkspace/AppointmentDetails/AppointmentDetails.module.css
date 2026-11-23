@@ -2,6 +2,11 @@
 
 .details {
   flex: 1;
+}
+
+/* Held to the pane's height, so the reschedule form and its times each scroll on their own.
+   Only here: a page held short squeezes its buttons flat rather than letting the pane scroll. */
+.rescheduling {
   min-height: 0;
 }
 

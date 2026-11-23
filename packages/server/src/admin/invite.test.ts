@@ -8,6 +8,7 @@ import {
   ContentType,
   createReference,
   getReferenceString,
+  Logger,
   normalizeErrorString,
 } from '@medplum/core';
 import type {
@@ -35,7 +36,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { SelectQuery } from '../fhir/sql';
 import {
@@ -46,6 +47,17 @@ import {
   withTestContext,
 } from '../test.setup';
 import { inviteUser } from './invite';
+
+const { mockCreateTransport } = vi.hoisted(() => {
+  const mockSendMail = vi.fn().mockResolvedValue(undefined);
+  const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+  return { mockCreateTransport };
+});
+
+vi.mock('nodemailer', () => ({
+  createTransport: mockCreateTransport,
+  default: { createTransport: mockCreateTransport },
+}));
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -182,6 +194,66 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
+  });
+
+  test('Logs a membership granted to an existing user with an unverified email', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const systemRepo = getGlobalSystemRepo();
+    const unverifiedEmail = `bob${randomUUID()}@example.com`;
+    const verifiedEmail = `carol${randomUUID()}@example.com`;
+    const unverifiedUser = await withTestContext(() =>
+      systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: unverifiedEmail,
+      })
+    );
+    await withTestContext(() =>
+      systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Carol',
+        lastName: 'Jones',
+        email: verifiedEmail,
+        emailVerified: true,
+      })
+    );
+
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    const invite = (firstName: string, email: string): request.Test =>
+      request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({ resourceType: 'Practitioner', firstName, lastName: 'Jones', email, sendEmail: false });
+
+    const res1 = await invite('Bob', unverifiedEmail);
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.user.reference).toBe(getReferenceString(unverifiedUser));
+    expect(await invite('Carol', verifiedEmail)).toHaveStatus(200);
+    expect(await invite('Dave', `dave${randomUUID()}@example.com`)).toHaveStatus(200);
+
+    const message = 'Membership granted to existing user with unverified email';
+    expect(warnSpy.mock.calls.filter(([msg]) => msg === message)).toStrictEqual([
+      [
+        message,
+        expect.objectContaining({
+          source: 'invite',
+          userId: unverifiedUser.id,
+          projectId: project.id,
+          membershipId: res1.body.id,
+        }),
+      ],
+    ]);
+    warnSpy.mockRestore();
   });
 
   test('Existing practitioner to project', async () => {
@@ -417,6 +489,49 @@ describe('Admin Invite', () => {
     expect(res2).toHaveStatus(200);
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
+  });
+
+  test.each([
+    ['server', false],
+    ['project', true],
+  ])('Invite email for %s-scoped user uses project SMTP: %s', async (scope, useProjectSmtp) => {
+    mockCreateTransport.mockClear();
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const secretsRes = await request(app)
+      .post('/admin/projects/' + project.id + '/secrets')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send([
+        { name: 'smtpHost', valueString: 'smtp.project.example.com' },
+        { name: 'smtpPort', valueInteger: 587 },
+        { name: 'smtpUsername', valueString: 'projectuser' },
+        { name: 'smtpPassword', valueString: 'projectpass' },
+        { name: 'smtpFromAddress', valueString: 'support@project.example.com' },
+      ]);
+    expect(secretsRes).toHaveStatus(200);
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        scope,
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@example.com`,
+      });
+    expect(res).toHaveStatus(200);
+
+    expect(mockCreateTransport).toHaveBeenCalledTimes(useProjectSmtp ? 1 : 0);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(useProjectSmtp ? 0 : 1);
   });
 
   test('Invite by externalId', async () => {

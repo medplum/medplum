@@ -60,7 +60,6 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultMfaRateLimit ??= 10;
   config.defaultFhirQuota ??= 50_000;
   config.defaultMaxUserWebSocketSubscriptions ??= 20;
-  config.asyncDelayScaling ??= 5;
   config.aiRealtimeTranscriptionUrl ??= 'wss://api.openai.com/v1/realtime?intent=transcription';
 
   const ignoredResourceTypes = projectAdminResourceTypes.filter((rt) => config.disableChainedSearch?.includes(rt));
@@ -138,7 +137,6 @@ type DefaultConfigKeys =
   | 'defaultFhirQuota'
   | 'defaultMaxUserWebSocketSubscriptions'
   | 'aiRealtimeTranscriptionUrl'
-  | 'asyncDelayScaling'
   | 'serverScopedSubscriptionsEnabled';
 
 const integerKeys = new Set([
@@ -267,7 +265,7 @@ export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
 }
 
-const arrayKeys = new Set(['blockedEmailDomains', 'disableChainedSearch']);
+const arrayKeys = new Set(['blockedEmailDomains', 'disableChainedSearch', 'loginRateLimitExemptIps']);
 
 export function isArrayConfig(key: string): boolean {
   return arrayKeys.has(key);

@@ -42,7 +42,10 @@ import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
+import { LogThrottle } from '../util/logthrottle';
 import { makeValidationMiddleware } from '../util/validator';
+
+const unverifiedEmailMatchLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 export const inviteValidator = makeValidationMiddleware([
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -178,11 +181,46 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
   const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
 
+  if (existingUser) {
+    logUnverifiedEmailMatch(user, membership, 'invite');
+  }
+
   if (email && request.sendEmail !== false) {
     await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
   }
 
   return { user, profile, membership };
+}
+
+/**
+ * Diagnostic logging for a membership granted to an existing User that was matched by email address
+ * but has not verified that address.
+ * @param user - The existing User matched by email address.
+ * @param membership - The ProjectMembership granted to the User.
+ * @param source - The operation that granted the membership.
+ */
+export function logUnverifiedEmailMatch(
+  user: WithId<User>,
+  membership: WithId<ProjectMembership>,
+  source: 'invite' | 'project-init'
+): void {
+  if (user.emailVerified) {
+    return;
+  }
+  const projectId = resolveId(membership.project);
+  unverifiedEmailMatchLogThrottle.maybeLog([projectId, user.id].join('|'), (suppressed) => {
+    getLogger().warn('Membership granted to existing user with unverified email', {
+      source,
+      userId: user.id,
+      userProject: user.project?.reference,
+      projectId,
+      membershipId: membership.id,
+      profile: membership.profile.reference,
+      admin: membership.admin,
+      invitedBy: membership.invitedBy?.reference,
+      suppressed,
+    });
+  });
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
@@ -611,8 +649,10 @@ async function sendInviteEmail(
       '',
     ].join('\n');
   }
+  // A server-scoped user is shared with other projects, so their mail must not go through this project's SMTP
+  const emailProject = user.project?.reference === getReferenceString(request.project) ? request.project : undefined;
   try {
-    await sendEmail(systemRepo, options, request.project);
+    await sendEmail(systemRepo, options, emailProject);
   } catch (err) {
     getLogger().warn('Invite email failed', { projectId: request.project.id, err: normalizeErrorString(err) });
     // A common error for new self-hosted Medplum servers is that SES is not configured.

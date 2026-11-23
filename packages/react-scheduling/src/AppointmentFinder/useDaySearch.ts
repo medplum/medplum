@@ -58,11 +58,6 @@ export interface UseDaySearchOptions {
   readonly ignoreAppointment?: Reference<Appointment> | WithId<Appointment>;
   /** How many weekly occurrences to find a series of. See {@link useProposedAppointments}. */
   readonly occurrenceCount?: number;
-  /**
-   * Fired when what is on show is replaced rather than added to, so the caller can
-   * drop the time it chose out of results that no longer exist.
-   */
-  readonly onResultsReplaced?: () => void;
 }
 
 export interface UseDaySearchResult {
@@ -118,16 +113,7 @@ export interface UseDaySearchResult {
  * @returns The days on show with their times, load and error state, and the ways in.
  */
 export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
-  const {
-    service,
-    combinations,
-    timezone,
-    defaultStart,
-    actorResources,
-    ignoreAppointment,
-    occurrenceCount,
-    onResultsReplaced,
-  } = options;
+  const { service, combinations, timezone, defaultStart, actorResources, ignoreAppointment, occurrenceCount } = options;
 
   const [daySearch, setDaySearch] = useState<DaySearch>(() => openDaySearch(defaultStart ?? new Date()));
   const [combinationLimit, setCombinationLimit] = useState(COMBINATION_WAVE);
@@ -158,13 +144,9 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     return { timeResultsByDay: grouped, hasTimes: grouped.some((day) => day.groups.length > 0) };
   }, [search.loading, search.appointments, daySearch.found, timezone, selectedDayRange, actorResources]);
 
-  const chooseDayRange = useCallback(
-    (start: Date, end?: Date): void => {
-      setDaySearch(openDaySearch(start, end));
-      onResultsReplaced?.();
-    },
-    [onResultsReplaced]
-  );
+  const chooseDayRange = useCallback((start: Date, end?: Date): void => {
+    setDaySearch(openDaySearch(start, end));
+  }, []);
 
   const isDayOnShow = useCallback(
     (date: Date): boolean => {
@@ -183,16 +165,14 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
     }));
   }, [search.appointments]);
 
-  // `original` is carried over, so the days picked stay picked and `onResultsReplaced`
-  // does not fire: it is the extension that goes, not the choice of days.
+  // `original` is carried over, so the days picked stay picked: it is the extension that
+  // goes, not the choice of days.
   const reset = useCallback((): void => {
     setDaySearch(backToFirstWindow);
     setCombinationLimit(COMBINATION_WAVE);
   }, []);
 
-  // Unlike `reset`, this does announce itself: the times are refetched, so a chosen
-  // one is replaced by an equal object the caller would no longer recognise. The days
-  // paged in are kept and asked again rather than dropped, since asking for more
+  // The days paged in are kept and asked again rather than dropped, since asking for more
   // actors is not asking about fewer days — unless together they are more than `$find`
   // answers at once, as a series' week soon is, when the days first picked are asked alone.
   const searchMoreCombinations = useCallback((): void => {
@@ -203,8 +183,7 @@ export function useDaySearch(options: UseDaySearchOptions): UseDaySearchResult {
         ? backToFirstWindow(previous)
         : everyDay;
     });
-    onResultsReplaced?.();
-  }, [onResultsReplaced, timezone, occurrenceCount]);
+  }, [timezone, occurrenceCount]);
 
   // A spinner rather than empty days: only while the first window is still out, before
   // "Show more days" has moved the search past it.

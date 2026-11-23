@@ -20,6 +20,7 @@ import {
   gone,
   isGone,
   isNotFound,
+  isObject,
   isOk,
   isResource,
   isResourceType,
@@ -104,6 +105,7 @@ import {
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
+import { LogThrottle } from '../util/logthrottle';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -130,13 +132,12 @@ import type {
 import type { ConnectionEntry } from './repository/repository-connections';
 import { RepositoryConnections } from './repository/repository-connections';
 import type { RepositoryContext } from './repository/repository-context';
-import type { CacheEntry } from './repository/resource-cache';
+import type { CacheEntry, ResourceCacheWrite } from './repository/resource-cache';
 import {
-  deleteResourceCacheEntries,
-  deleteResourceCacheEntry,
+  buildResourceCacheDelete,
+  buildResourceCacheSet,
   getResourceCacheEntries,
   getResourceCacheEntry,
-  setResourceCacheEntry,
 } from './repository/resource-cache';
 import type { HistoryRow } from './repository/row-builder';
 import {
@@ -164,6 +165,28 @@ import {
 } from './sharding';
 import type { Expression, PgQueryable } from './sql';
 import { Condition, Constant, DeleteQuery, Disjunction, InsertQuery, SelectQuery } from './sql';
+
+const accountsChangeLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
+
+function hasAccountReferences(meta: Meta | undefined): boolean {
+  return !!(meta?.account || meta?.accounts?.length);
+}
+
+function isAccountReference(value: unknown): value is Reference {
+  return isObject(value) && (value.reference === undefined || typeof value.reference === 'string');
+}
+
+function hasValidAccounts(resource: Resource): boolean {
+  const meta = resource.meta as unknown;
+  if (!isObject(meta)) {
+    return true;
+  }
+  if (meta.account !== undefined && !isAccountReference(meta.account)) {
+    return false;
+  }
+  const accounts = meta.accounts;
+  return accounts === undefined || (Array.isArray(accounts) && accounts.every(isAccountReference));
+}
 
 export interface InteractionOptions {
   verbose?: boolean;
@@ -1176,6 +1199,8 @@ export class Repository extends FhirRepository implements Disposable {
       throw new OperationOutcomeError(forbidden);
     }
 
+    this.logAccountsChange(existing, updated, accounts, result);
+
     await this.handleStorage(result, create);
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     if (this.shouldAddBackgroundJobs(result)) {
@@ -1249,16 +1274,10 @@ export class Repository extends FhirRepository implements Disposable {
    * @param create - Whether the resource is being create, or updated in place.
    */
   private async handleStorage(resource: WithId<Resource>, create: boolean): Promise<void> {
-    if (!this.isCacheOnly(resource)) {
+    if (this.isCacheOnly(resource)) {
+      await this.setCacheEntry(resource, { force: true });
+    } else {
       await this.writeToDatabase(resource, create);
-    }
-
-    // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
-    if (resource.resourceType !== 'AuditEvent') {
-      await this.setCacheEntry(resource, { force: this.isCacheOnly(resource) });
-    } else if (!create) {
-      // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
-      await this.deleteCacheEntry(resource.resourceType, resource.id);
     }
 
     // Handle special cases for resource caching
@@ -1283,6 +1302,15 @@ export class Repository extends FhirRepository implements Disposable {
         await txRepo.writeResource(resource);
         await txRepo.writeResourceVersion(resource);
         await txRepo.writeLookupTables(resource, create);
+
+        // Queued on the transaction, so it reaches the cache together with its other writes when COMMIT returns
+        // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
+        if (resource.resourceType !== 'AuditEvent') {
+          await txRepo.setCacheEntry(resource);
+        } else if (!create) {
+          // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
+          await txRepo.deleteCacheEntries(resource.resourceType, [resource.id]);
+        }
       },
       { resourceTypes: resource.resourceType, source: 'repo.writeToDatabase' }
     );
@@ -1503,10 +1531,10 @@ export class Repository extends FhirRepository implements Disposable {
           }
         }
         await txRepo.reindexResources(current);
+        await txRepo.deleteCacheEntries(resourceType, ids);
       },
       { resourceTypes: resourceType, source: 'repo.restoreResourceVersions' }
     );
-    await this.deleteCacheEntries(resourceType, ids);
   }
 
   /**
@@ -1623,7 +1651,9 @@ export class Repository extends FhirRepository implements Disposable {
 
       await preCommitValidation(this, resource, 'delete');
 
-      await this.deleteCacheEntry(resourceType, id);
+      // Also deleted after COMMIT below; deleting first means a cache failure aborts the delete instead of leaving
+      // the resource readable from cache
+      await this.deleteCacheEntries(resourceType, [id]);
 
       // Clean up per-user and project active sets for deleted WebSocket subscriptions
       if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
@@ -1693,6 +1723,7 @@ export class Repository extends FhirRepository implements Disposable {
             );
 
             await txRepo.deleteFromLookupTables(resource);
+            await txRepo.deleteCacheEntries(resourceType, [id]);
 
             const durationMs = Date.now() - startTime;
 
@@ -1869,7 +1900,7 @@ export class Repository extends FhirRepository implements Disposable {
           { source: 'repo.expungeResources.tombstone' }
         );
 
-        await txRepo.postCommit(() => txRepo.deleteCacheEntries(resourceType, deletedIds));
+        await txRepo.deleteCacheEntries(resourceType, deletedIds);
 
         if (collectStorageKeys && historyResult.length > 0) {
           // Deliberately after the transaction commits: deleting stored objects is irreversible, and
@@ -2657,6 +2688,75 @@ export class Repository extends FhirRepository implements Disposable {
     }
   }
 
+  private logAccountsChange(
+    existing: Resource | undefined,
+    updated: Resource,
+    assigned: Reference[] | undefined,
+    result: Resource
+  ): void {
+    if (!hasValidAccounts(updated)) {
+      return;
+    }
+    if (
+      !assigned?.length &&
+      !hasAccountReferences(updated.meta) &&
+      !hasAccountReferences(result.meta) &&
+      !hasAccountReferences(existing?.meta)
+    ) {
+      // Fast path for the common case where no accounts are involved
+      return;
+    }
+
+    const isAdmin = this.isSuperAdmin() || this.isProjectAdmin();
+    if (isAdmin && this.context.extendedMode) {
+      // Admin is allowed to set accounts directly
+      return;
+    }
+
+    const toSet = (refs: Reference[] | undefined): Set<string> =>
+      new Set(refs?.map((r) => r.reference).filter((r): r is string => !!r));
+    const requested = toSet(extractAccountReferences(updated.meta));
+    const stored = toSet(extractAccountReferences(result.meta));
+    const serverAssigned = toSet([...(assigned ?? EMPTY), ...(extractAccountReferences(existing?.meta) ?? EMPTY)]);
+
+    const meta = result.meta;
+    const throttleKey = `${meta?.project}|${result.resourceType}|${meta?.onBehalfOf?.reference ?? meta?.author?.reference}`;
+    const log = (message: string, details: Record<string, unknown>): void => {
+      accountsChangeLogThrottle.maybeLog(`${message}|${throttleKey}`, (suppressed) =>
+        getLogger().warn(message, {
+          projectId: meta?.project,
+          resourceType: result.resourceType,
+          id: result.id,
+          author: meta?.author?.reference,
+          onBehalfOf: meta?.onBehalfOf?.reference,
+          serverAssigned: [...serverAssigned],
+          ...details,
+          suppressed,
+        })
+      );
+    };
+
+    if (!existing && !isAdmin) {
+      const rejected = [...requested].filter((r) => !serverAssigned.has(r));
+      if (rejected.length) {
+        log('Requested account would be rejected on create', {
+          accounts: rejected,
+          stored: rejected.filter((r) => stored.has(r)),
+        });
+      }
+      return;
+    }
+
+    const ignored = [...stored].filter((r) => !serverAssigned.has(r));
+    if (ignored.length) {
+      log('Requested account would be ignored', { interaction: existing ? 'update' : 'create', accounts: ignored });
+    }
+    const retained = [...serverAssigned].filter((r) => !stored.has(r));
+    if (retained.length) {
+      log('Removed account would be retained on update', { accounts: retained });
+    }
+  }
+
   /**
    * Overwrites readonly fields from a resource as defined by the access policy.
    * If no original (i.e., this is the first version), then blank them out.
@@ -2953,6 +3053,16 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * The connection queues the write until this repository's open transaction commits, or applies it immediately when there is none.
+   * @param write - The cache write.
+   */
+  private async queueCacheWrite(write: ResourceCacheWrite): Promise<void> {
+    this.assertUsable();
+    const { entry, scope } = this.callbackTarget();
+    await entry.connection.queueResourceCacheWrite(scope, write);
+  }
+
+  /**
    * Tries to read a cache entry from Redis by resource type and ID.
    * @param resourceType - The resource type.
    * @param id - The resource ID.
@@ -2966,7 +3076,7 @@ export class Repository extends FhirRepository implements Disposable {
     if (this.inOwnTransaction()) {
       return undefined;
     }
-    this.recordCacheAccess('read', resourceType, 'repo.getCacheEntry');
+    this.recordCacheRead(resourceType, 'repo.getCacheEntry');
     const entry = await getResourceCacheEntry<T>(resourceType, id);
     return this.cacheEntryOnShard(entry);
   }
@@ -2982,7 +3092,7 @@ export class Repository extends FhirRepository implements Disposable {
       return new Array(references.length);
     }
 
-    this.recordCacheAccess('read', getResourceTypesFromReferences(references), 'repo.getCacheEntries');
+    this.recordCacheRead(getResourceTypesFromReferences(references), 'repo.getCacheEntries');
     const entries = await getResourceCacheEntries(references);
     for (let i = 0; i < entries.length; i++) {
       entries[i] = this.cacheEntryOnShard(entries[i]);
@@ -3004,77 +3114,45 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
-   * Writes a cache entry to Redis.
+   * Writes a cache entry to Redis, after COMMIT when in a transaction.
    * @param resource - The resource to cache.
    * @param options - Optional write options.
    * @param options.force - Create the entry even if it does not already exist.
    */
   private async setCacheEntry(resource: WithId<Resource>, options?: { force?: boolean }): Promise<void> {
-    // No cache access allowed mid-transaction
-    if (this.inOwnTransaction()) {
-      const cachedResource = deepClone(resource);
-      await this.postCommit(() => {
-        return this.setCacheEntry(cachedResource, options);
-      });
-      return;
-    }
-
-    this.recordCacheAccess('write', resource.resourceType, 'repo.setCacheEntry');
-    await setResourceCacheEntry(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options);
+    await this.queueCacheWrite(
+      buildResourceCacheSet(resource, getResourceTypeShardId(this.shardId, resource.resourceType), options)
+    );
   }
 
   /**
-   * Deletes a cache entry from Redis.
-   * @param resourceType - The resource type.
-   * @param id - The resource ID.
-   */
-  private async deleteCacheEntry(resourceType: ResourceType, id: string): Promise<void> {
-    // No cache access allowed mid-transaction
-    if (this.inOwnTransaction()) {
-      await this.postCommit(() => this.deleteCacheEntry(resourceType, id));
-      return;
-    }
-
-    this.recordCacheAccess('write', resourceType, 'repo.deleteCacheEntry');
-    await deleteResourceCacheEntry(resourceType, id);
-  }
-
-  /**
-   * Deletes cache entries from Redis.
+   * Deletes cache entries from Redis, after COMMIT when in a transaction.
    * @param resourceType - The resource type.
    * @param ids - The resource IDs.
    */
-  private async deleteCacheEntries(resourceType: ResourceType, ids: string[]): Promise<void> {
-    // No cache access allowed mid-transaction
-    if (this.inOwnTransaction()) {
-      await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
-      return;
-    }
-
-    this.recordCacheAccess('write', resourceType, 'repo.deleteCacheEntries');
-    await deleteResourceCacheEntries(resourceType, ids);
+  private async deleteCacheEntries(resourceType: ResourceType, ids: readonly string[]): Promise<void> {
+    await this.queueCacheWrite(buildResourceCacheDelete(resourceType, ids));
   }
 
   /**
-   * Records a resource cache access against the shard-boundary inventory.
+   * Records a resource cache read against the shard-boundary inventory. Cache writes are recorded by the
+   * connection that applies them.
    *
-   * Called after each cache method's transaction guard, so it reflects an actual Redis round trip: a
-   * write deferred by an open transaction records later, when its post-commit callback re-enters.
+   * Called after each cache read's transaction guard, so it reflects an actual Redis round trip.
    *
    * Recorded against this repository's own shard rather than routed by the types it touches. A cache
    * access that spans shards is exactly what this inventory exists to surface, so it has to be logged
    * rather than rejected — and `resolveShardId` would throw on it. Revisit once the cache is
    * partitioned alongside the databases and a cache access has a shard of its own to resolve to.
-   * @param operation - Whether the access reads or writes.
-   * @param resourceTypes - The resource types the access touches.
+   * @param resourceTypes - The resource types the read touches.
    * @param source - Short label identifying the call site.
    */
-  private recordCacheAccess(operation: 'read' | 'write', resourceTypes: ResourceTypeInput, source: string): void {
+  private recordCacheRead(resourceTypes: ResourceTypeInput, source: string): void {
     const types = normalizeResourceTypes(resourceTypes);
     if (types.size === 0) {
       return;
     }
-    this.connections.entryFor(this.shardId).connection.recordResourceAccess('cache', operation, types, source);
+    this.connections.entryFor(this.shardId).connection.recordResourceAccess('cache', 'read', types, source);
   }
 
   async ensureInTransaction<TResult>(
