@@ -31,6 +31,7 @@ export function initComparisons() {
     allowed: [...section.querySelectorAll('thead [data-competitor]')].map((cell) => cell.dataset.competitor).filter((id) => id !== 'medplum'),
     defaults: (section.dataset.default ?? '').split(','),
     selected: [],
+    table: section.querySelector('table'),
     rows: [...section.querySelectorAll('table tr')],
     columns: [...section.querySelectorAll('[data-competitor]')],
     options: [...section.querySelectorAll('[data-comparison-option]')],
@@ -41,6 +42,33 @@ export function initComparisons() {
   const closeMenus = (except) => pickers.forEach((picker) => picker !== except && setMenu(picker, false));
   const triggerAt = (group, position) =>
     group.section.querySelector(`thead [data-competitor="${visible(group)[Math.min(position, visible(group).length - 1)]}"] [data-comparison-trigger]`);
+
+  function sizeRows() {
+    const group = groups.find((candidate) => candidate.id === activeId);
+    const columnWidth = group.table.querySelector('thead [data-competitor="medplum"]').getBoundingClientRect().width;
+    const labelWidth = group.rows[0].firstElementChild.getBoundingClientRect().width;
+    const size = `${columnWidth},${labelWidth}`;
+    if (!columnWidth || group.measuredSize === size) {
+      return;
+    }
+
+    // Overlay every alternative at the displayed column width to reserve each row's tallest entry.
+    const measure = group.table.cloneNode(true);
+    measure.classList.add('compare-table-measure');
+    measure.setAttribute('aria-hidden', 'true');
+    measure.inert = true;
+    measure.style.setProperty('--compare-cell-width', `${columnWidth}px`);
+    measure.style.setProperty('--compare-label-width', `${labelWidth}px`);
+    measure.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+    measure.querySelectorAll('[data-competitor]').forEach((cell) => (cell.hidden = false));
+    const rows = [...measure.querySelectorAll('tr')];
+    rows.forEach((row) => row.style.removeProperty('height'));
+    group.table.after(measure);
+    const heights = rows.map((row) => Math.ceil(row.getBoundingClientRect().height));
+    measure.remove();
+    group.rows.forEach((row, index) => (row.style.height = `${heights[index]}px`));
+    group.measuredSize = size;
+  }
 
   function readUrl() {
     const url = new URL(window.location.href);
@@ -99,6 +127,7 @@ export function initComparisons() {
       tab.tabIndex = active ? 0 : -1;
     }
     root.dataset.enhanced = 'true';
+    sizeRows();
   }
 
   function choose(option) {
@@ -199,7 +228,29 @@ export function initComparisons() {
     }
   }
 
-  // Swup replaces the page on navigation, so teardown only has to detach these listeners.
+  // Recalculate for responsive widths and loaded fonts, independent of the selected competitors.
+  let resizeFrame;
+  const resizeObserver = new ResizeObserver(() => {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(sizeRows);
+  });
+  resizeObserver.observe(root);
+  signal.addEventListener(
+    'abort',
+    () => {
+      resizeObserver.disconnect();
+      cancelAnimationFrame(resizeFrame);
+    },
+    { once: true }
+  );
+  document.fonts.ready.then(() => {
+    if (!signal.aborted) {
+      groups.forEach((group) => delete group.measuredSize);
+      sizeRows();
+    }
+  });
+
+  // Swup replaces the page on navigation; abort detaches listeners and the resize observer.
   root.addEventListener('click', onClick, { signal });
   root.addEventListener('keydown', onKeyDown, { signal });
   document.addEventListener('click', onOutside, { signal });

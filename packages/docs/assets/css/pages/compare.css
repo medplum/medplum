@@ -130,14 +130,6 @@
   border: 0;
 }
 
-.compare-note {
-  margin: 1rem 0 0;
-  color: var(--landing-color-muted);
-  font-family: var(--landing-font-body);
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
 /* Competitor headers: plain names without JavaScript, a menu trigger styled as the heading with it. */
 .compare-picker,
 [data-enhanced='true'] .compare-name {
@@ -353,6 +345,33 @@
   height: 1.58rem;
 }
 
+/* A temporary, invisible grid measures all alternatives at the visible column width. */
+.compare-table-measure {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-enhanced='true'] .compare-table-measure thead {
+  position: static;
+}
+
+[data-enhanced='true'] .compare-table-measure tr {
+  display: grid;
+  grid-template-columns: var(--compare-label-width) var(--compare-cell-width);
+}
+
+.compare-table-measure tr > * {
+  grid-area: 1 / 2;
+}
+
+.compare-table-measure tr > .compare-dimension {
+  grid-area: 1 / 1;
+  width: auto;
+}
+
 .compare-cta {
   margin-top: 4rem;
 }
@@ -461,6 +480,22 @@
 
   [data-enhanced='true'] .compare-table tbody td {
     border-top: 0;
+  }
+
+  [data-enhanced='true'] .compare-table tbody tr {
+    grid-template-rows: max-content 1fr;
+  }
+
+  [data-enhanced='true'] .compare-table-measure tr {
+    grid-template-columns: repeat(2, var(--compare-cell-width));
+  }
+
+  .compare-table-measure tbody td {
+    grid-row: 2;
+  }
+
+  .compare-table-measure [data-competitor='medplum'] {
+    grid-column: 1;
   }
 
   .compare-cta-buttons {
