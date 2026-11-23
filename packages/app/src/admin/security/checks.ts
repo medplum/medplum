@@ -350,7 +350,7 @@ function checkEmailDomainLock(project: Project, memberships: ProjectMembership[]
   if (staffUserIds.size < 2 || domains.size === 0 || domains.size > 2) {
     return [];
   }
-  const list = [...domains].sort().join(', ');
+  const list = [...domains].sort((a, b) => a.localeCompare(b)).join(', ');
   return [
     {
       id: 'email-domain-lock',
