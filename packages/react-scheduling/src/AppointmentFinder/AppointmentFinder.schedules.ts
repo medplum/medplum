@@ -104,9 +104,9 @@ export interface SearchScheduleCandidatesOptions {
   /**
    * The site being booked at. Actors sited elsewhere are left out: a room or a
    * device anywhere inside it counts, a provider only if one of their
-   * PractitionerRoles names it.
+   * PractitionerRoles names it. Given several sites, an actor at any one of them is kept.
    */
-  readonly location?: Reference<Location> | WithId<Location>;
+  readonly location?: Reference<Location> | WithId<Location> | readonly (Reference<Location> | WithId<Location>)[];
   readonly signal?: AbortSignal;
   /** Maximum schedules to consider. Defaults to 25. */
   readonly count?: number;
@@ -156,19 +156,26 @@ function getActorCriteria(actorType: SchedulingActorType, query: string): Record
  * whose name matches what was typed.
  * @param medplum - The Medplum client.
  * @param service - The HealthcareService being booked, or undefined to search
- *   unconstrained by service type — every active, bookable schedule for the role.
+ *   unconstrained by service type — every active, bookable schedule for the role. Given
+ *   several, a schedule offering any one of them is found; given none, as for undefined.
  * @param options - The role, the text typed, the site, an abort signal, and a page size.
  * @returns The matching schedules, each with its actor, by display name.
  */
 export async function searchScheduleCandidates(
   medplum: MedplumClient,
-  service: WithId<HealthcareService> | undefined,
+  service: WithId<HealthcareService> | readonly WithId<HealthcareService>[] | undefined,
   options: SearchScheduleCandidatesOptions
 ): Promise<ScheduleCandidate[]> {
   const count = (options.count ?? DEFAULT_COUNT).toString();
   const actorCriteria = getActorCriteria(options.actorType, options.query);
 
-  const tokens = service ? getServiceTypeTokens(service) : [];
+  const services = [service].flat().filter(isDefined);
+  // One request however many are asked for: the tokens are ORed. A service naming no type cannot be
+  // searched by one, so the search is left open and the check below narrows it.
+  const tokensByService = services.map(getServiceTypeTokens);
+  const tokens = tokensByService.every((serviceTokens) => serviceTokens.length > 0)
+    ? [...new Set(tokensByService.flat())]
+    : [];
   const typeCriteria = tokens.length > 0 ? { 'service-type': [...tokens, ALL_SERVICE_TYPES_TOKEN].join(',') } : {};
 
   const bundle = await medplum.search(
@@ -193,11 +200,21 @@ export async function searchScheduleCandidates(
   }
 
   const found = schedules
-    .map((schedule) => toScheduleCandidate(schedule, service, actorsByReference))
+    .filter(
+      (schedule) => services.length === 0 || services.some((s) => serviceTypeOffersService(schedule.serviceType, s))
+    )
+    .map((schedule) => toScheduleCandidate(schedule, undefined, actorsByReference))
     .filter(isDefined);
 
-  // Filter by location
-  const kept = await filterCandidatesByLocation(medplum, found, options.location, { signal: options.signal });
+  // Filter by location. Each site is asked on its own, and reads the same roles and Locations as the
+  // others, which the client's request cache answers once.
+  const locations = [options.location].flat().filter(isDefined);
+  const keptBySite = await Promise.all(
+    (locations.length > 0 ? locations : [undefined]).map((location) =>
+      filterCandidatesByLocation(medplum, found, location, { signal: options.signal })
+    )
+  );
+  const kept = found.filter((candidate) => keptBySite.some((atSite) => atSite.includes(candidate)));
   return kept.sort((left, right) => getCandidateDisplay(left).localeCompare(getCandidateDisplay(right)));
 }
 

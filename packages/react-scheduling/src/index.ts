@@ -21,6 +21,7 @@ export * from './Calendar/Calendar';
 export * from './MultiCalendar/MultiCalendar';
 export * from './ScheduleAvailabilityEditor/ScheduleAvailabilityEditor';
 export * from './SchedulingConfigWorkspace/SchedulingConfigWorkspace';
+export type { CalendarFilterValues } from './SchedulingWorkspace/CalendarFilters';
 export * from './SchedulingWorkspace/SchedulingWorkspace';
 
 // Hooks that load what the components display
@@ -31,3 +32,4 @@ export * from './hooks/useSchedulingResources';
 // Helpers the components are built on, usable without them
 export * from './actors';
 export * from './availability';
+export * from './availabilityShading';

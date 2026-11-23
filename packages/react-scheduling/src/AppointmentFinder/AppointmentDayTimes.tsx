@@ -17,6 +17,10 @@ export interface AppointmentDayTimesProps {
   readonly timezone?: string;
   readonly viewerTimezone?: string;
   readonly selected?: Appointment;
+  /** Prototype. Called with the time the pointer or focus is on, and with undefined once it leaves. */
+  readonly onHoverAppointment?: (appointment: Appointment | undefined) => void;
+  /** Prototype. An offered time to mark, such as the one under the pointer on a host's calendar. */
+  readonly highlighted?: Appointment;
 }
 
 /**
@@ -29,7 +33,7 @@ export interface AppointmentDayTimesProps {
  * @returns The day's heading and its times.
  */
 export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Element {
-  const { date, groups, onSelectAppointment, timezone, viewerTimezone, selected } = props;
+  const { date, groups, onSelectAppointment, timezone, viewerTimezone, selected, onHoverAppointment } = props;
 
   return (
     <Stack gap="xs">
@@ -45,6 +49,8 @@ export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Elemen
           viewerTimezone={viewerTimezone}
           selected={selected}
           onSelectAppointment={onSelectAppointment}
+          onHoverAppointment={onHoverAppointment}
+          highlighted={props.highlighted}
         />
       ))}
     </Stack>

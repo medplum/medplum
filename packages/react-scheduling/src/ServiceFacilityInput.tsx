@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { Location, Reference } from '@medplum/fhirtypes';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { ResourceInput } from '@medplum/react';
+import { MultiResourceInput, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
 import { AppointmentOptionRow } from './AppointmentFinder/AppointmentOptionRow';
 import { SERVICE_FACILITY_SEARCH_CRITERIA, SERVICE_FACILITY_SEARCH_PARAM } from './constants';
@@ -38,6 +38,39 @@ export function ServiceFacilityInput(props: Readonly<ServiceFacilityInputProps>)
       itemComponent={ServiceFacilityItem}
       onChange={props.onChange}
       clearable={props.clearable ?? false}
+    />
+  );
+}
+
+export interface ServiceFacilitiesInputProps {
+  readonly label: string;
+  readonly placeholder: string;
+  /** Narrows which sites to offer. Defaults to every site, inactive ones included. */
+  readonly searchCriteria?: Record<string, string>;
+  /** Read once, at mount. */
+  readonly defaultValue?: readonly (WithId<Location> | Reference<Location>)[];
+  readonly onChange: (locations: WithId<Location>[]) => void;
+}
+
+/**
+ * Prototype. Chooses any number of the sites scheduling offers, for a field that filters rather than
+ * books.
+ * @param props - The React props.
+ * @returns The field.
+ */
+export function ServiceFacilitiesInput(props: Readonly<ServiceFacilitiesInputProps>): JSX.Element {
+  return (
+    <MultiResourceInput<WithId<Location>>
+      resourceType="Location"
+      name="serviceFacilities"
+      label={props.label}
+      placeholder={props.placeholder}
+      searchCriteria={props.searchCriteria ?? SERVICE_FACILITY_SEARCH_CRITERIA}
+      searchParam={SERVICE_FACILITY_SEARCH_PARAM}
+      defaultValue={props.defaultValue as (WithId<Location> | Reference<WithId<Location>>)[] | undefined}
+      itemComponent={ServiceFacilityItem}
+      onChange={props.onChange}
+      clearable={false}
     />
   );
 }
