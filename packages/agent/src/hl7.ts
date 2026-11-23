@@ -219,6 +219,7 @@ export class AgentHl7Channel extends BaseChannel {
         app: this.app,
         queue,
         log: this.log,
+        channelLog: this.channelLog,
         retryPolicy: this.retryPolicy,
         sendAck: (response) => this.sendToRemote(response),
         notifyDispatcher: () => this.notifyWorkers(),

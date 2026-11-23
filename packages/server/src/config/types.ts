@@ -105,6 +105,12 @@ export interface MedplumServerConfig {
   defaultAuthRateLimit?: number;
   defaultLoginRateLimit?: number;
   defaultMfaRateLimit?: number;
+  /**
+   * IP addresses exempt from the login rate limit. Requests from these addresses to login endpoints count
+   * against the auth rate limit instead. Entries use `AccessPolicy.ipAccessRule` syntax: exact IP, dotted prefix, or `*`
+   * (`*` exempts every IP from the login rate limit).
+   */
+  loginRateLimitExemptIps?: string[];
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
   /**
@@ -149,7 +155,10 @@ export interface MedplumServerConfig {
    */
   cacheResourcesOnWrite?: boolean;
 
-  /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
+  /**
+   * Flag to enable pre-commit subscriptions for the interceptor pattern (default: false)
+   * @deprecated Pre-commit subscriptions will be removed in the next major version.
+   */
   preCommitSubscriptionsEnabled?: boolean;
 
   /**

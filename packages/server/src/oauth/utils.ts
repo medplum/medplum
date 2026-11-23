@@ -5,6 +5,7 @@ import {
   badRequest,
   ContentType,
   createReference,
+  DEFAULT_MAX_SEARCH_COUNT,
   escapeSearchValue,
   forbidden,
   getDateProperty,
@@ -41,9 +42,8 @@ import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
-import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt } from '../auth/mfalimit';
+import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
 import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
@@ -63,7 +63,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { getProjectIdFromUrl, getProjectScopedUrl, safeFetch } from '../util/url';
+import { getProjectIdFromUrl, getProjectScopedUrl, matchesIpAccessRule, safeFetch } from '../util/url';
 import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -381,8 +381,7 @@ export async function verifyMfaToken(login: Login, token: string, enrollSecret?:
 
   // TOTP authenticator application
   if (!verified && secret) {
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    verified = authenticator.verify({ token, secret });
+    verified = await verifyTotpToken(user.id, secret, token);
   }
 
   if (!verified) {
@@ -582,6 +581,9 @@ export async function setLoginMembership(
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
   // Include the SMART App Launch context, which patient scopes in the login require to build a policy
   const smartAppLaunch = login.launch ? await projectSystemRepo.readReference<SmartAppLaunch>(login.launch) : undefined;
+  if (smartAppLaunch && !isValidLaunchForMembership(smartAppLaunch, membership)) {
+    throw new OperationOutcomeError(badRequest('Invalid launch'));
+  }
   const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig, smartAppLaunch });
   await checkIpAccessRules(login, accessPolicy);
 
@@ -620,6 +622,24 @@ export async function setLoginMembership(
 }
 
 /**
+ * Returns true if a SMART App Launch context can be used to sign in with a project membership.
+ * The launch must be in the membership's project, and either started by the membership's profile
+ * (directly or on behalf of) or for the membership's profile as the patient.
+ * @param launch - The SMART App Launch context.
+ * @param membership - The project membership of the user that is signing in.
+ * @returns True if the launch can be used with the membership; false otherwise.
+ */
+export function isValidLaunchForMembership(launch: SmartAppLaunch, membership: ProjectMembership): boolean {
+  const profile = membership.profile?.reference;
+  const launchedBy = (launch.meta?.onBehalfOf ?? launch.meta?.author)?.reference;
+  return (
+    !!profile &&
+    launch.meta?.project === resolveId(membership.project) &&
+    (launchedBy === profile || launch.patient?.reference === profile)
+  );
+}
+
+/**
  * Checks a login against the IP Access Rules for a project.
  * Returns successfully if the login first matches an "allow" rule.
  * Returns successfully if the login does not match any rules.
@@ -641,17 +661,6 @@ export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolic
       }
     }
   }
-}
-
-/**
- * Returns true if the remote address matches the rule value.
- * @param remoteAddress - The login remote address.
- * @param ruleValue - The IP Access Rule value.
- * @returns True if the remote address matches the rule value; otherwise false.
- */
-function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
-  const prefix = ruleValue.endsWith('.') ? ruleValue : ruleValue + '.';
-  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(prefix);
 }
 
 function matchesScope(existing: SmartScope, candidate: SmartScope, hasPatientContext = false): boolean {
@@ -1160,7 +1169,13 @@ export function isExternalEmailUnverified(userInfo: Record<string, unknown>): bo
   return userInfo.email_verified === false || userInfo.email_verified === 'false';
 }
 
-async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
+/**
+ * Verifies an external token against the identity provider's JWKS, issuer and audience,
+ * or against its user info endpoint when no JWKS URL is configured.
+ * @param idp - The external identity provider.
+ * @param token - The external token.
+ */
+export async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
   if (!idp.jwksUrl) {
     if (!idp.userInfoUrl) {
       throw new OperationOutcomeError(badRequest('Missing user info URL - check your identity provider configuration'));
@@ -1587,6 +1602,19 @@ async function tryExternalAuthLogin(
       return undefined;
     }
     client = await getExternalBearerClient(projectId, claims.iss);
+    // The server-wide provider verified the token; the client's audience binds it to this project.
+    const audience = client?.identityProvider?.audience;
+    if (
+      client &&
+      !(audience && (Array.isArray(claims.aud) ? claims.aud.includes(audience) : claims.aud === audience))
+    ) {
+      getLogger().warn('External token audience does not match ClientApplication', {
+        issuer: claims.iss,
+        projectId,
+        clientId: client.id,
+      });
+      return undefined;
+    }
     membership = client ? await getClientApplicationMembership(systemRepo, client, projectId) : undefined;
     if (!isClientSubjectAllowed(membership, claims)) {
       return undefined;
@@ -1655,6 +1683,18 @@ async function tryExternalAuthLogin(
   return { login, project, membership };
 }
 
+// An allow-list, not a deny-list: a new IdentityProvider setting must never make a client eligible for bearer tokens.
+const externalBearerIdpFields = ['issuer', 'jwksUrl', 'audience'];
+
+function isExternalBearerIdentityProvider(idp: IdentityProvider | undefined): boolean {
+  return (
+    !!idp?.issuer &&
+    !!idp.jwksUrl &&
+    !!idp.audience &&
+    Object.keys(idp).every((key) => externalBearerIdpFields.includes(key))
+  );
+}
+
 /**
  * A client membership that names an externalId admits only tokens whose `sub` equals it, so a
  * workload-identity issuer can be trusted for one principal rather than for everything it signs.
@@ -1696,16 +1736,29 @@ async function getExternalBearerClient(
       { code: '_project', operator: Operator.EQUALS, value: projectId },
       { code: 'identity-provider-issuer', operator: Operator.EXACT, value: escapeSearchValue(issuer) },
     ],
-    count: 2,
+    // Server max; projects normally have one or two clients per issuer, so this only bounds pathological configs
+    count: DEFAULT_MAX_SEARCH_COUNT,
   });
-  if (clients.length !== 1) {
-    if (clients.length > 1) {
+  // Eligibility is filtered after the search, so a full page may hide clients and the decision would be unsound
+  if (clients.length === DEFAULT_MAX_SEARCH_COUNT) {
+    getLogger().warn('Too many ClientApplications found for external auth issuer in project', { issuer, projectId });
+    return undefined;
+  }
+  const bearerClients = clients.filter((client) => isExternalBearerIdentityProvider(client.identityProvider));
+  if (bearerClients.length !== 1) {
+    if (bearerClients.length > 1) {
       getLogger().warn('Multiple ClientApplications found for external auth issuer in project', { issuer, projectId });
+    } else if (clients.length > 0) {
+      getLogger().warn('External auth issuer matched ClientApplication not configured for bearer tokens', {
+        issuer,
+        projectId,
+        clientIds: clients.map((client) => client.id),
+      });
     }
     return undefined;
   }
 
-  return clients[0];
+  return bearerClients[0];
 }
 
 /**

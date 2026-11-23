@@ -246,6 +246,8 @@ export interface ChannelQueueWorkerOptions {
   app: App;
   queue: DurableQueue;
   log: ILogger;
+  /** Receives failure detail, which can echo message content (Bot output, ACK segments). */
+  channelLog: ILogger;
   /** Auto-retry policy; default {@link DEFAULT_RETRY_POLICY} (enabled, guaranteed delivery). */
   retryPolicy?: RetryPolicy;
   /** Override for unit tests; default {@link DEFAULT_WORKER_RESPONSE_TIMEOUT_MS}. */
@@ -319,6 +321,7 @@ export class ChannelQueueWorker {
   private readonly app: App;
   private readonly queue: DurableQueue;
   private readonly log: ILogger;
+  private readonly channelLog: ILogger;
   private readonly responseTimeoutMs: number;
   private readonly sendAck: ChannelQueueWorkerOptions['sendAck'];
   private readonly notifyDispatcher: () => void;
@@ -343,6 +346,7 @@ export class ChannelQueueWorker {
     this.app = options.app;
     this.queue = options.queue;
     this.log = options.log;
+    this.channelLog = options.channelLog;
     this.responseTimeoutMs = options.responseTimeoutMs ?? DEFAULT_WORKER_RESPONSE_TIMEOUT_MS;
     this.sendAck = options.sendAck;
     this.notifyDispatcher = options.notifyDispatcher ?? ((): void => {});
@@ -957,7 +961,7 @@ export class ChannelQueueWorker {
         const delayMs = computeRetryDelayMs(policy, row.attemptCount);
         if (this.queue.scheduleRetry(row.id, row.attemptCount, message, code, Date.now() + delayMs)) {
           const attemptDesc = `attempt ${row.attemptCount + 1}${policy.maxAttempts > 0 ? `/${policy.maxAttempts}` : ''}`;
-          this.log.warn(`${rowDesc} failed (${code}), retrying in ${delayMs}ms (${attemptDesc}): ${message}`);
+          this.logFailure('warn', `${rowDesc} failed (${code}), retrying in ${delayMs}ms (${attemptDesc})`, message);
           return false;
         }
         // Superseded — the terminal write below carries the same attempt_count
@@ -974,7 +978,7 @@ export class ChannelQueueWorker {
       const applied = this.queue.markRejected(row.id, row.attemptCount, message, code);
       if (applied) {
         this.releasePartition(row);
-        this.log.error(`${rowDesc} rejected (${code}): ${message}`);
+        this.logFailure('error', `${rowDesc} rejected (${code})`, message);
       } else {
         this.log.info(`${rowDesc} rejected-state write discarded: attempt ${row.attemptCount} was already superseded`);
       }
@@ -984,11 +988,23 @@ export class ChannelQueueWorker {
     const applied = this.queue.markFailed(row.id, row.attemptCount, message, code);
     if (applied) {
       this.releasePartition(row);
-      this.log.error(`${rowDesc} failed (${code}, operator review): ${message}`);
+      this.logFailure('error', `${rowDesc} failed (${code}, operator review)`, message);
     } else {
       this.log.info(`${rowDesc} failed-state write discarded: attempt ${row.attemptCount} was already superseded`);
     }
     return applied;
+  }
+
+  /**
+   * Logs a failure with its detail on the channel log only: the detail can carry
+   * the server response body.
+   * @param level - Log level for both lines.
+   * @param summary - Body-free description of the failure.
+   * @param detail - The failure message, as written to `last_error`.
+   */
+  private logFailure(level: 'warn' | 'error', summary: string, detail: string): void {
+    this.log[level](`${summary} - check channel logs`);
+    this.channelLog[level](`${summary}: ${detail}`);
   }
 
   private async dispatch(row: InboundRow): Promise<AgentTransmitResponse> {

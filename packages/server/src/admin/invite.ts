@@ -610,8 +610,10 @@ async function sendInviteEmail(
       '',
     ].join('\n');
   }
+  // A server-scoped user is shared with other projects, so their mail must not go through this project's SMTP
+  const emailProject = user.project?.reference === getReferenceString(request.project) ? request.project : undefined;
   try {
-    await sendEmail(systemRepo, options, request.project);
+    await sendEmail(systemRepo, options, emailProject);
   } catch (err) {
     getLogger().warn('Invite email failed', { projectId: request.project.id, err: normalizeErrorString(err) });
     // A common error for new self-hosted Medplum servers is that SES is not configured.

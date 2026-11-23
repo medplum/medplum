@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
 import { encodeBase64Url, getReferenceString } from '@medplum/core';
-import type { Practitioner, Project, ProjectMembership } from '@medplum/fhirtypes';
+import type { ClientApplication, Practitioner, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
@@ -138,15 +138,28 @@ describe('External auth', () => {
       },
     });
     await withExternalAuthProviders(undefined, async () => {
-      fetchMock.mockImplementationOnce(() => mockFetchJson({ keys: [publicJwk] }));
-
       const jwt = await new SignJWT({ nonce: randomUUID() })
         .setProtectedHeader({ alg: 'ES256' })
         .setIssuer('https://external-auth.example.com')
+        .setAudience('https://api.example.com')
         .setSubject('external-client-subject')
         .setIssuedAt()
         .setExpirationTime('2h')
         .sign(keyPair.privateKey);
+
+      fetchMock.mockClear();
+      const noAudienceResponse = await request(app)
+        .get(`/projects/${project.id}/oauth2/userinfo`)
+        .set('Authorization', 'Bearer ' + jwt);
+      expect(noAudienceResponse).toHaveStatus(401);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      const projectRepo = await getProjectSystemRepo(project);
+      await projectRepo.updateResource({
+        ...client,
+        identityProvider: { ...client.identityProvider, audience: 'https://api.example.com' },
+      });
+      fetchMock.mockImplementationOnce(() => mockFetchJson({ keys: [publicJwk] }));
       const res = await request(app)
         .get(`/projects/${project.id}/oauth2/userinfo`)
         .set('Authorization', 'Bearer ' + jwt);
@@ -166,6 +179,7 @@ describe('External auth', () => {
         identityProvider: {
           issuer: 'https://external-auth.example.com',
           jwksUrl: 'https://external-auth.example.com/.well-known/obo-jwks.json',
+          audience: 'https://api.example.com',
         },
       },
     });
@@ -176,6 +190,7 @@ describe('External auth', () => {
       const jwt = await new SignJWT({ nonce: randomUUID() })
         .setProtectedHeader({ alg: 'ES256' })
         .setIssuer('https://external-auth.example.com')
+        .setAudience('https://api.example.com')
         .setIssuedAt()
         .setExpirationTime('2h')
         .sign(keyPair.privateKey);
@@ -194,33 +209,27 @@ describe('External auth', () => {
   });
 
   test('Identity-less token cache is scoped by URL project', async () => {
-    const first = await createTestProject({
-      withClient: true,
-      client: {
-        identityProvider: {
-          issuer: 'https://external-auth.example.com',
-          userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
-        },
-      },
-    });
-    const second = await createTestProject({
-      withClient: true,
-      client: {
-        identityProvider: {
-          issuer: 'https://external-auth.example.com',
-          userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
-        },
-      },
-    });
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+    const identityProvider = {
+      issuer: 'https://external-auth.example.com',
+      jwksUrl: 'https://external-auth.example.com/.well-known/cache-jwks.json',
+      audience: 'https://api.example.com',
+    };
+    const first = await createTestProject({ withClient: true, client: { identityProvider } });
+    const second = await createTestProject({ withClient: true, client: { identityProvider } });
     await withExternalAuthProviders(undefined, async () => {
       fetchMock
-        .mockImplementationOnce(() => mockFetchJson({ ok: true }))
-        .mockImplementationOnce(() => mockFetchJson({ ok: true }));
+        .mockImplementationOnce(() => mockFetchJson({ keys: [publicJwk] }))
+        .mockImplementationOnce(() => mockFetchJson({ keys: [publicJwk] }));
 
-      const jwt = createFakeJwt({
-        iss: 'https://external-auth.example.com',
-        nonce: randomUUID(),
-      });
+      const jwt = await new SignJWT({ nonce: randomUUID() })
+        .setProtectedHeader({ alg: 'ES256' })
+        .setIssuer('https://external-auth.example.com')
+        .setAudience('https://api.example.com')
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(keyPair.privateKey);
       const firstResponse = await request(app)
         .get(`/projects/${first.project.id}/oauth2/userinfo`)
         .set('Authorization', 'Bearer ' + jwt);
@@ -241,13 +250,28 @@ describe('External auth', () => {
       client: {
         identityProvider: {
           issuer: 'https://external-auth.example.com',
-          userInfoUrl: 'https://external-auth.example.com/oauth2/userinfo',
+          jwksUrl: 'https://external-auth.example.com/.well-known/jwks.json',
+          audience: 'https://api.example.com',
         },
       },
     });
-    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
 
-    const jwt = createFakeJwt({ iss: 'https://external-auth.example.com', nonce: randomUUID() });
+    // The server-wide provider verifies the token, but only the client's audience binds it to this project
+    for (const aud of [undefined, 'https://other.example.com']) {
+      fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+      const jwt = createFakeJwt({ iss: 'https://external-auth.example.com', aud, nonce: randomUUID() });
+      const res = await request(app)
+        .get(`/projects/${project.id}/oauth2/userinfo`)
+        .set('Authorization', 'Bearer ' + jwt);
+      expect(res).toHaveStatus(401);
+    }
+
+    fetchMock.mockImplementationOnce(() => mockFetchJson({ ok: true }));
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      aud: ['https://other.example.com', 'https://api.example.com'],
+      nonce: randomUUID(),
+    });
     const res = await request(app)
       .get(`/projects/${project.id}/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + jwt);
@@ -278,32 +302,46 @@ describe('External auth', () => {
   });
 
   test('Rejects ambiguous project clients for an external issuer', async () => {
-    const { project } = await createTestProject({
-      withClient: true,
-      client: {
-        identityProvider: {
-          issuer: 'https://ambiguous.example.com',
-          userInfoUrl: 'https://ambiguous.example.com/oauth2/userinfo',
-        },
-      },
-    });
+    const keyPair = await generateKeyPair('ES256');
+    const publicJwk = await exportJWK(keyPair.publicKey);
+    const identityProvider = {
+      issuer: 'https://ambiguous.example.com',
+      jwksUrl: 'https://ambiguous.example.com/.well-known/jwks.json',
+      audience: 'https://api.example.com',
+    };
+    const { client, project } = await createTestProject({ withClient: true, client: { identityProvider } });
     const projectRepo = await getProjectSystemRepo(project);
-    await projectRepo.createResource({
+    const duplicate = await projectRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       meta: { project: project.id },
       name: 'Duplicate external issuer',
-      identityProvider: {
-        issuer: 'https://ambiguous.example.com',
-        userInfoUrl: 'https://ambiguous.example.com/oauth2/userinfo',
-      },
+      identityProvider,
     });
 
     await withExternalAuthProviders(undefined, async () => {
-      const jwt = createFakeJwt({ iss: 'https://ambiguous.example.com', nonce: randomUUID() });
+      const jwt = await new SignJWT({ nonce: randomUUID() })
+        .setProtectedHeader({ alg: 'ES256' })
+        .setIssuer('https://ambiguous.example.com')
+        .setAudience('https://api.example.com')
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(keyPair.privateKey);
       const res = await request(app)
         .get(`/projects/${project.id}/oauth2/userinfo`)
         .set('Authorization', 'Bearer ' + jwt);
       expect(res).toHaveStatus(401);
+
+      // Any other identity provider setting makes a client ineligible
+      await projectRepo.updateResource({
+        ...duplicate,
+        identityProvider: { ...identityProvider, tokenUrl: 'https://ambiguous.example.com/oauth2/token' },
+      });
+      fetchMock.mockImplementationOnce(() => mockFetchJson({ keys: [publicJwk] }));
+      const resolved = await request(app)
+        .get(`/projects/${project.id}/oauth2/userinfo`)
+        .set('Authorization', 'Bearer ' + jwt);
+      expect(resolved).toHaveStatus(200);
+      expect(resolved.body.sub).toBe(client.id);
     });
   });
 
@@ -536,6 +574,7 @@ describe('External auth', () => {
         identityProvider: {
           issuer: 'https://external-auth.example.com',
           jwksUrl: 'https://external-auth.example.com/.well-known/bound-jwks.json',
+          audience: 'https://api.example.com',
         },
       },
     });
@@ -546,6 +585,7 @@ describe('External auth', () => {
         const jwt = new SignJWT({ nonce: randomUUID() })
           .setProtectedHeader({ alg: 'ES256' })
           .setIssuer('https://external-auth.example.com')
+          .setAudience('https://api.example.com')
           .setIssuedAt()
           .setExpirationTime('2h');
         return (sub ? jwt.setSubject(sub) : jwt).sign(keyPair.privateKey);

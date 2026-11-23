@@ -29,11 +29,12 @@ export function addSearchValues(search: SearchRequest, config: UserConfiguration
 }
 
 function getDefaultResourceType(config: UserConfiguration | undefined): string {
-  return (
-    localStorage.getItem('defaultResourceType') ??
-    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString ??
-    'Patient'
-  );
+  // The result becomes a navigation path, so it must not name another route or add a query string
+  const candidates = [
+    localStorage.getItem('defaultResourceType'),
+    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString,
+  ];
+  return candidates.find((candidate) => candidate && /^[A-Z][A-Za-z]+$/.test(candidate)) ?? 'Patient';
 }
 
 export function getDefaultFields(resourceType: string): string[] {

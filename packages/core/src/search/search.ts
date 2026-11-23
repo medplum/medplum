@@ -514,7 +514,7 @@ export function parseXFhirQuery(
     if (replacement.length !== 1) {
       return '';
     }
-    return stringifyTypedValue(replacement[0]);
+    return encodeURIComponent(stringifyTypedValue(replacement[0]));
   });
   return parseSearchRequest(query);
 }

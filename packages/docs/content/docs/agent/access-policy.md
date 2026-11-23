@@ -46,6 +46,8 @@ This policy grants read-only access to:
 - **Bot**: Required to read and invoke bots defined in the agent channels
 - **CodeSystem** and **ValueSet**: Required for terminology operations that bots may use
 
+This policy is for the agent itself. Read-only access to `Agent` does not allow [`$upgrade`](/docs/agent/upgrade) or [`$reload-config`](/docs/agent/reload-config), which require update access to the target `Agent`, so give the accounts that manage agents a separate policy.
+
 ## Parameterized Access Policy
 
 This example uses Organizations as access groups within one project. An organization can represent an application tenant or a narrower group; choose its role in [Tenancy Design](/docs/decision-guides/tenancy-design). Assign the resources to the intended organization using [tenant account assignments](/docs/access/multi-tenant-access-policy#step-2-assigning-data-to-tenants).

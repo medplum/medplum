@@ -13,7 +13,12 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import type { MockAgentResponseHandle } from './utils/agenttestutils';
-import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
+import {
+  cleanupMockAgents,
+  configMockAgents,
+  createAgentAccessFixture,
+  mockAgentResponse,
+} from './utils/agenttestutils';
 
 const NUM_DEFAULT_AGENTS = 2;
 
@@ -200,6 +205,40 @@ describe('Agent/$fetch-logs', () => {
     const outcome = res.body as OperationOutcome;
 
     expect(outcome).toMatchObject(badRequest("Invalid value 'true' provided for integer parameter 'limit'"));
+  });
+
+  test('Read access to the Agent is sufficient', async () => {
+    const { adminToken, writableAgent, readonlyAgent, readonlyTokens, linkedProjectToken } =
+      await createAgentAccessFixture();
+    const logs: LogMessage[] = [{ level: 'INFO', timestamp: new Date().toISOString(), msg: 'Test' }];
+    const handles = await Promise.all(
+      [writableAgent, readonlyAgent].map((agent) =>
+        mockAgentResponse<AgentLogsRequest, AgentLogsResponse>(agent, adminToken, 'agent:logs:request', {
+          type: 'agent:logs:response',
+          statusCode: 200,
+          logs,
+          hasMore: false,
+        })
+      )
+    );
+
+    for (const token of [...readonlyTokens, linkedProjectToken]) {
+      let res = await request(app)
+        .get(`/fhir/R4/Agent/${readonlyAgent.id}/$fetch-logs`)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res).toHaveStatus(200);
+
+      res = await request(app)
+        .get('/fhir/R4/Agent/$fetch-logs')
+        .set('Authorization', 'Bearer ' + token);
+      expect(res).toHaveStatus(200);
+      expectBundleToContainLogsEntry(res.body as Bundle<Parameters>, writableAgent, logs);
+      expectBundleToContainLogsEntry(res.body as Bundle<Parameters>, readonlyAgent, logs);
+    }
+
+    for (const handle of handles) {
+      handle.cleanup();
+    }
   });
 });
 

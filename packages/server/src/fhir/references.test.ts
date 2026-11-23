@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type { Login, Patient, Project, Questionnaire, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
+import type {
+  Login,
+  Patient,
+  PatientLink,
+  Project,
+  Reference,
+  ServiceRequest,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -237,26 +245,13 @@ describe('Reference checks', () => {
       await expect(superAdminRepo.updateResource(membership)).rejects.toThrow('Invalid reference (Not found)');
     }));
 
-  test('Check references with non-literal reference', () =>
-    withTestContext(async () => {
-      const { repo } = await createTestProject({
-        project: { checkReferencesOnWrite: true },
-        withRepo: true,
-      });
-      const patient: Patient = {
-        resourceType: 'Patient',
-        link: [
-          {
-            type: 'refer',
-            other: { display: 'J. Smith' },
-          },
-        ],
-      };
-
-      await expect(repo.createResource(patient)).resolves.toBeDefined();
-    }));
-
-  test('Check references with reference placeholder', () =>
+  test.each<[string, Reference]>([
+    ['non-literal reference', { display: 'J. Smith' }],
+    ['placeholder', { reference: '%patient' }],
+    ['internal reference', { reference: '#template' }],
+    ['absolute http URL', { reference: 'http://example.com/fhir/Patient/' + randomUUID() }],
+    ['absolute https URL', { reference: 'https://example.com/fhir/Patient/' + randomUUID() }],
+  ])('Check references skips %s', (_name, other) =>
     withTestContext(async () => {
       const { repo } = await createTestProject({
         project: { checkReferencesOnWrite: true },
@@ -270,41 +265,12 @@ describe('Reference checks', () => {
 
       const patient: Patient = {
         resourceType: 'Patient',
-        link: [
-          {
-            type: 'refer',
-            other: { reference: '%patient' },
-          },
-        ],
-      };
-
-      const questionnaire: Questionnaire = {
-        resourceType: 'Questionnaire',
-        status: 'active',
-        item: [
-          {
-            linkId: 'group-id',
-            type: 'group',
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
-                extension: [{ url: 'template', valueReference: { reference: '#template' } }],
-              },
-            ],
-            item: [
-              {
-                linkId: 'nested-item',
-                type: 'string',
-                text: 'A nested question',
-              },
-            ],
-          },
-        ],
+        link: [{ type: 'refer', other: other as PatientLink['other'] }],
       };
 
       await expect(repo.createResource(patient)).resolves.toBeDefined();
-      await expect(repo.createResource(questionnaire)).resolves.toBeDefined();
-    }));
+    })
+  );
 
   test('Resources with identical references', () => {
     const table = new ReferenceTable();

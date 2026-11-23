@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import { TimezoneExtensionURI } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import type { ScheduleCandidate } from '../AppointmentFinder/AppointmentFinder.schedules';
-import { formatZonedTime } from '../AppointmentFinder/AppointmentFinder.times';
+import { formatZonedTime, isViewerTimezone } from '../timezones';
 import {
   filterSlotsByDrawnAppointments,
   formatWhen,
@@ -76,6 +76,23 @@ describe('formatWhen', () => {
       `Monday, May 4 · ${formatZonedTime(mondayNine)} – Friday, May 8 · ${formatZonedTime(fridayFive)}`
     );
     expect(formatWhen({})).toBeUndefined();
+
+    // An appointment naming its zone is told on that clock, days included: both of these
+    // fall on Tuesday, May 5 in UTC. The zone is named unless the runner is set to it too.
+    const extension = [{ url: TimezoneExtensionURI, valueCode: EASTERN }];
+    const et = isViewerTimezone(EASTERN) ? '' : ' ET';
+    expect(formatWhen({ start: '2020-05-05T01:00:00Z', end: '2020-05-05T02:00:00Z', extension })).toMatch(
+      new RegExp(`^Monday, May 4 · 9:00\\sPM – 10:00\\sPM${et}$`)
+    );
+    expect(formatWhen({ start: '2020-05-05T03:00:00Z', end: '2020-05-05T05:00:00Z', extension })).toMatch(
+      new RegExp(`^Monday, May 4 · 11:00\\sPM – Tuesday, May 5 · 1:00\\sAM${et}$`)
+    );
+
+    // A zone the runtime cannot read falls back to the viewer's clock rather than throwing.
+    const bad = [{ url: TimezoneExtensionURI, valueCode: 'Not/AZone' }];
+    expect(formatWhen({ start: '2020-05-05T01:00:00Z', end: '2020-05-05T02:00:00Z', extension: bad })).toBe(
+      formatWhen({ start: '2020-05-05T01:00:00Z', end: '2020-05-05T02:00:00Z' })
+    );
   });
 });
 
