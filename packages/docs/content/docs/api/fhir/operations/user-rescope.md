@@ -45,6 +45,8 @@ The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource:
 
 Returns the updated [`User`](/docs/api/fhir/medplum/user) resource with `User.project` set (project scope) or cleared (server scope).
 
+The `User` is returned as the caller would read it, so fields hidden by the caller's access policy are omitted. A project admin who rescopes a `User` to server scope can no longer read it, so the response contains only `resourceType` and `id`.
+
 ## Examples
 
 ### Release a user to server scope

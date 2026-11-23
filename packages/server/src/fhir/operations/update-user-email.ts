@@ -88,7 +88,7 @@ type InputParams = {
 const profileTypesWithTelecom: ResourceType[] = ['Patient', 'Practitioner', 'RelatedPerson'];
 
 export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirResponse> {
-  const { project, membership } = getAuthenticatedContext();
+  const { project, membership, repo } = getAuthenticatedContext();
   if (!project.superAdmin && !membership.admin) {
     return [forbidden];
   }
@@ -97,7 +97,7 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
   const id = req.params.id;
 
   const user = await updateUser(id, params, project);
-  return [allOk, user];
+  return [allOk, repo.toCallerView(user)];
 }
 
 async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<WithId<User>> {

@@ -2635,6 +2635,21 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   /**
+   * Returns a resource read or written outside this repository, such as by a system repository, as this
+   * repository's caller would see it on a read. If the caller cannot read the resource, for example because
+   * the write moved it out of their access policy or project, only its type and id are returned.
+   * @param resource - The resource to return to the caller. It is not modified.
+   * @returns A copy without the fields hidden from the caller.
+   */
+  toCallerView<T extends Resource>(resource: WithId<T>): WithId<T> {
+    const readPolicy = this.canPerformInteraction(AccessPolicyInteraction.READ, resource);
+    if (!readPolicy) {
+      return { resourceType: resource.resourceType, id: resource.id } as WithId<T>;
+    }
+    return this.removePolicyHiddenFields(deepClone(resource), [readPolicy], this.context.extendedMode);
+  }
+
+  /**
    * Removes the hidden fields of the given access policy entries, and the internal meta fields unless in extended mode.
    * @param input - The input resource.
    * @param policies - The access policy entries whose hidden fields to remove.
