@@ -113,6 +113,20 @@ describe('FhirPathTable', () => {
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Does not run mutations', async () => {
+    const graphql = vi.spyOn(MockClient.prototype, 'graphql');
+
+    await setup({
+      resourceType: 'Patient',
+      query: 'mutation { PatientCreate(res: { resourceType: "Patient" }) { id } }',
+      fields: [],
+    });
+
+    expect(await screen.findByTestId('search-error')).toHaveTextContent('Mutations are not allowed');
+    expect(graphql).not.toHaveBeenCalled();
+    graphql.mockRestore();
+  });
+
   test('Renders with checkboxes', async () => {
     const props = {
       resourceType: 'ServiceRequest',

@@ -275,7 +275,7 @@ describe('TimelinePage', () => {
       subject: createReference(HomerSimpson),
       content: {
         contentType: 'application/pdf',
-        url: 'Binary/123',
+        url: 'https://example.com/test.pdf',
         title: filename,
       },
     });

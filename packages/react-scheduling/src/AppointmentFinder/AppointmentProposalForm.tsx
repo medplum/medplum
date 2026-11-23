@@ -8,6 +8,7 @@ import {
   Button,
   Divider,
   Group,
+  Input,
   Loader,
   NumberInput,
   Select,
@@ -40,7 +41,7 @@ import type { Appointment, Extension, HealthcareService, Location, Patient, Refe
 import { CalendarDateInput, ResourceName } from '@medplum/react';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle, IconArrowBackUp, IconCalendarSearch } from '@tabler/icons-react';
-import type { JSX, RefObject } from 'react';
+import type { JSX, ReactNode, RefObject } from 'react';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
@@ -225,6 +226,11 @@ export interface AppointmentProposalFormProps {
    * to six. Only offered when booking: `$reschedule` moves a single visit.
    */
   readonly allowRecurring?: boolean;
+  /**
+   * Controls of the host's own, such as the way back to where the form was opened from.
+   * Listed under the submit button.
+   */
+  readonly children?: ReactNode;
 }
 
 /** What `onBook` is told about the proposal it was handed. */
@@ -270,6 +276,7 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
     canBypassSchedulingRules,
     appointmentExtensions,
     allowRecurring,
+    children,
   } = props;
 
   const [serviceFacility, setServiceFacility] = useState<Reference<Location> | WithId<Location> | undefined>(
@@ -860,19 +867,23 @@ export function AppointmentProposalForm(props: AppointmentProposalFormProps): JS
           />
         )}
 
-        {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
-        <Stack gap={4}>
-          <Button
-            fullWidth
-            disabled={!chosen || written || detailsOutstanding}
-            loading={writing}
-            onClick={handleSubmit}
-            aria-describedby={chosenActors.length > 0 ? chosenActorsId : undefined}
-          >
-            {getSubmitLabel(mode, effectiveOccurrenceCount)}
-          </Button>
-          {/* Read off the proposal, as the search may be what settled who holds it. */}
-          {chosenActors.length > 0 && <ChosenActors id={chosenActorsId} actors={chosenActors} />}
+        <Stack gap="sm" className={classes.controls}>
+          <Divider />
+          {writeError !== undefined && <Alert color="red">{normalizeErrorString(writeError)}</Alert>}
+          <Stack gap={4}>
+            <Button
+              fullWidth
+              disabled={!chosen || written || detailsOutstanding}
+              loading={writing}
+              onClick={handleSubmit}
+              aria-describedby={chosenActors.length > 0 ? chosenActorsId : undefined}
+            >
+              {getSubmitLabel(mode, effectiveOccurrenceCount)}
+            </Button>
+            {/* Read off the proposal, as the search may be what settled who holds it. */}
+            {chosenActors.length > 0 && <ChosenActors id={chosenActorsId} actors={chosenActors} />}
+          </Stack>
+          {children}
         </Stack>
       </Stack>
 
@@ -1001,6 +1012,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
   };
 
   const durationMinutes = appointment ? getDurationMinutes(appointment) : 0;
+  const noTimeField = !manualTime && !appointment?.start;
+  const finderLabelId = useId();
 
   return (
     <>
@@ -1018,7 +1031,8 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
         <TextInput
           key={flashKey}
           {...flash}
-          label="Date & time"
+          label="Date & Time"
+          withAsterisk
           readOnly
           value={formatZonedDateTime(new Date(appointment.start), timezone)}
           // Mantine puts the description above the input by default.
@@ -1033,6 +1047,12 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
       )}
 
       <Stack gap={4}>
+        {/* With no time field to label, it describes the button instead. */}
+        {noTimeField && (
+          <Input.Label id={finderLabelId} labelElement="div" required>
+            Date & Time
+          </Input.Label>
+        )}
         <Button
           ref={finderButtonRef}
           variant="outline"
@@ -1040,6 +1060,7 @@ function ChosenTime(props: ChosenTimeProps): JSX.Element {
           leftSection={<IconCalendarSearch size={16} stroke={1.8} />}
           disabled={!!blockedBy}
           onClick={onToggleFinder}
+          aria-describedby={noTimeField ? finderLabelId : undefined}
         >
           {getFinderLabel(searching, !!appointment)}
         </Button>
@@ -1162,7 +1183,8 @@ function ManualTime(props: ManualTimeProps): JSX.Element {
     <>
       <TextInput
         {...flash}
-        label="Date & time"
+        label="Date & Time"
+        withAsterisk
         type={getNativeInputType('datetime-local')}
         value={dateTime}
         disabled={disabled}

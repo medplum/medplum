@@ -113,7 +113,7 @@ export default {
  * does; closing it with the ✕ does not.
  * "Cancel Appointment" turns the pane over to a page asking what the visit is being
  * called off for; a reason has to be searched for and picked before it can be confirmed,
- * and "Back" leaves without touching the visit. Confirming runs it through
+ * and "Back to Appointment Details" leaves without touching the visit. Confirming runs it through
  * `Appointment/:id/$cancel`: the pane lands back on the details, now describing a
  * cancelled appointment, showing the reason and with no button left on it, and the event
  * beside it is drawn as cancelled without a reload, because the cancellation announces
@@ -176,6 +176,10 @@ Basic.parameters = { controls: { include: ['appointmentCommentMaxLength'] } };
  * kept in another. Deselect both providers and the line goes, because the rooms and
  * devices never declared a zone.
  *
+ * Tuesday's imaging visit is held in Eastern time and Wednesday's in Central, and each says so:
+ * hover either, or click it for its details, and its times are told on its own clock and
+ * labelled ET or CT, though the grid still draws it where it falls on yours.
+ *
  * Click open time, choose Ultrasound Imaging and Dr. Maya Rivera, then Find a time.
  * The times are Rivera's Eastern hours, labelled ET, and the form writes the same zone
  * on the one it keeps.
@@ -192,19 +196,19 @@ FromADifferentTimezone.decorators = [withFixtures(ELSEWHERE_FIXTURES)];
  * The workspace when the host lets a user enter a time of their own.
  *
  * Everything in `Basic` still works: a time picked from the search is booked through
- * `$book`, which checks it. What this changes is the form's **Date & time** field, which
+ * `$book`, which checks it. What this changes is the form's **Date & Time** field, which
  * becomes editable, with the visit's length under it, whose **Change** link opens a
  * **Custom duration (minutes)** field, for placing a visit the rules would refuse. A time
  * picked from the search fills both; editing either makes it a typed time. The field's reset
  * button puts back the length it opened on and closes it.
  *
- * **Date & time** starts out on the time clicked to open the form, unless that time has
+ * **Date & Time** starts out on the time clicked to open the form, unless that time has
  * passed or a whole day was picked in month view.
  *
  * To see a clash: select **Providers → Dr. Maya Rivera**, and find her booked imaging
  * visit for Miles Cooper on the Tuesday. Click any open time to open the form, choose
  * **Ultrasound Imaging** and **Dr. Maya Rivera**, then type that Tuesday and *the time
- * the visit on the calendar starts* into **Date & time** — read it off the event rather
+ * the visit on the calendar starts* into **Date & Time** — read it off the event rather
  * than copying a time from here, since the fixtures are kept on your own clock. A line
  * appears under the fields:
  *

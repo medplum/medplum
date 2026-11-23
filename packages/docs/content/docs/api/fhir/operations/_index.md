@@ -275,6 +275,7 @@ Validate resources and transform data structures.
 
 - [$graph](/docs/api/fhir/operations/resource-graph) - Fetch related resources via GraphDefinition
 - [GraphQL](/docs/api/fhir/operations/graphql) - Query resources using GraphQL
+- [Questionnaire/$assemble](/docs/api/fhir/operations/assemble) - Assemble a modular Questionnaire into a complete form
 - [Questionnaire/$extract](/docs/api/fhir/operations/extract) - Extract data from QuestionnaireResponse
 - [Resource/$validate](/docs/api/fhir/operations/validate-a-resource) - Validate a resource against profiles
 - [StructureDefinition/$expand-profile](/docs/api/fhir/operations/structuredefinition-expand-profile) - Expand a StructureDefinition with nested profiles

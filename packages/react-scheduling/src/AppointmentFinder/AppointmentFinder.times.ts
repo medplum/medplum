@@ -131,12 +131,34 @@ export function formatZonedTime(date: Date, timezone?: string, options?: FormatZ
 }
 
 /**
+ * Formats the times a period runs between in a given timezone (e.g. "4:00 PM – 5:00 PM ET"),
+ * naming the zone once, after the last time, when it is not the viewer's.
+ * @param start - When the period starts.
+ * @param end - When it ends, if known.
+ * @param timezone - IANA timezone identifier. Defaults to the browser's.
+ * @returns The formatted times.
+ */
+export function formatZonedTimeRange(start: Date, end: Date | undefined, timezone?: string): string {
+  const withTimezone = !isViewerTimezone(timezone);
+  if (!end) {
+    return formatZonedTime(start, timezone, { withTimezone });
+  }
+  return `${formatZonedTime(start, timezone)} – ${formatZonedTime(end, timezone, { withTimezone })}`;
+}
+
+/**
  * Formats a calendar day as a heading (e.g. "Monday, July 27").
- * @param date - Local midnight of the day.
+ * @param date - Local midnight of the day, or with a timezone, any instant during it there.
+ * @param timezone - IANA timezone to read the day in. Defaults to the browser's.
  * @returns The formatted day.
  */
-export function formatDayHeading(date: Date): string {
-  return getFormatter('dayHeading', { weekday: 'long', month: 'long', day: 'numeric' }).format(date);
+export function formatDayHeading(date: Date, timezone?: string): string {
+  return getFormatter(`dayHeading:${timezone ?? ''}`, {
+    timeZone: timezone,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
 }
 
 /**

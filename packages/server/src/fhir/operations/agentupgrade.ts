@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AgentUpgradeResponse, WithId } from '@medplum/core';
+import { AccessPolicyInteraction } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Agent } from '@medplum/fhirtypes';
 import { makeOperationDefinition } from './definitions';
@@ -39,7 +40,7 @@ export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirRespons
   const params = parseInputParameters<AgentUpgradeOptions>(operation, req);
   req.query = rest;
 
-  return handleBulkAgentOperation(req, async (agent) => upgradeAgent(agent, params));
+  return handleBulkAgentOperation(req, AccessPolicyInteraction.UPDATE, async (agent) => upgradeAgent(agent, params));
 }
 
 export type AgentUpgradeOptions = {

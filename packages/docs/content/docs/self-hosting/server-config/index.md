@@ -720,9 +720,9 @@ Number of milliseconds to use as a base for exponential backoff in transaction r
 
 **Default:** None
 
-### preCommitSubscriptionsEnabled
+### preCommitSubscriptionsEnabled (deprecated)
 
-Flag to enable pre-commit subscriptions for the interceptor pattern.
+Flag to enable pre-commit subscriptions for the interceptor pattern. This setting is deprecated, and pre-commit subscriptions will be removed in the next major version.
 
 **Default:** `false`
 
