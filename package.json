@@ -34,7 +34,10 @@
     "uuid": "14.0.2",
     "whatwg-url": "14.0.0",
     "import-in-the-middle": "3.4.0",
-    "tinypool": "2.2.0"
+    "tinypool": "2.2.0",
+    "@photonhealth/elements": {
+      "@solid-primitives/timer": "1.4.4"
+    }
   },
   "devDependencies": {
     "@microsoft/api-documenter": "7.30.20",
