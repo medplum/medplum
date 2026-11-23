@@ -494,7 +494,7 @@ describe('worker utils', () => {
       } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
-      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq, autorun: false });
     });
 
     test('returns default options plus global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
@@ -504,7 +504,7 @@ describe('worker utils', () => {
       } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
-      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq, autorun: false });
     });
 
     test('merges per-worker bullmq overrides on top of global config', () => {
@@ -523,6 +523,7 @@ describe('worker utils', () => {
         concurrency: 50,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
+        autorun: false,
       });
     });
 
@@ -537,6 +538,7 @@ describe('worker utils', () => {
         concurrency: 1,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
+        autorun: false,
       });
     });
 
@@ -556,6 +558,7 @@ describe('worker utils', () => {
         concurrency: 5,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
+        autorun: false,
       });
     });
 
@@ -570,7 +573,7 @@ describe('worker utils', () => {
       } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'download', defaultOptions);
-      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq, autorun: false });
     });
   });
 });

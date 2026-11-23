@@ -839,6 +839,7 @@ describe('OAuth2 Token', () => {
       authMethod: 'none',
       hasCodeChallenge: true,
       hasCodeVerifier: false,
+      clientIdPresented: false,
     });
 
     // Wrong code verifier, even with a client secret: logged
@@ -862,6 +863,7 @@ describe('OAuth2 Token', () => {
     ).toMatchObject({
       reason: 'no-pkce-no-client-auth',
       authMethod: 'client_secret_basic',
+      clientIdPresented: true,
     });
   });
 

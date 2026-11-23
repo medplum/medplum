@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
+import { Checkbox, Group, NativeSelect, Textarea, TextInput, Tooltip } from '@mantine/core';
 import type { ExtendedInternalSchemaElement } from '@medplum/core';
 import {
   applyDefaultValuesToElement,
@@ -41,6 +41,24 @@ import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
 import type { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
+
+// Boolean elements whose `meaningWhenMissing` says a missing value means true.
+// Not every `active` qualifies: a missing `Cron.active` means inactive.
+const BOOLEAN_PATHS_MISSING_MEANS_TRUE = new Set([
+  'BodyStructure.active',
+  'Group.active',
+  'HealthcareService.active',
+  'Linkage.active',
+  'Organization.active',
+  'OrganizationAffiliation.active',
+  'Patient.active',
+  'Practitioner.active',
+  'PractitionerRole.active',
+  'Project.active',
+  'ProjectMembership.active',
+  'RelatedPerson.active',
+  'Schedule.active',
+]);
 
 export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: ExtendedInternalSchemaElement;
@@ -323,17 +341,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.boolean:
-      return (
-        <Checkbox
-          {...getPrimitiveInputProps()}
-          defaultChecked={Boolean(defaultValue)}
-          onChange={(e) => {
-            if (onChange) {
-              onChange(e.currentTarget.checked);
-            }
-          }}
-        />
-      );
+      return <BooleanInput {...getPrimitiveInputProps()} path={path} onChange={onChange} />;
     case PropertyType.base64Binary:
     case PropertyType.markdown:
     case PropertyType.xhtml:
@@ -407,4 +415,41 @@ function getTargetTypes(elementDefinitionType?: ElementDefinitionType): string[]
       return p;
     }
   });
+}
+
+interface BooleanInputProps extends PrimitiveTypeInputProps {
+  readonly path: string;
+  readonly onChange?: (checked: boolean) => void;
+}
+
+/**
+ * Checkbox for a boolean element. When the value is missing but the element's definition says
+ * missing means true, the box is checked with an outline and a tooltip, since a search for
+ * `active=true` will not match the resource.
+ * @param props - The BooleanInput React props.
+ * @returns The BooleanInput React node.
+ */
+function BooleanInput(props: BooleanInputProps): JSX.Element {
+  const { path, onChange, ...inputProps } = props;
+  const [inferred, setInferred] = useState(
+    () => isEmpty(inputProps.defaultValue) && BOOLEAN_PATHS_MISSING_MEANS_TRUE.has(path)
+  );
+  const field = path.split('.').pop();
+  // Always render the Tooltip so the Checkbox is not remounted (losing focus) when the value is set
+  return (
+    <Tooltip.Floating
+      label={`Not set, so treated as true. A search for ${field}=true will not match it.`}
+      disabled={!inferred}
+    >
+      <Checkbox
+        {...inputProps}
+        variant={inferred ? 'outline' : undefined}
+        defaultChecked={inferred || Boolean(inputProps.defaultValue)}
+        onChange={(e) => {
+          setInferred(false);
+          onChange?.(e.currentTarget.checked);
+        }}
+      />
+    </Tooltip.Floating>
+  );
 }

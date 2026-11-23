@@ -1753,6 +1753,15 @@ describe('Client', () => {
     );
   });
 
+  test('Resource type and id stay single path segments', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    await client.readHistory('Patient', 'a/b?c');
+    expect(fetch.mock.calls[0][0]).toBe('https://api.medplum.com/fhir/R4/Patient/a%2Fb%3Fc/_history');
+    expect(() => client.readResource('Patient', '..')).toThrow('Invalid FHIR URL path');
+    await expect(client.readReference({ reference: 'Patient/..' })).rejects.toThrow('Invalid reference');
+  });
+
   test('Read reference', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch });
