@@ -20,6 +20,7 @@ columns:
     items:
       - { label: About us, to: /about }
       - { label: Pricing, to: /pricing }
+      - { label: Compare Medplum, to: /compare }
       - { label: Careers, to: /careers }
       - { label: Blog, to: /blog }
       - { label: Brand, to: /brand }

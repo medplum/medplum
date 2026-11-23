@@ -274,11 +274,8 @@ body[data-page] .footer {
   }
 }
 
-.build-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  left: 0;
-  width: 400px;
+/* Shared visual surface for landing-page dropdowns. */
+.landing-menu-surface {
   background-color: #fff;
   border: 1px solid var(--oc-gray-1);
   border-radius: 1rem;
@@ -286,6 +283,13 @@ body[data-page] .footer {
     0px 3px 9px rgba(0, 0, 0, 0.08),
     0px 0.7px 1.4625px rgba(0, 0, 0, 0.015);
   padding: 0.5rem;
+}
+
+.build-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  width: 400px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -337,7 +341,7 @@ body[data-page] .footer {
   color: var(--oc-grape-5);
 }
 
-[data-theme='dark'] .build-dropdown-menu {
+[data-theme='dark'] .landing-menu-surface {
   background-color: #1a1a1a;
   border: 1px solid rgba(var(--oc-gray-8-rgb), 0.5);
 }

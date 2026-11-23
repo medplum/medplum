@@ -30,6 +30,7 @@
 @import './pages/home.css';
 @import './pages/brand.css';
 @import './pages/pricing.css';
+@import './pages/compare.css';
 
 :root {
   /* Docusaurus overrides */

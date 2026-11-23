@@ -1,0 +1,55 @@
+{{- $group := . -}}
+<section id="{{ .id }}" class="compare-section" aria-labelledby="{{ .id }}-title" data-comparison="{{ .id }}" data-default="{{ delimit .defaults "," }}">
+  <h2 id="{{ .id }}-title" class="compare-title">{{ .title }}</h2>
+  <p class="compare-active-tagline">{{ .tagline }}</p>
+  <p class="compare-sr-only" id="{{ .id }}-picker-hint">Choose another platform for this column.</p>
+  <div class="compare-table-wrap" role="region" aria-label="{{ .title }} comparison" tabindex="0">
+    <table class="compare-table" style="--compare-columns: {{ add (len .competitors) 1 }}">
+      <caption class="compare-sr-only">Medplum compared with {{ .title | lower }}</caption>
+      <thead>
+        <tr>
+          <th scope="col" class="compare-dimension">Capability</th>
+          {{ range .competitors }}
+            {{- $column := . -}}
+            <th scope="col" id="{{ $group.id }}-{{ .id }}" data-competitor="{{ .id }}">
+              {{ if eq .id "medplum" }}
+                <span class="compare-medplum-logo" aria-hidden="true">{{ partial "logo.html" (dict "width" "102" "height" "22") }}</span>
+                <span class="compare-sr-only">{{ .name }}</span>
+              {{ else }}
+                <span class="compare-name" data-comparison-name>{{ .name }}</span>
+                <div class="compare-picker" data-comparison-picker>
+                  <button type="button" class="compare-picker-trigger" aria-expanded="false" aria-controls="{{ $group.id }}-{{ .id }}-menu" aria-describedby="{{ $group.id }}-picker-hint" data-comparison-trigger>
+                    {{ .name }}{{ partial "icon" "outline/chevron-down" }}
+                  </button>
+                  <div class="landing-menu-surface compare-picker-menu" id="{{ $group.id }}-{{ .id }}-menu" data-comparison-menu hidden>
+                    {{ range $group.competitors }}
+                      {{ if ne .id "medplum" }}
+                        <button type="button" class="compare-picker-option" data-comparison-option="{{ .id }}"{{ if eq .id $column.id }} aria-current="true"{{ end }}>
+                          {{ .name }}{{ if eq .id $column.id }}{{ partial "icon" "outline/check" }}{{ end }}
+                        </button>
+                      {{ end }}
+                    {{ end }}
+                  </div>
+                </div>
+              {{ end }}
+            </th>
+          {{ end }}
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .rows }}
+          {{- $row := . -}}
+          <tr>
+            <th scope="row" id="{{ $group.id }}-{{ .id }}" class="compare-dimension">{{ .label }}</th>
+            {{ range $group.competitors }}
+              {{- $cell := index $row.cells .id -}}
+              <td data-competitor="{{ .id }}" headers="{{ $group.id }}-{{ .id }} {{ $group.id }}-{{ $row.id }}">
+                {{ $cell | markdownify }}
+              </td>
+            {{ end }}
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+</section>

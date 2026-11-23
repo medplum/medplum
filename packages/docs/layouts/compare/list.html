@@ -1,0 +1,38 @@
+{{ define "page" }}
+{{- $data := hugo.Data.comparison -}}
+<div class="landing compare-page">
+  <header class="compare-hero landing-container-container">
+    <h1 class="landing-hero-title">{{ .Title }}</h1>
+    <p class="landing-hero-text compare-lead">{{ .Params.lead }}</p>
+  </header>
+
+  <div class="landing-container-container">
+    <div class="products-apps-showcase-box compare-board" data-comparisons>
+      <nav class="compare-tabs" aria-label="Choose a comparison" data-comparison-tabs>
+        {{ range $data.groups }}
+        <a class="compare-tab" id="compare-tab-{{ .id }}" href="#{{ .id }}" data-comparison-tab="{{ .id }}">
+          <span class="compare-tab-icon" aria-hidden="true">{{ partial "icon" .icon }}</span>
+          <span class="compare-tab-label">
+            <span class="compare-tab-name">{{ .title }}</span>
+            <span class="compare-tab-tagline">{{ .tagline }}</span>
+          </span>
+        </a>
+        {{ end }}
+      </nav>
+      {{ range $data.groups }} {{ partial "compare/table.html" . }} {{ end }}
+    </div>
+    <p class="compare-note">Last reviewed {{ $data.reviewed }}.</p>
+  </div>
+
+  <section class="landing-cta-banner compare-cta" aria-labelledby="compare-cta-title">
+    <div class="landing-container-container">
+      <h2 id="compare-cta-title">Build on your terms.</h2>
+      <p class="landing-cta-banner-description">Talk with our team about the application you want to build.</p>
+      <div class="compare-cta-buttons">
+        <a class="landing-btn-button landing-btn-purple" href="/contact">Discuss your application</a>
+        <a class="landing-btn-button landing-btn-white" href="/solutions">See what customers have built</a>
+      </div>
+    </div>
+  </section>
+</div>
+{{ end }}
