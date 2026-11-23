@@ -58,6 +58,12 @@ Required only when you specify a `code_challenge_method` parameter.
 
 A random value that you can add to the request. The nonce value that you provide is included in the ID token that Medplum issues. You can use a `nonce` value to guard against replay attacks.
 
+#### `project` (Optional)
+
+The ID of the project to sign in to, for a client that doesn't belong to a project (a server-level client).
+Use it to sign in [project-scoped users](/docs/user-management/project-vs-server-scoped-users) of that project.
+A client that belongs to a project always signs in to its own project, and other values are refused.
+
 #### `prompt` (Optional)
 
 Controls how the authorization server prompts the user for consent. Supported values:

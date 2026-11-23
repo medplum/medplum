@@ -162,6 +162,44 @@ describe('Login', () => {
     expect(res.body.issue[0].details.text).toBe('Invalid projectId');
   });
 
+  test('Server-level client signs in a project-scoped user with projectId, but not with new', async () => {
+    const scopedEmail = `scoped${randomUUID()}@example.com`;
+    const serverClient = await withTestContext(async () => {
+      const { user } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Scoped',
+        lastName: 'User',
+        email: scopedEmail,
+        scope: 'project',
+      });
+      await setPassword(getGlobalSystemRepo(), user, password);
+      return getGlobalSystemRepo().createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        secret: randomUUID(),
+      });
+    });
+    const body = { clientId: serverClient.id, email: scopedEmail, password, scope: 'openid' };
+
+    const res1 = await request(app).post('/auth/login').type('json').send(body);
+    expect(res1).toHaveStatus(400);
+    expect(res1.body.issue[0].details.text).toBe('Email or password is invalid');
+
+    const res2 = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ ...body, projectId: project.id });
+    expect(res2).toHaveStatus(200);
+    expect(res2.body.code).toBeDefined();
+
+    const res3 = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({ ...body, projectId: 'new' });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue[0].details.text).toBe('Invalid projectId');
+  });
+
   test('Success with custom client', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
