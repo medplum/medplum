@@ -140,4 +140,43 @@ describe('security checks', () => {
       'at least 200 days'
     );
   });
+
+  test('staff admins, email domains and patient access', () => {
+    const staff: ProjectMembership[] = [1, 2, 3, 4].map((n) => ({
+      resourceType: 'ProjectMembership',
+      id: `s${n}`,
+      project: { reference: 'Project/p1' },
+      user: { reference: `User/u${n}` },
+      profile: { reference: `Practitioner/pr${n}` },
+      accessPolicy: { reference: 'AccessPolicy/a1' },
+      admin: true,
+    }));
+    const patient: ProjectMembership = {
+      resourceType: 'ProjectMembership',
+      id: 'pt1',
+      project: { reference: 'Project/p1' },
+      user: { reference: 'User/u9' },
+      profile: { reference: 'Patient/pt1' },
+      accessPolicy: { reference: 'AccessPolicy/wide' },
+    };
+    const input: SecurityCheckInput = {
+      project: { resourceType: 'Project', id: 'p1' },
+      memberships: [...staff, patient],
+      accessPolicies: [policy('a1'), policy('wide', { resource: [{ resourceType: '*' }] })],
+      users: [1, 2, 3, 4].map((n) => ({
+        resourceType: 'User',
+        id: `u${n}`,
+        firstName: 'Staff',
+        lastName: `${n}`,
+        email: `user${n}@example.org`,
+      })),
+      secretRotations: new Map(),
+      now: NOW,
+    };
+    expect(findingIds(input).sort((a, b) => a.localeCompare(b))).toEqual([
+      'email-domain-lock',
+      'patient-broad-access',
+      'staff-admins',
+    ]);
+  });
 });
