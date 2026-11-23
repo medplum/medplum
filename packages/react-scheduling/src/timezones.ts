@@ -23,6 +23,9 @@ export function getFormatter(options: Intl.DateTimeFormatOptions, locale?: strin
   return formatter;
 }
 
+/** Timezone format to display beside a time. */
+const TIMEZONE_NAME_STYLE = 'shortGeneric' as const;
+
 export interface FormatZonedTimeOptions {
   /** Names the zone alongside the time, e.g. "12:30 PM ET". */
   readonly withTimezone?: boolean;
@@ -82,9 +85,6 @@ export function formatDayHeading(date: Date, timezone?: string): string {
 export function getBrowserTimezone(): string {
   return getFormatter({}).resolvedOptions().timeZone;
 }
-
-/** Timezone format to display beside a time. */
-const TIMEZONE_NAME_STYLE = 'shortGeneric' as const;
 
 /** Arbitrary instant in the browser's timezone. */
 const TIMEZONE_LABEL_INSTANT = new Date(0);
