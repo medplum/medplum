@@ -142,6 +142,14 @@ async function setup(
     />,
     medplum
   );
+  // The service facility fields draw only once what they show is read: a provider's roles, or the facility a
+  // room is part of.
+  if (storedActor.resourceType === 'Practitioner') {
+    await facilityPicker();
+  } else if (storedActor.resourceType === 'Location' && storedActor.partOf) {
+    const facility = await medplum.readReference(storedActor.partOf);
+    await within(general()).findByText(facility.name as string);
+  }
   return { medplum, onSynced, schedules: stored };
 }
 

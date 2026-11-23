@@ -246,7 +246,10 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    const edit = await screen.findByRole('button', { name: 'Edit' });
+    await act(async () => {
+      fireEvent.click(edit);
+    });
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
     expect(screen.getByText('Miles Cooper')).toBeInTheDocument();
     expect(cancelButton()).not.toBeInTheDocument();
@@ -758,7 +761,11 @@ describe('AppointmentDetails editing', () => {
       />,
       medplum
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    const edit = await screen.findByRole('button', { name: 'Edit' });
+    await act(async () => {
+      fireEvent.click(edit);
+    });
+    await settleAutocomplete();
   }
 
   function saveButton(): HTMLElement {
