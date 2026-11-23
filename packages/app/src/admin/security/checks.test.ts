@@ -166,14 +166,15 @@ describe('security checks', () => {
     );
   });
 
-  test.each<[string, AccessPolicyIpAccessRule[], string]>([
-    ['without IP restriction', [], 'high'],
-    ['with IP restriction', [{ value: '*', action: 'block' }], 'medium'],
-  ])('Bot write severity %s', (_name, ipAccessRule, severity) => {
-    const input = makeInput(clientMembership({ accessPolicy: { reference: 'AccessPolicy/a1' } }), [
+  test.each<[string, AccessPolicyIpAccessRule[], boolean, string]>([
+    ['without IP restriction', [], false, 'high'],
+    ['with IP restriction', [{ value: '*', action: 'block' }], false, 'medium'],
+    ['for an admin with IP restriction', [{ value: '*', action: 'block' }], true, 'critical'],
+  ])('Bot write severity %s', (_name, ipAccessRule, admin, severity) => {
+    const input = makeInput(clientMembership({ admin, accessPolicy: { reference: 'AccessPolicy/a1' } }), [
       policy('a1', { resource: [{ resourceType: 'Bot' }], ipAccessRule }),
     ]);
-    expect(analyzeProjectSecurity(input)).toMatchObject([{ id: 'client-writes-bots/m1', severity }]);
+    expect(analyzeProjectSecurity(input).find((f) => f.id === 'client-writes-bots/m1')?.severity).toBe(severity);
   });
 
   test.each<[string, string]>([
@@ -228,18 +229,23 @@ describe('security checks', () => {
     ]);
   });
 
-  test.each<[string, string[], Project['setting'], boolean]>([
-    ['one shared domain', ['a@example.org', 'b@example.org'], undefined, true],
-    ['two domains', ['a@example.org', 'b@example.com'], undefined, true],
-    ['three domains', ['a@example.org', 'b@example.com', 'c@example.net'], undefined, false],
-    ['one staff user', ['a@example.org'], undefined, false],
+  const lock: Project['setting'] = [{ name: 'allowedPractitionerEmailDomain', valueString: 'example.org' }];
+
+  test.each<[string, string[], Project['setting'], string[]]>([
+    ['one shared domain', ['a@example.org', 'b@example.org'], undefined, ['email-domain-lock']],
+    ['two domains', ['a@example.org', 'b@example.com'], undefined, ['email-domain-lock']],
+    ['three domains', ['a@example.org', 'b@example.com', 'c@example.net'], undefined, []],
+    ['one staff user', ['a@example.org'], undefined, []],
+    ['setting present', ['a@example.org', 'b@example.org'], lock, []],
     [
-      'setting present',
-      ['a@example.org', 'b@example.org'],
-      [{ name: 'allowedPractitionerEmailDomain', valueString: 'example.org' }],
-      false,
+      'company and public domains',
+      ['a@example.org', 'b@gmail.com'],
+      undefined,
+      ['email-domain-lock', 'staff-public-email'],
     ],
-  ])('email domains: %s', (_name, emails, setting, flagged) => {
+    ['public domain with setting present', ['a@example.org', 'b@Gmail.com'], lock, ['staff-public-email']],
+    ['public domains only', ['a@gmail.com', 'b@outlook.com'], undefined, ['staff-public-email']],
+  ])('email domains: %s', (_name, emails, setting, expected) => {
     const users: User[] = emails.map((email, i) => ({
       resourceType: 'User',
       id: `s${i}`,
@@ -248,7 +254,23 @@ describe('security checks', () => {
       email,
     }));
     const input = projectInput(staffMembers(emails.length, 0), users, { resourceType: 'Project', id: 'p1', setting });
-    expect(findingIds(input)).toEqual(flagged ? ['email-domain-lock'] : []);
+    expect(findingIds(input).sort((a, b) => a.localeCompare(b))).toEqual(expected);
+  });
+
+  test('public email finding lists the addresses', () => {
+    const users: User[] = ['b@gmail.com', 'a@yahoo.com'].map((email, i) => ({
+      resourceType: 'User',
+      id: `s${i}`,
+      firstName: 'A',
+      lastName: 'B',
+      email,
+    }));
+    expect(analyzeProjectSecurity(projectInput(staffMembers(2, 0), users))).toMatchObject([
+      { id: 'staff-public-email', title: '2 staff users have a public email address' },
+    ]);
+    expect(analyzeProjectSecurity(projectInput(staffMembers(2, 0), users))[0].description).toContain(
+      'a@yahoo.com, b@gmail.com'
+    );
   });
 
   test.each<[number, string | undefined]>([

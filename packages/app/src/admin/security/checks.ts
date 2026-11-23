@@ -184,7 +184,7 @@ export function analyzeProjectSecurity(input: SecurityCheckInput): SecurityFindi
     findings.push(...checkMembership(membership, policiesByRef, input));
   }
   findings.push(...checkAdmins(active));
-  findings.push(...checkEmailDomainLock(input.project, active, input.users));
+  findings.push(...checkStaffEmails(input.project, active, input.users));
 
   return findings.sort(
     (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity) || a.title.localeCompare(b.title)
@@ -219,7 +219,17 @@ function checkMembership(
     } else {
       const ipRestricted = hasIpRestriction(resolved.policies);
       const canWriteBots = canWrite(resolved.policies, 'Bot');
-      if (canWriteBots) {
+      if (canWriteBots && membership.admin) {
+        findings.push({
+          id: `client-writes-bots/${membership.id}`,
+          severity: 'critical',
+          title: `Client "${name}" is a project admin and can deploy Bots`,
+          description:
+            'Bots run code inside your project. An admin client that can write Bots can deploy code with access to all project data. Remove Bot write access from this client access policy.',
+          target,
+          link,
+        });
+      } else if (canWriteBots) {
         findings.push({
           id: `client-writes-bots/${membership.id}`,
           severity: ipRestricted ? 'medium' : 'high',
@@ -329,13 +339,20 @@ function checkAdmins(memberships: ProjectMembership[]): SecurityFinding[] {
   ];
 }
 
-function checkEmailDomainLock(project: Project, memberships: ProjectMembership[], users: User[]): SecurityFinding[] {
-  if (project.setting?.some((s) => s.name === 'allowedPractitionerEmailDomain' && s.valueString)) {
-    return [];
-  }
+/**
+ * Checks staff email addresses.
+ * - Flags staff users on public email providers, whether or not the project has a domain lock.
+ * - Suggests a domain lock when staff company addresses share one or two domains and no lock is set.
+ * @param project - The project, with its settings.
+ * @param memberships - Active project memberships.
+ * @param users - The project's staff users.
+ * @returns Email findings.
+ */
+function checkStaffEmails(project: Project, memberships: ProjectMembership[], users: User[]): SecurityFinding[] {
   const staffUserIds = new Set(
     memberships.filter((m) => m.profile.reference?.startsWith('Practitioner/')).map((m) => resolveId(m.user))
   );
+  const publicEmails: string[] = [];
   const domains = new Set<string>();
   for (const user of users) {
     if (!staffUserIds.has(user.id) || !user.email) {
@@ -343,23 +360,36 @@ function checkEmailDomainLock(project: Project, memberships: ProjectMembership[]
     }
     const domain = user.email.slice(user.email.lastIndexOf('@') + 1).toLowerCase();
     if (PUBLIC_EMAIL_DOMAINS.has(domain)) {
-      return [];
+      publicEmails.push(user.email);
+    } else {
+      domains.add(domain);
     }
-    domains.add(domain);
   }
-  if (staffUserIds.size < 2 || domains.size === 0 || domains.size > 2) {
-    return [];
+
+  const findings: SecurityFinding[] = [];
+  if (publicEmails.length > 0) {
+    publicEmails.sort((a, b) => a.localeCompare(b));
+    findings.push({
+      id: 'staff-public-email',
+      severity: 'medium',
+      title: `${publicEmails.length} staff ${publicEmails.length === 1 ? 'user has' : 'users have'} a public email address`,
+      description: `Staff accounts on public email providers cannot be limited by an email domain lock. Use company email addresses for staff accounts: ${publicEmails.join(', ')}.`,
+      link: '/admin/users',
+    });
   }
-  const list = [...domains].sort((a, b) => a.localeCompare(b)).join(', ');
-  return [
-    {
+
+  const locked = project.setting?.some((s) => s.name === 'allowedPractitionerEmailDomain' && s.valueString);
+  if (!locked && staffUserIds.size >= 2 && domains.size > 0 && domains.size <= 2) {
+    const list = [...domains].sort((a, b) => a.localeCompare(b)).join(', ');
+    findings.push({
       id: 'email-domain-lock',
       severity: 'medium',
       title: 'Staff email domains are not locked down',
-      description: `All staff users have ${list} email addresses. Add an "allowedPractitionerEmailDomain" project setting for each so that only these domains can be invited.`,
+      description: `Staff users have ${list} email addresses. Add an "allowedPractitionerEmailDomain" project setting for each so that only these domains can be invited.`,
       link: '/admin/settings',
-    },
-  ];
+    });
+  }
+  return findings;
 }
 
 function getPoliciesByRef(accessPolicies: AccessPolicy[]): Map<string, AccessPolicy> {
