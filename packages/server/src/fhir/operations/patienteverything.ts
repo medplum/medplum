@@ -6,6 +6,7 @@ import {
   allOk,
   append,
   concatUrls,
+  deleteElement,
   flatMapFilter,
   getReferenceString,
   isReference,
@@ -359,7 +360,7 @@ async function inlineDocumentReferenceAttachments(
         if (!attachment.contentType && binary.contentType) {
           attachment.contentType = binary.contentType;
         }
-        delete attachment.url;
+        deleteElement(attachment, 'url');
         totalBytes += buffer.length;
         inlinedCount++;
       } catch (err) {

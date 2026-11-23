@@ -4,6 +4,7 @@ import type { OperationOutcomeIssue, Resource, StructureDefinition } from '@medp
 import { arrayify } from '../array';
 import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
+import { getElementName, getPairedElementKey, getPrimitiveExtensionKey } from '../element-keys';
 import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
@@ -327,15 +328,8 @@ class ResourceValidator implements CrawlerVisitor {
       const choiceOfTypeElementName = isChoiceOfType(parent, key, properties);
       if (choiceOfTypeElementName) {
         // check that the type of the primitive extension matches the type of the property
-        let relatedElementName: string;
-        let requiredRelatedElementName: string;
-        if (choiceOfTypeElementName.startsWith('_')) {
-          relatedElementName = choiceOfTypeElementName.slice(1);
-          requiredRelatedElementName = key.slice(1);
-        } else {
-          relatedElementName = '_' + choiceOfTypeElementName;
-          requiredRelatedElementName = '_' + key;
-        }
+        const relatedElementName = getPairedElementKey(choiceOfTypeElementName);
+        const requiredRelatedElementName = getPairedElementKey(key);
 
         if (
           relatedElementName in choiceOfTypeElements &&
@@ -345,7 +339,7 @@ class ResourceValidator implements CrawlerVisitor {
             createOperationOutcomeIssue(
               'warning',
               'structure',
-              `Type of primitive extension does not match the type of property "${choiceOfTypeElementName.startsWith('_') ? choiceOfTypeElementName.slice(1) : choiceOfTypeElementName}"`,
+              `Type of primitive extension does not match the type of property "${getElementName(choiceOfTypeElementName)}"`,
               choiceOfTypeElementName
             )
           );
@@ -367,7 +361,7 @@ class ResourceValidator implements CrawlerVisitor {
         choiceOfTypeElements[choiceOfTypeElementName] = key;
         continue;
       }
-      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties) && object[key] !== undefined) {
+      if (!(getElementName(key) in properties) && object[key] !== undefined) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
@@ -660,19 +654,17 @@ function isChoiceOfType(
   key: string,
   propertyDefinitions: Record<string, InternalSchemaElement>
 ): string | undefined {
-  let prefix = '';
-  if (key.startsWith('_')) {
-    key = key.slice(1);
-    prefix = '_';
-  }
-  const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
+  const name = getElementName(key);
+  const parts = name.split(/(?=[A-Z])/g); // Split before capital letters
   let testProperty = '';
   for (const part of parts) {
     testProperty += part;
     const elementName = testProperty + '[x]';
     if (propertyDefinitions[elementName]) {
-      const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
-      return typedPropertyValue ? prefix + elementName : undefined;
+      if (!getTypedPropertyValue(typedValue, testProperty)) {
+        return undefined;
+      }
+      return name === key ? elementName : getPrimitiveExtensionKey(elementName);
     }
   }
   return undefined;
@@ -681,7 +673,7 @@ function isChoiceOfType(
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
   for (const [key, value] of Object.entries(obj)) {
     const propertyPath = `${path}.${key}`;
-    const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
+    const partnerKey = getPairedElementKey(key);
     if (value === null) {
       issues.push(createStructureIssue(propertyPath, 'Invalid null value'));
     } else if (Array.isArray(value)) {

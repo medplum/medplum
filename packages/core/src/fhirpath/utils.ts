@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
+import { getPrimitiveExtensionKey } from '../element-keys';
 import type { TypedValue } from '../types';
 import { PropertyType, getElementDefinition, isResource } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
@@ -159,7 +160,7 @@ export function getTypedPropertyValueWithSchema(
       candidatePath += capitalize(type.code);
     }
     resultValue = value[candidatePath];
-    primitiveExtension = value['_' + candidatePath];
+    primitiveExtension = value[getPrimitiveExtensionKey(candidatePath)];
     if (resultValue !== undefined || primitiveExtension !== undefined) {
       resultType = type.code;
       break;

@@ -1134,7 +1134,7 @@ describe('AccessPolicy', () => {
       });
     }));
 
-  test.skip('Readonly choice-of-type fields on write', () =>
+  test('Readonly choice-of-type fields on write', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -1205,7 +1205,7 @@ describe('AccessPolicy', () => {
       expect(patient.identifier).toBeUndefined();
     }));
 
-  test.skip('Try to create with readonly choice-of-type property', () =>
+  test('Try to create with readonly choice-of-type property', () =>
     withTestContext(async () => {
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
@@ -1347,16 +1347,16 @@ describe('AccessPolicy', () => {
       expect(bundle2.entry?.length).toStrictEqual(1);
     }));
 
-  test.skip('Try to remove readonly choice-of-type property', () =>
+  test('Try to remove readonly choice-of-type property', () =>
     withTestContext(async () => {
-      // Create a patient with an identifier
+      // Create a patient with multipleBirth[x]
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Identifier'], family: 'Test' }],
         multipleBirthInteger: 2,
       });
 
-      // AccessPolicy with Patient.identifier readonly
+      // AccessPolicy with Patient.multipleBirth[x] readonly
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
         resource: [
@@ -1726,6 +1726,33 @@ describe('AccessPolicy', () => {
         birthDate: '1974-12-25',
         _birthDate: birthTime('1974-12-25T14:35:45-05:00'),
       });
+    }));
+
+  test('Readonly fields restore falsy values', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        active: false,
+        multipleBirthInteger: 0,
+      });
+
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', readonlyFields: ['active', 'multipleBirth[x]'] }],
+        },
+      });
+
+      // A missing `active` means active, so dropping the stored `false` would reactivate the Patient
+      const writeResource = await repo2.updateResource<Patient>({
+        ...patient,
+        active: true,
+        multipleBirthInteger: undefined,
+        multipleBirthBoolean: true,
+      });
+      expect(writeResource.active).toBe(false);
+      expect(writeResource.multipleBirthInteger).toBe(0);
+      expect(writeResource.multipleBirthBoolean).toBeUndefined();
     }));
 
   test('Hidden fields on possible missing values', () =>

@@ -23,6 +23,7 @@ import type {
   AuditEvent,
   Binary,
   BundleEntry,
+  DomainConfiguration,
   Login,
   OperationOutcome,
   Organization,
@@ -809,6 +810,38 @@ describe('FHIR Repo', () => {
       });
       expect(searchResult.entry?.length).toBe(1);
       expect((searchResult.entry?.[0]?.resource as Patient)?.name?.[0]?.family).toStrictEqual('Jones');
+    }));
+
+  test('Write ignores submitted primitive extensions on server-assigned meta', () =>
+    withTestContext(async () => {
+      const extension = [{ url: 'https://example.com/ext', valueString: 'client' }];
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: {
+          _versionId: { id: 'client-version', extension },
+          _lastUpdated: { extension },
+          _deleted: { extension },
+        },
+      } as Patient);
+
+      const stored = await systemRepo.readResource<Patient>('Patient', patient.id);
+      expect(stored.meta).not.toHaveProperty('_versionId');
+      expect(stored.meta).not.toHaveProperty('_lastUpdated');
+      expect(stored.meta).not.toHaveProperty('_deleted');
+    }));
+
+  test('Write keeps submitted project and its primitive extension when server assigns none', () =>
+    withTestContext(async () => {
+      const projectId = randomUUID();
+      const _project = { extension: [{ url: 'https://example.com/ext', valueString: 'x' }] };
+      const domainConfig = await systemRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain: randomUUID() + '.example.com',
+        meta: { project: projectId, _project },
+      } as DomainConfiguration);
+
+      const stored = await systemRepo.readResource<DomainConfiguration>('DomainConfiguration', domainConfig.id);
+      expect(stored.meta).toMatchObject({ project: projectId, _project });
     }));
 
   test('Create Patient as ClientApplication with no author', () =>

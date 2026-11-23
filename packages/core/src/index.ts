@@ -16,6 +16,7 @@ export * from './cron';
 export * from './crypto';
 export * from './datasampler';
 export * from './default-values';
+export * from './element-keys';
 export * from './elements-context';
 export * from './environment';
 export * from './eventtarget';

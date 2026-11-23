@@ -30,6 +30,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { arrayify } from './array';
 import { HL7_V2_0203 } from './constants';
+import { getElementName } from './element-keys';
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatDateTime, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
@@ -877,9 +878,12 @@ export function trimTrailingEmptyElements<T>(arr: T[] | undefined): T[] | undefi
   return i >= 0 ? arr.slice(0, i + 1) : undefined;
 }
 
+/** Server-assigned meta elements that do not affect resource equality. */
+const deepEqualsIgnoredMetaElements = { versionId: true, lastUpdated: true, author: true };
+
 /**
  * Resource equality.
- * Ignores meta.versionId and meta.lastUpdated.
+ * Ignores meta.versionId, meta.lastUpdated, and meta.author.
  * @param object1 - The first object.
  * @param object2 - The second object.
  * @param path - Optional path string.
@@ -934,12 +938,10 @@ function deepEqualsObject(
   for (const k of Object.keys(object2)) {
     keySet.add(k);
   }
-  if (path === 'meta') {
-    keySet.delete('versionId');
-    keySet.delete('lastUpdated');
-    keySet.delete('author');
-  }
   for (const key of keySet) {
+    if (path === 'meta' && Object.hasOwn(deepEqualsIgnoredMetaElements, getElementName(key))) {
+      continue;
+    }
     const val1 = object1[key];
     const val2 = object2[key];
     if (!deepEquals(val1, val2, key)) {

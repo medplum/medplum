@@ -12,6 +12,7 @@ import {
   EMPTY,
   evalFhirPathTyped,
   flatMapFilter,
+  getElementName,
   getExtension,
   OperationOutcomeError,
   Operator,
@@ -380,12 +381,14 @@ class TemplateExtractor implements AsyncCrawlerVisitor {
 
   private makePatch(results: TypedValue[], path: string, template: any, extension: TypedValueWithPath): void {
     const lastDotIndex = path.lastIndexOf('.');
-    const isPrimitiveExtension = path[lastDotIndex + 1] === '_'; // Primitive extension fields are prefixed with _
+    const lastSegment = path.slice(lastDotIndex + 1);
+    const elementSegment = getElementName(lastSegment);
+    const isPrimitiveExtension = elementSegment !== lastSegment;
     if (isPrimitiveExtension) {
       // Always remove primitive extension field
       this.patch.push({ op: 'remove', path: asJsonPath(path) });
       // Convert to "real" path
-      path = path.slice(0, lastDotIndex + 1) + path.slice(lastDotIndex + 2);
+      path = path.slice(0, lastDotIndex + 1) + elementSegment;
     }
 
     const isArrayElement = path.endsWith(']');

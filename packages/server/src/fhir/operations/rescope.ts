@@ -6,6 +6,7 @@ import {
   allOk,
   badRequest,
   createReference,
+  deleteElement,
   escapeSearchValue,
   forbidden,
   getReferenceString,
@@ -224,7 +225,9 @@ async function rescopeUserToServer(ctx: AuthenticatedRequestContext, user: WithI
       await retireAllSecurityRequests(txRepo, rereadUser);
 
       delete rereadUser.project;
-      delete rereadUser.meta?.project;
+      if (rereadUser.meta) {
+        deleteElement(rereadUser.meta, 'project');
+      }
 
       return txRepo.updateResource(rereadUser);
     },
