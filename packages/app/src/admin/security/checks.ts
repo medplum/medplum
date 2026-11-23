@@ -57,6 +57,8 @@ export interface SecurityCheckInput {
   readonly accessPolicies: AccessPolicy[];
   readonly users: User[];
   readonly secretRotations: Map<string, SecretRotation>;
+  /** Current names of membership profiles, keyed by reference string, read from the profile resources. */
+  readonly names: Map<string, string>;
   readonly now: Date;
 }
 
@@ -87,14 +89,19 @@ export interface AdminEntry {
  * Lists every membership with project admin privileges, including users, bots and clients.
  * @param memberships - All project memberships.
  * @param owner - The project owner's User reference, if known.
+ * @param names - Current profile names keyed by reference string.
  * @returns Admin memberships, owner first, then by profile type and name.
  */
-export function listAdmins(memberships: ProjectMembership[], owner: Reference | undefined): AdminEntry[] {
+export function listAdmins(
+  memberships: ProjectMembership[],
+  owner: Reference | undefined,
+  names: Map<string, string>
+): AdminEntry[] {
   return memberships
     .filter((m) => m.admin)
     .map((membership) => ({
       membershipId: membership.id as string,
-      name: getMembershipName(membership),
+      name: getMembershipName(membership, names),
       profileType: membership.profile.reference?.split('/')[0] ?? 'Unknown',
       profile: membership.profile,
       link: getMembershipLink(membership),
@@ -148,7 +155,7 @@ export function listClients(input: SecurityCheckInput): ClientEntry[] {
       const secretAge = getSecretAge(membership.profile, input);
       return {
         membershipId: membership.id as string,
-        name: getMembershipName(membership),
+        name: getMembershipName(membership, input.names),
         profile: membership.profile,
         link: getMembershipLink(membership),
         active: membership.active !== false,
@@ -197,7 +204,7 @@ function checkMembership(
   input: SecurityCheckInput
 ): SecurityFinding[] {
   const profileType = membership.profile.reference?.split('/')[0];
-  const name = getMembershipName(membership);
+  const name = getMembershipName(membership, input.names);
   const link = getMembershipLink(membership);
   const target = membership.profile;
   const resolved = resolvePolicies(membership, policiesByRef);
@@ -205,9 +212,9 @@ function checkMembership(
 
   if (profileType === 'ClientApplication') {
     if (membership.admin) {
-      findings.push(getClientAdminFinding(membership, resolved));
+      findings.push(getClientAdminFinding(membership, name, resolved));
       if (resolved && !resolved.complete) {
-        findings.push(getUnresolvedPolicyFinding(membership));
+        findings.push(getUnresolvedPolicyFinding(membership, name));
       }
     } else if (!resolved) {
       findings.push({
@@ -220,7 +227,7 @@ function checkMembership(
         link,
       });
     } else if (!resolved.complete) {
-      findings.push(getUnresolvedPolicyFinding(membership));
+      findings.push(getUnresolvedPolicyFinding(membership, name));
     } else {
       const ipRestricted = hasIpRestriction(resolved.policies);
       const canWriteBots = canWrite(resolved.policies, 'Bot');
@@ -278,7 +285,7 @@ function checkMembership(
         link,
       });
     } else if (!resolved.complete) {
-      findings.push(getUnresolvedPolicyFinding(membership));
+      findings.push(getUnresolvedPolicyFinding(membership, name));
     }
     return findings;
   }
@@ -430,14 +437,15 @@ function resolvePolicies(
  * - No IP restriction: medium.
  * - Otherwise, or when a policy could not be loaded: low.
  * @param membership - The admin client's membership.
+ * @param name - The client's current name.
  * @param resolved - The client's resolved access policies.
  * @returns The admin client finding.
  */
 function getClientAdminFinding(
   membership: ProjectMembership,
+  name: string,
   resolved: ResolvedPolicies | undefined
 ): SecurityFinding {
-  const name = getMembershipName(membership);
   const base = {
     id: `${CLIENT_ADMIN_FINDING_PREFIX}/${membership.id}`,
     target: membership.profile,
@@ -477,11 +485,11 @@ function getClientAdminFinding(
   return { ...base, severity: 'low', title: `Client "${name}" is a project admin`, description: adminRisk };
 }
 
-function getUnresolvedPolicyFinding(membership: ProjectMembership): SecurityFinding {
+function getUnresolvedPolicyFinding(membership: ProjectMembership, name: string): SecurityFinding {
   return {
     id: `policy-unresolved/${membership.id}`,
     severity: 'medium',
-    title: `Access policy for "${getMembershipName(membership)}" could not be fully evaluated`,
+    title: `Access policy for "${name}" could not be fully evaluated`,
     description:
       'At least one access policy assigned to this member could not be read, for example because it belongs to a linked project. Its IP restrictions and permissions were not checked. Review it in the project that owns it.',
     target: membership.profile,
@@ -511,8 +519,16 @@ function grantsWildcard(policies: AccessPolicy[]): boolean {
   return policies.some((p) => p.resource?.some((r) => r.resourceType === '*' && !r.criteria));
 }
 
-function getMembershipName(membership: ProjectMembership): string {
-  return membership.profile.display ?? membership.userName ?? membership.profile.reference ?? 'Unknown';
+/**
+ * Returns the profile's current name. The membership's `profile.display` and `userName` are copies taken when the
+ * membership was created and go stale when the profile is renamed, so they are not used.
+ * @param membership - The project membership.
+ * @param names - Current profile names keyed by reference string.
+ * @returns The profile's name, or its reference when the name is not known.
+ */
+function getMembershipName(membership: ProjectMembership, names: Map<string, string>): string {
+  const reference = membership.profile.reference;
+  return (reference && names.get(reference)) || reference || 'Unknown';
 }
 
 function getMembershipLink(membership: ProjectMembership): string {

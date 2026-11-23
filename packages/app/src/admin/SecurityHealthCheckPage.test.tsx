@@ -48,7 +48,7 @@ describe('SecurityHealthCheckPage', () => {
       resourceType: 'ProjectMembership',
       project: { reference: `Project/${project.id}` },
       user: { reference: `ClientApplication/${client.id}` },
-      profile: { reference: `ClientApplication/${client.id}`, display: 'Test Client' },
+      profile: { reference: `ClientApplication/${client.id}`, display: 'Stale Name' },
       admin: true,
     });
 
@@ -108,23 +108,21 @@ describe('SecurityHealthCheckPage', () => {
     await medplum.createResource(
       membership({
         user: { reference: 'User/u1' },
-        profile: { reference: 'Practitioner/pr1', display: 'Olive Owner' },
+        profile: { reference: 'Practitioner/pr1' },
         accessPolicy: createReference(policy),
         admin: true,
       })
     );
-    await medplum.createResource(
-      membership({ profile: { reference: 'Bot/b1', display: 'Old Bot' }, admin: true, active: false })
-    );
+    await medplum.createResource(membership({ profile: { reference: 'Bot/b1' }, admin: true, active: false }));
     await medplum.createResource(
       membership({
-        profile: { reference: 'ClientApplication/c1', display: 'Restricted Client' },
+        profile: { reference: 'ClientApplication/c1' },
         accessPolicy: createReference(policy),
       })
     );
     await medplum.createResource(
       membership({
-        profile: { reference: 'ClientApplication/c2', display: 'Linked Client' },
+        profile: { reference: 'ClientApplication/c2' },
         accessPolicy: { reference: 'AccessPolicy/linked' },
         active: false,
       })
@@ -134,8 +132,8 @@ describe('SecurityHealthCheckPage', () => {
     expect(await screen.findByText('No issues found')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('tab', { name: /^Clients \(/ }));
-    expect(await screen.findByText('Restricted Client')).toBeInTheDocument();
-    expect(screen.getByText('Linked Client')).toBeInTheDocument();
+    expect(await screen.findByText('ClientApplication/c1')).toBeInTheDocument();
+    expect(screen.getByText('ClientApplication/c2')).toBeInTheDocument();
     expect(screen.getAllByText('Unknown')).toHaveLength(4);
 
     await userEvent.click(screen.getByRole('tab', { name: /^Admins \(/ }));
@@ -154,7 +152,7 @@ describe('SecurityHealthCheckPage', () => {
       resourceType: 'ProjectMembership',
       project: { reference: `Project/${project.id}` },
       user: createReference(client),
-      profile: { ...createReference(client), display: 'Old Client' },
+      profile: createReference(client),
     });
     const lastUpdated = new Date(Date.now() - 200 * 86_400_000).toISOString();
     const page: Bundle<ClientApplication> = {

@@ -17,7 +17,7 @@ function clientMembership(rest: Partial<ProjectMembership> = {}): ProjectMembers
     id: 'm1',
     project: { reference: 'Project/p1' },
     user: { reference: 'ClientApplication/c1' },
-    profile: { reference: 'ClientApplication/c1', display: 'Client One' },
+    profile: { reference: 'ClientApplication/c1', display: 'Stale Name' },
     ...rest,
   };
 }
@@ -44,7 +44,15 @@ function projectInput(
   users: User[] = [],
   project: Project = { resourceType: 'Project', id: 'p1' }
 ): SecurityCheckInput {
-  return { project, memberships, accessPolicies: [policy('a1')], users, secretRotations: new Map(), now: NOW };
+  return {
+    project,
+    memberships,
+    accessPolicies: [policy('a1')],
+    users,
+    secretRotations: new Map(),
+    names: new Map(),
+    now: NOW,
+  };
 }
 
 function makeInput(
@@ -58,6 +66,7 @@ function makeInput(
     accessPolicies,
     users: [],
     secretRotations,
+    names: new Map([['ClientApplication/c1', 'Client One']]),
     now: NOW,
   };
 }
@@ -129,6 +138,12 @@ describe('security checks', () => {
       ipRestricted: false,
       canWriteBots: true,
     });
+  });
+
+  test('names come from the profile resource, not the membership display', () => {
+    const input = makeInput(clientMembership(), []);
+    expect(listClients(input)[0].name).toBe('Client One');
+    expect(listClients({ ...input, names: new Map() })[0].name).toBe('ClientApplication/c1');
   });
 
   test('client admin', () => {
@@ -243,7 +258,9 @@ describe('security checks', () => {
       member('s2', 'Practitioner/pr2', { admin: true }),
       member('s3', 'Practitioner/pr3'),
     ];
-    expect(listAdmins(memberships, { reference: 'User/s2' }).map((a) => [a.membershipId, a.isOwner])).toEqual([
+    expect(
+      listAdmins(memberships, { reference: 'User/s2' }, new Map()).map((a) => [a.membershipId, a.isOwner])
+    ).toEqual([
       ['s2', true],
       ['b1', false],
       ['s1', false],
@@ -339,6 +356,7 @@ describe('security checks', () => {
         email: `user${n}@example.org`,
       })),
       secretRotations: new Map(),
+      names: new Map(),
       now: NOW,
     };
     expect(findingIds(input).sort((a, b) => a.localeCompare(b))).toEqual([

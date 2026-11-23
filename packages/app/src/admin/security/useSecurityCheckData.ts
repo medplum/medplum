@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, MedplumRequestOptions, WithId } from '@medplum/core';
 import { DEFAULT_MAX_SEARCH_COUNT, isReference, normalizeErrorString, resolveId } from '@medplum/core';
-import type { ClientApplication, ExtractResource, Project, ResourceType, User } from '@medplum/fhirtypes';
+import type {
+  Bot,
+  ClientApplication,
+  ExtractResource,
+  Project,
+  ProjectMembership,
+  ResourceType,
+  User,
+} from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { getProjectId } from '../../utils';
@@ -73,12 +81,13 @@ export function useSecurityCheckData(): SecurityCheckState {
 
 async function runSecurityCheck(medplum: MedplumClient): Promise<SecurityCheckResult> {
   const projectId = getProjectId(medplum);
-  const [projectResult, projectResource, memberships, accessPolicies, clients] = await Promise.all([
+  const [projectResult, projectResource, memberships, accessPolicies, clients, bots] = await Promise.all([
     medplum.get<{ project: Project }>(`admin/projects/${projectId}`, NO_CACHE),
     medplum.readResource('Project', projectId, NO_CACHE),
     searchAll(medplum, 'ProjectMembership', { project: `Project/${projectId}` }),
     searchAll(medplum, 'AccessPolicy'),
     searchAll(medplum, 'ClientApplication'),
+    searchAll(medplum, 'Bot'),
   ]);
 
   const staffUserIds = memberships
@@ -97,12 +106,13 @@ async function runSecurityCheck(medplum: MedplumClient): Promise<SecurityCheckRe
     accessPolicies,
     users,
     secretRotations,
+    names: getProfileNames(memberships, clients, bots, users),
     now: new Date(),
   };
   return {
     checkedAt: input.now,
     findings: analyzeProjectSecurity(input),
-    admins: listAdmins(memberships, projectResource.owner),
+    admins: listAdmins(memberships, projectResource.owner, input.names),
     clients: listClients(input),
   };
 }
@@ -126,6 +136,42 @@ async function searchAll<RT extends ResourceType>(
     results.push(...page);
   }
   return results;
+}
+
+/**
+ * Maps membership profile references to the profile's current name: the client or Bot name, or the staff User's name.
+ * @param memberships - The project's memberships.
+ * @param clients - The project's client applications.
+ * @param bots - The project's Bots.
+ * @param users - The project's staff users.
+ * @returns Current names keyed by profile reference string.
+ */
+function getProfileNames(
+  memberships: ProjectMembership[],
+  clients: ClientApplication[],
+  bots: Bot[],
+  users: User[]
+): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const client of clients) {
+    if (client.name) {
+      names.set(`ClientApplication/${client.id}`, client.name);
+    }
+  }
+  for (const bot of bots) {
+    if (bot.name) {
+      names.set(`Bot/${bot.id}`, bot.name);
+    }
+  }
+  const usersById = new Map(users.map((u) => [u.id, u]));
+  for (const membership of memberships) {
+    const user = usersById.get(resolveId(membership.user));
+    const name = user && ([user.firstName, user.lastName].filter(Boolean).join(' ') || user.email);
+    if (name && membership.profile.reference) {
+      names.set(membership.profile.reference, name);
+    }
+  }
+  return names;
 }
 
 async function searchUsers(medplum: MedplumClient, ids: string[]): Promise<User[]> {
