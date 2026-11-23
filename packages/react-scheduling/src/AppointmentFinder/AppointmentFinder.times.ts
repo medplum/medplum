@@ -66,7 +66,6 @@ interface ZonedParts {
  */
 function getZonedParts(date: Date, timezone: string | undefined): ZonedParts {
   const parts = getFormatter(
-    `parts:${timezone ?? ''}`,
     {
       timeZone: timezone,
       year: 'numeric',

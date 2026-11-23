@@ -9,12 +9,12 @@ const formatters = new Map<string, Intl.DateTimeFormat>();
 
 /**
  * Returns a formatter for a set of options, building it the first time it is asked for.
- * @param key - What tells one formatter apart from another.
- * @param options - How to format, read only when the formatter is built.
+ * @param options - How to format.
  * @param locale - The locale to build it in. Defaults to the browser's.
  * @returns The cached formatter.
  */
-export function getFormatter(key: string, options: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat {
+export function getFormatter(options: Intl.DateTimeFormatOptions, locale?: string): Intl.DateTimeFormat {
+  const key = `${locale ?? ''}|${JSON.stringify(options)}`;
   let formatter = formatters.get(key);
   if (!formatter) {
     formatter = new Intl.DateTimeFormat(locale, options);
@@ -36,7 +36,7 @@ export interface FormatZonedTimeOptions {
  * @returns The formatted time.
  */
 export function formatZonedTime(date: Date, timezone?: string, options?: FormatZonedTimeOptions): string {
-  return getFormatter(`time:${timezone ?? ''}${options?.withTimezone ? ':named' : ''}`, {
+  return getFormatter({
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
@@ -67,7 +67,7 @@ export function formatZonedTimeRange(start: Date, end: Date | undefined, timezon
  * @returns The formatted day.
  */
 export function formatDayHeading(date: Date, timezone?: string): string {
-  return getFormatter(`dayHeading:${timezone ?? ''}`, {
+  return getFormatter({
     timeZone: timezone,
     weekday: 'long',
     month: 'long',
@@ -80,7 +80,7 @@ export function formatDayHeading(date: Date, timezone?: string): string {
  * @returns The viewer's own timezone identifier.
  */
 export function getBrowserTimezone(): string {
-  return getFormatter('resolved', {}).resolvedOptions().timeZone;
+  return getFormatter({}).resolvedOptions().timeZone;
 }
 
 /** Timezone format to display beside a time. */
@@ -95,7 +95,7 @@ const TIMEZONE_LABEL_INSTANT = new Date(0);
  * @returns The zone's short name.
  */
 export function formatTimezoneLabel(timezone?: string): string {
-  const parts = getFormatter(`zoneName:${timezone ?? ''}`, {
+  const parts = getFormatter({
     timeZone: timezone,
     timeZoneName: TIMEZONE_NAME_STYLE,
   }).formatToParts(TIMEZONE_LABEL_INSTANT);
