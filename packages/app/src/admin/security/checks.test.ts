@@ -96,8 +96,21 @@ describe('security checks', () => {
   });
 
   test('client with no access policy is critical', () => {
-    const findings = analyzeProjectSecurity(makeInput(clientMembership(), []));
-    expect(findings[0]).toMatchObject({ id: 'client-no-policy/m1', severity: 'critical' });
+    const input = makeInput(clientMembership(), []);
+    expect(analyzeProjectSecurity(input)[0]).toMatchObject({ id: 'client-no-policy/m1', severity: 'critical' });
+    expect(listClients(input)[0]).toMatchObject({
+      hasPolicy: false,
+      policiesResolved: true,
+      ipRestricted: false,
+      canWriteBots: true,
+    });
+  });
+
+  test('client admin', () => {
+    const input = makeInput(clientMembership({ admin: true, accessPolicy: { reference: 'AccessPolicy/a1' } }), [
+      policy('a1', { ipAccessRule: [{ value: '*', action: 'block' }] }),
+    ]);
+    expect(findingIds(input)).toEqual(['client-admin']);
   });
 
   test('policy that cannot be loaded', () => {

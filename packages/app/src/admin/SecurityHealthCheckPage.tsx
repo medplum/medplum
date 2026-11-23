@@ -20,7 +20,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import type { AdminEntry, ClientEntry, SecurityFinding, SecuritySeverity } from './security/checks';
-import { SECRET_MAX_AGE_DAYS, SEVERITY_ORDER, STAFF_ADMINS_FINDING_ID } from './security/checks';
+import { isAdminFinding, SECRET_MAX_AGE_DAYS, SEVERITY_ORDER } from './security/checks';
 import { useSecurityCheckData } from './security/useSecurityCheckData';
 
 const SEVERITY_COLORS: Record<SecuritySeverity, string> = {
@@ -84,10 +84,7 @@ export function SecurityHealthCheckPage(): JSX.Element {
             <ClientsPanel clients={result.clients} />
           </Tabs.Panel>
           <Tabs.Panel value="admins" pt="md">
-            <AdminsPanel
-              admins={result.admins}
-              warning={result.findings.find((f) => f.id === STAFF_ADMINS_FINDING_ID)}
-            />
+            <AdminsPanel admins={result.admins} findings={result.findings} />
           </Tabs.Panel>
         </Tabs>
       )}
@@ -177,25 +174,27 @@ function FindingsPanel({ findings }: FindingsPanelProps): JSX.Element {
 
 /**
  * Props for the Admins tab.
- * - `warning` is the "too many staff admins" finding, shown above the table when present.
+ * - `findings` are all findings; the admin-related ones are shown as alerts above the table.
  */
 interface AdminsPanelProps {
   readonly admins: AdminEntry[];
-  readonly warning?: SecurityFinding;
+  readonly findings: SecurityFinding[];
 }
 
-function AdminsPanel({ admins, warning }: AdminsPanelProps): JSX.Element {
+function AdminsPanel({ admins, findings }: AdminsPanelProps): JSX.Element {
+  const warnings = useMemo(() => findings.filter(isAdminFinding), [findings]);
+
   if (admins.length === 0) {
     return <Text c="dimmed">No members have admin privileges.</Text>;
   }
 
   return (
     <Stack>
-      {warning && (
-        <Alert color={SEVERITY_COLORS[warning.severity]} title={warning.title}>
+      {warnings.map((warning) => (
+        <Alert key={warning.id} color={SEVERITY_COLORS[warning.severity]} title={warning.title}>
           {warning.description}
         </Alert>
-      )}
+      ))}
       <Text size="sm" c="dimmed">
         Admins can manage memberships, access policies, bots and project settings. Remove admin from any member that
         does not need it.

@@ -12,6 +12,7 @@ export const MAX_STAFF_ADMIN_RATIO = 0.25;
 export const MIN_STAFF_FOR_ADMIN_RATIO = 8;
 export const SECRET_MAX_AGE_DAYS = 180;
 export const STAFF_ADMINS_FINDING_ID = 'staff-admins';
+const CLIENT_ADMIN_FINDING_PREFIX = 'client-admin';
 
 const PUBLIC_EMAIL_DOMAINS = new Set([
   'gmail.com',
@@ -57,6 +58,15 @@ export interface SecurityCheckInput {
   readonly users: User[];
   readonly secretRotations: Map<string, SecretRotation>;
   readonly now: Date;
+}
+
+/**
+ * Returns true for findings about admin privileges, which are also shown on the Admins tab.
+ * @param finding - A security finding.
+ * @returns True for the staff admin count and client admin findings.
+ */
+export function isAdminFinding(finding: SecurityFinding): boolean {
+  return finding.id === STAFF_ADMINS_FINDING_ID || finding.id.startsWith(`${CLIENT_ADMIN_FINDING_PREFIX}/`);
 }
 
 /**
@@ -233,6 +243,18 @@ function checkMembership(
           link,
         });
       }
+    }
+
+    if (membership.admin) {
+      findings.push({
+        id: `${CLIENT_ADMIN_FINDING_PREFIX}/${membership.id}`,
+        severity: 'critical',
+        title: `Client "${name}" is a project admin`,
+        description:
+          'Admin clients can manage memberships, access policies and project settings. Remove admin unless this client needs to administer the project.',
+        target,
+        link,
+      });
     }
 
     const secretAge = getSecretAge(target, input);
