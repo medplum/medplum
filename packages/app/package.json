@@ -40,7 +40,7 @@
     "@medplum/mock": "5.2.18",
     "@medplum/react": "5.2.18",
     "@tabler/icons-react": "3.52.0",
-    "@testing-library/jest-dom": "8.0.0",
+    "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

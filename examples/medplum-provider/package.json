@@ -39,7 +39,7 @@
     "@medplum/react-scheduling": "5.2.18",
     "@tabler/icons-react": "3.52.0",
     "@testing-library/dom": "10.4.2",
-    "@testing-library/jest-dom": "8.0.0",
+    "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.13",
     "@types/node": "22.20.5",

@@ -102,7 +102,8 @@ fi
 # typescript - v7 needs us to do some work before we can use it
 # undici - version 8 not compatible with node's built-in fetch, e.g. in `safeFetch`
 # vitest - v5 needs to wait until our mock libraries can catch up on compatibility
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm otplib @mantine/* typescript undici vitest @vitest/coverage-v8 @vitest/ui"
+# @testing-library/jest-dom - v8 requires vitest v5
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander eslint hibp node-fetch npm otplib @mantine/* typescript undici vitest @vitest/coverage-v8 @vitest/ui @testing-library/jest-dom"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

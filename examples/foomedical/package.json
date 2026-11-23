@@ -29,7 +29,7 @@
     "@medplum/react": "5.2.18",
     "@smart-health-checkin/client": "https://github.com/smart-health-checkin/client/releases/download/v0.4.4/smart-health-checkin-client-0.4.4.tgz",
     "@tabler/icons-react": "3.52.0",
-    "@testing-library/jest-dom": "8.0.0",
+    "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
