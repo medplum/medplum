@@ -174,7 +174,25 @@ describe('security checks', () => {
     const input = makeInput(clientMembership({ admin, accessPolicy: { reference: 'AccessPolicy/a1' } }), [
       policy('a1', { resource: [{ resourceType: 'Bot' }], ipAccessRule }),
     ]);
-    expect(analyzeProjectSecurity(input).find((f) => f.id === 'client-writes-bots/m1')?.severity).toBe(severity);
+    expect(
+      analyzeProjectSecurity(input).find(
+        (f) => f.id.startsWith('client-writes-bots/') || f.id.startsWith('client-deploys-bots/')
+      )?.severity
+    ).toBe(severity);
+  });
+
+  test.each<[string, ProjectMembership['accessPolicy'], AccessPolicy[], string[]]>([
+    ['no access policy', undefined, [], ['client-admin', 'client-deploys-bots', 'client-no-policy']],
+    [
+      'Bot write access',
+      { reference: 'AccessPolicy/a1' },
+      [policy('a1', { resource: [{ resourceType: 'Bot' }] })],
+      ['client-admin', 'client-deploys-bots'],
+    ],
+    ['a policy that cannot be loaded', { reference: 'AccessPolicy/linked' }, [], ['client-admin', 'policy-unresolved']],
+  ])('admin client with %s', (_name, accessPolicy, policies, expected) => {
+    const input = makeInput(clientMembership({ admin: true, accessPolicy }), policies);
+    expect(findingIds(input).sort((a, b) => a.localeCompare(b))).toEqual(expected);
   });
 
   test.each<[string, string]>([

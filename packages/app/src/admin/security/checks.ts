@@ -63,10 +63,14 @@ export interface SecurityCheckInput {
 /**
  * Returns true for findings about admin privileges, which are also shown on the Admins tab.
  * @param finding - A security finding.
- * @returns True for the staff admin count and client admin findings.
+ * @returns True for the staff admin count, client admin and admin client Bot deploy findings.
  */
 export function isAdminFinding(finding: SecurityFinding): boolean {
-  return finding.id === STAFF_ADMINS_FINDING_ID || finding.id.startsWith(`${CLIENT_ADMIN_FINDING_PREFIX}/`);
+  return (
+    finding.id === STAFF_ADMINS_FINDING_ID ||
+    finding.id.startsWith(`${CLIENT_ADMIN_FINDING_PREFIX}/`) ||
+    finding.id.startsWith('client-deploys-bots/')
+  );
 }
 
 /**
@@ -219,17 +223,7 @@ function checkMembership(
     } else {
       const ipRestricted = hasIpRestriction(resolved.policies);
       const canWriteBots = canWrite(resolved.policies, 'Bot');
-      if (canWriteBots && membership.admin) {
-        findings.push({
-          id: `client-writes-bots/${membership.id}`,
-          severity: 'critical',
-          title: `Client "${name}" is a project admin and can deploy Bots`,
-          description:
-            'Bots run code inside your project. An admin client that can write Bots can deploy code with access to all project data. Remove Bot write access from this client access policy.',
-          target,
-          link,
-        });
-      } else if (canWriteBots) {
+      if (canWriteBots && !membership.admin) {
         findings.push({
           id: `client-writes-bots/${membership.id}`,
           severity: ipRestricted ? 'medium' : 'high',
@@ -253,6 +247,18 @@ function checkMembership(
           link,
         });
       }
+    }
+
+    if (membership.admin && (!resolved || canWrite(resolved.policies, 'Bot'))) {
+      findings.push({
+        id: `client-deploys-bots/${membership.id}`,
+        severity: 'critical',
+        title: `Client "${name}" is a project admin and can deploy Bots`,
+        description:
+          'Bots run code inside your project. An admin client that can write Bots can deploy code with access to all project data. Give this client an access policy without Bot write access.',
+        target,
+        link,
+      });
     }
 
     if (membership.admin) {

@@ -56,6 +56,7 @@ describe('SecurityHealthCheckPage', () => {
 
     expect(await screen.findByText('Client "Test Client" has no access policy or IP restriction')).toBeInTheDocument();
     expect(screen.getByText('Client "Test Client" is a project admin')).toBeInTheDocument();
+    expect(screen.getByText('Client "Test Client" is a project admin and can deploy Bots')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('High (0)'));
     expect(screen.queryByText('Client "Test Client" is a project admin')).not.toBeInTheDocument();
