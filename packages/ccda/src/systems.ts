@@ -3,6 +3,7 @@
 import { CPT, EMPTY, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
 import type { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
+  OID_ACT_CODE_CODE_SYSTEM,
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ASSESSMENT_SCALE_OBSERVATION,
   OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
@@ -685,9 +686,68 @@ export const ENCOUNTER_STATUS_MAPPER = new EnumMapper({}, [
   { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
 ]);
 
+// The R4 Encounter.class binding, v3-ActEncounterCode, with the v3-ActCode displays.
+const ACT_ENCOUNTER_DISPLAYS = new Map([
+  ['AMB', 'ambulatory'],
+  ['EMER', 'emergency'],
+  ['FLD', 'field'],
+  ['HH', 'home health'],
+  ['IMP', 'inpatient encounter'],
+  ['ACUTE', 'inpatient acute'],
+  ['NONAC', 'inpatient non-acute'],
+  ['OBSENC', 'observation encounter'],
+  ['PRENC', 'pre-admission'],
+  ['SS', 'short stay'],
+  ['VR', 'virtual'],
+]);
+
+// C-CDA on FHIR encounter mapping: https://hl7.org/fhir/us/ccda/STU2/CF-encounters.html
+// Encounter.class takes only V3 ActCode. The IG maps CPT evaluation and management codes to ActCode by setting;
+// these are its examples plus 99202-99205, the new-patient codes of the same office visit family (99202-99215).
+const CPT_ENCOUNTER_CLASS_RANGES: { low: number; high: number; code: string }[] = [
+  { low: 99202, high: 99205, code: 'AMB' },
+  { low: 99211, high: 99215, code: 'AMB' },
+  { low: 99221, high: 99223, code: 'IMP' },
+  { low: 99281, high: 99285, code: 'EMER' },
+];
+
+function actEncounterCoding(code: string, display?: string): Coding {
+  return { system: ACT_CODE_SYSTEM, code, display: display || ACT_ENCOUNTER_DISPLAYS.get(code) };
+}
+
+/**
+ * Maps the code of a C-CDA Encounter Activity to Encounter.class.
+ * @param code - The encounter code.
+ * @returns An ActEncounterCode from the code or a translation, else one mapped from a CPT code, else a data absent
+ * reason. An encounter with no code keeps the ambulatory default.
+ */
+export function mapCcdaEncounterClass(code: CcdaCode | undefined): Coding {
+  if (!code) {
+    return actEncounterCoding('AMB');
+  }
+  const codes = [code, ...(code.translation ?? EMPTY)];
+
+  for (const actCode of codes.filter((c) => c['@_codeSystem'] === OID_ACT_CODE_CODE_SYSTEM)) {
+    const value = actCode['@_code'];
+    if (value && ACT_ENCOUNTER_DISPLAYS.has(value)) {
+      return actEncounterCoding(value, actCode['@_displayName']);
+    }
+  }
+
+  for (const cpt of codes.filter((c) => c['@_codeSystem'] === OID_CPT_CODE_SYSTEM)) {
+    const value = /^\d{5}$/.test(cpt['@_code'] ?? '') ? Number(cpt['@_code']) : Number.NaN;
+    const range = CPT_ENCOUNTER_CLASS_RANGES.find((r) => value >= r.low && value <= r.high);
+    if (range) {
+      return actEncounterCoding(range.code);
+    }
+  }
+
+  return { extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason', valueCode: 'unknown' }] };
+}
+
 export const PROCEDURE_STATUS_MAPPER = new EnumMapper({}, [
   { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
-  { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
+  { ccdaValue: 'active', fhirValue: 'in-progress', displayName: 'In Progress' },
   { ccdaValue: 'aborted', fhirValue: 'stopped', displayName: 'Stopped' },
   { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Not Done' },
   { ccdaValue: 'new', fhirValue: 'not-done', displayName: 'Draft' },

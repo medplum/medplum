@@ -38,7 +38,7 @@ Keep the published definition available for its responses. When a module changes
 
 Medplum's current React renderer works with the complete Questionnaire's inline items, including nested groups and basic `enableWhen` conditions. Your application owns selecting modules and combining their content. Check the [advanced-authoring compatibility table](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms) for other features used by your modules.
 
-FHIR's Structured Data Capture (SDC) guide defines a `subQuestionnaire` extension and an [`$assemble` operation](https://hl7.org/fhir/uv/sdc/STU4/en/OperationDefinition-Questionnaire-assemble.html) for modular authoring. **Medplum does not currently provide a built-in `$assemble` operation, and `QuestionnaireForm` does not expand `subQuestionnaire` references.** An imported definition that requires assembly needs application code or a compatible external assembler before it reaches the renderer.
+FHIR's Structured Data Capture (SDC) guide defines a `subQuestionnaire` extension and an [`$assemble` operation](https://hl7.org/fhir/uv/sdc/STU4/en/OperationDefinition-Questionnaire-assemble.html) for modular authoring. **`QuestionnaireForm` does not expand `subQuestionnaire` references.** Use Medplum's [`$assemble` operation](/docs/api/fhir/operations/assemble) to produce a complete Questionnaire before it reaches the renderer.
 
 ## Build a visit-preparation form
 
@@ -121,8 +121,6 @@ See [Parsing Questionnaire Responses](/docs/questionnaires/parsing-questionnaire
 
 ## Using SDC modular forms
 
-For interoperability with other form-authoring tools, [SDC Modular Forms](https://hl7.org/fhir/uv/sdc/STU4/en/modular.html) describes referencing a child Questionnaire from a parent `display` item with `subQuestionnaire`. An assembler replaces that placeholder with the child's items before population and rendering. Version-specific references keep the selected content predictable.
+For interoperability with other form-authoring tools, [SDC Modular Forms](https://hl7.org/fhir/uv/sdc/STU4/en/modular.html) describes referencing a child Questionnaire from a parent `display` item with `subQuestionnaire`. Medplum's [`$assemble` operation](/docs/api/fhir/operations/assemble) replaces each placeholder with the child's items, resolving nested imports and applying `linkIdPrefix` so a child can be imported more than once. Version-specific references keep the selected content predictable.
 
-An SDC assembler also handles dependencies such as contained resources, extension propagation, expression context, and ID collisions. The small composition function above implements the needs of its two known modules; it does not implement the SDC assembly algorithm or claim conformance to its Modular Questionnaire profile.
-
-If your authoring tool produces SDC modular definitions, choose an assembler that supports their features, then inspect and test the complete output with Medplum's renderer. Successful assembly still needs the feature compatibility checks in [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms).
+`$assemble` handles the common case: it does not expand `item.definition`, or carry variables, launch contexts, libraries, and contained resources from a child into the result. If your modules depend on those, compose them in application code like the function above, then inspect and test the complete output with Medplum's renderer. Assembled forms still need the feature compatibility checks in [Advanced Questionnaire Authoring](/docs/questionnaires/advanced-authoring#supported-features-and-imported-forms).

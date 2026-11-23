@@ -16,9 +16,9 @@ import {
   formatDayHeading,
   formatZonedTime,
   formatZonedTimeRange,
+  getOwnTimezone,
   isViewerTimezone,
-} from '../AppointmentFinder/AppointmentFinder.times';
-import { getOwnTimezone } from '../timezones';
+} from '../timezones';
 import type { CalendarFilterValues } from './CalendarFilters';
 
 /** The zones the calendars on show are kept in, and whether any of them is unknown. */

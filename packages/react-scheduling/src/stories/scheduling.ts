@@ -46,13 +46,13 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { getBrowserTimezone } from '../AppointmentFinder/AppointmentFinder.times';
 import { setScheduleAvailability } from '../availability';
 import { LOCATION_PHYSICAL_TYPE_CODE_SYSTEM, NPI_SYSTEM, SERVICE_FACILITY_ROLE_SYSTEM } from '../constants';
 import {
   getHealthcareServiceSchedulingParameterValues,
   setHealthcareServiceSchedulingParameterValues,
 } from '../parameterValues';
+import { getBrowserTimezone } from '../timezones';
 
 /** Who an appointment can be held on, as FHIR allows. */
 export type ParticipantActor = NonNullable<AppointmentParticipant['actor']>;

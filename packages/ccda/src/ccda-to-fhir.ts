@@ -68,7 +68,6 @@ import {
 } from './oids';
 import { sanitizeNullFlavors } from './sanitize';
 import {
-  ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
@@ -87,6 +86,7 @@ import {
   IMMUNIZATION_STATUS_MAPPER,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   mapCcdaCodeToCodeableConcept,
+  mapCcdaEncounterClass,
   mapCcdaNoKnownAllergyCode,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
@@ -596,7 +596,10 @@ class CcdaToFhirConverter {
       resourceType: 'Procedure',
       id: this.mapId(act.id),
       identifier: this.mapIdentifiers(act.id),
-      status: 'completed',
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
+        act.statusCode?.['@_code'] as CcdaProcedure['statusCode']['@_code'],
+        'completed'
+      ),
       code: this.mapCode(act.code),
       subject: createReference(this.patient as Patient),
       performedDateTime: mapCcdaToFhirDateTime(act.effectiveTime?.[0]?.['@_value']),
@@ -1426,11 +1429,7 @@ class CcdaToFhirConverter {
       id: this.mapId(encounter.id),
       identifier: this.mapIdentifiers(encounter.id),
       status: ENCOUNTER_STATUS_MAPPER.mapCcdaToFhirWithDefault(encounter.statusCode?.['@_code'], 'unknown'),
-      class: {
-        system: ACT_CODE_SYSTEM,
-        code: encounter.code?.['@_code'] ?? 'AMB',
-        display: encounter.code?.['@_displayName'] ?? 'Ambulatory',
-      },
+      class: mapCcdaEncounterClass(encounter.code),
       type: encounter.code ? [this.mapCode(encounter.code) as CodeableConcept] : undefined,
       subject: createReference(this.patient as Patient),
       period: this.mapEffectiveTimeToPeriod(encounter.effectiveTime?.[0]),
@@ -1523,10 +1522,7 @@ class CcdaToFhirConverter {
       resourceType: 'Procedure',
       id: this.mapId(procedure.id),
       identifier: this.mapIdentifiers(procedure.id),
-      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
-        procedure.statusCode?.['@_code'],
-        'completed'
-      ) as Procedure['status'],
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
       performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),

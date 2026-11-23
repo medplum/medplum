@@ -3,7 +3,7 @@
 import { Group, Text } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { formatTimezoneLabel, isViewerTimezone } from '../AppointmentFinder/AppointmentFinder.times';
+import { formatTimezoneLabel, isViewerTimezone } from '../timezones';
 
 export interface CalendarTimezoneNoticeProps {
   /** IANA timezones of the calendars on show whose timezone is known. Exclude any that are unknown. */
