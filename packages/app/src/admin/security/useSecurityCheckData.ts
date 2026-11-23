@@ -1,19 +1,21 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, MedplumRequestOptions, QueryTypes, WithId } from '@medplum/core';
-import { normalizeErrorString, resolveId } from '@medplum/core';
+import { isReference, normalizeErrorString, resolveId } from '@medplum/core';
 import type { ClientApplication, ExtractResource, Project, ResourceType, User } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { getProjectId } from '../../utils';
 import type { AdminEntry, ClientEntry, SecretRotation, SecurityCheckInput, SecurityFinding } from './checks';
 import { analyzeProjectSecurity, listAdmins, listClients } from './checks';
+import { saveSecurityReport } from './saveReport';
 
 const NO_CACHE: MedplumRequestOptions = { cache: 'no-cache' };
 const USER_ID_CHUNK_SIZE = 100;
 const HISTORY_PAGE_SIZE = 100;
 
 export interface SecurityCheckResult {
+  readonly checkedAt: Date;
   readonly findings: SecurityFinding[];
   readonly admins: AdminEntry[];
   readonly clients: ClientEntry[];
@@ -27,7 +29,8 @@ export interface SecurityCheckState {
 }
 
 /**
- * Loads the project's memberships, access policies, staff users and clients, then runs the security checks.
+ * Loads the project's memberships, access policies, staff users and clients, runs the security checks,
+ * and saves each result as a report.
  * @returns The loading state, findings, admin and client lists, and a reload callback.
  */
 export function useSecurityCheckData(): SecurityCheckState {
@@ -40,9 +43,20 @@ export function useSecurityCheckData(): SecurityCheckState {
   useEffect(() => {
     let cancelled = false;
     runSecurityCheck(medplum)
-      .then((r) => !cancelled && setResult(r))
-      .catch((err) => !cancelled && setError(normalizeErrorString(err)))
-      .finally(() => !cancelled && setLoading(false));
+      .then(async (r) => {
+        if (cancelled) {
+          return;
+        }
+        setResult(r);
+        setLoading(false);
+        await saveSecurityReport(medplum, r).catch(console.error);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(normalizeErrorString(err));
+          setLoading(false);
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -68,7 +82,7 @@ async function runSecurityCheck(medplum: MedplumClient): Promise<SecurityCheckRe
   ]);
 
   const staffUserIds = memberships
-    .filter((m) => m.profile.reference?.startsWith('Practitioner/') && m.user.reference?.startsWith('User/'))
+    .filter((m) => isReference(m.profile, 'Practitioner') && isReference(m.user, 'User'))
     .map((m) => resolveId(m.user))
     .filter((id): id is string => !!id);
 
@@ -86,6 +100,7 @@ async function runSecurityCheck(medplum: MedplumClient): Promise<SecurityCheckRe
     now: new Date(),
   };
   return {
+    checkedAt: input.now,
     findings: analyzeProjectSecurity(input),
     admins: listAdmins(memberships, projectResource.owner),
     clients: listClients(input),

@@ -17,7 +17,7 @@ const tabs: TabDefinition[] = [
   { label: 'Settings', value: 'settings' },
   { label: 'Sites', value: 'sites' },
   { label: 'Rate Limits', value: 'rate-limits' },
-  { label: 'Security Health Check', value: 'security' },
+  { label: 'Security Health Check (Alpha)', value: 'security' },
 ];
 
 export function ProjectPage(): JSX.Element {
