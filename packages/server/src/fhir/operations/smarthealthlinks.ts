@@ -296,7 +296,9 @@ async function resolveGeneratedSmartHealthLink(
   passcode?: string
 ): Promise<ResolvedSmartHealthLink> {
   const payload = parseSmartHealthLink(shlink);
-  const id = getSmartHealthLinkId(payload.url);
+  // Serve from the database only for links under this server's baseUrl; anything else is fetched from its origin
+  const isLocal = payload.url.startsWith(concatUrls(getConfig().baseUrl, '/shl/'));
+  const id = isLocal ? getSmartHealthLinkId(payload.url) : undefined;
   const smartHealthLink = id ? await readSmartHealthLink(id) : undefined;
   if (!smartHealthLink) {
     return resolveExternalSmartHealthLink(payload, recipient);
@@ -321,7 +323,7 @@ async function resolveGeneratedSmartHealthLink(
     return {
       fhirResources,
       recipient,
-      sourceOrigin: new URL(smartHealthLink.url).origin,
+      sourceOrigin: new URL(payload.url).origin,
       expiresAt: smartHealthLink.expiresAt,
     };
   }
@@ -335,7 +337,7 @@ async function resolveGeneratedSmartHealthLink(
   return {
     manifest,
     fhirResources,
-    sourceOrigin: new URL(smartHealthLink.url).origin,
+    sourceOrigin: new URL(payload.url).origin,
     expiresAt: smartHealthLink.expiresAt,
   };
 }

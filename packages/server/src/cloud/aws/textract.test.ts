@@ -166,6 +166,24 @@ describe('AWS Textract', () => {
   });
 
   test('Comprehend', async () => {
+    // Textract returns PAGE, LINE, and WORD blocks; only LINE text should be sent to Comprehend
+    mockTextractClient.reset();
+    mockTextractClient.on(StartDocumentTextDetectionCommand).resolves({ JobId: 'job-1' });
+    mockTextractClient.on(GetDocumentTextDetectionCommand).resolves({
+      JobStatus: 'SUCCEEDED',
+      Blocks: [
+        { BlockType: 'PAGE' },
+        { BlockType: 'LINE', Text: 'Patient: Jane Doe' },
+        { BlockType: 'WORD', Text: 'Patient:' },
+        { BlockType: 'WORD', Text: 'Jane' },
+        { BlockType: 'WORD', Text: 'Doe' },
+        { BlockType: 'LINE', Text: 'Metformin 500 mg' },
+        { BlockType: 'WORD', Text: 'Metformin' },
+        { BlockType: 'WORD', Text: '500' },
+        { BlockType: 'WORD', Text: 'mg' },
+      ],
+    });
+
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
 
     // Step 1: Create a PDF Binary
@@ -198,6 +216,10 @@ describe('AWS Textract', () => {
       .send({ comprehend: true });
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
+
+    const comprehendCalls = mockComprehendClient.commandCalls(DetectEntitiesV2Command);
+    expect(comprehendCalls).toHaveLength(1);
+    expect(comprehendCalls[0].args[0].input.Text).toBe('Patient: Jane Doe\nMetformin 500 mg');
   });
 
   test('DocumentReference happy path', async () => {

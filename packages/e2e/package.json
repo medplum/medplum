@@ -29,7 +29,7 @@
   "devDependencies": {
     "@medplum/core": "5.2.18",
     "@medplum/fhirtypes": "5.2.18",
-    "@playwright/test": "1.65.0"
+    "@playwright/test": "1.65.1"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

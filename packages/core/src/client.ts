@@ -1357,7 +1357,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (event.operation !== 'delete' && event.resource) {
       this.cacheResource(event.resource, undefined);
     } else if (event.id) {
-      this.deleteCacheEntry(this.fhirUrl(event.resourceType, event.id).toString());
+      this.deleteCacheEntry(this.fhirResourceUrl(event.resourceType, event.id).toString());
     }
     this.invalidateSearches(event.resourceType);
     this.dispatchResourceModified(event);
@@ -1383,7 +1383,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue && !options.disableAutoBatch) {
+    if (
+      url.startsWith(this.fhirBaseUrl) &&
+      this.autoBatchQueue &&
+      !options.disableAutoBatch &&
+      !this.getRequestHeader(options, 'x-medplum-on-behalf-of')
+    ) {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
@@ -1757,6 +1762,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Builds the FHIR URL of a resource, or of a path below the resource such as `_history` or an operation.
+   * The resource type and ID are each encoded as exactly one path segment.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param path - Optional path components below the resource.
+   * @returns The well-formed FHIR URL.
+   */
+  private fhirResourceUrl(resourceType: string, id: string, ...path: string[]): URL {
+    return this.fhirUrl(encodePathSegment(resourceType), encodePathSegment(id), ...path);
+  }
+
+  /**
    * Builds a FHIR search URL from a search query or structured query object.
    * @category HTTP
    * @category Search
@@ -1989,7 +2006,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<RT extends ResourceType>(resourceType: RT, id: string): WithId<ExtractResource<RT>> | undefined {
-    const cached = this.requestCache?.get(this.fhirUrl(resourceType, id).toString())?.value;
+    const cached = this.requestCache?.get(this.fhirResourceUrl(resourceType, id).toString())?.value;
     return cached?.isOk() ? (cached.read() as WithId<ExtractResource<RT>>) : undefined;
   }
 
@@ -2008,7 +2025,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return system as WithId<T>;
     }
     const [resourceType, id] = refString.split('/');
-    if (!resourceType || !id) {
+    if (!resourceType || !id || isDotSegment(resourceType) || isDotSegment(id)) {
       return undefined;
     }
     return this.getCached(resourceType as ResourceType, id) as WithId<T> | undefined;
@@ -2040,7 +2057,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!id) {
       throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
     }
-    return this.get<WithId<ExtractResource<RT>>>(this.fhirUrl(resourceType, id), options);
+    return this.get<WithId<ExtractResource<RT>>>(this.fhirResourceUrl(resourceType, id), options);
   }
 
   /**
@@ -2075,7 +2092,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return new ReadablePromise(Promise.resolve(system as unknown as WithId<T>));
     }
     const [resourceType, id] = refString.split('/');
-    if (!resourceType || !id) {
+    if (!resourceType || !id || isDotSegment(resourceType) || isDotSegment(id)) {
       return new ReadablePromise(Promise.reject(new Error('Invalid reference')));
     }
     return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<WithId<T>>;
@@ -2243,7 +2260,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     options?: ReadHistoryOptions,
     requestOptions?: MedplumRequestOptions
   ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
-    const url = this.fhirUrl(resourceType, id, '_history');
+    const url = this.fhirResourceUrl(resourceType, id, '_history');
     if (options?.count) {
       url.searchParams.set('_count', options.count.toString());
     }
@@ -2278,7 +2295,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     vid: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<WithId<ExtractResource<RT>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
+    return this.get(this.fhirResourceUrl(resourceType, id, '_history', encodePathSegment(vid)), options);
   }
 
   /**
@@ -2299,7 +2316,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Bundle of all Resources related to the Patient
    */
   readPatientEverything(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
-    return this.getBundle(this.fhirUrl('Patient', id, '$everything'), options);
+    return this.getBundle(this.fhirResourceUrl('Patient', id, '$everything'), options);
   }
 
   /**
@@ -2322,7 +2339,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A patient summary bundle, organized into the patient summary sections.
    */
   readPatientSummary(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
-    return this.getBundle(this.fhirUrl('Patient', id, '$summary'), options);
+    return this.getBundle(this.fhirResourceUrl('Patient', id, '$summary'), options);
   }
 
   /**
@@ -2355,7 +2372,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new Error('Missing resourceType');
     }
     this.invalidateSearches(resource.resourceType);
-    const result = await this.post(this.fhirUrl(resource.resourceType), resource, undefined, options);
+    const url = this.fhirUrl(encodePathSegment(resource.resourceType));
+    const result = await this.post(url, resource, undefined, options);
     this.dispatchResourceModified({
       resourceType: resource.resourceType,
       operation: 'create',
@@ -2411,12 +2429,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     query: string,
     options: MedplumRequestOptions = {}
   ): Promise<WithId<T>> {
-    const url = this.fhirUrl(resource.resourceType);
+    const url = this.fhirUrl(encodePathSegment(resource.resourceType));
     this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post<WithId<T>>(url, resource, undefined, options);
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     this.dispatchResourceModified({
       resourceType: resource.resourceType,
@@ -2451,7 +2469,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       result = resource;
     }
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     if (wasModified) {
       this.dispatchResourceModified({
@@ -2834,7 +2852,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!resource.id) {
       throw new Error('Missing id');
     }
-    let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
+    let result = await this.put(this.fhirResourceUrl(resource.resourceType, resource.id), resource, undefined, options);
     const wasModified = result !== undefined;
     if (!result) {
       // On 304 not modified, result will be undefined
@@ -2842,7 +2860,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       result = resource;
     }
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resource.resourceType, resource.id, '_history'));
     this.invalidateSearches(resource.resourceType);
     if (wasModified) {
       this.dispatchResourceModified({
@@ -2886,9 +2904,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     operations: PatchOperation[],
     options?: MedplumRequestOptions
   ): Promise<WithId<ExtractResource<RT>>> {
-    const result = await this.patch(this.fhirUrl(resourceType, id), operations, options);
+    const result = await this.patch(this.fhirResourceUrl(resourceType, id), operations, options);
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resourceType, id, '_history'));
     this.invalidateSearches(resourceType);
     this.dispatchResourceModified({ resourceType, operation: 'patch', id, resource: result });
     return result;
@@ -2912,9 +2930,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The result of the delete operation.
    */
   async deleteResource(resourceType: ResourceType, id: string, options?: MedplumRequestOptions): Promise<any> {
-    this.deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
+    this.deleteCacheEntry(this.fhirResourceUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
-    const result = await this.delete(this.fhirUrl(resourceType, id), options);
+    const result = await this.delete(this.fhirResourceUrl(resourceType, id), options);
     this.dispatchResourceModified({ resourceType, operation: 'delete', id });
     return result;
   }
@@ -2938,7 +2956,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The validate operation outcome.
    */
   validateResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<OperationOutcome> {
-    return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource, undefined, options);
+    return this.post(this.fhirUrl(encodePathSegment(resource.resourceType), '$validate'), resource, undefined, options);
   }
 
   /**
@@ -2958,7 +2976,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     let url: URL;
     if (typeof idOrIdentifier === 'string') {
       const id = idOrIdentifier;
-      url = this.fhirUrl('Bot', id, '$execute');
+      url = this.fhirResourceUrl('Bot', id, '$execute');
     } else {
       const identifier = idOrIdentifier;
       url = this.fhirUrl('Bot', '$execute');
@@ -3139,7 +3157,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     graphName: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<Bundle> {
-    return this.get<Bundle>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
+    return this.get<Bundle>(`${this.fhirResourceUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
   }
 
   /**
@@ -3163,7 +3181,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   ): Promise<any> {
     const { waitTimeout, returnAck, ...requestOptions } = options ?? {};
     return this.post(
-      this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
+      this.fhirResourceUrl('Agent', resolveId(agent) as string, '$push'),
       {
         destination: typeof destination === 'string' ? destination : getReferenceString(destination),
         body,
@@ -3725,7 +3743,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private cacheResource(resource: Resource | undefined, options: MedplumRequestOptions | undefined): void {
     if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
       this.setCacheEntry(
-        this.fhirUrl(resource.resourceType, resource.id).toString(),
+        this.fhirResourceUrl(resource.resourceType, resource.id).toString(),
         new ReadablePromise(Promise.resolve(resource)),
         options
       );
@@ -4113,7 +4131,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } else if (headers instanceof Headers) {
       return headers.get(key) ?? undefined;
     } else if (isObject(headers)) {
-      return headers[key] ?? undefined;
+      const lowerKey = key.toLowerCase();
+      const header = Object.entries(headers).find(([k]) => k.toLowerCase() === lowerKey);
+      return header ? header[1] : undefined;
     }
     return undefined;
   }
@@ -4901,6 +4921,29 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   getMasterSubscriptionEmitter(): SubscriptionEmitter {
     return this.getSubscriptionManager().getMasterEmitter();
   }
+}
+
+/**
+ * Encodes a string as exactly one segment of a URL path.
+ * @param segment - The path segment, such as a resource type or a resource ID.
+ * @returns The encoded path segment.
+ * @throws Error if the segment is "." or "..", which the URL parser removes from the path even when encoded.
+ */
+function encodePathSegment(segment: string): string {
+  if (isDotSegment(segment)) {
+    throw new Error('Invalid FHIR URL path');
+  }
+  return encodeURIComponent(segment);
+}
+
+/**
+ * Returns true if the string is a "." or ".." path segment.
+ * The URL parser resolves these against the preceding path, even when they are percent-encoded.
+ * @param segment - The path segment.
+ * @returns True if the segment is "." or "..".
+ */
+function isDotSegment(segment: string): boolean {
+  return segment === '.' || segment === '..';
 }
 
 /**

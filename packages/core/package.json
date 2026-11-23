@@ -59,7 +59,7 @@
   "devDependencies": {
     "@medplum/definitions": "5.2.18",
     "@medplum/fhirtypes": "5.2.18",
-    "fast-check": "4.10.2",
+    "fast-check": "4.10.3",
     "@fast-check/vitest": "0.5.0"
   },
   "peerDependencies": {
