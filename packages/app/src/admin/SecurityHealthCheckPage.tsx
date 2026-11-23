@@ -55,13 +55,12 @@ export function SecurityHealthCheckPage(): JSX.Element {
         </Button>
       </Group>
       <Alert color="blue" title="Alpha">
-        This feature is in alpha. Checks and recommendations may change, and passing them does not guarantee that
-        every issue has been found.
+        This feature is in alpha. Checks and recommendations may change, and new checks will be added over time.
       </Alert>
       <Text c="dimmed">
         Reviews this project's memberships, clients and access policies against Medplum's recommended security
-        practices. Each finding explains the risk and how to address it, ranked from most to least severe. Some
-        findings may be intentional for your project, so review each one and decide whether it applies.
+        practices. Each finding explains the risk and how to address it, ranked from most to least severe. Some findings
+        may be intentional for your project, so review each one and decide whether it applies.
       </Text>
 
       {error && (
