@@ -473,23 +473,38 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
+    
+    const allergyTypeCode = observation.value?.['@_code'];
+
+    const allergyTypeMapping: Record<
+      string,
+      Partial<Pick<AllergyIntolerance, 'category' | 'type'>>
+    > = {
+      '416098002': { category: ['medication'], type: 'allergy' },
+      '59037007': { category: ['medication'], type: 'intolerance' },
+      '419511003': { category: ['medication'] },
+      '414285001': { category: ['food'], type: 'allergy' },
+      '235719002': { category: ['food'], type: 'intolerance' },
+      '418471000': { category: ['food'] },
+      '426232007': { category: ['environment'], type: 'allergy' },
+      '444316004': { category: ['environment'], type: 'allergy' },
+      '12481000132103': { category: ['biologic'], type: 'allergy' },
+      '419199007': { type: 'allergy' },
+      '609328004': { type: 'allergy' },
+    };
+
     const allergy: AllergyIntolerance = {
       resourceType: 'AllergyIntolerance',
       id: this.mapId(act.id),
       clinicalStatus: this.createClinicalStatus(act),
       verificationStatus: this.createVerificationStatus(),
-      type: 'allergy',
-      category: ['food'],
+      ...allergyTypeMapping[allergyTypeCode ?? ''],
       patient: createReference(this.patient as Patient),
       recorder: this.mapAuthorToReference(act.author?.[0]),
       recordedDate: this.mapEffectiveTimeToDateTime(act.effectiveTime?.[0]),
       onsetDateTime: this.mapEffectiveTimeToDateTime(observation.effectiveTime?.[0]),
     };
 
-    // Set category based on the observation.value code
-    if ((observation.value as CcdaCode)?.['@_code'] === '414285001') {
-      allergy.category = ['food'];
-    }
 
     allergy.extension = this.mapTextReference(observation.text);
 
