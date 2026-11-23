@@ -12,7 +12,7 @@ const medplum = new MockClient();
 const navigateMock = vi.fn();
 const closeMock = vi.fn();
 
-async function setup(client?: MockClient, settingsHref?: string): Promise<void> {
+async function setup(client?: MockClient, onClickSettings?: () => void): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={client ?? medplum} navigate={navigateMock}>
@@ -21,7 +21,7 @@ async function setup(client?: MockClient, settingsHref?: string): Promise<void> 
             logo={<Logo size={24} />}
             version="test.version"
             navbarToggle={closeMock}
-            settingsHref={settingsHref}
+            onClickSettings={onClickSettings}
           />
         </MantineAppShell>
       </MedplumProvider>
@@ -237,8 +237,9 @@ describe('Header', () => {
     expect(navigateMock).toHaveBeenCalledWith('/Practitioner/124');
   });
 
-  test('Settings with settingsHref', async () => {
-    await setup(undefined, '/settings');
+  test('Settings with onClickSettings', async () => {
+    const onClickSettings = vi.fn();
+    await setup(undefined, onClickSettings);
     await openMenu();
 
     expect(screen.queryByText('Account settings')).not.toBeInTheDocument();
@@ -247,7 +248,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Settings'));
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/settings');
+    expect(onClickSettings).toHaveBeenCalledTimes(1);
   });
 
   test('Sign out', async () => {

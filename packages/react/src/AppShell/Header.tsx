@@ -26,7 +26,7 @@ export interface HeaderProps {
   readonly notifications?: ReactNode;
   readonly announcements?: AppShellAnnouncement[];
   readonly onDismissAnnouncement?: (announcement: AppShellAnnouncement) => void;
-  readonly settingsHref?: string;
+  readonly onClickSettings?: () => void;
 }
 
 export function Header(props: HeaderProps): JSX.Element {
@@ -88,7 +88,7 @@ export function Header(props: HeaderProps): JSX.Element {
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown className={headerDropdownClasses.dropdown}>
-                <HeaderDropdown version={props.version} settingsHref={props.settingsHref} />
+                <HeaderDropdown version={props.version} onClickSettings={props.onClickSettings} />
               </Menu.Dropdown>
             </Menu>
           </Group>

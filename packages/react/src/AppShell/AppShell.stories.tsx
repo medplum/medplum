@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import { useMedplumProfile } from '@medplum/react-hooks';
+import { useMedplumNavigate, useMedplumProfile } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import {
   Icon2fa,
@@ -343,6 +343,7 @@ export function PersistentAnnouncement(): JSX.Element {
 }
 
 export function SettingsNavbar(): JSX.Element {
+  const navigate = useMedplumNavigate();
   return (
     <div className={classes.root}>
       <AppShell
@@ -351,7 +352,7 @@ export function SettingsNavbar(): JSX.Element {
         layoutVersion="v2"
         pathname="/settings/account"
         searchParams={new URLSearchParams()}
-        settingsHref="/settings"
+        onClickSettings={() => navigate('/settings')}
         navbarSearchHidden={true}
         navbarHeader={
           <div className={classes.backLinkSection}>

@@ -69,7 +69,7 @@ export interface NavbarProps {
   readonly opened?: boolean;
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
-  readonly settingsHref?: string;
+  readonly onClickSettings?: () => void;
   readonly header?: ReactNode;
 }
 
@@ -256,7 +256,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <HeaderDropdown
                   version={props.version}
                   showLayoutVersionToggle={props.showLayoutVersionToggle}
-                  settingsHref={props.settingsHref}
+                  onClickSettings={props.onClickSettings}
                 />
               </Menu.Dropdown>
             </Menu>
