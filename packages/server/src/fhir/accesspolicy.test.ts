@@ -1652,6 +1652,82 @@ describe('AccessPolicy', () => {
       );
     }));
 
+  test('Hidden fields include primitive extensions', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice', 'Beth'],
+            _given: [null, { id: 'given-id', extension: [{ url: 'https://example.com/ext', valueString: 'Beth' }] }],
+            family: 'Smith',
+            _family: { extension: [{ url: 'https://example.com/ext', valueString: 'Smith' }] },
+          },
+        ],
+        birthDate: '1974-12-25',
+        _birthDate: {
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime',
+              valueDateTime: '1974-12-25T14:35:45-05:00',
+            },
+          ],
+        },
+        _deceasedBoolean: { extension: [{ url: 'https://example.com/ext', valueString: 'unknown' }] },
+      } as unknown as Patient);
+
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['birthDate', 'name.family', 'name.given.extension', 'deceased[x]'],
+            },
+          ],
+        },
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id);
+      expect(readResource).toStrictEqual({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: expect.any(Object),
+        name: [{ given: ['Alice', 'Beth'], _given: [null, { id: 'given-id' }] }],
+      });
+    }));
+
+  test('Readonly fields include primitive extensions', () =>
+    withTestContext(async () => {
+      const birthTime = (valueDateTime: string): Record<string, unknown> => ({
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime', valueDateTime }],
+      });
+
+      const patient = await systemRepo.createResource({
+        resourceType: 'Patient',
+        birthDate: '1974-12-25',
+        _birthDate: birthTime('1974-12-25T14:35:45-05:00'),
+      } as Patient);
+
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', readonlyFields: ['birthDate'] }],
+        },
+      });
+
+      const writeResource = await repo2.updateResource({
+        ...patient,
+        active: true,
+        _birthDate: birthTime('2000-01-01T00:00:00Z'),
+      } as Patient);
+      expect(writeResource).toMatchObject({
+        active: true,
+        birthDate: '1974-12-25',
+        _birthDate: birthTime('1974-12-25T14:35:45-05:00'),
+      });
+    }));
+
   test('Hidden fields on possible missing values', () =>
     withTestContext(async () => {
       // Create an Observation with a valueQuantity

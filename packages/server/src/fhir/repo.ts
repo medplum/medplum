@@ -2787,9 +2787,12 @@ export class Repository extends FhirRepository implements Disposable {
       // choice-of-type fields technically aren't allowed in readonlyFields/hiddenFields,
       // but that isn't currently enforced at write time, so exclude them here
       if (original && !field.includes('.') && !field.endsWith('[x]')) {
-        const value = original[field as keyof T];
-        if (value) {
-          input[field as keyof T] = value;
+        // primitive fields have their id and extensions under a separate "_" key
+        for (const key of [field, '_' + field] as (keyof T)[]) {
+          const value = original[key];
+          if (value) {
+            input[key] = value;
+          }
         }
       }
     }
@@ -3437,15 +3440,19 @@ const superAdminProjectFields = [
  * @returns The Project with the target's super admin fields.
  */
 function replaceSuperAdminProjectFields(project: Project, existing: Project | undefined): Project {
-  const result = { ...project };
+  const result: Record<string, unknown> = { ...project };
+  const current: Record<string, unknown> = { ...existing };
   for (const field of superAdminProjectFields) {
-    if (existing?.[field] === undefined) {
-      delete result[field];
-    } else {
-      Object.assign(result, { [field]: existing[field] });
+    // primitive fields have their id and extensions under a separate "_" key
+    for (const key of [field, '_' + field]) {
+      if (current[key] === undefined) {
+        delete result[key];
+      } else {
+        result[key] = current[key];
+      }
     }
   }
-  return result;
+  return result as unknown as Project;
 }
 
 const RESEND_HISTORY_PAGE_SIZE = 100;
