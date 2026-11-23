@@ -988,8 +988,8 @@ export function SchedulingWorkspace(props: SchedulingWorkspaceProps): JSX.Elemen
   const displayError = resourcesError ?? schedulesLoadingError;
   const calendarsLabel = calendarsOpen ? 'Hide Calendar Filters' : 'Show Calendar Filters';
   const filterCount =
-    (filters.serviceFacility ? 1 : 0) +
-    (filters.service ? 1 : 0) +
+    (filters.serviceFacilities?.length ? 1 : 0) +
+    (filters.services?.length ? 1 : 0) +
     Object.values(panelItems)
       .flat()
       .filter((item) => !item.selected).length;
