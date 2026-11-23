@@ -1383,7 +1383,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue && !options.disableAutoBatch) {
+    if (
+      url.startsWith(this.fhirBaseUrl) &&
+      this.autoBatchQueue &&
+      !options.disableAutoBatch &&
+      !this.getRequestHeader(options, 'x-medplum-on-behalf-of')
+    ) {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
