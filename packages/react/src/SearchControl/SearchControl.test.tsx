@@ -94,6 +94,45 @@ describe('SearchControl', () => {
     expect(screen.getByText(`cell-${HomerSimpson.id}`)).toBeInTheDocument();
   });
 
+  test('Fetches full resources when the search has no fields', async () => {
+    const medplum = new MockClient();
+    await setup(
+      { search: { resourceType: 'Patient' } },
+      { resourceType: 'Bundle', type: 'searchset', entry: [] },
+      medplum
+    );
+    expect(medplum.search).toHaveBeenCalledTimes(1);
+    const query = (medplum.search as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    expect(query).not.toContain('_fields');
+  });
+
+  test('Fetches full resources when additional columns are rendered', async () => {
+    const medplum = new MockClient();
+    await setup(
+      {
+        search: { resourceType: 'Patient', fields: ['id', 'name'] },
+        additionalColumns: [{ name: 'Extra', renderCell: () => null }],
+      },
+      { resourceType: 'Bundle', type: 'searchset', entry: [] },
+      medplum
+    );
+    expect(medplum.search).toHaveBeenCalledTimes(1);
+    const query = (medplum.search as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    expect(query).not.toContain('_fields');
+  });
+
+  test('Requests only the elements behind the fields', async () => {
+    const medplum = new MockClient();
+    await setup(
+      { search: { resourceType: 'Patient', fields: ['id', 'name', 'email'] } },
+      { resourceType: 'Bundle', type: 'searchset', entry: [] },
+      medplum
+    );
+    expect(medplum.search).toHaveBeenCalledTimes(1);
+    const query = (medplum.search as ReturnType<typeof vi.fn>).mock.calls[0][1] as string;
+    expect(query).toContain('_fields=name,photo,telecom');
+  });
+
   test('Rerender does not trigger `loadResult` when `search` deep equals `memoizedSearch`', async () => {
     const search = {
       resourceType: 'Patient',
