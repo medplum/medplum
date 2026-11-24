@@ -1,0 +1,38 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--app-shell-header-height, 0));
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+
+.worklist {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--mantine-color-gray-3);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.report {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chart {
+  width: 320px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--mantine-color-gray-3);
+  overflow-y: auto;
+}
