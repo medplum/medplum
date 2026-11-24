@@ -313,6 +313,20 @@ export const SCHEDULING_SEARCH_PARAMETERS: Bundle<SearchParameter> = {
     {
       resource: {
         resourceType: 'SearchParameter',
+        id: 'Appointment-end',
+        url: 'https://medplum.com/fhir/SearchParameter/Appointment-end',
+        name: 'end',
+        status: 'draft',
+        description: 'The end time of the Appointment',
+        code: 'end',
+        base: ['Appointment'],
+        type: 'date',
+        expression: 'Appointment.end',
+      },
+    },
+    {
+      resource: {
+        resourceType: 'SearchParameter',
         id: 'Appointment-status',
         url: 'http://hl7.org/fhir/SearchParameter/Appointment-status',
         name: 'status',

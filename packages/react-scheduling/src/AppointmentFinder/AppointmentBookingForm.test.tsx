@@ -190,6 +190,7 @@ describe('AppointmentBookingForm', () => {
     });
 
     test('Reports a booking the host callback threw over as written', async () => {
+      const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       onBooked.mockRejectedValueOnce(new Error('Calendar refresh failed'));
       const post = vi.spyOn(medplum, 'post');
       setup(medplum);
@@ -202,6 +203,8 @@ describe('AppointmentBookingForm', () => {
       expect(bookCount(post)).toBe(1);
       expect(screen.queryByText('Calendar refresh failed')).not.toBeInTheDocument();
       expect(bookButton()).toBeDisabled();
+      expect(logged).toHaveBeenCalled();
+      logged.mockRestore();
     });
 
     test('Writes a booking once, however many times the button is clicked', async () => {

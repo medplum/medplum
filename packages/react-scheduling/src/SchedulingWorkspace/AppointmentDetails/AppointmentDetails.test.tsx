@@ -246,7 +246,10 @@ describe('AppointmentDetails', () => {
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save Changes' })).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    const edit = await screen.findByRole('button', { name: 'Edit' });
+    await act(async () => {
+      fireEvent.click(edit);
+    });
     expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
     expect(screen.getByText('Miles Cooper')).toBeInTheDocument();
     expect(cancelButton()).not.toBeInTheDocument();
@@ -257,7 +260,7 @@ describe('AppointmentDetails', () => {
 
     expect(screen.getByText('Status').nextElementSibling).toHaveTextContent('booked');
     expect(await screen.findByText('Miles Cooper')).toBeInTheDocument();
-    expect(screen.getByText('Ultrasound Imaging')).toBeInTheDocument();
+    expect(await screen.findByText('Ultrasound Imaging')).toBeInTheDocument();
     expect(screen.getByText('Bring prior films')).toBeInTheDocument();
     // Everyone but the patient, named from their own resources rather than the references' displays.
     expect(await screen.findByText('Dr. Maya Rivera')).toBeInTheDocument();
@@ -758,7 +761,11 @@ describe('AppointmentDetails editing', () => {
       />,
       medplum
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    const edit = await screen.findByRole('button', { name: 'Edit' });
+    await act(async () => {
+      fireEvent.click(edit);
+    });
+    await settleAutocomplete();
   }
 
   function saveButton(): HTMLElement {
