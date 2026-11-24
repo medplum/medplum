@@ -62,29 +62,29 @@ describe('Certificate validation', () => {
     // so we rely on the other tests to ensure the validation chain works correctly.
 
     test('No valid PEM certificates found in client cert', () => {
-      const trustedCAs = generateSelfSignedCert('CN=Test CA', true);
-      expect(() => validateClientCert('not a certificate', trustedCAs.cert)).toThrow('No valid PEM certificates found');
+      const trustStore = generateSelfSignedCert('CN=Test CA', true);
+      expect(() => validateClientCert('not a certificate', trustStore.cert)).toThrow('No valid PEM certificates found');
     });
 
-    test('No valid PEM certificates found in trusted CAs', () => {
+    test('No valid PEM certificates found in trust store', () => {
       const cert = generateSelfSignedCert('CN=Test Client');
       expect(() => validateClientCert(cert.cert, 'not a certificate')).toThrow('No valid PEM certificates found');
     });
 
     test('Malformed PEM with BEGIN but no END marker', () => {
       const malformedPem = '-----BEGIN CERTIFICATE-----\nMIID...';
-      const trustedCAs = generateSelfSignedCert('CN=Test CA', true);
-      expect(() => validateClientCert(malformedPem, trustedCAs.cert)).toThrow('No valid PEM certificates found');
+      const trustStore = generateSelfSignedCert('CN=Test CA', true);
+      expect(() => validateClientCert(malformedPem, trustStore.cert)).toThrow('No valid PEM certificates found');
     });
 
     test('Empty PEM string', () => {
-      const trustedCAs = generateSelfSignedCert('CN=Test CA', true);
-      expect(() => validateClientCert('', trustedCAs.cert)).toThrow('No valid PEM certificates found');
+      const trustStore = generateSelfSignedCert('CN=Test CA', true);
+      expect(() => validateClientCert('', trustStore.cert)).toThrow('No valid PEM certificates found');
     });
 
     test('Whitespace-only PEM string', () => {
-      const trustedCAs = generateSelfSignedCert('CN=Test CA', true);
-      expect(() => validateClientCert('   \n\n   ', trustedCAs.cert)).toThrow('No valid PEM certificates found');
+      const trustStore = generateSelfSignedCert('CN=Test CA', true);
+      expect(() => validateClientCert('   \n\n   ', trustStore.cert)).toThrow('No valid PEM certificates found');
     });
 
     test('Certificate with tampered signature', () => {
@@ -106,7 +106,7 @@ describe('Certificate validation', () => {
       const tamperedCert = lines.join('\n');
 
       // The tampered certificate should fail to parse or fail validation
-      expect(() => validateClientCert(tamperedCert, ca.cert)).toThrow();
+      expect(() => validateClientCert(tamperedCert, client.cert)).toThrow();
     });
 
     test('PEM with multiple certificates extracts first one', () => {
