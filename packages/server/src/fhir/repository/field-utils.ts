@@ -7,7 +7,13 @@ function lowercaseFirstLetter(str: string): string {
   return str.charAt(0).toLowerCase() + str.slice(1);
 }
 
-function resolveFieldName(input: any, fieldName: string): string[] {
+/**
+ * Resolves a field name to the matching keys of the input object; supports choice-of-type `[x]` names.
+ * @param input - The object whose keys are matched.
+ * @param fieldName - The field name.
+ * @returns The matching keys.
+ */
+export function resolveFieldName(input: any, fieldName: string): string[] {
   if (!fieldName.endsWith('[x]')) {
     return [fieldName];
   }

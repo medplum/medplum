@@ -956,6 +956,7 @@ describe('AccessPolicy', () => {
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
+        active: false,
       });
 
       // AccessPolicy that hides Patient name
@@ -964,7 +965,7 @@ describe('AccessPolicy', () => {
         resource: [
           {
             resourceType: 'Patient',
-            readonlyFields: ['name'],
+            readonlyFields: ['name', 'active'],
           },
         ],
       };
@@ -983,17 +984,19 @@ describe('AccessPolicy', () => {
       const writeResource = await repo2.updateResource<Patient>({
         ...readResource,
         active: true,
+        gender: 'female',
         name: [{ given: ['Morty'], family: 'Smith' }],
       });
       expect(writeResource).toMatchObject({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
-        active: true,
+        active: false,
+        gender: 'female',
       });
     }));
 
-  test.skip('Readonly choice-of-type fields on write', () =>
+  test('Readonly choice-of-type fields on write', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -1064,7 +1067,7 @@ describe('AccessPolicy', () => {
       expect(patient.identifier).toBeUndefined();
     }));
 
-  test.skip('Try to create with readonly choice-of-type property', () =>
+  test('Try to create with readonly choice-of-type property', () =>
     withTestContext(async () => {
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
@@ -1206,13 +1209,13 @@ describe('AccessPolicy', () => {
       expect(bundle2.entry?.length).toStrictEqual(1);
     }));
 
-  test.skip('Try to remove readonly choice-of-type property', () =>
+  test('Try to remove readonly choice-of-type property', () =>
     withTestContext(async () => {
       // Create a patient with an identifier
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Identifier'], family: 'Test' }],
-        multipleBirthInteger: 2,
+        multipleBirthInteger: 0,
       });
 
       // AccessPolicy with Patient.identifier readonly
@@ -1231,14 +1234,14 @@ describe('AccessPolicy', () => {
       });
 
       const { multipleBirthInteger, ...rest } = patient1;
-      expect(multipleBirthInteger).toStrictEqual(2);
+      expect(multipleBirthInteger).toStrictEqual(0);
       expect((rest as Patient).multipleBirthInteger).toBeUndefined();
 
       // Try to update the patient without multipleBirth[x]
       // Effectively, try to remove it
       // This returns success, but multipleBirth[x] is still there
       const patient2 = await repo.updateResource<Patient>(rest);
-      expect(patient2.multipleBirthInteger).toStrictEqual(2);
+      expect(patient2.multipleBirthInteger).toStrictEqual(0);
     }));
 
   test('Hidden fields on read', () =>
@@ -1297,7 +1300,7 @@ describe('AccessPolicy', () => {
           resource: [
             {
               resourceType: 'Patient',
-              hiddenFields: ['name'],
+              hiddenFields: ['name', 'active'],
             },
           ],
         },
@@ -1308,12 +1311,14 @@ describe('AccessPolicy', () => {
         meta: { project: project.id },
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
+        active: false,
       });
 
       // Empty patch returns the resource as it would be read
       const unmodified = await repo2.patchResource<Patient>('Patient', patient.id, { resourceType: 'Parameters' });
       expect(unmodified.birthDate).toBe('1970-01-01');
       expect(unmodified.name).toBeUndefined();
+      expect(unmodified.active).toBeUndefined();
 
       // Patch operations cannot observe hidden fields
       try {
@@ -1333,9 +1338,11 @@ describe('AccessPolicy', () => {
       ]);
       expect(patched.birthDate).toBe('1970-01-02');
       expect(patched.name).toBeUndefined();
+      expect(patched.active).toBeUndefined();
       expect(await systemRepo.readResource<Patient>('Patient', patient.id)).toMatchObject({
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-02',
+        active: false,
       });
     }));
 
@@ -1598,7 +1605,7 @@ describe('AccessPolicy', () => {
       expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
     }));
 
-  test.skip('Hidden choice-of-type field', () =>
+  test('Hidden choice-of-type field', () =>
     withTestContext(async () => {
       // Create an Observation with a valueQuantity
       const obsQuantity = await systemRepo.createResource<Observation>({
@@ -1648,7 +1655,18 @@ describe('AccessPolicy', () => {
         code: { text: 'test' },
       });
       expect(readResource2.valueQuantity).toBeUndefined();
-      expect(readResource2.valueString).toBeDefined();
+      expect(readResource2.valueString).toBeUndefined();
+
+      // Hidden values are preserved on write, including when another type is submitted
+      await repo2.updateResource<Observation>({ ...readResource1, status: 'amended' });
+      await repo2.updateResource<Observation>({ ...readResource2, status: 'amended', valueBoolean: false });
+      expect((await systemRepo.readResource<Observation>('Observation', obsQuantity.id)).valueQuantity).toStrictEqual({
+        value: 123,
+        unit: 'mmHg',
+      });
+      const storedString = await systemRepo.readResource<Observation>('Observation', obsString.id);
+      expect(storedString.valueString).toStrictEqual('test');
+      expect(storedString.valueBoolean).toBeUndefined();
     }));
 
   test('Hidden meta field', () =>

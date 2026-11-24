@@ -119,7 +119,7 @@ import type {
   TransactionSqlOptions,
 } from './repository/access-tracker';
 import { normalizeResourceTypes, repoAccess } from './repository/access-tracker';
-import { removeField } from './repository/field-utils';
+import { removeField, resolveFieldName } from './repository/field-utils';
 import type {
   ConnectionScope,
   RepositoryConnection,
@@ -2564,12 +2564,12 @@ export class Repository extends FhirRepository implements Disposable {
     for (const field of fieldsToRestore) {
       removeField(input, field);
       // only top-level fields can be restored.
-      // choice-of-type fields technically aren't allowed in readonlyFields/hiddenFields,
-      // but that isn't currently enforced at write time, so exclude them here
-      if (original && !field.includes('.') && !field.endsWith('[x]')) {
-        const value = original[field as keyof T];
-        if (value) {
-          input[field as keyof T] = value;
+      if (original && !field.includes('.')) {
+        for (const key of resolveFieldName(original, field)) {
+          const value = original[key as keyof T];
+          if (value !== undefined) {
+            input[key as keyof T] = value;
+          }
         }
       }
     }
