@@ -1,0 +1,12 @@
+{{- /* Generate a static comparison page for each alternative; keep the copy in one data file. */ -}}
+{{- range hugo.Data.comparison.groups -}}
+  {{- $group := . -}}
+  {{- range where .competitors "id" "ne" "medplum" -}}
+    {{- $.AddPage (dict
+      "path" .slug
+      "title" (printf "Why choose Medplum over %s?" (.shortName | default .name))
+      "description" .summary
+      "params" (dict "comparisonGroup" $group.id "competitorId" .id)
+    ) -}}
+  {{- end -}}
+{{- end -}}

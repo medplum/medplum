@@ -1,62 +1,107 @@
 groups:
   - id: ehr
-    title: EHR Platforms
+    title: EHRs & Care Platforms
     icon: outline/replace
-    tagline: Evaluating a replacement for your current EHR?
-    defaults: [healthie, canvas]
+    tagline: Replacing an EHR or Care Platform?
     competitors:
       - { id: medplum, name: Medplum }
-      - { id: healthie, name: Healthie }
-      - { id: canvas, name: Canvas }
-      - { id: elation, name: Elation }
-      - { id: athenaone, name: athenaOne }
-      - { id: modmed, name: ModMed EMA }
-      - { id: salesforce, name: Agentforce Health (formerly Health Cloud) }
+      - id: athenaone
+        name: athenaOne
+        slug: athenaone
+        summary: Your EHR should evolve with the way you deliver care. Medplum gives your team control of the application itself, so you can redesign screens, create workflows, and set access rules beyond what you can configure in athenaOne.
+      - id: elation
+        name: Elation
+        slug: elation
+        summary: Full application source, reusable healthcare UI, and read/write FHIR APIs are three reasons to choose Medplum over Elation. Your engineers can shape the entire clinical experience as your care model evolves.
+      - id: epic
+        name: Epic
+        slug: epic
+        summary: Full application source, reusable healthcare UI, and a FHIR-native platform are a few reasons to choose Medplum over Epic. Shape the clinical experience around your care model, with managed hosting or self-hosting.
+      - id: healthie
+        name: Healthie
+        slug: healthie
+        summary: With Medplum, your team can change the whole clinical product. Compared with Healthie’s configuration and embedded-app options, you get the application source to redesign screens, change workflow logic, and build directly on standard FHIR records.
+      - id: canvas
+        name: Canvas
+        slug: canvas
+        summary: If you want control over the application itself, Medplum goes further than Canvas’s plugin model. Customize the full clinical app on an open-source FHIR platform maintained by Medplum, with managed hosting or self-hosting.
+      - id: modmed
+        name: ModMed EMA
+        slug: modmed-ema
+        summary: Different practices and service lines bring different workflows and data-sharing needs. For MSOs and care networks evaluating ModMed EMA, Medplum puts those decisions in your hands, with a fully customizable app and sharing rules you define.
+      - id: oracle
+        name: Oracle Health Millennium
+        slug: oracle-health-millennium
+        summary: For teams evaluating Oracle Health Millennium, Medplum puts the clinical app and backend source in your hands. Build directly on standard FHIR records, redesign the experience, and shape the clinical product around the care you deliver.
+      - id: eclinicalworks
+        name: eClinicalWorks
+        tableName: eClinical<wbr>Works
+        slug: eclinicalworks
+        summary: Full application source, reusable healthcare UI, and a FHIR-native backend are a few reasons to choose Medplum over eClinicalWorks. Your engineers can reshape the clinical product as your care model evolves.
+      - id: salesforce
+        name: Salesforce Health Cloud
+        slug: salesforce-health-cloud
+        summary: Salesforce Health Cloud brings care management to its CRM platform. Medplum gives your team an open-source clinical app and backend, standard FHIR records, and the freedom to run on our cloud or your own infrastructure.
     rows:
       - id: customize-app
         label: Change the clinical app
         cells:
           medplum: '**Full application source.** Change any screen or application logic in Provider.'
+          epic: '**Configuration and extensions.** Configure workflows and embed custom apps in Epic.'
+          oracle: '**Configuration and extensions.** Extend PowerChart with custom screens and embedded SMART apps.'
+          eclinicalworks: '**Configuration and SMART apps.** Customize templates and launch apps from the EHR.'
           healthie: '**Configuration and extensions.** Configure Healthie and embed custom apps (Enterprise).'
           canvas: '**Plugins and embedded apps.** Extend screens, workflows, and data models through the SDK.'
           elation: '**Configuration and extensions.** Configure Elation and launch SMART apps from the chart.'
           athenaone: '**Configuration and extensions.** Configure athenaOne and embed SMART apps.'
           modmed: '**Configuration and extensions.** Configure EMA and connect approved partner apps.'
-          salesforce: '**Low-code and code.** Build custom screens and logic with Salesforce tools.'
+          salesforce: '**Configurable care apps.** Extend supplied screens and workflows with Salesforce tools and code.'
       - id: custom-app
         label: Build a custom clinical app
         cells:
           medplum: '**FHIR APIs + healthcare React library.** Build with the APIs and components behind Provider.'
+          epic: '**FHIR and Epic APIs.** Build apps for your Epic environment; writes vary by resource and workflow.'
+          oracle: '**FHIR and Millennium APIs.** Build embedded or standalone apps; writes vary by resource.'
+          eclinicalworks: '**FHIR read/write APIs.** Writes require a contract; coverage varies by resource.'
           healthie: '**GraphQL APIs + React SDKs.** SDKs for chat, forms, booking, and packages.'
           canvas: '**FHIR APIs + SDK.** Build with supported FHIR writes and custom plugin endpoints.'
           elation: '**REST APIs.** Build around supported workflows; FHIR access is read-only.'
           athenaone: '**Partner APIs.** Use proprietary APIs for writes; FHIR is mostly read-only.'
           modmed: '**Approved APIs.** Use proprietary APIs for writes; certified FHIR is read-only.'
-          salesforce: '**Salesforce frameworks.** Build with Lightning components and Experience Cloud.'
+          salesforce: '**Salesforce tools and APIs.** Build with Lightning components or connect your own application.'
       - id: organization
         label: Organize practices and service lines
         cells:
           medplum: '**Custom organizational model.** Define which practices, services, and teams share records.'
+          epic: '**Shared EHR.** Extend your Epic environment to other organizations through Community Connect.'
+          oracle: '**Shared EHR.** Share a Millennium environment across organizations and care settings.'
+          eclinicalworks: '**Enterprise Directory.** Consolidate clinical and financial data across practices.'
           healthie: '**Sub-organizations.** Organize clinics and configure sharing (Enterprise).'
           canvas: '**Patient groups.** Share patients across panels, sites, and programs.'
           elation: '**Workspaces and cohorts.** Organize schedules and patient access by group.'
           athenaone: '**Chart-sharing groups.** Choose which practices share patient charts.'
           modmed: '**Multi-practice support.** Practice groups and MSOs.'
-          salesforce: '**Custom sharing model.** Define organizational hierarchies and record-sharing rules.'
+          salesforce: '**Custom sharing model.** Define record sharing across teams with roles, groups, and code.'
       - id: access
         label: Set detailed permissions
         cells:
           medplum: '**Custom access policies.** Control access to records, individual fields, and actions.'
+          epic: '**Configurable roles.** Set permissions for users, actions, and emergency chart access.'
+          oracle: '**Configurable roles and privileges.** Restrict access by role, organization, and encounter.'
+          eclinicalworks: '**Role-based permissions.** Control access through roles and security settings.'
           healthie: '**User and team permissions.** Configure permissions with templates and care-team settings.'
           canvas: '**Custom roles.** Set permissions for record types, actions, and features.'
           elation: '**Custom roles.** Define user privileges and restrict access to patient charts.'
           athenaone: '**Standard roles.** Assign permissions through predefined roles.'
           modmed: '**Role permissions.** Assign access by staff role.'
-          salesforce: '**Field-level security.** Configure record, field, and action permissions.'
+          salesforce: '**Granular permissions.** Configure record, field, and action access.'
       - id: automation
         label: Add custom workflow logic
         cells:
           medplum: '**Hosted or external code.** Run Bots on Medplum or send events directly to your services.'
+          epic: '**Configured workflows and external services.** Connect custom logic through APIs, events, and decision-support hooks.'
+          oracle: '**Rules, scripts, and external services.** Add Millennium rules and code, or connect through APIs.'
+          eclinicalworks: '**Custom agents and integrations.** Build AI Workbench flows or connect external services.'
           healthie: '**External code.** Use APIs and webhooks; configurable automations are also available.'
           canvas: '**Hosted or external code.** Run Python plugins and connect them to your services.'
           elation: '**External code.** Use APIs and webhooks to run your own workflows.'
@@ -67,16 +112,22 @@ groups:
         label: Clinical data model
         cells:
           medplum: '**FHIR-native.** Build directly on FHIR records and read/write APIs.'
+          epic: '**Epic schema.** FHIR read/write APIs; standard and Epic-native exports.'
+          oracle: '**Millennium schema.** FHIR read/write APIs and database exports.'
+          eclinicalworks: '**eClinicalWorks schema.** FHIR read/write APIs and database-table exports.'
           healthie: '**Healthie schema.** Build through GraphQL; a FHIR exchange API is an Enterprise add-on.'
           canvas: '**FHIR-native.** FHIR APIs and custom SDK models; writes vary by resource.'
           elation: '**Elation schema.** REST application APIs; FHIR read access and export.'
           athenaone: '**athenahealth schema.** Proprietary application APIs; mostly read-only FHIR, plus export.'
           modmed: '**EMA schema.** Proprietary application APIs; FHIR read access and export.'
-          salesforce: '**FHIR-aligned objects.** Map between Salesforce records and standard FHIR.'
+          salesforce: '**FHIR-aligned Salesforce objects.** Map between Salesforce records and standard FHIR.'
       - id: platform-control
         label: Platform source and hosting
         cells:
           medplum: '**Open source.** Apache 2.0 server, apps, and SDKs; managed or self-hosted.'
+          epic: '**Proprietary platform.** Epic-hosted, self-hosted, or hosted by a third party.'
+          oracle: '**Proprietary platform.** Oracle-hosted or self-hosted.'
+          eclinicalworks: '**Proprietary platform.** Cloud or customer-hosted deployments.'
           healthie: '**Proprietary platform.** Healthie-hosted.'
           canvas: '**Proprietary platform.** Canvas-hosted, with a dedicated customer instance.'
           elation: '**Proprietary platform.** Elation-hosted.'
@@ -87,24 +138,46 @@ groups:
         label: ONC certification
         cells:
           medplum: '**ONC-certified.**'
+          epic: '**ONC-certified.**'
+          oracle: '**ONC-certified.**'
+          eclinicalworks: '**ONC-certified.**'
           healthie: '**ONC-certified.**'
           canvas: '**ONC-certified.**'
           elation: '**ONC-certified.**'
           athenaone: '**ONC-certified.**'
           modmed: '**ONC-certified.**'
-          salesforce: '**Not ONC-certified.**'
+          salesforce: '**No ONC listing found.**'
   - id: platforms
     title: Developer Platforms
     icon: outline/code
-    tagline: Choosing the foundation for your clinical application?
-    defaults: [oystehr, aidbox]
+    tagline: Building a Clinical Application?
     competitors:
       - { id: medplum, name: Medplum }
-      - { id: oystehr, name: Oystehr }
-      - { id: aidbox, name: Aidbox }
-      - { id: hapi, name: HAPI FHIR (open source) }
-      - { id: healthlake, name: AWS HealthLake }
-      - { id: google, name: Google Cloud Healthcare API }
+      - id: healthlake
+        name: AWS HealthLake
+        slug: aws-healthlake
+        summary: A FHIR data store is only the beginning of a clinical product. Medplum adds a customizable app, user accounts, healthcare UI, and workflow automation, giving teams evaluating AWS HealthLake more of their application’s foundation from the start.
+      - id: google
+        name: Google Cloud Healthcare API
+        slug: google-cloud-healthcare-api
+        summary: Clinical software takes more than healthcare data APIs. Medplum brings the app, accounts, permissions, and workflow automation together, giving teams considering Google Cloud Healthcare API fewer pieces to assemble around their data.
+      - id: hapi
+        name: HAPI FHIR (open source)
+        shortName: HAPI FHIR
+        slug: hapi-fhir
+        summary: Open-source flexibility, a ready-to-use clinical app, and managed hosting are a few reasons to choose Medplum over HAPI FHIR. Your team gets reusable healthcare UI and application services alongside the FHIR server, with self-hosting still available.
+      - id: firely
+        name: Firely Server
+        slug: firely
+        summary: A ready-to-use clinical app, reusable healthcare UI, and an open-source backend are three reasons to choose Medplum over Firely Server. Your team can customize the full application and run workflows on the managed platform.
+      - id: aidbox
+        name: Aidbox
+        slug: aidbox
+        summary: Our ready-to-use clinical app, open-source backend, and hosted workflow automation are three reasons to choose Medplum over Aidbox. Use the app as it is or make it entirely your own.
+      - id: oystehr
+        name: Oystehr
+        slug: oystehr
+        summary: An open-source clinical app and FHIR backend, flexible hosting, and a platform averaging 2.5 billion API calls a month are a few reasons to choose Medplum over Oystehr. Our team maintains the platform, while yours shapes the clinical experience.
     rows:
       - id: clinical-app
         label: Start with a clinical app
@@ -113,6 +186,7 @@ groups:
           oystehr: '**Source-available Ottehr.** Customize its app under a license with reuse restrictions.'
           aidbox: '**Assemble your app.** Start with backend modules and Formbox forms.'
           hapi: '**Build your app.** The platform supplies the FHIR server.'
+          firely: '**Build your app.** Firely supplies the FHIR server and development tools.'
           healthlake: '**Build your app.** The service supplies the FHIR data backend.'
           google: '**Build your app.** The service supplies healthcare data APIs.'
       - id: ui-components
@@ -122,6 +196,7 @@ groups:
           oystehr: "**Bundled with Ottehr.** Reuse app components under Ottehr's license."
           aidbox: '**React UI and FHIR tooling.** Use its component library and Formbox for clinical forms.'
           hapi: '**Build or source.** Add your own clinical UI.'
+          firely: '**Build or source.** Add your own clinical UI.'
           healthlake: '**Build or source.** Add your own clinical UI.'
           google: '**Build or source.** Add your own clinical UI.'
       - id: platform-control
@@ -131,6 +206,7 @@ groups:
           oystehr: "**Proprietary backend.** Oystehr-hosted; Ottehr's app source is available separately."
           aidbox: '**Proprietary core.** Managed or self-hosted under a commercial license.'
           hapi: '**Open-source core.** Apache 2.0; you host and operate the server.'
+          firely: '**Proprietary server.** Open-source .NET SDK; self-host or partner-managed hosting.'
           healthlake: '**Proprietary managed service.** AWS hosts and operates the backend.'
           google: '**Proprietary managed service.** Google hosts and operates the backend.'
       - id: organization
@@ -140,6 +216,7 @@ groups:
           oystehr: '**Project-based data.** Build your sharing model within a project.'
           aidbox: '**Hierarchy or custom policies.** Share records across organizations using either approach.'
           hapi: '**Server-defined partitions.** Implement separation and sharing in your server.'
+          firely: '**Tenant labels and custom policies.** Label each tenant’s records and define access by user or group (Scale or Prior Authorization).'
           healthlake: '**Separate data stores.** Build cross-practice sharing around the service.'
           google: '**Separate data stores.** Use consent rules for access within a store.'
       - id: access
@@ -149,6 +226,7 @@ groups:
           oystehr: '**Resource/action policies.** Define which records users can access and change.'
           aidbox: '**Custom policies and masking.** Define access rules and hide sensitive fields.'
           hapi: '**Server-side code.** Implement authorization and field redaction in Java.'
+          firely: '**Custom access policies.** Filter records and actions using SMART scopes and user claims (Scale or Prior Authorization).'
           healthlake: '**IAM and SMART scopes.** Configure service permissions and patient-access rules.'
           google: '**IAM and consent.** Configure service permissions and consent-based read access.'
       - id: identity
@@ -158,6 +236,7 @@ groups:
           oystehr: '**Built-in accounts.** Connect external identity providers, including SAML SSO.'
           aidbox: '**Built-in accounts.** Connect external identity providers and SMART apps.'
           hapi: '**Integrate your own.** Add an identity provider and application authentication.'
+          firely: '**Included Firely Auth.** Manage accounts and connect external OpenID Connect providers.'
           healthlake: '**Integrate your own.** Add application authentication and configure SMART access.'
           google: '**Integrate your own.** Add application authentication and a SMART proxy.'
       - id: automation
@@ -167,6 +246,7 @@ groups:
           oystehr: '**Hosted or external code.** Run Zambdas and connect them to your services.'
           aidbox: '**External code and SQL.** Use webhooks or proxied apps; SQL triggers are in alpha.'
           hapi: '**Server or external code.** Run Java interceptors or send events to your services.'
+          firely: '**Server or external code.** Run .NET plugins or send events to your services (Scale or Prior Authorization).'
           healthlake: '**External code.** Run your services in response to data-change notifications.'
           google: '**External code.** Run your services in response to Pub/Sub notifications.'
       - id: integrations
@@ -176,6 +256,7 @@ groups:
           oystehr: '**Prebuilt integrations.**'
           aidbox: '**Optional modules.**'
           hapi: '**Integrate separately.** Build or source the clinical connections.'
+          firely: '**Integrate separately.** Build or source the clinical connections.'
           healthlake: '**Integrate separately.** Build or source the clinical connections.'
           google: '**Integrate separately.** Build or source the clinical connections.'
       - id: certification
@@ -185,5 +266,6 @@ groups:
           oystehr: '**Certified API module.**'
           aidbox: '**Certified API module.**'
           hapi: '**Not ONC-certified.**'
+          firely: '**Certified API module.**'
           healthlake: '**Not ONC-certified.**'
           google: '**Not ONC-certified.**'

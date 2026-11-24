@@ -1,0 +1,18 @@
+{{ define "page" }} {{- $group := index (where hugo.Data.comparison.groups "id" .Params.comparisonGroup) 0 -}} {{- $competitor := index (where
+$group.competitors "id" .Params.competitorId) 0 -}}
+<div class="landing compare-page">
+  <header class="compare-hero landing-container-container">
+    <a class="solutions-category-section-inline-link compare-back" href="/compare#{{ $group.id }}">
+      {{ partial "icon" "outline/arrow-left" }} All Comparisons
+    </a>
+    <h1 class="landing-hero-title compare-detail-title">{{ .Title }}</h1>
+    <p class="landing-hero-text compare-lead">{{ $competitor.summary }}</p>
+  </header>
+
+  <div class="landing-container-container">
+    <div class="products-apps-showcase-box compare-board">{{ partial "compare/table.html" (dict "group" $group "competitor" $competitor) }}</div>
+  </div>
+
+  {{ partial "compare/cta.html" . }}
+</div>
+{{ end }}
