@@ -50,6 +50,7 @@ import { BOOKABLE_SERVICE_FACILITY_SEARCH_CRITERIA } from '../constants';
 import { useChanged } from '../hooks/useChanged';
 import { MonthPickerButton } from '../MonthPickerButton/MonthPickerButton';
 import { ServiceFacilityInput } from '../ServiceFacilityInput';
+import { formatTimezoneLabel, isViewerTimezone } from '../timezones';
 import { AppointmentActorSelections } from './AppointmentActorSelections';
 import { AppointmentDayTimes } from './AppointmentDayTimes';
 import classes from './AppointmentFinder.module.css';
@@ -70,13 +71,11 @@ import {
   getUnsatisfiableRows,
 } from './AppointmentFinder.schedules';
 import {
-  formatTimezoneLabel,
   formatZonedDateTimeInput,
   getAppointmentActors,
   getDurationMinutes,
   getLaterOccurrenceStarts,
   getNativeInputType,
-  isViewerTimezone,
   parseZonedDateTimeInput,
   startOfDay,
 } from './AppointmentFinder.times';

@@ -181,7 +181,9 @@ describe('SchedulingWorkspace appointment details', () => {
     await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
     await Promise.all(held);
     vi.setSystemTime(new Date(TODAY_AT_TEN.getTime() + 60 * 1000));
-    await medplum.updateResource({ ...APPOINTMENT, status: 'arrived' });
+    await act(async () => {
+      await medplum.updateResource({ ...APPOINTMENT, status: 'arrived' });
+    });
     await waitFor(() => expect(open.getByText('arrived')).toBeInTheDocument());
 
     await act(async () => {

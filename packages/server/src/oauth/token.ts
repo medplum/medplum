@@ -58,6 +58,7 @@ import {
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
+  verifyExternalToken,
   verifyMultipleMatchingException,
 } from './utils';
 
@@ -314,7 +315,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   if (client?.pkceOptional) {
-    logPkceOptionalCodeRedemption(req, client, login, authMethod, clientSecret);
+    logPkceOptionalCodeRedemption(req, client, login, authMethod, clientId, clientSecret);
   }
 
   await sendTokenResponse(req, res, login, client);
@@ -689,6 +690,14 @@ async function tryGetExternalUserInfo(
     sendTokenError(res, 'invalid_request', 'Missing user info URL', 400);
     return undefined;
   }
+  if (idp.audience && idp.jwksUrl) {
+    try {
+      await verifyExternalToken(idp, subjectToken);
+    } catch (err) {
+      sendTokenError(res, 'invalid_request', 'Invalid subject_token: ' + normalizeErrorString(err), 400);
+      return undefined;
+    }
+  }
   try {
     return await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
@@ -720,7 +729,7 @@ function resolveExternalAuthProvider(clientId: string, client?: ClientApplicatio
   );
   if (externalAuthConfig) {
     if (externalAuthConfig.identityProvider) {
-      return externalAuthConfig.identityProvider;
+      return { issuer: externalAuthConfig.issuer, ...externalAuthConfig.identityProvider };
     }
 
     const userInfoUrl = externalAuthConfig.userInfoUrl;
@@ -872,6 +881,7 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * @param client - The `pkceOptional` client application.
  * @param login - The login being redeemed.
  * @param authMethod - How the client presented credentials to the token endpoint.
+ * @param clientId - The client ID presented in the request, if any.
  * @param clientSecret - The client secret, if one was presented and validated.
  */
 function logPkceOptionalCodeRedemption(
@@ -879,6 +889,7 @@ function logPkceOptionalCodeRedemption(
   client: ClientApplication,
   login: WithId<Login>,
   authMethod: TokenEndpointAuthMethod | undefined,
+  clientId: string | undefined,
   clientSecret: string | undefined
 ): void {
   // Log-only: must never affect the response
@@ -907,6 +918,7 @@ function logPkceOptionalCodeRedemption(
       getLogger().warn('Authorization code redeemed by pkceOptional client without verification', {
         reason,
         clientId: client.id,
+        clientIdPresented: !!clientId,
         projectId: client.meta?.project,
         loginId: login.id,
         authMethod,

@@ -3,8 +3,10 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { Logo } from '../Logo/Logo';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { act, fireEvent, render, screen, selectAutocompleteOption } from '../test-utils/render';
 import type { AppShellAnnouncement } from './AnnouncementBanners';
+import type { AppShellProps } from './AppShell';
 import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
@@ -13,7 +15,7 @@ const navigateMock = vi.fn();
 async function setup(
   layoutVersion: 'v1' | 'v2' = 'v1',
   announcements?: AppShellAnnouncement[],
-  extraProps?: { logo?: null; spotlightDisabled?: boolean }
+  extraProps?: Partial<Pick<AppShellProps, 'navbarSearchHidden' | 'navbarHeader'>>
 ): Promise<void> {
   // Reset localStorage before each test
   localStorage.clear();
@@ -22,8 +24,9 @@ async function setup(
     render(
       <MedplumProvider medplum={medplum} navigate={navigateMock}>
         <AppShell
-          logo={extraProps?.logo === null ? null : <Logo size={24} />}
-          spotlightDisabled={extraProps?.spotlightDisabled}
+          logo={<Logo size={24} />}
+          navbarSearchHidden={extraProps?.navbarSearchHidden}
+          navbarHeader={extraProps?.navbarHeader}
           version="test.version"
           layoutVersion={layoutVersion}
           announcements={announcements}
@@ -202,11 +205,31 @@ describe('AppShell v2', () => {
     expect(menuTitle.getAttribute('data-opened')).toBeNull();
   });
 
-  test('Hides logo and search for a settings-style navbar', async () => {
-    await setup('v2', undefined, { logo: null, spotlightDisabled: true });
+  test('Settings-style navbar with back link and no search', async () => {
+    await setup('v2', undefined, {
+      navbarSearchHidden: true,
+      navbarHeader: <MedplumLink to="/Task?status=ready">Back to app</MedplumLink>,
+    });
     expect(screen.queryByLabelText('Medplum Logo')).not.toBeInTheDocument();
     expect(screen.queryByText('Search')).not.toBeInTheDocument();
     expect(screen.getByText('Link 1')).toBeInTheDocument();
+
+    const headerSection = screen.getByText('Back to app').parentElement as HTMLElement;
+    expect(headerSection).not.toHaveAttribute('data-opened');
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Open Sidebar'));
+    });
+    expect(headerSection).toHaveAttribute('data-opened', 'true');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back to app'));
+    });
+    expect(navigateMock).toHaveBeenCalledWith('/Task?status=ready');
+
+    await act(async () => {
+      fireEvent.keyDown(document.documentElement, { key: 'k', code: 'KeyK', ctrlKey: true });
+    });
+    expect(await screen.findByPlaceholderText(/Start typing to search/i)).toBeInTheDocument();
   });
 
   test('Spotlight search', async () => {

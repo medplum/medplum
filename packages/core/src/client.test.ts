@@ -1753,6 +1753,15 @@ describe('Client', () => {
     );
   });
 
+  test('Resource type and id stay single path segments', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    await client.readHistory('Patient', 'a/b?c');
+    expect(fetch.mock.calls[0][0]).toBe('https://api.medplum.com/fhir/R4/Patient/a%2Fb%3Fc/_history');
+    expect(() => client.readResource('Patient', '..')).toThrow('Invalid FHIR URL path');
+    await expect(client.readReference({ reference: 'Patient/..' })).rejects.toThrow('Invalid reference');
+  });
+
   test('Read reference', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch });
@@ -4683,6 +4692,46 @@ describe('Client', () => {
     const response2 = await request2;
     expect(response2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('Do not use cache with on-behalf-of header object mixed case', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const request1 = await client.get('Practitioner/123', { headers: { 'X-Medplum-On-Behalf-Of': 'Patient/123' } });
+    const request2 = client.get('Practitioner/123', { headers: { 'X-Medplum-On-Behalf-Of': 'Patient/456' } });
+    expect(request2).not.toBe(request1);
+
+    const response1 = await request1;
+    expect(response1).toBeDefined();
+    const response2 = await request2;
+    expect(response2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('Do not auto batch requests with on-behalf-of header', async () => {
+    const fetch = mockFetch(200, { resourceType: 'Bundle', type: 'searchset' });
+    const client = new MedplumClient({ fetch, autoBatchTime: 50 });
+
+    await Promise.all([
+      client.search('Patient', undefined, { headers: { 'X-Medplum-On-Behalf-Of': 'ProjectMembership/123' } }),
+      client.search('Observation', undefined, { headers: { 'X-Medplum-On-Behalf-Of': 'ProjectMembership/456' } }),
+    ]);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ 'X-Medplum-On-Behalf-Of': 'ProjectMembership/123' }),
+      })
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Observation',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ 'X-Medplum-On-Behalf-Of': 'ProjectMembership/456' }),
+      })
+    );
   });
 
   test('Do not use cache with on-behalf-of header array', async () => {

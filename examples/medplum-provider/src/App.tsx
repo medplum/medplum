@@ -13,13 +13,14 @@ import {
   IconPill,
   IconPrinter,
   IconReceipt,
+  IconSettings,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useParams, useSearchParams } from 'react-router';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { hasScriptSureIdentifier } from './components/utils';
 import { useDoseSpotAccess } from './hooks/useDoseSpotAccess';
 import './index.css';
@@ -89,6 +90,7 @@ export function App(): JSX.Element | null {
   const profile = useMedplumProfile();
   const doseSpotCount = useDoseSpotNotifications();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const project = medplum.getProject();
   const setupDisabledByProject =
@@ -164,8 +166,8 @@ export function App(): JSX.Element | null {
       searchParams={searchParams}
       layoutVersion="v2"
       showLayoutVersionToggle={false}
-      settingsHref={SETTINGS_PATH}
-      spotlightDisabled={inSettings}
+      menuItems={[{ label: 'Settings', icon: IconSettings, onClick: () => navigate(SETTINGS_PATH)?.catch(console.error) }]}
+      navbarSearchHidden={inSettings}
       menus={
         settingsMenus ??
         (profile

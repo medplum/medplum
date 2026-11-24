@@ -7,22 +7,18 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { Header } from './Header';
+import type { AppShellMenuItem } from './HeaderDropdown';
 
 const medplum = new MockClient();
 const navigateMock = vi.fn();
 const closeMock = vi.fn();
 
-async function setup(client?: MockClient, settingsHref?: string): Promise<void> {
+async function setup(client?: MockClient, menuItems?: AppShellMenuItem[]): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={client ?? medplum} navigate={navigateMock}>
         <MantineAppShell>
-          <Header
-            logo={<Logo size={24} />}
-            version="test.version"
-            navbarToggle={closeMock}
-            settingsHref={settingsHref}
-          />
+          <Header logo={<Logo size={24} />} version="test.version" navbarToggle={closeMock} menuItems={menuItems} />
         </MantineAppShell>
       </MedplumProvider>
     );
@@ -237,8 +233,9 @@ describe('Header', () => {
     expect(navigateMock).toHaveBeenCalledWith('/Practitioner/124');
   });
 
-  test('Settings with settingsHref', async () => {
-    await setup(undefined, '/settings');
+  test('Custom menuItems replace Account settings', async () => {
+    const onClickSettings = vi.fn();
+    await setup(undefined, [{ label: 'Settings', onClick: onClickSettings }]);
     await openMenu();
 
     expect(screen.queryByText('Account settings')).not.toBeInTheDocument();
@@ -247,7 +244,15 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('Settings'));
     });
 
-    expect(navigateMock).toHaveBeenCalledWith('/settings');
+    expect(onClickSettings).toHaveBeenCalledTimes(1);
+  });
+
+  test('Empty menuItems removes Account settings', async () => {
+    await setup(undefined, []);
+    await openMenu();
+
+    expect(screen.queryByText('Account settings')).not.toBeInTheDocument();
+    expect(screen.getByText('Sign out')).toBeInTheDocument();
   });
 
   test('Sign out', async () => {

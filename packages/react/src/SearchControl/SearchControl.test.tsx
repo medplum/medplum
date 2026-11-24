@@ -298,6 +298,24 @@ describe('SearchControl', () => {
     expect(screen.getByText('555-7334 [home phone]')).toBeInTheDocument();
   });
 
+  test('Renders false and zero values', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', 'active', 'multipleBirth[x]'],
+      },
+    };
+
+    await setup(props, {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: { resourceType: 'Patient', id: 'p1', active: false, multipleBirthInteger: 0 } }],
+    });
+    expect(await screen.findByText('p1')).toBeInTheDocument();
+    expect(screen.getByText('false')).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
+
   test('Renders nested properties', async () => {
     const props: SearchControlProps = {
       search: {
