@@ -613,6 +613,33 @@ describe('Custom FHIR operation Parameters helpers', () => {
     expect(parametersToMedicationCheckoutResponse(params)).toEqual(expected);
   });
 
+  test.each([
+    { label: 'valueBoolean true', value: { valueBoolean: true }, expected: true },
+    { label: 'valueBoolean false', value: { valueBoolean: false }, expected: undefined },
+    { label: "valueString 'true'", value: { valueString: 'true' }, expected: undefined },
+    { label: 'valueInteger 1', value: { valueInteger: 1 }, expected: undefined },
+  ])('parametersToMedicationCheckoutResponse sets duplicate and replaced only from $label', ({ value, expected }) => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-1' },
+            { name: 'status', valueCode: 'queued' },
+            { name: 'duplicate', ...value },
+            { name: 'replaced', ...value },
+          ],
+        },
+      ],
+    };
+    const [item] = parametersToMedicationCheckoutResponse(params).items;
+    expect(item.duplicate).toBe(expected);
+    expect(item.replaced).toBe(expected);
+  });
+
   test('parametersToMedicationCheckoutResponse tolerates zero items', () => {
     const params: Parameters = {
       resourceType: 'Parameters',
