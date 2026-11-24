@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
-import type { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
+import { readMembershipReference } from '../fhir/projectmembership';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -77,8 +78,14 @@ async function createPatient(
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
+  const policy = await readMembershipReference<AccessPolicy>(
+    systemRepo,
+    { project: createReference(project) },
+    policyRef,
+    ['AccessPolicy'],
+    { allowLinkedProjects: true }
+  );
   const profile = (await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email)) as Patient;
-  const policy = await systemRepo.readReference(policyRef);
   // The caller sets the membership on the login with `setLoginMembership`
   return createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),

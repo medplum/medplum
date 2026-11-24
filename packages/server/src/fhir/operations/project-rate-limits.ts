@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, arrayify, badRequest, forbidden, getReferenceString } from '@medplum/core';
+import { allOk, arrayify, badRequest, forbidden, getReferenceString, isResource } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinitionParameter, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import { getActiveRateLimitKey, getProjectFhirQuota, getUserFhirQuota } from '../fhirquota';
-import type { SystemRepository } from '../repo';
+import type { Repository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -126,7 +126,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   }
 
   const consumedValues = results[0][1] as (string | null)[];
-  const userConfigsByRef = await loadMembershipUserConfigurations(ctx.repo.getSystemRepo(), memberships);
+  const userConfigsByRef = await loadMembershipUserConfigurations(ctx.repo, memberships);
   const projectLimit = getProjectFhirQuota(project);
 
   const membershipResults = memberships.map((membership, i) => {
@@ -156,7 +156,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 }
 
 async function loadMembershipUserConfigurations(
-  systemRepo: SystemRepository,
+  repo: Repository,
   memberships: WithId<ProjectMembership>[]
 ): Promise<Map<string, UserConfiguration>> {
   const configByRef = new Map<string, Reference<UserConfiguration>>();
@@ -173,11 +173,11 @@ async function loadMembershipUserConfigurations(
   }
 
   const configRefs = Array.from(configByRef.values());
-  const reads = await systemRepo.readReferences<UserConfiguration>(configRefs);
+  const reads = await repo.readReferences<UserConfiguration>(configRefs);
   for (let i = 0; i < configRefs.length; i++) {
     const ref = configRefs[i].reference;
     const resource = reads[i];
-    if (ref && !(resource instanceof Error)) {
+    if (ref && isResource<UserConfiguration>(resource, 'UserConfiguration')) {
       result.set(ref, resource);
     }
   }

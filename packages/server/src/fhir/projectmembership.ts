@@ -88,7 +88,7 @@ export function findProjectMembership(
  */
 export async function readMembershipReference<T extends Resource>(
   systemRepo: SystemRepository,
-  membership: ProjectMembership,
+  membership: Pick<ProjectMembership, 'project'>,
   reference: Reference<T>,
   allowedTypes: readonly ResourceType[],
   options?: { allowLinkedProjects?: boolean }

@@ -49,7 +49,7 @@ import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getInactiveReason, membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
-import type { Repository, SystemRepository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
@@ -1395,7 +1395,7 @@ async function makeAuthResult(
  * @param authState - The existing auth state.
  */
 async function tryAddOnBehalfOf(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   req: IncomingMessage | undefined,
   authState: AuthState
 ): Promise<void> {
@@ -1447,7 +1447,18 @@ async function tryAddOnBehalfOf(
     throw new OperationOutcomeError(forbidden);
   }
 
-  const onBehalfOf = await systemRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  let onBehalfOf: WithId<ProfileResource>;
+  try {
+    onBehalfOf = await readMembershipReference<ProfileResource>(
+      systemRepo,
+      onBehalfOfMembership,
+      onBehalfOfMembership.profile as Reference<ProfileResource>,
+      membershipProfileTypes,
+      { allowLinkedProjects: true }
+    );
+  } catch {
+    throw new OperationOutcomeError(forbidden);
+  }
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
 }
