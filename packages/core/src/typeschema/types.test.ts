@@ -344,6 +344,27 @@ describe('FHIR resource and data type representations', () => {
     });
   });
 
+  test('subsetResource keeps primitive extensions of choice-of-type elements', () => {
+    const extension = [{ url: 'http://example.com/ext', valueString: 'ext' }];
+    const observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      _status: { extension },
+      code: { text: 'test' },
+      valueString: 'value',
+      _valueString: { extension },
+    } as Observation;
+
+    expect(subsetResource(observation, ['value', 'status'])).toEqual({
+      resourceType: 'Observation',
+      status: 'final',
+      _status: { extension },
+      valueString: 'value',
+      _valueString: { extension },
+      meta: { tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }] },
+    });
+  });
+
   test('Deeply nested content reference', () => {
     // Make sure we can handle contentReference more than 2 layers down
     const structureMapGroupRuleType = getDataType('StructureMapGroupRule');

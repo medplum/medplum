@@ -1,21 +1,32 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, FhirPathPatch, Filter, Operation, SearchRequest, WithId } from '@medplum/core';
+import type {
+  BackgroundJobInteraction,
+  ElementName,
+  FhirPathPatch,
+  Filter,
+  Operation,
+  SearchRequest,
+  WithId,
+} from '@medplum/core';
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
   append,
   badRequest,
+  copyElement,
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
+  deleteElement,
   EMPTY,
   evalFhirPathTyped,
   extractAccountReferences,
   fhirpathPatchTypedValue,
   forbidden,
   formatSearchQuery,
+  getPrimitiveExtensionKey,
   getStatus,
   gone,
   isGone,
@@ -1139,19 +1150,21 @@ export class Repository extends FhirRepository implements Disposable {
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, deepClone(validatedResource));
     updated = await replaceConditionalReferences(this, updated);
 
-    const resultMeta: Meta = {
-      ...updated.meta,
-      versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, validatedResource),
-      author: this.getAuthor(),
-      onBehalfOf: this.context.onBehalfOf,
-      deleted: undefined,
-    };
+    // Server-assigned meta elements replace any client-provided values, including primitive ids and extensions
+    const resultMeta: Meta = { ...updated.meta };
+    for (const name of serverAssignedMetaElements) {
+      deleteElement(resultMeta, name);
+    }
+    resultMeta.versionId = this.generateId();
+    resultMeta.lastUpdated = this.getLastUpdated(existing, validatedResource);
+    resultMeta.author = this.getAuthor();
+    resultMeta.onBehalfOf = this.context.onBehalfOf;
 
     const result = { ...updated, meta: resultMeta };
 
     const projectId = this.getProjectId(existing, updated);
     if (projectId) {
+      deleteElement(resultMeta, 'project');
       resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
@@ -1264,7 +1277,7 @@ export class Repository extends FhirRepository implements Disposable {
     await getBinaryStorage().writeBinary(resource, undefined, resource.contentType, stream);
 
     // Remove the data field from the resource
-    resource.data = undefined;
+    deleteElement(resource, 'data');
   }
 
   /**
@@ -2653,12 +2666,17 @@ export class Repository extends FhirRepository implements Disposable {
     }
     if (!extendedMode && input.meta) {
       const meta = input.meta;
-      meta.author = undefined;
-      meta.project = undefined;
-      meta.account = undefined;
-      meta.accounts = undefined;
-      meta.compartment = undefined;
-      meta.deleted = undefined;
+      // Assigning rather than deleting keeps meta in V8's fast-property mode; undefined is omitted from JSON
+      for (const name of internalMetaElements) {
+        meta[name] = undefined;
+      }
+      // Primitive ids and extensions are rare, so only delete the keys that exist
+      const record = meta as Record<string, unknown>;
+      for (const key of internalMetaExtensionKeys) {
+        if (record[key] !== undefined) {
+          delete record[key];
+        }
+      }
     }
     return input;
   }
@@ -2782,15 +2800,12 @@ export class Repository extends FhirRepository implements Disposable {
       fieldsToRestore.push(...policy.hiddenFields);
     }
     for (const field of fieldsToRestore) {
-      removeField(input, field);
-      // only top-level fields can be restored.
-      // choice-of-type fields technically aren't allowed in readonlyFields/hiddenFields,
-      // but that isn't currently enforced at write time, so exclude them here
-      if (original && !field.includes('.') && !field.endsWith('[x]')) {
-        const value = original[field as keyof T];
-        if (value) {
-          input[field as keyof T] = value;
-        }
+      // only top-level fields can be restored
+      if (original && !field.includes('.')) {
+        // Access policy field names are not checked against the resource type
+        copyElement(input, original, field as ElementName<T>);
+      } else {
+        removeField(input, field);
       }
     }
     return original ? fieldsToRestore : EMPTY;
@@ -3420,6 +3435,13 @@ function isRestorableToProject(resource: Resource, projectId: string): boolean {
   }
 }
 
+/** Meta elements assigned by the server on every write. */
+const serverAssignedMetaElements = ['versionId', 'lastUpdated', 'author', 'onBehalfOf', 'deleted'] as const;
+
+/** Meta elements removed from resources returned outside of extended mode. */
+const internalMetaElements = ['author', 'project', 'account', 'accounts', 'compartment', 'deleted'] as const;
+const internalMetaExtensionKeys = internalMetaElements.map(getPrimitiveExtensionKey);
+
 const superAdminProjectFields = [
   'active',
   'superAdmin',
@@ -3439,11 +3461,7 @@ const superAdminProjectFields = [
 function replaceSuperAdminProjectFields(project: Project, existing: Project | undefined): Project {
   const result = { ...project };
   for (const field of superAdminProjectFields) {
-    if (existing?.[field] === undefined) {
-      delete result[field];
-    } else {
-      Object.assign(result, { [field]: existing[field] });
-    }
+    copyElement(result, existing, field);
   }
   return result;
 }

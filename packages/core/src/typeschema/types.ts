@@ -12,11 +12,12 @@ import type {
 import type { DataTypesMap } from '../base-schema-utils';
 import { inflateBaseSchema } from '../base-schema-utils';
 import baseSchema from '../base-schema.json';
+import { getElementName, isElementKey } from '../element-keys';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
 import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
-import { capitalize, getExtension, isEmpty } from '../utils';
+import { getExtension, isEmpty } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -535,20 +536,21 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   if (!resource) {
     return undefined;
   }
-  const extraProperties = [];
+  const elements = DATA_TYPES[resource.resourceType].elements;
+  const exactNames = new Set<string>(mandatorySubsetProperties);
+  const choiceNames: string[] = [];
   for (const property of properties) {
-    extraProperties.push('_' + property);
-    const choiceTypeField = DATA_TYPES[resource.resourceType].elements[property + '[x]'];
-    if (choiceTypeField) {
-      extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
+    const name = getElementName(property);
+    const choiceName = name + '[x]';
+    if (elements[choiceName]) {
+      choiceNames.push(choiceName);
+    } else {
+      exactNames.add(name);
     }
   }
   for (const property of Object.getOwnPropertyNames(resource)) {
-    if (
-      !properties.includes(property) &&
-      !extraProperties.includes(property) &&
-      !mandatorySubsetProperties.includes(property)
-    ) {
+    const name = getElementName(property);
+    if (!exactNames.has(name) && !choiceNames.some((choiceName) => isElementKey(name, choiceName))) {
       Object.defineProperty(resource, property, {
         enumerable: false,
         writable: false,

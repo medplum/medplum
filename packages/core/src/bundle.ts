@@ -9,8 +9,12 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
+import { deleteElement } from './element-keys';
 import { isReference } from './types';
 import { deepClone, EMPTY } from './utils';
+
+/** Server-assigned meta elements removed from transaction entries. */
+const serverAssignedMetaElements = ['author', 'compartment', 'lastUpdated', 'project', 'versionId'] as const;
 
 /**
  * More on Bundles can be found here
@@ -31,11 +35,9 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
       continue;
     }
     if (resource.meta !== undefined) {
-      delete resource.meta.author;
-      delete resource.meta.compartment;
-      delete resource.meta.lastUpdated;
-      delete resource.meta.project;
-      delete resource.meta.versionId;
+      for (const name of serverAssignedMetaElements) {
+        deleteElement(resource.meta, name);
+      }
       if (Object.keys(resource.meta).length === 0) {
         delete resource.meta;
       }

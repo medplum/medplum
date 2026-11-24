@@ -1134,7 +1134,7 @@ describe('AccessPolicy', () => {
       });
     }));
 
-  test.skip('Readonly choice-of-type fields on write', () =>
+  test('Readonly choice-of-type fields on write', () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
@@ -1205,7 +1205,7 @@ describe('AccessPolicy', () => {
       expect(patient.identifier).toBeUndefined();
     }));
 
-  test.skip('Try to create with readonly choice-of-type property', () =>
+  test('Try to create with readonly choice-of-type property', () =>
     withTestContext(async () => {
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
@@ -1347,16 +1347,16 @@ describe('AccessPolicy', () => {
       expect(bundle2.entry?.length).toStrictEqual(1);
     }));
 
-  test.skip('Try to remove readonly choice-of-type property', () =>
+  test('Try to remove readonly choice-of-type property', () =>
     withTestContext(async () => {
-      // Create a patient with an identifier
+      // Create a patient with multipleBirth[x]
       const patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Identifier'], family: 'Test' }],
         multipleBirthInteger: 2,
       });
 
-      // AccessPolicy with Patient.identifier readonly
+      // AccessPolicy with Patient.multipleBirth[x] readonly
       const accessPolicy: AccessPolicy = {
         resourceType: 'AccessPolicy',
         resource: [
@@ -1650,6 +1650,109 @@ describe('AccessPolicy', () => {
       expect(await repo2.canPerformInteractionById(AccessPolicyInteraction.UPDATE, 'Patient', randomUUID())).toBe(
         false
       );
+    }));
+
+  test('Hidden fields include primitive extensions', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice', 'Beth'],
+            _given: [null, { id: 'given-id', extension: [{ url: 'https://example.com/ext', valueString: 'Beth' }] }],
+            family: 'Smith',
+            _family: { extension: [{ url: 'https://example.com/ext', valueString: 'Smith' }] },
+          },
+        ],
+        birthDate: '1974-12-25',
+        _birthDate: {
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime',
+              valueDateTime: '1974-12-25T14:35:45-05:00',
+            },
+          ],
+        },
+        _deceasedBoolean: { extension: [{ url: 'https://example.com/ext', valueString: 'unknown' }] },
+      } as unknown as Patient);
+
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['birthDate', 'name.family', 'name.given.extension', 'deceased[x]'],
+            },
+          ],
+        },
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id);
+      expect(readResource).toStrictEqual({
+        resourceType: 'Patient',
+        id: patient.id,
+        meta: expect.any(Object),
+        name: [{ given: ['Alice', 'Beth'], _given: [null, { id: 'given-id' }] }],
+      });
+    }));
+
+  test('Readonly fields include primitive extensions', () =>
+    withTestContext(async () => {
+      const birthTime = (valueDateTime: string): Record<string, unknown> => ({
+        extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/patient-birthTime', valueDateTime }],
+      });
+
+      const patient = await systemRepo.createResource({
+        resourceType: 'Patient',
+        birthDate: '1974-12-25',
+        _birthDate: birthTime('1974-12-25T14:35:45-05:00'),
+      } as Patient);
+
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', readonlyFields: ['birthDate'] }],
+        },
+      });
+
+      const writeResource = await repo2.updateResource({
+        ...patient,
+        active: true,
+        _birthDate: birthTime('2000-01-01T00:00:00Z'),
+      } as Patient);
+      expect(writeResource).toMatchObject({
+        active: true,
+        birthDate: '1974-12-25',
+        _birthDate: birthTime('1974-12-25T14:35:45-05:00'),
+      });
+    }));
+
+  test('Readonly fields restore falsy values', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        active: false,
+        multipleBirthInteger: 0,
+      });
+
+      const repo2 = getRepository({
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', readonlyFields: ['active', 'multipleBirth[x]'] }],
+        },
+      });
+
+      // A missing `active` means active, so dropping the stored `false` would reactivate the Patient
+      const writeResource = await repo2.updateResource<Patient>({
+        ...patient,
+        active: true,
+        multipleBirthInteger: undefined,
+        multipleBirthBoolean: true,
+      });
+      expect(writeResource.active).toBe(false);
+      expect(writeResource.multipleBirthInteger).toBe(0);
+      expect(writeResource.multipleBirthBoolean).toBeUndefined();
     }));
 
   test('Hidden fields on possible missing values', () =>
