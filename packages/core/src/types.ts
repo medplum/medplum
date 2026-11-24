@@ -5,6 +5,7 @@ import type {
   CodeableConcept,
   Coding,
   ElementDefinition,
+  ExtractResource,
   Reference,
   Resource,
   ResourceType,
@@ -525,11 +526,15 @@ export function isResource<T extends Resource>(value: unknown, resourceType?: T[
  * @param resourceType - Checks that the reference is of the given type
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
-
+export function isReference<T extends ResourceType>(
+  value: unknown,
+  resourceType: T
+): value is Reference<ExtractResource<T>> & { reference: string };
 export function isReference<T extends Resource = Resource>(
   value: unknown,
   resourceType?: T['resourceType']
-): value is Reference<T> & { reference: string } {
+): value is Reference<T> & { reference: string };
+export function isReference(value: unknown, resourceType?: ResourceType): boolean {
   // if the value is an object with a reference property and the reference is a string, then it is a reference
   if (value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string') {
     // if resourceType is provided, check if the reference matches the resource type

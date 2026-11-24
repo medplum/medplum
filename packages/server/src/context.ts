@@ -19,6 +19,8 @@ import type {
   Project,
   ProjectMembership,
   Reference,
+  SmartAppLaunch,
+  User,
 } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
@@ -29,6 +31,7 @@ import { getInactiveReason } from './fhir/projectmembership';
 import type { Repository, SuperAdminRepository, SystemRepository } from './fhir/repo';
 import { getGlobalSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
+import { hasSmartResourceScopes } from './fhir/smart';
 import { getLogger, globalLogger, writeLineToStdout } from './logger';
 import type { AuthState } from './oauth/middleware';
 import { authenticateTokenImpl } from './oauth/middleware';
@@ -69,6 +72,21 @@ export type AuthenticatedContextOptions = {
   async?: boolean;
   logTag?: string; // Opaque caller-supplied string included in log output
 };
+
+/** Login details of the caller. Under On-Behalf-Of, these still describe the caller, not the delegated member. */
+export interface AuthenticatedSession {
+  readonly authMethod: Login['authMethod'];
+  readonly scope?: string;
+  readonly clientId?: string;
+  readonly smartAppLaunch?: WithId<SmartAppLaunch>;
+}
+
+export interface Attribution {
+  /** The caller's `Login.user`. */
+  readonly actor: Login['user'];
+  /** The delegated member's profile, under On-Behalf-Of. */
+  readonly onBehalfOf?: ProjectMembership['profile'];
+}
 
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
@@ -118,8 +136,69 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.authState.onBehalfOfMembership ?? this.authState.membership;
   }
 
-  get login(): Login {
+  get session(): AuthenticatedSession {
+    const { login, profile, smartAppLaunch } = this.authState;
+    return {
+      authMethod: login.authMethod,
+      scope: login.scope,
+      // Basic auth logins have no client; the ClientApplication is the profile instead
+      clientId: resolveId(login.client) ?? (profile?.resourceType === 'ClientApplication' ? profile.id : undefined),
+      smartAppLaunch,
+    };
+  }
+
+  getAttribution(): Attribution {
+    return { actor: this.authState.login.user, onBehalfOf: this.authState.onBehalfOfMembership?.profile };
+  }
+
+  /**
+   * Returns the caller's User, for routes that manage the caller's own account.
+   * Refuses On-Behalf-Of, callers that are not Users, and logins limited by SMART resource scopes.
+   * @returns The caller's User reference.
+   */
+  requireCallerUser(): Reference<User> {
+    const { membership, onBehalfOfMembership } = this.authState;
+    if (
+      onBehalfOfMembership ||
+      !membership.user?.reference?.startsWith('User/') ||
+      hasSmartResourceScopes(this.session)
+    ) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    return membership.user as Reference<User>;
+  }
+
+  /**
+   * Returns the caller's Login, for routes that act on the session itself. Refuses On-Behalf-Of.
+   * @returns The caller's Login.
+   */
+  requireCallerLogin(): Login {
+    if (this.authState.onBehalfOfMembership) {
+      throw new OperationOutcomeError(forbidden);
+    }
     return this.authState.login;
+  }
+
+  /**
+   * Returns the delegated membership, for routes where a project admin acts on behalf of a member.
+   * @returns The On-Behalf-Of membership.
+   */
+  requireDelegatingAdmin(): WithId<ProjectMembership> {
+    const { project, membership, onBehalfOfMembership } = this.authState;
+    if (project.superAdmin || !membership.admin) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    if (!onBehalfOfMembership) {
+      throw new OperationOutcomeError(badRequest('Requires X-Medplum-On-Behalf-Of'));
+    }
+    return onBehalfOfMembership;
+  }
+
+  /** Requires the caller, not the delegated member, to be in a super admin project. */
+  requireSuperAdminCaller(): void {
+    if (!this.authState.project.superAdmin) {
+      throw new OperationOutcomeError(forbidden);
+    }
   }
 
   get profile(): Reference<ProfileResource | Bot | ClientApplication> {

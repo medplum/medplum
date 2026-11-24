@@ -96,13 +96,8 @@ async function canIntrospectToken(
     return false;
   }
 
-  // The token must have been issued to the client making the request. Bearer callers record the
-  // client on the login, while Basic auth has no login step, so `getLoginForBasicAuth` synthesizes
-  // a login without a client and supplies the ClientApplication as the profile instead.
-  const { login: callerLogin, profile } = ctx.authState;
-  const callerClientId =
-    resolveId(callerLogin.client) ?? (profile?.resourceType === 'ClientApplication' ? profile.id : undefined);
-  return claims.client_id === callerClientId;
+  // The token must have been issued to the client making the request
+  return claims.client_id === ctx.session.clientId;
 }
 
 function writeInactiveResponse(res: Response): void {

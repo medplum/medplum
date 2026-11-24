@@ -12,7 +12,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
 import { setPassword } from './setpassword';
-import { readUserForAccountManagement } from './utils';
+import { readAccountForManagement } from './utils';
 
 export const changePasswordValidator = makeValidationMiddleware([
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
@@ -26,7 +26,7 @@ export const changePasswordValidator = makeValidationMiddleware([
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
-  const user = await readUserForAccountManagement(ctx);
+  const { user } = await readAccountForManagement(ctx);
 
   await changePassword(ctx.systemRepo, {
     user,

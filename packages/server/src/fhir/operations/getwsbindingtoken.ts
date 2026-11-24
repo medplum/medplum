@@ -157,12 +157,11 @@ const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { authState, login, profile, repo, project, membership } = getAuthenticatedContext();
-
+  const ctx = getAuthenticatedContext();
   // The token is issued for the caller's own login, which cannot represent an On-Behalf-Of member
-  if (authState.onBehalfOfMembership) {
-    return [forbidden];
-  }
+  const login = ctx.requireCallerLogin();
+  const { profile, repo, project, membership } = ctx;
+  const { baseUrl } = getConfig();
 
   if (!project.features?.includes('websocket-subscriptions')) {
     return [badRequest('WebSocket subscriptions not enabled for current project')];
