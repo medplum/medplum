@@ -7,6 +7,7 @@ import { ContentType, createReference } from '@medplum/core';
 import type {
   Coding,
   Encounter,
+  Organization,
   Patient,
   Practitioner,
   Reference,
@@ -21,7 +22,7 @@ import type {
   LabOrganization,
   TestCoding,
 } from '@medplum/health-gorilla-core';
-import { LabOrderValidationError, NPI_SYSTEM } from '@medplum/health-gorilla-core';
+import { HEALTH_GORILLA_SYSTEM, LabOrderValidationError, NPI_SYSTEM } from '@medplum/health-gorilla-core';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import {
@@ -99,6 +100,7 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
   const [requester, setRequester] = useState<Practitioner | undefined>(medplum.getProfile() as Practitioner);
   const defaultPatientResource = useResource(defaultPatient);
   const [patient, setPatient] = useState<Patient | undefined>(defaultPatientResource);
+  const [requestingLocation, setRequestingLocation] = useState<Organization | undefined>();
   const [draftDefaults, setDraftDefaults] = useState<LabOrderDraftDefaults | undefined>();
   const tests = defaultTests ?? draftDefaults?.tests;
   const performingLab = defaultPerformingLab ?? draftDefaults?.performingLab;
@@ -107,6 +109,7 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
   const labOrderReturn = useHealthGorillaLabOrder({
     patient,
     requester,
+    requestingLocation,
   });
 
   const {
@@ -181,6 +184,9 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
     }
     if (draftDefaults.requester) {
       setRequester(draftDefaults.requester);
+    }
+    if (draftDefaults.requestingLocation) {
+      setRequestingLocation(draftDefaults.requestingLocation);
     }
     for (const test of draftDefaults.tests) {
       const metadata = draftDefaults.testMetadata[test.code];
@@ -284,7 +290,7 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
     try {
       setIsSavingDraft(true);
       setCreateError(undefined);
-      const saved = await saveLabOrderDraft(medplum, { ...state, patient, requester }, draftOrder);
+      const saved = await saveLabOrderDraft(medplum, { ...state, patient, requester, requestingLocation }, draftOrder);
       showNotification({ title: 'Draft Saved', message: 'The lab order was saved as a draft.', color: 'green' });
       onSaveDraft?.(saved);
     } catch (error) {
@@ -332,6 +338,18 @@ function OrderLabsForm(props: OrderLabsModalProps & { onExitTransitionEnd: () =>
                 name="patient"
                 defaultValue={patient}
                 onChange={setPatient}
+              />
+            </Input.Wrapper>
+            <Input.Wrapper
+              label="Practice location"
+              description="The location the order is placed from. Its address, phone and fax print on the requisition."
+            >
+              <ResourceInput<Organization>
+                resourceType="Organization"
+                name="requestingLocation"
+                defaultValue={draftDefaults?.requestingLocation}
+                onChange={setRequestingLocation}
+                searchCriteria={{ identifier: `${HEALTH_GORILLA_SYSTEM}|` }}
               />
             </Input.Wrapper>
             <PerformingLabInput

@@ -36,6 +36,7 @@ import type {
 } from '@medplum/health-gorilla-core';
 import {
   createLabOrderBundle,
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,
   isBillTo,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
@@ -61,6 +62,8 @@ const AUTOCOMPLETE_BOT = {
 export interface LabOrderDraftDefaults {
   patient?: Patient;
   requester?: Practitioner;
+  /** The practice location the order is placed from. */
+  requestingLocation?: Organization;
   encounter?: Reference<Encounter>;
   /** The Task whose focus is the draft, so the task can be pointed at the new order. */
   task?: Task;
@@ -96,10 +99,15 @@ export async function getLabOrderDraftDefaults(
     : undefined;
   const performerRef = order.performer?.find((ref): ref is Reference<Organization> => isReference(ref, 'Organization'));
   const specimenRef = order.specimen?.find((ref): ref is Reference<Specimen> => isReference(ref, 'Specimen'));
+  const locationValue = getExtensionValue(order, HEALTH_GORILLA_AUTHORIZED_BY_EXT);
+  const locationRef = isReference(locationValue, 'Organization')
+    ? (locationValue as Reference<Organization>)
+    : undefined;
 
-  const [patient, requester, performingLab, specimen, childRequests, task] = await Promise.all([
+  const [patient, requester, requestingLocation, performingLab, specimen, childRequests, task] = await Promise.all([
     subjectRef ? medplum.readReference(subjectRef) : undefined,
     requesterRef ? medplum.readReference(requesterRef) : undefined,
+    locationRef ? medplum.readReference(locationRef) : undefined,
     performerRef ? medplum.readReference(performerRef) : undefined,
     specimenRef ? medplum.readReference(specimenRef) : undefined,
     order.id ? searchOrderTests(medplum, order.id) : [],
@@ -145,6 +153,7 @@ export async function getLabOrderDraftDefaults(
   return {
     patient,
     requester,
+    requestingLocation,
     encounter: isReference(order.encounter, 'Encounter') ? order.encounter : undefined,
     task,
     performingLab,
@@ -227,6 +236,7 @@ function isCompendiumCoding(coding: TestCoding): boolean {
 
 /** Extensions the order form writes on a lab order. Any others on a resumed draft are kept. */
 const FORM_EXTENSION_URLS = new Set([
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_PHYSICIAN_AN,
