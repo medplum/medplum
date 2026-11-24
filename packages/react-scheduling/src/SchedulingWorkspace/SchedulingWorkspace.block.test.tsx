@@ -141,8 +141,9 @@ describe('SchedulingWorkspace blocking', () => {
 
   test('Opens a block over several calendars on one drawn, listing the others', async () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
+    const rivera = await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
     await act(async () => {
-      fireEvent.click(await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
+      fireEvent.click(rivera);
     });
 
     await dragCalendar();
