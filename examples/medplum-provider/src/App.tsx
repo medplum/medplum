@@ -166,7 +166,9 @@ export function App(): JSX.Element | null {
       searchParams={searchParams}
       layoutVersion="v2"
       showLayoutVersionToggle={false}
-      menuItems={[{ label: 'Settings', icon: IconSettings, onClick: () => navigate(SETTINGS_PATH)?.catch(console.error) }]}
+      menuItems={[
+        { label: 'Settings', icon: IconSettings, onClick: () => navigate(SETTINGS_PATH)?.catch(console.error) },
+      ]}
       navbarSearchHidden={inSettings}
       menus={
         settingsMenus ??
