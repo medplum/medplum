@@ -2172,6 +2172,11 @@ describe('AccessPolicy', () => {
           { op: 'add', path: '/sent', value: '2026-01-03T00:00:00Z' },
         ]);
         expect(touched.sent).toBe('2026-01-03T00:00:00Z');
+        await expect(
+          repo.patchResource('Communication', thread.id, [
+            { op: 'replace', path: '/sent', value: '2026-01-02T00:00:00Z' },
+          ])
+        ).rejects.toThrow('Forbidden');
 
         await expect(
           repo.createResource(message(patient, [practitioner], { subject: patient, partOf: [createReference(thread)] }))
@@ -2180,6 +2185,16 @@ describe('AccessPolicy', () => {
 
         const own = await repo.createResource(message(patient, [patient]));
         await expect(repo.updateResource({ ...own, sender: practitioner })).rejects.toThrow('Forbidden');
+      }));
+
+    test('Patient with a Patient account can send messages', () =>
+      withTestContext(async () => {
+        const guarantor = createReference(await adminRepo.createResource<Patient>({ resourceType: 'Patient' }));
+        const stored = await systemRepo.readReference(patient);
+        await systemRepo.updateResource({ ...stored, meta: { ...stored.meta, accounts: [guarantor] } });
+        const repo = await login('Patient', patient);
+
+        await expect(repo.createResource(message(patient, [practitioner]))).resolves.toBeDefined();
       }));
 
     test('RelatedPerson sends messages as self, about their patient', () =>

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
+  getDataType,
   getResourceTypes,
   projectAdminResourceTypes,
   protectedResourceTypes,
@@ -43,69 +44,44 @@ function fhirPath(expression: string): Expression {
   return { language: 'text/fhirpath', expression };
 }
 
-const ONLY_THIS_PATIENT = fhirPath(
-  `(sender | recipient | subject).where(reference.startsWith('Patient/')).all(reference = '%patient')`
-);
-
-/** Every top-level Communication element except id and the read state a recipient sets. */
-const COMMUNICATION_CONTENT_FIELDS = [
-  'meta',
-  'implicitRules',
-  'language',
-  'text',
-  'contained',
-  'extension',
-  'modifierExtension',
-  'identifier',
-  'instantiatesCanonical',
-  'instantiatesUri',
-  'basedOn',
-  'partOf',
-  'inResponseTo',
-  'statusReason',
-  'category',
-  'priority',
-  'medium',
-  'subject',
-  'topic',
-  'about',
-  'encounter',
-  'sent',
-  'recipient',
-  'sender',
-  'reasonCode',
-  'reasonReference',
-  'payload',
-  'note',
-];
+// Messages the user sends, which may not name any other Patient
+function sentCommunication(criteria: string): AccessPolicyResource {
+  return {
+    resourceType: 'Communication',
+    criteria,
+    writeConstraint: [
+      fhirPath(`(sender | recipient | subject).where(reference.startsWith('Patient/')).all(reference = '%patient')`),
+    ],
+  };
+}
 
 // A recipient may mark a message read or close a thread, but not undo either
-const RECIPIENT_WRITE_CONSTRAINT = [
-  fhirPath('(%before.sender.empty() and %after.sender.empty()) or %before.sender = %after.sender'),
-  fhirPath(
-    `%before.status = %after.status or (%after.status = 'completed' and %before.status in ('preparation' | 'in-progress' | 'on-hold' | 'unknown'))`
-  ),
-  fhirPath('%before.received.empty() or %before.received = %after.received'),
-  fhirPath('%before.sent.empty() or (%after.sent.exists() and %after.sent >= %before.sent)'),
-];
+function receivedCommunication(criteria: string, writableFields: string[]): AccessPolicyResource {
+  return {
+    resourceType: 'Communication',
+    criteria,
+    interaction: [...readInteractions, AccessPolicyInteraction.UPDATE],
+    readonlyFields: Object.keys(getDataType('Communication').elements).filter(
+      (field) => field !== 'id' && !writableFields.includes(field)
+    ),
+    writeConstraint: [
+      fhirPath('(%before.sender.empty() and %after.sender.empty()) or %before.sender = %after.sender'),
+      fhirPath(
+        `%before.status = %after.status or (%after.status = 'completed' and %before.status in ('in-progress' | 'on-hold' | 'unknown'))`
+      ),
+      fhirPath('%before.received.empty() or %before.received = %after.received'),
+      fhirPath('%before.sent.empty() or (%after.sent.exists() and %after.sent >= %before.sent)'),
+    ],
+  };
+}
 
-const RECEIVED_COMMUNICATIONS: AccessPolicyResource[] = [
-  // Thread headers, whose sent time ThreadChat advances on each new message
-  {
-    resourceType: 'Communication',
-    criteria: 'Communication?recipient=%patient&part-of:missing=true',
-    interaction: [...readInteractions, AccessPolicyInteraction.UPDATE],
-    readonlyFields: COMMUNICATION_CONTENT_FIELDS.filter((field) => field !== 'sent'),
-    writeConstraint: RECIPIENT_WRITE_CONSTRAINT,
-  },
-  {
-    resourceType: 'Communication',
-    criteria: 'Communication?recipient=%patient&part-of:missing=false',
-    interaction: [...readInteractions, AccessPolicyInteraction.UPDATE],
-    readonlyFields: COMMUNICATION_CONTENT_FIELDS,
-    writeConstraint: RECIPIENT_WRITE_CONSTRAINT,
-  },
-];
+function receivedCommunications(): AccessPolicyResource[] {
+  return [
+    // Thread headers, whose sent time ThreadChat advances on each new message
+    receivedCommunication('Communication?recipient=%patient&part-of:missing=true', ['status', 'received', 'sent']),
+    receivedCommunication('Communication?recipient=%patient&part-of:missing=false', ['status', 'received']),
+  ];
+}
 
 /** The default access policy for each profile type, in the order they are listed on `Project.defaultAccessPolicies`. */
 export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfileType, () => DefaultAccessPolicy>> = {
@@ -114,12 +90,8 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
     // Criteria below limit reads to the patient compartment, which the server assigns from
     // patient references on the resource. A top-level compartment would only tag meta.accounts on create.
     resource: patientCompartmentResources([
-      {
-        resourceType: 'Communication',
-        criteria: 'Communication?sender=%patient',
-        writeConstraint: [ONLY_THIS_PATIENT],
-      },
-      ...RECEIVED_COMMUNICATIONS,
+      sentCommunication('Communication?sender=%patient'),
+      ...receivedCommunications(),
     ]),
   }),
   RelatedPerson: () => ({
@@ -135,13 +107,9 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
       },
       ...patientCompartmentResources([
         // A caregiver sends as themselves, about their patient
-        {
-          resourceType: 'Communication',
-          criteria: 'Communication?sender=%profile&_compartment=%patient',
-          writeConstraint: [ONLY_THIS_PATIENT],
-        },
+        sentCommunication('Communication?sender=%profile&_compartment=%patient'),
         { resourceType: 'Communication', criteria: 'Communication?sender=%patient', readonly: true },
-        ...RECEIVED_COMMUNICATIONS,
+        ...receivedCommunications(),
       ]),
     ],
   }),
