@@ -63,7 +63,7 @@ interface ProjectInitParameters {
  * @returns The FHIR response.
  */
 export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { systemRepo } = requireSuperAdmin();
+  const { repo, systemRepo } = requireSuperAdmin();
 
   const params = parseInputParameters<ProjectInitParameters>(projectInitOperation, req);
 
@@ -74,12 +74,10 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
   } else if (params.ownerEmail) {
     let user = await getUserByEmailWithoutProject(params.ownerEmail);
     existingOwnerByEmail = user;
-    user ??= await createUser({
-      email: params.ownerEmail,
-      password: randomUUID(),
-      firstName: params.name,
-      lastName: 'Admin',
-    });
+    user ??= await createUser(
+      { email: params.ownerEmail, password: randomUUID(), firstName: params.name, lastName: 'Admin' },
+      { skipEmailDomainCheck: repo.isSuperAdmin() } // defense in depth, only super admins bypass email domain check
+    );
     ownerRef = createReference(user);
   }
 

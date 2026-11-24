@@ -30,7 +30,12 @@ import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
+import {
+  bcryptHashPassword,
+  createProjectMembership,
+  isEmailDomainBlocked,
+  isPractitionerEmailDomainAllowed,
+} from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
@@ -105,13 +110,14 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   const { project, email } = request;
   const invitedBySuperAdmin = tryGetRequestContext()?.authState?.project?.superAdmin;
-  if (
-    email &&
-    !invitedBySuperAdmin &&
-    request.resourceType === 'Practitioner' &&
-    !isPractitionerEmailDomainAllowed(email, project, getConfig().blockedEmailDomains)
-  ) {
-    throw new OperationOutcomeError(badRequest('Email domain is not allowed for this project', 'email'));
+  if (email && !invitedBySuperAdmin) {
+    const blockedDomains = getConfig().blockedEmailDomains;
+    if (
+      (request.resourceType === 'Practitioner' && !isPractitionerEmailDomainAllowed(email, project, blockedDomains)) ||
+      (!isProjectScopedUser(request) && isEmailDomainBlocked(email, blockedDomains))
+    ) {
+      throw new OperationOutcomeError(badRequest('Email domain is not allowed for this project', 'email'));
+    }
   }
 
   let existingUser = false;
@@ -224,18 +230,11 @@ export function logUnverifiedEmailMatch(
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
-  const { firstName, lastName, externalId, scope, mfaRequired } = request;
+  const { firstName, lastName, mfaRequired } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
-
-  // Default scoping: Patients are project-scoped, Practitioners/RelatedPersons are server-scoped.
-  // Either default can be overridden with scope: 'project' | 'server'.
-  // Users with an externalId are always project-scoped regardless of resourceType.
-  let project: Reference<Project> | undefined = undefined;
-  if ((request.resourceType === 'Patient' && scope !== 'server') || externalId || scope === 'project') {
-    project = createReference(request.project);
-  }
+  const project = isProjectScopedUser(request) ? createReference(request.project) : undefined;
 
   return {
     resourceType: 'User',
@@ -247,6 +246,19 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     project,
     mfaRequired,
   };
+}
+
+/**
+ * Determines whether an invite creates a project-scoped User.
+ * Default scoping: Patients are project-scoped, Practitioners/RelatedPersons are server-scoped.
+ * Either default can be overridden with scope: 'project' | 'server'.
+ * Users with an externalId are always project-scoped regardless of resourceType.
+ * @param request - The invite request.
+ * @returns True if the invited User is project-scoped.
+ */
+function isProjectScopedUser(request: ServerInviteRequest): boolean {
+  const { resourceType, externalId, scope } = request;
+  return (resourceType === 'Patient' && scope !== 'server') || !!externalId || scope === 'project';
 }
 
 async function upsertProfileResource(

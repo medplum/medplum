@@ -288,6 +288,12 @@ Optional flag whether new user registration is enabled. When `false`, the server
 
 **Default:** `true`
 
+### blockedEmailDomains
+
+Optional list of email domains (e.g. disposable email providers) that cannot be used for new server-scoped users; comma-separated when set via environment variable or AWS Parameter Store. Applies to new user registration (`/auth/newuser`) and Google sign-up without a project, and to invites that create a server-scoped user (Practitioners, RelatedPersons, and Patients invited with `scope: 'server'`). Practitioner invites are always checked. Project-scoped users, such as patients self-registering into a project, are not checked. Super admin requests (invites and `Project/$init`) skip the check. Domains are matched case-insensitively and take precedence over a project's `allowedPractitionerEmailDomain` setting.
+
+**Default:** None
+
 ### mfaAuthenticatorWindow
 
 Optional TOTP authenticator window for MFA token validation. This controls how many time steps (each 30 seconds) are accepted before and after the current time. A higher value is more lenient but less secure.

@@ -133,6 +133,17 @@ export function getAllowedEmailDomains(project: Project | undefined): string[] {
 }
 
 /**
+ * Determines whether an email address belongs to a server-wide blocked domain.
+ * @param email - The email address to check.
+ * @param blockedDomains - Domains that are never allowed (typically the `blockedEmailDomains` config setting).
+ * @returns True if the email's domain is blocked.
+ */
+export function isEmailDomainBlocked(email: string, blockedDomains: string[] = []): boolean {
+  const domain = getEmailDomain(email);
+  return blockedDomains.some((blocked) => blocked.trim().toLowerCase() === domain);
+}
+
+/**
  * Determines whether an email address is allowed to be used for a new Practitioner user or invite.
  *
  * `blockedDomains` (typically the server-wide `blockedEmailDomains` config setting) always
@@ -148,10 +159,7 @@ export function isPractitionerEmailDomainAllowed(
   project: Project | undefined,
   blockedDomains: string[] = []
 ): boolean {
-  const atIndex = email.lastIndexOf('@');
-  const domain = atIndex === -1 ? '' : email.slice(atIndex + 1).toLowerCase();
-
-  if (blockedDomains.some((blocked) => blocked.trim().toLowerCase() === domain)) {
+  if (isEmailDomainBlocked(email, blockedDomains)) {
     return false;
   }
 
@@ -159,7 +167,12 @@ export function isPractitionerEmailDomainAllowed(
   if (allowedDomains.length === 0) {
     return true;
   }
-  return allowedDomains.includes(domain);
+  return allowedDomains.includes(getEmailDomain(email));
+}
+
+function getEmailDomain(email: string): string {
+  const atIndex = email.lastIndexOf('@');
+  return atIndex === -1 ? '' : email.slice(atIndex + 1).toLowerCase();
 }
 
 /**
