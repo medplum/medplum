@@ -2150,8 +2150,18 @@ describe('AccessPolicy', () => {
         await expect(repo.createResource(message(practitioner, [patient]))).rejects.toThrow('Forbidden');
         await expect(repo.deleteResource('Communication', received.id)).rejects.toThrow('Forbidden');
 
-        const edited = await repo.updateResource({ ...received, payload: [{ contentString: 'b' }] });
+        const edited = await repo.updateResource({
+          ...received,
+          meta: { ...received.meta, tag: [{ code: 'x' }] },
+          payload: [{ contentString: 'b' }],
+        });
         expect(edited.payload).toStrictEqual(received.payload);
+        expect(edited.meta?.tag).toBeUndefined();
+
+        const retracted = await adminRepo.createResource(
+          message(practitioner, [patient], { status: 'entered-in-error' })
+        );
+        await expect(repo.updateResource({ ...retracted, status: 'completed' })).rejects.toThrow('Forbidden');
 
         const read = await repo.updateResource({ ...received, status: 'completed', received: '2026-01-02T00:00:00Z' });
         expect(read.status).toBe('completed');
@@ -2167,6 +2177,9 @@ describe('AccessPolicy', () => {
           repo.createResource(message(patient, [practitioner], { subject: patient, partOf: [createReference(thread)] }))
         ).resolves.toBeDefined();
         await expect(repo.createResource(message(patient, [otherPatient]))).rejects.toThrow('Forbidden');
+
+        const own = await repo.createResource(message(patient, [patient]));
+        await expect(repo.updateResource({ ...own, sender: practitioner })).rejects.toThrow('Forbidden');
       }));
 
     test('RelatedPerson sends messages as self, about their patient', () =>

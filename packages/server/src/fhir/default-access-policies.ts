@@ -44,11 +44,12 @@ function fhirPath(expression: string): Expression {
 }
 
 const ONLY_THIS_PATIENT = fhirPath(
-  `meta.compartment.where(reference.startsWith('Patient/')).all(reference = '%patient')`
+  `(sender | recipient | subject).where(reference.startsWith('Patient/')).all(reference = '%patient')`
 );
 
-/** Every top-level Communication element except the read state a recipient sets. */
+/** Every top-level Communication element except id and the read state a recipient sets. */
 const COMMUNICATION_CONTENT_FIELDS = [
+  'meta',
   'implicitRules',
   'language',
   'text',
@@ -81,7 +82,9 @@ const COMMUNICATION_CONTENT_FIELDS = [
 // A recipient may mark a message read or close a thread, but not undo either
 const RECIPIENT_WRITE_CONSTRAINT = [
   fhirPath('(%before.sender.empty() and %after.sender.empty()) or %before.sender = %after.sender'),
-  fhirPath(`%before.status = %after.status or %after.status = 'completed'`),
+  fhirPath(
+    `%before.status = %after.status or (%after.status = 'completed' and %before.status in ('preparation' | 'in-progress' | 'on-hold' | 'unknown'))`
+  ),
   fhirPath('%before.received.empty() or %before.received = %after.received'),
   fhirPath('%before.sent.empty() or (%after.sent.exists() and %after.sent >= %before.sent)'),
 ];
