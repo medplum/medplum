@@ -78,10 +78,10 @@ describe('SecurityHealthCheckPage', () => {
       expect(result).toBeDefined();
       return result;
     })) as DocumentReference;
-    expect(doc.type).toEqual({
-      coding: [{ system: 'https://medplum.com/fhir/CodeSystem/document-type', code: 'security-health-check' }],
-      text: 'Security health check report',
-    });
+    expect(doc.identifier).toEqual([
+      { system: 'https://medplum.com/fhir/security-health-check-report', value: expect.any(String) },
+    ]);
+    expect(doc.type?.text).toBe('Security health check report');
     const binaryId = doc.content[0].attachment.url?.split('/').pop() as string;
     const binary = await medplum.readResource('Binary', binaryId);
     expect(binary).toMatchObject({ contentType: 'application/json', securityContext: { reference: 'Project/p123' } });
@@ -92,9 +92,7 @@ describe('SecurityHealthCheckPage', () => {
     await medplum.createResource<DocumentReference>({
       resourceType: 'DocumentReference',
       status: 'current',
-      type: {
-        coding: [{ system: 'https://medplum.com/fhir/CodeSystem/document-type', code: 'security-health-check' }],
-      },
+      identifier: [{ system: 'https://medplum.com/fhir/security-health-check-report', value: 'r1' }],
       date: '2026-11-01T00:00:00.000Z',
       content: [{ attachment: { url: 'https://example.com/binary/report', contentType: 'application/json' } }],
     });

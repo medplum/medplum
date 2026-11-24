@@ -1,17 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
+import { createReference, generateId } from '@medplum/core';
 import type { DocumentReference, Practitioner, Reference } from '@medplum/fhirtypes';
 import { getProjectId } from '../../utils';
 import type { AdminEntry, ClientEntry, SecurityFinding } from './checks';
 import type { SecurityCheckResult } from './useSecurityCheckData';
 
 export const SECURITY_REPORT_TYPE_TEXT = 'Security health check report';
-export const SECURITY_REPORT_TYPE = {
-  system: 'https://medplum.com/fhir/CodeSystem/document-type',
-  code: 'security-health-check',
-};
+export const SECURITY_REPORT_IDENTIFIER_SYSTEM = 'https://medplum.com/fhir/security-health-check-report';
 
 /**
  * Contents of a saved report's JSON attachment.
@@ -62,7 +59,8 @@ export async function saveSecurityReport(
   return medplum.createResource<DocumentReference>({
     resourceType: 'DocumentReference',
     status: 'current',
-    type: { coding: [SECURITY_REPORT_TYPE], text: SECURITY_REPORT_TYPE_TEXT },
+    identifier: [{ system: SECURITY_REPORT_IDENTIFIER_SYSTEM, value: generateId() }],
+    type: { text: SECURITY_REPORT_TYPE_TEXT },
     date: savedAt,
     author: author ? [author] : undefined,
     content: [{ attachment: { ...attachment, title: filename, creation: checkedAt } }],
@@ -77,7 +75,7 @@ export async function saveSecurityReport(
 export async function loadLatestSecurityReport(medplum: MedplumClient): Promise<SecurityCheckResult | undefined> {
   const doc = await medplum.searchOne(
     'DocumentReference',
-    { type: `${SECURITY_REPORT_TYPE.system}|${SECURITY_REPORT_TYPE.code}`, _sort: '-date' },
+    { identifier: `${SECURITY_REPORT_IDENTIFIER_SYSTEM}|`, _sort: '-date' },
     { cache: 'no-cache' }
   );
   const url = doc?.content[0]?.attachment.url;
