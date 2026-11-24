@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 22.22+ or 24.2+, not 23 or 25+ (see `engines` in the root `package.json`)
 - npm 10+
 - Postgres 13+
 - Redis 6+
