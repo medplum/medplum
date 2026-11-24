@@ -22,6 +22,7 @@ import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
+import type { AppShellMenuItem } from './HeaderDropdown';
 import { HeaderDropdown } from './HeaderDropdown';
 import headerDropdownClasses from './HeaderDropdown.module.css';
 import classes from './Navbar.module.css';
@@ -69,7 +70,7 @@ export interface NavbarProps {
   readonly opened?: boolean;
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
-  readonly onClickSettings?: () => void;
+  readonly menuItems?: AppShellMenuItem[];
   readonly header?: ReactNode;
 }
 
@@ -256,7 +257,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <HeaderDropdown
                   version={props.version}
                   showLayoutVersionToggle={props.showLayoutVersionToggle}
-                  onClickSettings={props.onClickSettings}
+                  menuItems={props.menuItems}
                 />
               </Menu.Dropdown>
             </Menu>

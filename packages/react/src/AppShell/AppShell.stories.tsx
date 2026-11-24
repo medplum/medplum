@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import { useMedplumNavigate, useMedplumProfile } from '@medplum/react-hooks';
+import { MedplumProvider, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
 import {
   Icon2fa,
@@ -18,6 +18,7 @@ import {
   IconClipboardCheck,
   IconDatabaseImport,
   IconFingerprint,
+  IconHelp,
   IconKey,
   IconListCheck,
   IconMail,
@@ -29,7 +30,7 @@ import {
   IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useLayoutEffect } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NotificationIcon } from '../NotificationIcon/NotificationIcon';
@@ -343,6 +344,20 @@ export function PersistentAnnouncement(): JSX.Element {
 }
 
 export function SettingsNavbar(): JSX.Element {
+  const medplum = useMedplum();
+  const [location, setLocation] = useState(() => new URL('/settings/account', window.location.origin));
+  const navigate = useCallback((path: string) => setLocation(new URL(path, window.location.origin)), []);
+  return (
+    <MedplumProvider medplum={medplum} navigate={navigate}>
+      <SettingsNavbarShell pathname={location.pathname} searchParams={location.searchParams} />
+    </MedplumProvider>
+  );
+}
+
+function SettingsNavbarShell(props: {
+  readonly pathname: string;
+  readonly searchParams: URLSearchParams;
+}): JSX.Element {
   const navigate = useMedplumNavigate();
   return (
     <div className={classes.root}>
@@ -350,9 +365,12 @@ export function SettingsNavbar(): JSX.Element {
         logo={<Logo size={24} />}
         version="your.version"
         layoutVersion="v2"
-        pathname="/settings/account"
-        searchParams={new URLSearchParams()}
-        onClickSettings={() => navigate('/settings')}
+        pathname={props.pathname}
+        searchParams={props.searchParams}
+        menuItems={[
+          { label: 'Settings', icon: IconSettings, onClick: () => navigate('/settings') },
+          { label: 'Help & support', icon: IconHelp, onClick: () => navigate('/help') },
+        ]}
         navbarSearchHidden={true}
         navbarHeader={
           <div className={classes.backLinkSection}>

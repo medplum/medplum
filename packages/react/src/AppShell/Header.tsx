@@ -10,6 +10,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import type { AppShellAnnouncement } from './AnnouncementBanners';
 import { AnnouncementBanners } from './AnnouncementBanners';
 import classes from './Header.module.css';
+import type { AppShellMenuItem } from './HeaderDropdown';
 import { HeaderDropdown } from './HeaderDropdown';
 import headerDropdownClasses from './HeaderDropdown.module.css';
 import { HeaderSearchInput } from './HeaderSearchInput';
@@ -26,7 +27,7 @@ export interface HeaderProps {
   readonly notifications?: ReactNode;
   readonly announcements?: AppShellAnnouncement[];
   readonly onDismissAnnouncement?: (announcement: AppShellAnnouncement) => void;
-  readonly onClickSettings?: () => void;
+  readonly menuItems?: AppShellMenuItem[];
 }
 
 export function Header(props: HeaderProps): JSX.Element {
@@ -88,7 +89,7 @@ export function Header(props: HeaderProps): JSX.Element {
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown className={headerDropdownClasses.dropdown}>
-                <HeaderDropdown version={props.version} onClickSettings={props.onClickSettings} />
+                <HeaderDropdown version={props.version} menuItems={props.menuItems} />
               </Menu.Dropdown>
             </Menu>
           </Group>

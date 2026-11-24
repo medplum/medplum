@@ -11,6 +11,7 @@ import type { AppShellAnnouncement } from './AnnouncementBanners';
 import { AnnouncementBanners } from './AnnouncementBanners';
 import classes from './AppShell.module.css';
 import { Header } from './Header';
+import type { AppShellMenuItem } from './HeaderDropdown';
 import type { NavbarMenu } from './Navbar';
 import { Navbar } from './Navbar';
 import type { SpotlightLinkAction } from './Spotlight';
@@ -21,6 +22,7 @@ const HEADER_HEIGHT = 60;
 const ANNOUNCEMENT_HEIGHT = 36;
 
 export type { AppShellAnnouncement } from './AnnouncementBanners';
+export type { AppShellMenuItem } from './HeaderDropdown';
 
 export interface AppShellProps {
   readonly logo: ReactNode;
@@ -38,8 +40,10 @@ export interface AppShellProps {
   readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
   readonly spotlightActions?: SpotlightLinkAction[];
-  readonly onClickSettings?: () => void;
+  /** User menu entries. Replaces the default "Account settings" entry; pass `[]` to show none. */
+  readonly menuItems?: AppShellMenuItem[];
   readonly navbarSearchHidden?: boolean;
+  /** Content at the top of the v2 navbar. Replaces the logo when set. */
   readonly navbarHeader?: ReactNode;
 }
 
@@ -134,7 +138,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         userMenuEnabled={true}
         version={props.version}
         showLayoutVersionToggle={props.showLayoutVersionToggle}
-        onClickSettings={props.onClickSettings}
+        menuItems={props.menuItems}
         header={props.navbarHeader}
       />
     ) : undefined;
@@ -159,7 +163,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         navbarOpen={navbarOpen}
         navbarToggle={toggleNavbar}
         notifications={props.notifications}
-        onClickSettings={props.onClickSettings}
+        menuItems={props.menuItems}
         announcements={visibleAnnouncements}
         onDismissAnnouncement={dismissAnnouncement}
       />
