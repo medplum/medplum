@@ -591,6 +591,13 @@ export class MemoryRepository extends FhirRepository {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));
     }
 
+    if (resource.resourceType !== resourceType) {
+      throw new OperationOutcomeError(badRequest('Patch cannot change resource type'));
+    }
+    if (resource.id !== id) {
+      throw new OperationOutcomeError(badRequest('Patch cannot change resource ID'));
+    }
+
     // ensure that even when in "seeding" mode calls to patchResource
     // generate new version numbers and timestamps instead of recycling
     // the previous version's

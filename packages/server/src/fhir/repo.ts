@@ -25,6 +25,7 @@ import {
   isResource,
   isResourceType,
   isResourceWithId,
+  isString,
   isUUID,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -1071,6 +1072,9 @@ export class Repository extends FhirRepository implements Disposable {
   }
 
   private checkResourcePermissions<T extends Resource>(resource: T, interaction: AccessPolicyInteraction): WithId<T> {
+    if (!isString(resource.resourceType)) {
+      throw new OperationOutcomeError(badRequest('Invalid resource type'));
+    }
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -1791,6 +1795,14 @@ export class Repository extends FhirRepository implements Disposable {
             fhirpathPatchTypedValue(toTypedValue(resource), params.operation as FhirPathPatch[]);
           } else {
             return txRepo.removeHiddenFields(resource); // No patch present, return unmodified
+          }
+
+          // The patch itself may have changed resourceType or id
+          if (resource.resourceType !== resourceType) {
+            throw new OperationOutcomeError(badRequest('Patch cannot change resource type'));
+          }
+          if (resource.id !== id) {
+            throw new OperationOutcomeError(badRequest('Patch cannot change resource ID'));
           }
 
           const result = await txRepo.updateResourceImpl(resource, false, options);
