@@ -575,6 +575,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       items: [
         { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'queued' },
         { medicationRequestId: 'mr-2', status: 'failed', error: 'no rxnorm' },
+        { medicationRequestId: 'mr-3', vendorLineId: 'rx-3', status: 'queued', replaced: true },
       ],
     };
     const params: Parameters = {
@@ -596,6 +597,15 @@ describe('Custom FHIR operation Parameters helpers', () => {
             { name: 'medicationRequestId', valueId: 'mr-2' },
             { name: 'status', valueCode: 'failed' },
             { name: 'error', valueString: 'no rxnorm' },
+          ],
+        },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-3' },
+            { name: 'vendorLineId', valueString: 'rx-3' },
+            { name: 'status', valueCode: 'queued' },
+            { name: 'replaced', valueBoolean: true },
           ],
         },
       ],

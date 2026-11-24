@@ -710,6 +710,12 @@ export interface MedicationCheckoutItemResult {
    * as `status: 'queued'` with this flag set so the caller can surface it.
    */
   readonly duplicate?: boolean;
+  /**
+   * True when the draft changed after an earlier checkout staged it, so its old
+   * line was taken out of the vendor's cart and the draft was staged again.
+   * `vendorLineId` is then the new line; with `duplicate`, no new line was added.
+   */
+  readonly replaced?: boolean;
   readonly error?: string;
 }
 
@@ -863,6 +869,7 @@ function checkoutItemFromPart(part: ParametersParameter[] | undefined): Medicati
     status,
     vendorLineId: typeof map.vendorLineId === 'string' ? map.vendorLineId : undefined,
     duplicate: map.duplicate === true ? true : undefined,
+    replaced: map.replaced === true ? true : undefined,
     error: typeof map.error === 'string' ? map.error : undefined,
   };
 }
