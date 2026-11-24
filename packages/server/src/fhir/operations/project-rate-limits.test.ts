@@ -11,6 +11,7 @@ import type { RegisterResponse } from '../../auth/register';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
 import { addTestUser, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { getUserFhirQuota } from '../fhirquota';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -342,7 +343,6 @@ describe('Project $rate-limits operation', () => {
       .set('Authorization', `Bearer ${admin.accessToken}`);
     expect(res.status).toBe(200);
     const membershipParams = getParametersByName(res.body as Parameters, 'membership');
-    expect(getPartValue(membershipParams[0], 'limit')).toBeDefined();
-    expect(getPartValue(membershipParams[0], 'limit')).not.toBe(7654321);
+    expect(getPartValue(membershipParams[0], 'limit')).toBe(getUserFhirQuota(admin.project));
   });
 });
