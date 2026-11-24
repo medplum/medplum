@@ -4,9 +4,24 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { DocumentReference, Practitioner, Reference } from '@medplum/fhirtypes';
 import { getProjectId } from '../../utils';
+import type { AdminEntry, ClientEntry, SecurityFinding } from './checks';
 import type { SecurityCheckResult } from './useSecurityCheckData';
 
 export const SECURITY_REPORT_TYPE_TEXT = 'Security health check report';
+export const SECURITY_REPORT_TYPE = {
+  system: 'https://medplum.com/fhir/CodeSystem/document-type',
+  code: 'security-health-check',
+};
+
+/**
+ * Contents of a saved report's JSON attachment.
+ */
+interface SavedSecurityReport {
+  readonly checkedAt: string;
+  readonly findings: SecurityFinding[];
+  readonly clients: ClientEntry[];
+  readonly admins: AdminEntry[];
+}
 
 /**
  * Saves a snapshot of a security health check as a DocumentReference with a JSON attachment.
@@ -47,9 +62,34 @@ export async function saveSecurityReport(
   return medplum.createResource<DocumentReference>({
     resourceType: 'DocumentReference',
     status: 'current',
-    type: { text: SECURITY_REPORT_TYPE_TEXT },
+    type: { coding: [SECURITY_REPORT_TYPE], text: SECURITY_REPORT_TYPE_TEXT },
     date: savedAt,
     author: author ? [author] : undefined,
     content: [{ attachment: { ...attachment, title: filename, creation: checkedAt } }],
   });
+}
+
+/**
+ * Loads the most recently saved security health check report for the current project.
+ * @param medplum - The Medplum client.
+ * @returns The saved result, or undefined when no report has been saved.
+ */
+export async function loadLatestSecurityReport(medplum: MedplumClient): Promise<SecurityCheckResult | undefined> {
+  const doc = await medplum.searchOne(
+    'DocumentReference',
+    { type: `${SECURITY_REPORT_TYPE.system}|${SECURITY_REPORT_TYPE.code}`, _sort: '-date' },
+    { cache: 'no-cache' }
+  );
+  const url = doc?.content[0]?.attachment.url;
+  if (!url) {
+    return undefined;
+  }
+  const blob = await medplum.download(url);
+  const report = JSON.parse(await blob.text()) as SavedSecurityReport;
+  return {
+    checkedAt: new Date(report.checkedAt),
+    findings: report.findings,
+    clients: report.clients,
+    admins: report.admins,
+  };
 }

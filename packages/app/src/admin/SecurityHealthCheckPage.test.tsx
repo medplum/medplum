@@ -78,10 +78,43 @@ describe('SecurityHealthCheckPage', () => {
       expect(result).toBeDefined();
       return result;
     })) as DocumentReference;
-    expect(doc.type?.text).toBe('Security health check report');
+    expect(doc.type).toEqual({
+      coding: [{ system: 'https://medplum.com/fhir/CodeSystem/document-type', code: 'security-health-check' }],
+      text: 'Security health check report',
+    });
     const binaryId = doc.content[0].attachment.url?.split('/').pop() as string;
     const binary = await medplum.readResource('Binary', binaryId);
     expect(binary).toMatchObject({ contentType: 'application/json', securityContext: { reference: 'Project/p123' } });
+  });
+
+  test('opens the last saved report without running a new check', async () => {
+    const { medplum } = await setup();
+    await medplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      type: {
+        coding: [{ system: 'https://medplum.com/fhir/CodeSystem/document-type', code: 'security-health-check' }],
+      },
+      date: '2026-11-01T00:00:00.000Z',
+      content: [{ attachment: { url: 'https://example.com/binary/report', contentType: 'application/json' } }],
+    });
+    const report = {
+      checkedAt: '2026-11-01T00:00:00.000Z',
+      findings: [{ id: 'f1', severity: 'high', title: 'Saved finding', description: 'From the saved report' }],
+      clients: [],
+      admins: [],
+    };
+    vi.spyOn(medplum, 'download').mockResolvedValue(new Blob([JSON.stringify(report)]));
+    const search = vi.spyOn(medplum, 'searchResourcePages');
+
+    renderAppRoutes(medplum, '/admin/security');
+    expect(await screen.findByText('Saved finding')).toBeInTheDocument();
+    expect(screen.getByText(/^Last checked/)).toBeInTheDocument();
+    expect(search).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Run again' }));
+    expect(await screen.findByText('No issues found')).toBeInTheDocument();
+    expect(search).toHaveBeenCalled();
   });
 
   test('lists clients and admins', async () => {

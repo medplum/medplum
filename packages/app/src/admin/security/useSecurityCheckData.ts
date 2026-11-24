@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getProjectId } from '../../utils';
 import type { AdminEntry, ClientEntry, SecretRotation, SecurityCheckInput, SecurityFinding } from './checks';
 import { analyzeProjectSecurity, listAdmins, listClients } from './checks';
-import { saveSecurityReport } from './saveReport';
+import { loadLatestSecurityReport, saveSecurityReport } from './saveReport';
 
 const NO_CACHE: MedplumRequestOptions = { cache: 'no-cache' };
 const USER_ID_CHUNK_SIZE = 100;
@@ -50,14 +50,16 @@ export function useSecurityCheckData(): SecurityCheckState {
 
   useEffect(() => {
     let cancelled = false;
-    runSecurityCheck(medplum)
-      .then(async (r) => {
+    loadOrRunSecurityCheck(medplum, runCount === 0)
+      .then(async ({ result: r, saved }) => {
         if (cancelled) {
           return;
         }
         setResult(r);
         setLoading(false);
-        await saveSecurityReport(medplum, r).catch(console.error);
+        if (!saved) {
+          await saveSecurityReport(medplum, r).catch(console.error);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -77,6 +79,28 @@ export function useSecurityCheckData(): SecurityCheckState {
   }, []);
 
   return { loading, result, error, reload };
+}
+
+/**
+ * Returns the last saved report when `preferSaved` is set and one exists, otherwise runs a new check.
+ * @param medplum - The Medplum client.
+ * @param preferSaved - Whether to load the last saved report instead of running a new check.
+ * @returns The result, and whether it came from a saved report.
+ */
+async function loadOrRunSecurityCheck(
+  medplum: MedplumClient,
+  preferSaved: boolean
+): Promise<{ result: SecurityCheckResult; saved: boolean }> {
+  if (preferSaved) {
+    const saved = await loadLatestSecurityReport(medplum).catch((err) => {
+      console.error(err);
+      return undefined;
+    });
+    if (saved) {
+      return { result: saved, saved: true };
+    }
+  }
+  return { result: await runSecurityCheck(medplum), saved: false };
 }
 
 async function runSecurityCheck(medplum: MedplumClient): Promise<SecurityCheckResult> {

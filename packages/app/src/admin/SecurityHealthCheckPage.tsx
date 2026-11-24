@@ -14,6 +14,7 @@ import {
   Text,
   Title,
 } from '@mantine/core';
+import { formatDateTime } from '@medplum/core';
 import { ReferenceDisplay } from '@medplum/react';
 import { IconRefresh, IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -44,15 +45,22 @@ export function SecurityHealthCheckPage(): JSX.Element {
     <Stack>
       <Group justify="space-between">
         <Title order={2}>Security Health Check</Title>
-        <Button
-          variant="default"
-          leftSection={<IconRefresh size={16} />}
-          onClick={reload}
-          loading={loading}
-          disabled={loading}
-        >
-          Run again
-        </Button>
+        <Stack gap={4} align="flex-end">
+          <Button
+            variant="default"
+            leftSection={<IconRefresh size={16} />}
+            onClick={reload}
+            loading={loading}
+            disabled={loading}
+          >
+            Run again
+          </Button>
+          {result && (
+            <Text size="xs" c="dimmed">
+              Last checked {formatDateTime(result.checkedAt.toISOString())}. Run again to see changes.
+            </Text>
+          )}
+        </Stack>
       </Group>
       <Alert color="blue" title="Alpha">
         This feature is in alpha. Checks and recommendations may change, and new checks will be added over time.
