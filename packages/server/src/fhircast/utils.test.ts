@@ -12,9 +12,11 @@ import {
   deleteEndpointSubscription,
   extractEndpoint,
   FHIRCAST_LEASE_SECONDS,
+  fhircastScopesPermit,
   getCurrentContext,
   getEndpointSubscription,
   getEndpointSubscriptionKey,
+  getFhircastScopes,
   getTopicForUser,
   parseFhircastEvents,
   setEndpointSubscription,
@@ -144,6 +146,37 @@ describe('FHIRcast Utils', () => {
       [undefined, []],
     ])('%j -> %j', (events, expected) => {
       expect(parseFhircastEvents(events)).toStrictEqual(expected);
+    });
+  });
+
+  describe('FHIRcast scopes', () => {
+    test.each<[string | undefined, string[] | undefined]>([
+      [undefined, undefined],
+      ['openid offline_access', undefined],
+      ['openid user/Patient.rs', []],
+      [
+        'openid fhircast/Patient-open.read  fhircast/DiagnosticReport-UPDATE.write',
+        ['patient-open.read', 'diagnosticreport-update.write'],
+      ],
+    ])('getFhircastScopes(%j)', (scope, expected) => {
+      expect(getFhircastScopes(scope)).toStrictEqual(expected);
+    });
+
+    test('fhircastScopesPermit', () => {
+      // Not limited by scopes
+      expect(fhircastScopesPermit(undefined, 'Patient-open', 'write')).toBe(true);
+
+      const scopes = ['patient-open.read', 'imagingstudy-close.*', '*.write'];
+      expect(fhircastScopesPermit(scopes, 'Patient-open', 'read')).toBe(true);
+      expect(fhircastScopesPermit(scopes, 'PATIENT-OPEN', 'read')).toBe(true);
+      expect(fhircastScopesPermit(scopes, 'ImagingStudy-close', 'read')).toBe(true);
+      expect(fhircastScopesPermit(scopes, 'Encounter-open', 'write')).toBe(true);
+      expect(fhircastScopesPermit(scopes, 'Patient-close', 'read')).toBe(false);
+      expect(fhircastScopesPermit([], 'Patient-open', 'read')).toBe(false);
+
+      // Every subscriber is sent heartbeats and sync errors, and can report a sync error
+      expect(fhircastScopesPermit([], 'heartbeat', 'read')).toBe(true);
+      expect(fhircastScopesPermit([], 'syncerror', 'write')).toBe(true);
     });
   });
 

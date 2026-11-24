@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { CurrentContext, FhircastAnchorResourceType } from '@medplum/core';
-import { OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
+import { EMPTY, OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
 import { createHash } from 'node:crypto';
+import { parseSmartScopes } from '../fhir/smart';
 import { globalLogger } from '../logger';
 import { getCacheRedis } from '../redis';
 
@@ -39,6 +40,11 @@ export type FhircastSubscription = {
   topic: string;
   events: string[];
   version: FhircastVersion;
+  /**
+   * The `fhircast/` scopes of the subscriber's login, which limit the events it is sent.
+   * Absent when the login is not limited by scopes.
+   */
+  scopes?: string[];
 };
 
 export function getEndpointSubscriptionKey(endpoint: string): string {
@@ -85,7 +91,9 @@ function isFhircastSubscription(subscription: unknown): subscription is Fhircast
     typeof candidate.topic === 'string' &&
     Array.isArray(candidate.events) &&
     candidate.events.every((event) => typeof event === 'string') &&
-    Object.values(FhircastVersion).includes(candidate.version)
+    Object.values(FhircastVersion).includes(candidate.version) &&
+    (candidate.scopes === undefined ||
+      (Array.isArray(candidate.scopes) && candidate.scopes.every((scope) => typeof scope === 'string')))
   );
 }
 
@@ -130,6 +138,53 @@ export function parseFhircastEvents(events: unknown): string[] {
     .split(',')
     .map((event) => event.trim())
     .filter(Boolean);
+}
+
+// Events delivered to every subscriber regardless of the events they subscribed to: `heartbeat`
+// keeps the connection alive, and `syncerror` reports a context change the subscriber may have
+// caused, so a subscriber can't opt out of hearing about its own failures.
+// Source: https://build.fhir.org/ig/HL7/fhircast-docs/3-Events.html
+export const UNCONDITIONAL_EVENTS = new Set(['heartbeat', 'syncerror']);
+
+const FHIRCAST_SCOPE_PREFIX = 'fhircast/';
+
+/**
+ * Returns the `fhircast/` scopes of a login, which limit the events it can receive and request.
+ *
+ * As with SMART scopes, a login granted neither SMART nor `fhircast/` scopes is not limited.
+ * Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-2-FhircastScopes.html
+ * @param scope - The OAuth scope of the login.
+ * @returns The `fhircast/` scopes, lowercased and without the prefix, or `undefined` if the login is not limited.
+ */
+export function getFhircastScopes(scope: string | undefined): string[] | undefined {
+  const fhircastScopes = (scope?.split(/\s+/) ?? EMPTY)
+    .filter((term) => term.startsWith(FHIRCAST_SCOPE_PREFIX))
+    .map((term) => term.slice(FHIRCAST_SCOPE_PREFIX.length).toLowerCase());
+  if (fhircastScopes.length === 0 && parseSmartScopes(scope).length === 0) {
+    return undefined;
+  }
+  return fhircastScopes;
+}
+
+/**
+ * Returns true if `fhircast/` scopes permit receiving (`read`) or requesting (`write`) an event.
+ * Event names are case-insensitive, and both the event and the permission can be the `*` wildcard.
+ * `heartbeat` and `syncerror` are always permitted.
+ * @param scopes - The scopes from `getFhircastScopes()`.
+ * @param eventName - The event name.
+ * @param permission - Whether the event is received or requested.
+ * @returns True if the scopes permit the event.
+ */
+export function fhircastScopesPermit(
+  scopes: string[] | undefined,
+  eventName: string,
+  permission: 'read' | 'write'
+): boolean {
+  const event = eventName.toLowerCase();
+  if (!scopes || UNCONDITIONAL_EVENTS.has(event)) {
+    return true;
+  }
+  return [event, '*'].some((e) => [permission, '*'].some((p) => scopes.includes(`${e}.${p}`)));
 }
 
 /**
