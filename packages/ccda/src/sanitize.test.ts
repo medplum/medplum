@@ -72,4 +72,28 @@ describe('sanitizeNullFlavors', () => {
     expect(result).toEqual({ validField: 'value' });
     expect('nullField' in (result as object)).toBe(false);
   });
+
+  test('returns unchanged values by reference (copy-on-write)', () => {
+    const input = { code: { '@_code': '123' }, name: [{ given: ['Alice'] }] };
+    const result = sanitizeNullFlavors(input);
+    expect(result).toBe(input);
+  });
+
+  test('copies only the changed branches, sharing the rest', () => {
+    const input = {
+      changed: { '@_nullFlavor': 'NA', keep: 'x' },
+      untouched: { deep: ['y'] },
+    };
+    const result = sanitizeNullFlavors(input);
+    expect(result).not.toBe(input);
+    expect(result.changed).toEqual({ keep: 'x' });
+    expect(result.untouched).toBe(input.untouched);
+  });
+
+  test('does not mutate the input when stripping', () => {
+    const input = { keep: 'x', drop: { '@_nullFlavor': 'NA' } };
+    const snapshot = JSON.parse(JSON.stringify(input));
+    expect(sanitizeNullFlavors(input)).toEqual({ keep: 'x' });
+    expect(input).toEqual(snapshot);
+  });
 });
