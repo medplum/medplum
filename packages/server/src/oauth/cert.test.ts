@@ -14,51 +14,51 @@ describe('Certificate validation', () => {
       expect(result.subject).toBe('CN=Test Client');
     });
 
-    test('Valid CA-signed certificate', () => {
+    test('Valid CA-signed certificate pinned in trust store', () => {
       const ca = generateSelfSignedCert('CN=Test CA', true);
       const client = generateCaSignedCert('CN=Test Client', ca);
-      const result = validateClientCert(client.cert, ca.cert);
+      const result = validateClientCert(client.cert, client.cert);
       expect(result).toBeInstanceOf(X509Certificate);
       expect(result.subject).toBe('CN=Test Client');
+    });
+
+    test('CA-signed certificate rejected when only the CA is trusted', () => {
+      const ca = generateSelfSignedCert('CN=Test CA', true);
+      const client = generateCaSignedCert('CN=Test Client', ca);
+      expect(() => validateClientCert(client.cert, ca.cert)).toThrow(
+        'Certificate is not in the trusted certificate list'
+      );
     });
 
     test('Multiple certificates in client PEM', () => {
       const ca = generateSelfSignedCert('CN=Test CA', true);
       const client = generateCaSignedCert('CN=Test Client', ca);
       const multipleCerts = client.cert + '\n' + ca.cert;
-      const result = validateClientCert(multipleCerts, ca.cert);
+      const result = validateClientCert(multipleCerts, client.cert);
       expect(result).toBeInstanceOf(X509Certificate);
       expect(result.subject).toBe('CN=Test Client');
     });
 
-    test('Multiple trusted CAs', () => {
-      const ca1 = generateSelfSignedCert('CN=Test CA 1', true);
-      const ca2 = generateSelfSignedCert('CN=Test CA 2', true);
-      const client = generateCaSignedCert('CN=Test Client', ca2);
-      const multipleCAs = ca1.cert + '\n' + ca2.cert;
-      const result = validateClientCert(client.cert, multipleCAs);
+    test('Multiple trusted certificates', () => {
+      const cert1 = generateSelfSignedCert('CN=Test Client 1');
+      const cert2 = generateSelfSignedCert('CN=Test Client 2');
+      const trustStore = cert1.cert + '\n' + cert2.cert;
+      const result = validateClientCert(cert2.cert, trustStore);
       expect(result).toBeInstanceOf(X509Certificate);
-      expect(result.subject).toBe('CN=Test Client');
+      expect(result.subject).toBe('CN=Test Client 2');
     });
 
     test('Self-signed certificate not in trusted list', () => {
       const cert1 = generateSelfSignedCert('CN=Test Client 1');
       const cert2 = generateSelfSignedCert('CN=Test Client 2');
       expect(() => validateClientCert(cert1.cert, cert2.cert)).toThrow(
-        'Self-signed certificate is not in the trusted certificate list'
+        'Certificate is not in the trusted certificate list'
       );
-    });
-
-    test('CA-signed certificate with untrusted CA', () => {
-      const ca1 = generateSelfSignedCert('CN=Test CA 1', true);
-      const ca2 = generateSelfSignedCert('CN=Test CA 2', true);
-      const client = generateCaSignedCert('CN=Test Client', ca1);
-      expect(() => validateClientCert(client.cert, ca2.cert)).toThrow('Certificate validation failed');
     });
 
     // Note: Testing expired and not-yet-valid certificates is challenging because
     // OpenSSL's `req -new -x509` command doesn't allow setting custom validity dates.
-    // The validation logic for expiration is straightforward (see cert.ts:63-73),
+    // The validation logic for expiration is straightforward (see validateCertExpiration),
     // so we rely on the other tests to ensure the validation chain works correctly.
 
     test('No valid PEM certificates found in client cert', () => {
@@ -115,7 +115,7 @@ describe('Certificate validation', () => {
       const client2 = generateCaSignedCert('CN=Test Client 2', ca);
 
       const multipleCerts = client1.cert + '\n' + client2.cert;
-      const result = validateClientCert(multipleCerts, ca.cert);
+      const result = validateClientCert(multipleCerts, client1.cert);
 
       // Should validate the first certificate
       expect(result.subject).toBe('CN=Test Client 1');
