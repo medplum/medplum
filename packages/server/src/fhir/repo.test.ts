@@ -1233,6 +1233,24 @@ describe('FHIR Repo', () => {
       expect(patched.meta?.versionId).toStrictEqual(patient.meta?.versionId);
     }));
 
+  test('Patch preserves resource type and ID', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+      await expect(
+        systemRepo.patchResource('Patient', patient.id, [{ op: 'replace', path: '/resourceType', value: ['Patient'] }])
+      ).rejects.toThrow('Patch cannot change resource type');
+      await expect(
+        systemRepo.patchResource('Patient', patient.id, [{ op: 'replace', path: '/id', value: randomUUID() }])
+      ).rejects.toThrow('Patch cannot change resource ID');
+      await expect(
+        systemRepo.updateResource({ ...patient, resourceType: ['Patient'] } as unknown as Patient)
+      ).rejects.toThrow('Invalid resource type');
+
+      const check = await systemRepo.readResource<Patient>('Patient', patient.id);
+      expect(check.meta?.versionId).toStrictEqual(patient.meta?.versionId);
+    }));
+
   test('Compartment permissions', () =>
     withTestContext(async () => {
       const { repo: repo1 } = await createTestProject({ withRepo: true });
