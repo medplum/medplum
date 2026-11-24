@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import type { Bundle, Practitioner } from '@medplum/fhirtypes';
+import type { Bundle, Patient, Practitioner } from '@medplum/fhirtypes';
 import { HTTP_HL7_ORG, LOINC, SNOMED, UCUM } from '../constants';
 import type { TypedValue } from '../types';
 import { PropertyType } from '../types';
@@ -3516,6 +3516,36 @@ describe('FHIRPath Test Suite', () => {
           patient
         )
       ).toStrictEqual([true]);
+    });
+
+    test('extension on any item in the collection', () => {
+      const url = 'https://example.com/fhir/StructureDefinition/verified';
+      const extension = [{ url, valueBoolean: true }];
+      const patient: Patient = {
+        resourceType: 'Patient',
+        telecom: [
+          { system: 'phone', value: '555-0100' },
+          { system: 'email', value: 'alice@example.com', extension },
+        ],
+      };
+      expect(evalFhirPath(`telecom.extension('${url}')`, patient)).toStrictEqual(extension);
+      expect(evalFhirPath(`telecom.extension('${url}')`, patient)).toStrictEqual(
+        evalFhirPath(`telecom.extension.where(url = '${url}')`, patient)
+      );
+      expect(evalFhirPath(`telecom.extension('${url}').empty()`, patient)).toStrictEqual([false]);
+    });
+
+    test('repeated extension', () => {
+      const url = 'https://example.com/fhir/StructureDefinition/flag';
+      const patient: Patient = {
+        resourceType: 'Patient',
+        extension: [
+          { url, valueBoolean: false },
+          { url, valueBoolean: true },
+        ],
+      };
+      expect(evalFhirPath(`extension('${url}').value`, patient)).toStrictEqual([false, true]);
+      expect(evalFhirPath(`extension('${url}').where(value = true).empty()`, patient)).toStrictEqual([false]);
     });
 
     test('davinci', () => {

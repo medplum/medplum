@@ -141,8 +141,9 @@ describe('SchedulingWorkspace blocking', () => {
 
   test('Opens a block over several calendars on one drawn, listing the others', async () => {
     renderWithMedplum(<SchedulingWorkspace />, medplum);
+    const rivera = await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true });
     await act(async () => {
-      fireEvent.click(await screen.findByRole('button', { name: /Dr. Maya Rivera/, pressed: true }));
+      fireEvent.click(rivera);
     });
 
     await dragCalendar();
@@ -183,6 +184,23 @@ describe('SchedulingWorkspace blocking', () => {
 
     expect(screen.getByRole('region', { name: 'Blocked time details' })).toBeInTheDocument();
     expect(screen.getByTestId('paged-to')).toHaveTextContent(new Date(2026, 7, 25, 12, 0).toISOString());
+  });
+
+  test('Stays on a week that a block from an earlier week reaches into', async () => {
+    renderWithMedplum(<SchedulingWorkspace />, medplum);
+
+    await dragCalendar();
+    await chooseTab('Block Time');
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/^Start/), { target: { value: '2026-08-10T12:00' } });
+    });
+    await chooseActor(/Provider/, 'riv', 'Dr. Maya Rivera');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Block Time on 1 Calendar' }));
+    });
+
+    expect(screen.getByRole('region', { name: 'Blocked time details' })).toBeInTheDocument();
+    expect(screen.getByTestId('paged-to')).toHaveTextContent('none');
   });
 
   test('Draws a block written under a filter, with no notice', async () => {

@@ -590,6 +590,9 @@ export async function setLoginMembership(
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
   // Include the SMART App Launch context, which patient scopes in the login require to build a policy
   const smartAppLaunch = login.launch ? await projectSystemRepo.readReference<SmartAppLaunch>(login.launch) : undefined;
+  if (smartAppLaunch && !isValidLaunchForMembership(smartAppLaunch, membership)) {
+    throw new OperationOutcomeError(badRequest('Invalid launch'));
+  }
   const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig, smartAppLaunch });
   await checkIpAccessRules(login, accessPolicy);
 
@@ -625,6 +628,24 @@ export async function setLoginMembership(
     }
     throw err;
   }
+}
+
+/**
+ * Returns true if a SMART App Launch context can be used to sign in with a project membership.
+ * The launch must be in the membership's project, and either started by the membership's profile
+ * (directly or on behalf of) or for the membership's profile as the patient.
+ * @param launch - The SMART App Launch context.
+ * @param membership - The project membership of the user that is signing in.
+ * @returns True if the launch can be used with the membership; false otherwise.
+ */
+export function isValidLaunchForMembership(launch: SmartAppLaunch, membership: ProjectMembership): boolean {
+  const profile = membership.profile?.reference;
+  const launchedBy = (launch.meta?.onBehalfOf ?? launch.meta?.author)?.reference;
+  return (
+    !!profile &&
+    launch.meta?.project === resolveId(membership.project) &&
+    (launchedBy === profile || launch.patient?.reference === profile)
+  );
 }
 
 /**
@@ -1157,7 +1178,13 @@ export function isExternalEmailUnverified(userInfo: Record<string, unknown>): bo
   return userInfo.email_verified === false || userInfo.email_verified === 'false';
 }
 
-async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
+/**
+ * Verifies an external token against the identity provider's JWKS, issuer and audience,
+ * or against its user info endpoint when no JWKS URL is configured.
+ * @param idp - The external identity provider.
+ * @param token - The external token.
+ */
+export async function verifyExternalToken(idp: IdentityProvider, token: string): Promise<void> {
   if (!idp.jwksUrl) {
     if (!idp.userInfoUrl) {
       throw new OperationOutcomeError(badRequest('Missing user info URL - check your identity provider configuration'));

@@ -5,6 +5,7 @@ import { ContentType } from '@medplum/core';
 import type { ClientApplication, IdentityProvider, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { createClient } from '../admin/client';
@@ -364,5 +365,68 @@ describe('Token Exchange', () => {
     });
     expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
+  });
+
+  describe('Identity provider with audience', () => {
+    const audience = 'https://medplum.example.com/api';
+    const jwksUrl = 'https://example.com/.well-known/jwks.json';
+    let audienceClient: ClientApplication;
+    let signToken: (aud: string) => Promise<string>;
+
+    beforeAll(async () => {
+      audienceClient = await withTestContext(async () =>
+        createClient(await getProjectSystemRepo(project), {
+          project,
+          name: 'Audience Client',
+          redirectUri,
+          identityProvider: { ...identityProvider, issuer: externalAuthIssuer, audience, jwksUrl },
+        })
+      );
+      const { publicKey, privateKey } = await generateKeyPair('ES256');
+      const jwk = await exportJWK(publicKey);
+      signToken = (aud) =>
+        new SignJWT({ email })
+          .setProtectedHeader({ alg: 'ES256' })
+          .setIssuer(externalAuthIssuer)
+          .setAudience(aud)
+          .setIssuedAt()
+          .setExpirationTime('2h')
+          .sign(privateKey);
+      // The user info endpoint answers for any token of the provider
+      fetchMock.mockImplementation((url) => mockFetchJson(url === jwksUrl ? { keys: [jwk] } : { email }));
+    });
+
+    test('Accepts token with configured audience', async () => {
+      const res = await request(app)
+        .post('/auth/exchange')
+        .type('json')
+        .send({ externalAccessToken: await signToken(audience), clientId: audienceClient.id });
+      expect(res).toHaveStatus(200);
+      expect(res.body.access_token).toBeTruthy();
+    });
+
+    test('Rejects token issued to another application', async () => {
+      const res = await request(app)
+        .post('/auth/exchange')
+        .type('json')
+        .send({ externalAccessToken: await signToken('https://other.example.com/api'), clientId: audienceClient.id });
+      expect(res).toHaveStatus(400);
+      expect(res.body.access_token).toBeUndefined();
+    });
+
+    test('Server external auth provider uses top-level issuer', async () => {
+      config.externalAuthProviders = [
+        {
+          issuer: externalAuthIssuer,
+          clientId: externalAuthConfigClientId,
+          identityProvider: { ...identityProvider, audience, jwksUrl },
+        },
+      ];
+      const res = await request(app)
+        .post('/auth/exchange')
+        .type('json')
+        .send({ externalAccessToken: await signToken(audience), clientId: externalAuthConfigClientId });
+      expect(res).toHaveStatus(200);
+    });
   });
 });

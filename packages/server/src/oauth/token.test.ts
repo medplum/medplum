@@ -135,6 +135,7 @@ describe('OAuth2 Token', () => {
   let gcipMissingKeyClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
   let systemRepo: SystemRepository;
+  let userRepo: Repository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -193,6 +194,7 @@ describe('OAuth2 Token', () => {
 
     // Set the test user password
     await setPassword(systemRepo, user, password);
+    userRepo = systemRepo.withOverrideConfig({ author: membership.profile });
 
     // Create a new client application with external auth
     externalAuthClient = await createClient(systemRepo, {
@@ -837,6 +839,7 @@ describe('OAuth2 Token', () => {
       authMethod: 'none',
       hasCodeChallenge: true,
       hasCodeVerifier: false,
+      clientIdPresented: false,
     });
 
     // Wrong code verifier, even with a client secret: logged
@@ -860,6 +863,7 @@ describe('OAuth2 Token', () => {
     ).toMatchObject({
       reason: 'no-pkce-no-client-auth',
       authMethod: 'client_secret_basic',
+      clientIdPresented: true,
     });
   });
 
@@ -2127,8 +2131,9 @@ describe('OAuth2 Token', () => {
   test('Smart App Launch tokens', async () => {
     // Create a SmartAppLaunch
     const launch = await withTestContext(() =>
-      systemRepo.createResource<SmartAppLaunch>({
+      userRepo.createResource<SmartAppLaunch>({
         resourceType: 'SmartAppLaunch',
+        meta: { project: project.id },
         patient: { reference: `Patient/${randomUUID()}` },
         encounter: { reference: `Encounter/${randomUUID()}` },
       })
@@ -2157,6 +2162,31 @@ describe('OAuth2 Token', () => {
   });
 
   test.each([
+    ['another user', () => systemRepo, async () => project.id],
+    ['another project', () => userRepo, async () => (await createTestProject()).project.id],
+  ])('Smart App Launch from %s', async (_, getRepo, getProjectId) => {
+    const launchProjectId = await getProjectId();
+    const launch = await withTestContext(() =>
+      getRepo().createResource<SmartAppLaunch>({
+        resourceType: 'SmartAppLaunch',
+        meta: { project: launchProjectId },
+        patient: { reference: `Patient/${randomUUID()}` },
+      })
+    );
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      launch: launch.id,
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid launch');
+  });
+
+  test.each([
     {
       fieldName: 'patient',
       resourceType: 'Patient',
@@ -2178,8 +2208,9 @@ describe('OAuth2 Token', () => {
 
       // Create a SmartAppLaunch with both reference and identifier
       const launch = await withTestContext(() =>
-        systemRepo.createResource<SmartAppLaunch>({
+        userRepo.createResource<SmartAppLaunch>({
           resourceType: 'SmartAppLaunch',
+          meta: { project: project.id },
           [fieldName]: {
             reference: `${resourceType}/${fhirId}`,
             identifier: {

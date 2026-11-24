@@ -22,6 +22,7 @@ import { agentStatsHandler } from './operations/agentstats';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
+import { assembleHandler } from './operations/assemble';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
 import { binaryScanHandler } from './operations/binary-scan';
@@ -409,6 +410,11 @@ function initInternalFhirRouter(): FhirRouter {
   // SMART Health Links operations
   router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
   router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
+
+  // Questionnaire $assemble operation
+  router.add('GET', '/Questionnaire/:id/$assemble', assembleHandler);
+  router.add('POST', '/Questionnaire/:id/$assemble', assembleHandler);
+  router.add('POST', '/Questionnaire/$assemble', assembleHandler);
 
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);

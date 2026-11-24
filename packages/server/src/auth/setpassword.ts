@@ -8,6 +8,7 @@ import {
   getReferenceString,
   OperationOutcomeError,
   Operator,
+  preconditionFailed,
 } from '@medplum/core';
 import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -18,6 +19,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import type { SuperAdminRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
+import { getLogger } from '../logger';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { hasExternalAuth } from './method';
@@ -65,7 +67,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  await setPassword(systemRepo, user, req.body.password, securityRequest);
+  await setPassword(systemRepo, user, req.body.password, { securityRequest });
 
   sendOutcome(res, allOk);
 }
@@ -84,14 +86,18 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
  * @param repo - The system repository to use.
  * @param user - The user whose password is being set.
  * @param password - The new plaintext password.
- * @param securityRequest - Optional security request authorizing the change, consumed on success.
+ * @param options - Optional settings.
+ * @param options.securityRequest - Security request authorizing the change, consumed on success.
+ * @param options.ifMatch - Version of the User that authorized the change, such as the one the current
+ * password was verified against. The change is refused if the User has changed since.
  */
 export async function setPassword(
   repo: SuperAdminRepository,
   user: WithId<User>,
   password: string,
-  securityRequest?: WithId<UserSecurityRequest>
+  options: { securityRequest?: WithId<UserSecurityRequest>; ifMatch?: string } = {}
 ): Promise<void> {
+  const { securityRequest, ifMatch } = options;
   const numPwns = await pwnedPassword(password);
   if (numPwns > 0) {
     throw new OperationOutcomeError(badRequest('Password found in breach database'));
@@ -116,8 +122,19 @@ export async function setPassword(
       // Links issued before this change must not be able to replace the new password
       await retirePasswordSecurityRequests(txRepo.getSystemRepo(), user);
       // Patch so that only these fields are written, leaving the rest of the User as
-      // stored rather than reverting it to this snapshot.
-      await txRepo.patchResource<User>('User', user.id, patch);
+      // stored rather than reverting it to this snapshot. The patch reads the User in the
+      // transaction, so a concurrent change fails ifMatch, if need be on retry.
+      try {
+        await txRepo.patchResource<User>('User', user.id, patch, { ifMatch });
+      } catch (err) {
+        if (ifMatch && err instanceof OperationOutcomeError && err.outcome.id === preconditionFailed.id) {
+          getLogger().warn('Password change rejected because the user changed during the request', {
+            userId: user.id,
+          });
+          throw new OperationOutcomeError(badRequest('Incorrect password', 'oldPassword'));
+        }
+        throw err;
+      }
     },
     { resourceTypes: ['User', 'UserSecurityRequest'], source: 'setPassword' }
   );

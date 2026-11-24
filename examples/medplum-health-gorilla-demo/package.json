@@ -23,14 +23,14 @@
     "@medplum/health-gorilla-core": "5.2.18",
     "@medplum/health-gorilla-react": "5.2.18",
     "@medplum/react": "5.2.18",
-    "@tabler/icons-react": "3.51.0",
+    "@tabler/icons-react": "3.52.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.3.0",
     "eslint": "9.39.5",
     "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.7",
-    "postcss": "8.5.32",
+    "eslint-plugin-react-refresh": "0.5.8",
+    "postcss": "8.5.33",
     "postcss-preset-mantine": "1.18.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -38,7 +38,7 @@
     "typescript": "6.0.3",
     "vite": "8.3.8"
   },
-  "packageManager": "npm@11.21.2",
+  "packageManager": "npm@11.21.3",
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
   }
