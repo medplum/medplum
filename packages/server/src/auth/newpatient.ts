@@ -80,7 +80,7 @@ async function createPatient(
 
   const policy = await readMembershipReference<AccessPolicy>(
     systemRepo,
-    { project: createReference(project) },
+    createReference(project),
     policyRef,
     ['AccessPolicy'],
     { allowLinkedProjects: true }

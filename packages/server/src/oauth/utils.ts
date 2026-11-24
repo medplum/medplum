@@ -561,7 +561,7 @@ export async function setLoginMembership(
     try {
       const profile = await readMembershipReference(
         projectSystemRepo,
-        membership,
+        membership.project,
         membership.profile,
         membershipProfileTypes
       );
@@ -1451,7 +1451,7 @@ async function tryAddOnBehalfOf(
   try {
     onBehalfOf = await readMembershipReference<ProfileResource>(
       systemRepo,
-      onBehalfOfMembership,
+      onBehalfOfMembership.project,
       onBehalfOfMembership.profile as Reference<ProfileResource>,
       membershipProfileTypes,
       { allowLinkedProjects: true }
