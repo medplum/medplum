@@ -10,7 +10,10 @@ import { getLogger } from '../logger';
 export function getMcpServer(): McpServer {
   const server = new McpServer({
     name: 'medplum',
+    title: 'Medplum',
     version: MEDPLUM_VERSION,
+    websiteUrl: 'https://www.medplum.com/docs/ai/mcp',
+    icons: [{ src: 'https://www.medplum.com/img/logo-512x512.png', mimeType: 'image/png', sizes: ['512x512'] }],
   });
 
   /**
@@ -50,11 +53,22 @@ export function getMcpServer(): McpServer {
   server.registerTool(
     'fhir-request',
     {
+      title: 'FHIR request',
+      description:
+        'Send a FHIR R4 REST request to Medplum as the signed-in user. Supports read, search, create, update, patch, delete, and FHIR operations such as $everything. Returns the response resource as JSON.',
       inputSchema: {
-        method: z.string(),
-        path: z.string(),
-        body: z.any().optional(),
+        method: z.string().describe('HTTP method: GET, POST, PUT, PATCH, or DELETE.'),
+        path: z
+          .string()
+          .describe(
+            'Path relative to the FHIR R4 base URL, e.g. "Patient/123", "Observation?subject=Patient/123&_count=10", or "Patient/123/$everything".'
+          ),
+        body: z
+          .any()
+          .optional()
+          .describe('Request body for POST, PUT, and PATCH. A FHIR resource, or a JSON Patch array for PATCH.'),
       },
+      annotations: { destructiveHint: true, openWorldHint: false },
     },
     async ({ method, path, body }) => {
       const ctx = getAuthenticatedContext();
