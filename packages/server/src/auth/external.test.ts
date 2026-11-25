@@ -1190,7 +1190,7 @@ describe('External', () => {
         firstName: 'External',
         lastName: 'Text',
         projectName: 'External Test Project',
-        email,
+        email: `text@${domain}`,
         password: 'password!@#',
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',

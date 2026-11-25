@@ -22,6 +22,7 @@ import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { getLogger } from '../logger';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
+import { hasExternalAuth } from './method';
 import { consumeSecurityRequest, isSecurityRequestExpired, retirePasswordSecurityRequests } from './securityrequest';
 import { bcryptHashPassword } from './utils';
 
@@ -61,6 +62,11 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   const user = await systemRepo.readReference(securityRequest.user);
+  if (user.email && (await hasExternalAuth(user.email))) {
+    sendOutcome(res, badRequest('Cannot set password for external auth. Contact your system administrator.'));
+    return;
+  }
+
   await setPassword(systemRepo, user, req.body.password, { securityRequest });
 
   sendOutcome(res, allOk);
