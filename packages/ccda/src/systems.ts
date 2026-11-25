@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { CPT, EMPTY, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
-import type { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
+import type { AllergyIntolerance, CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_ACT_CODE_CODE_SYSTEM,
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
@@ -242,6 +242,23 @@ export const FHIR_CVX_URL = `${HTTP_HL7_ORG}/fhir/sid/cvx`;
 export const FHIR_ICF_URL = `${HTTP_HL7_ORG}/fhir/sid/icf`;
 export const XSI_URL = `${HTTP}//www.w3.org/2001/XMLSchema-instance`;
 export const CCDA_NARRATIVE_REFERENCE_URL = 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference';
+
+/**
+ * Maps C-CDA allergy observation value codes (SNOMED CT) to FHIR AllergyIntolerance category and type.
+ */
+export const ALLERGY_TYPE_MAPPING: Record<string, Pick<AllergyIntolerance, 'category' | 'type'>> = {
+  '416098002': { category: ['medication'], type: 'allergy' },
+  '59037007': { category: ['medication'], type: 'intolerance' },
+  '419511003': { category: ['medication'] },
+  '414285001': { category: ['food'], type: 'allergy' },
+  '235719002': { category: ['food'], type: 'intolerance' },
+  '418471000': { category: ['food'] },
+  '426232007': { category: ['environment'], type: 'allergy' },
+  '444316004': { category: ['environment'], type: 'allergy' },
+  '12481000132103': { category: ['biologic'], type: 'allergy' },
+  '419199007': { type: 'allergy' },
+  '609328004': { type: 'allergy' },
+};
 
 /*
  * Commonly used LOINC codes

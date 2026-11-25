@@ -74,6 +74,7 @@ import {
   ALLERGY_STATUS_MAPPER,
   ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM,
   ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
+  ALLERGY_TYPE_MAPPING,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
   CLINICAL_CONDITION_CODE_SYSTEM,
@@ -475,26 +476,12 @@ class CcdaToFhirConverter {
 
     const allergyTypeCode = (observation.value as CcdaCode | undefined)?.['@_code'];
 
-    const allergyTypeMapping: Record<string, Partial<Pick<AllergyIntolerance, 'category' | 'type'>>> = {
-      '416098002': { category: ['medication'], type: 'allergy' },
-      '59037007': { category: ['medication'], type: 'intolerance' },
-      '419511003': { category: ['medication'] },
-      '414285001': { category: ['food'], type: 'allergy' },
-      '235719002': { category: ['food'], type: 'intolerance' },
-      '418471000': { category: ['food'] },
-      '426232007': { category: ['environment'], type: 'allergy' },
-      '444316004': { category: ['environment'], type: 'allergy' },
-      '12481000132103': { category: ['biologic'], type: 'allergy' },
-      '419199007': { type: 'allergy' },
-      '609328004': { type: 'allergy' },
-    };
-
     const allergy: AllergyIntolerance = {
       resourceType: 'AllergyIntolerance',
       id: this.mapId(act.id),
       clinicalStatus: this.createClinicalStatus(act),
       verificationStatus: this.createVerificationStatus(),
-      ...allergyTypeMapping[allergyTypeCode ?? ''],
+      ...ALLERGY_TYPE_MAPPING[allergyTypeCode ?? ''],
       patient: createReference(this.patient as Patient),
       recorder: this.mapAuthorToReference(act.author?.[0]),
       recordedDate: this.mapEffectiveTimeToDateTime(act.effectiveTime?.[0]),

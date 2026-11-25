@@ -5,29 +5,20 @@ import type { AllergyIntolerance } from '@medplum/fhirtypes';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';
+import { ALLERGY_TYPE_MAPPING } from './systems';
 import { convertXmlToCcda } from './xml';
 
 const testDataFolder = resolve(__dirname, '../testdata');
 
-const allergyMappings = [
-  ['416098002', 'medication', 'allergy'],
-  ['59037007', 'medication', 'intolerance'],
-  ['419511003', 'medication', undefined],
-  ['414285001', 'food', 'allergy'],
-  ['235719002', 'food', 'intolerance'],
-  ['418471000', 'food', undefined],
-  ['426232007', 'environment', 'allergy'],
-  ['444316004', 'environment', 'allergy'],
-  ['12481000132103', 'biologic', 'allergy'],
-  ['419199007', undefined, 'allergy'],
-  ['609328004', undefined, 'allergy'],
-  ['418038007', undefined, undefined],
-  ['420134006', undefined, undefined],
-  ['999999999', undefined, undefined],
-] as const;
+const allergyMappings: [string, Pick<AllergyIntolerance, 'category' | 'type'>][] = [
+  ...Object.entries(ALLERGY_TYPE_MAPPING),
+  ['418038007', {}],
+  ['420134006', {}],
+  ['999999999', {}],
+];
 
 describe('C-CDA allergy conversion', () => {
-  test.each(allergyMappings)('maps SNOMED code %s to category %s and type %s', (code, category, type) => {
+  test.each(allergyMappings)('maps SNOMED code %s to %o', (code, expected) => {
     const xml = readFileSync(join(testDataFolder, 'AllergyNullFlavorReaction.xml'), 'utf8');
 
     const ccda = convertXmlToCcda(xml);
@@ -48,7 +39,7 @@ describe('C-CDA allergy conversion', () => {
       AllergyIntolerance | undefined;
 
     expect(allergy).toBeDefined();
-    expect(allergy?.category).toEqual(category ? [category] : undefined);
-    expect(allergy?.type).toBe(type);
+    expect(allergy?.category).toEqual(expected.category);
+    expect(allergy?.type).toBe(expected.type);
   });
 });
