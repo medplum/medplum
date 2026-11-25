@@ -43,7 +43,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const profileRef = membership.profile as Reference<ProfileResource | ClientApplication>;
   let profile = await readMembershipReference<ProfileResource | ClientApplication>(
     systemRepo,
-    membership,
+    membership.project,
     profileRef,
     membershipProfileTypes,
     { allowLinkedProjects: true }
@@ -149,7 +149,7 @@ export async function getUserConfiguration(
   if (membership.userConfiguration) {
     result = await readMembershipReference<UserConfiguration>(
       systemRepo,
-      membership,
+      membership.project,
       membership.userConfiguration,
       ['UserConfiguration'],
       { allowLinkedProjects: true }

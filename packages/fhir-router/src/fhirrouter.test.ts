@@ -317,6 +317,20 @@ describe('FHIR Router', () => {
     );
     expect(res4).toMatchObject(badRequest('Invalid patch body'));
     expect(patient4).toBeUndefined();
+
+    const [res5, patient5] = await router.handleRequest(
+      makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, [{ op: 'replace', path: '/resourceType', value: 'Basic' }]),
+      repo
+    );
+    expect(res5).toMatchObject(badRequest('Patch cannot change resource type'));
+    expect(patient5).toBeUndefined();
+
+    const [res6, patient6] = await router.handleRequest(
+      makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, [{ op: 'replace', path: '/id', value: randomUUID() }]),
+      repo
+    );
+    expect(res6).toMatchObject(badRequest('Patch cannot change resource ID'));
+    expect(patient6).toBeUndefined();
   });
 
   test('Conditional PATCH', async () => {

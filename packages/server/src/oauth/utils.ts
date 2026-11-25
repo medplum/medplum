@@ -43,13 +43,14 @@ import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { getUserConfiguration } from '../auth/me';
+import { hasExternalAuth } from '../auth/method';
 import { assertMfaLoginActive, reserveMfaAttempt, tryReleaseMfaAttempt, verifyTotpToken } from '../auth/mfalimit';
 import { enrollTotp, getEnrolledMfaMethods } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MFA_LOGIN_ATTEMPT_LIMIT } from '../constants';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getInactiveReason, membershipProfileTypes, readMembershipReference } from '../fhir/projectmembership';
-import type { Repository, SystemRepository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
@@ -175,6 +176,14 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   let launch: SmartAppLaunch | undefined;
   if (request.launchId) {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
+  }
+
+  // Domain-level identity providers apply to every sign-in from the domain, not only clients that call /auth/method.
+  // Checked before the user lookup and password check, so the response reveals neither.
+  if (request.password && request.email && (await hasExternalAuth(request.email))) {
+    throw new OperationOutcomeError(
+      badRequest('Cannot sign in with password for external auth. Use your identity provider.')
+    );
   }
 
   let user: WithId<User> | undefined = undefined;
@@ -561,7 +570,7 @@ export async function setLoginMembership(
     try {
       const profile = await readMembershipReference(
         projectSystemRepo,
-        membership,
+        membership.project,
         membership.profile,
         membershipProfileTypes
       );
@@ -1395,7 +1404,7 @@ async function makeAuthResult(
  * @param authState - The existing auth state.
  */
 async function tryAddOnBehalfOf(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   req: IncomingMessage | undefined,
   authState: AuthState
 ): Promise<void> {
@@ -1447,7 +1456,18 @@ async function tryAddOnBehalfOf(
     throw new OperationOutcomeError(forbidden);
   }
 
-  const onBehalfOf = await systemRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  let onBehalfOf: WithId<ProfileResource>;
+  try {
+    onBehalfOf = await readMembershipReference<ProfileResource>(
+      systemRepo,
+      onBehalfOfMembership.project,
+      onBehalfOfMembership.profile as Reference<ProfileResource>,
+      membershipProfileTypes,
+      { allowLinkedProjects: true }
+    );
+  } catch {
+    throw new OperationOutcomeError(forbidden);
+  }
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
 }

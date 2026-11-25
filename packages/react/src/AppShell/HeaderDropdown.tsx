@@ -61,9 +61,16 @@ function getLoginKey(login: LoginState): string {
   return `${login.project.reference}-${login.profile.reference}`;
 }
 
+export interface AppShellMenuItem {
+  readonly label: string;
+  readonly icon?: TablerIcon;
+  readonly onClick: () => void;
+}
+
 export interface HeaderDropdownProps {
   readonly version?: string;
   readonly showLayoutVersionToggle?: boolean;
+  readonly menuItems?: AppShellMenuItem[];
 }
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
@@ -78,6 +85,13 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
     () => (localStorage['appShellLayoutVersion'] as AppShellLayoutVersion | undefined) ?? 'v1'
   );
   const showLayoutToggle = props.showLayoutVersionToggle ?? true;
+  const menuItems = props.menuItems ?? [
+    {
+      label: 'Account settings',
+      icon: IconSettings,
+      onClick: () => navigate(`/${getReferenceString(profile as ProfileResource)}`),
+    },
+  ];
 
   const projectDisplay = project?.name ?? medplum.getActiveLogin()?.project.display;
   const profileDisplay = activeLogin?.profile.display ?? (profile ? formatHumanName(profile.name?.[0]) : undefined);
@@ -122,12 +136,15 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         >
           <Text size="sm">Switch to another project</Text>
         </Menu.Item>
-        <Menu.Item
-          leftSection={<IconSettings size={16} color={MENU_ICON_COLOR} />}
-          onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}
-        >
-          <Text size="sm">Account settings</Text>
-        </Menu.Item>
+        {menuItems.map((item, index) => (
+          <Menu.Item
+            key={`${index}-${item.label}`}
+            leftSection={item.icon && <item.icon size={16} color={MENU_ICON_COLOR} />}
+            onClick={item.onClick}
+          >
+            <Text size="sm">{item.label}</Text>
+          </Menu.Item>
+        ))}
 
         <Flex className={classes.settingsRow} align="center" pl="sm" pr="xs" py="xs">
           <Flex align="center" gap="xs">

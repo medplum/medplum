@@ -63,7 +63,7 @@ describe('readMembershipReference', () => {
       const read = (resource: Practitioner | AccessPolicy | ClientApplication, allowLinkedProjects?: boolean): any =>
         readMembershipReference(
           systemRepo,
-          membership,
+          membership.project,
           createReference(resource),
           [...membershipProfileTypes, 'AccessPolicy'],
           { allowLinkedProjects }
@@ -86,7 +86,7 @@ describe('readMembershipReference', () => {
     withTestContext(async () => {
       const { project, membership } = await createTestProject({ withClient: true });
       await expect(
-        readMembershipReference(systemRepo, membership, createReference(project), membershipProfileTypes)
+        readMembershipReference(systemRepo, membership.project, createReference(project), membershipProfileTypes)
       ).rejects.toThrow('Not found');
     }));
 
@@ -116,17 +116,17 @@ describe('readMembershipReference', () => {
       });
 
       await expect(
-        readMembershipReference(systemRepo, membership, createReference(bot), membershipProfileTypes, {
+        readMembershipReference(systemRepo, membership.project, createReference(bot), membershipProfileTypes, {
           allowLinkedProjects: true,
         })
       ).resolves.toMatchObject({ id: bot.id });
       await expect(
-        readMembershipReference(systemRepo, membership, createReference(practitioner), membershipProfileTypes, {
+        readMembershipReference(systemRepo, membership.project, createReference(practitioner), membershipProfileTypes, {
           allowLinkedProjects: true,
         })
       ).rejects.toThrow('Not found');
       await expect(
-        readMembershipReference(systemRepo, membership, createReference(policy), ['AccessPolicy'], {
+        readMembershipReference(systemRepo, membership.project, createReference(policy), ['AccessPolicy'], {
           allowLinkedProjects: true,
         })
       ).rejects.toThrow('Not found');

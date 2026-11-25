@@ -78,7 +78,7 @@ export function findProjectMembership(
  * the project rules of a repository scoped to the membership's project (and its linked projects, if allowed).
  * Always use this function instead of reading membership references directly.
  * @param systemRepo - The system repository used for the reads.
- * @param membership - The project membership that holds the reference.
+ * @param project - The project of the membership that holds the reference.
  * @param reference - The reference to read.
  * @param allowedTypes - The resource types the reference may point to.
  * @param options - Optional read options.
@@ -88,7 +88,7 @@ export function findProjectMembership(
  */
 export async function readMembershipReference<T extends Resource>(
   systemRepo: SystemRepository,
-  membership: ProjectMembership,
+  project: Reference<Project>,
   reference: Reference<T>,
   allowedTypes: readonly ResourceType[],
   options?: { allowLinkedProjects?: boolean }
@@ -106,12 +106,14 @@ export async function readMembershipReference<T extends Resource>(
   const resource = await systemRepo.readReference<T>(reference);
 
   // Runs on every authenticated request, so skip loading projects in the common case
-  if (resource.meta?.project && resource.meta.project === resolveId(membership.project)) {
+  if (resource.meta?.project && resource.meta.project === resolveId(project)) {
     return resource;
   }
 
-  const project = await systemRepo.readReference<Project>(membership.project);
-  const projects = options?.allowLinkedProjects ? await getAllowedProjects(project, systemRepo) : [project];
+  const membershipProject = await systemRepo.readReference<Project>(project);
+  const projects = options?.allowLinkedProjects
+    ? await getAllowedProjects(membershipProject, systemRepo)
+    : [membershipProject];
   if (!getRepoForProjects(projects).canPerformInteraction(AccessPolicyInteraction.READ, resource)) {
     throw new OperationOutcomeError(notFound);
   }

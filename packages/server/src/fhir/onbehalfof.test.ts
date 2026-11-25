@@ -407,6 +407,39 @@ describe('On Behalf Of', () => {
       });
     }));
 
+  test('Forbidden for ProjectMembership with profile in another project', () =>
+    withTestContext(async () => {
+      const adminAccount = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+      const { membership } = await addTestUser(adminAccount.project);
+      const otherAccount = await createTestProject({ withRepo: true });
+      const otherPatient = await otherAccount.repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Other'], family: 'Patient' }],
+      });
+
+      const res1 = await request(app)
+        .put(`/fhir/R4/ProjectMembership/${membership.id}`)
+        .set('Authorization', 'Bearer ' + adminAccount.accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ ...membership, profile: createReference(otherPatient) });
+      expect(res1).toHaveStatus(200);
+
+      for (const onBehalfOf of [getReferenceString(membership), getReferenceString(otherPatient)]) {
+        const res2 = await request(app)
+          .post(`/fhir/R4/Basic`)
+          .set('Authorization', 'Bearer ' + adminAccount.accessToken)
+          .set('X-Medplum-On-Behalf-Of', onBehalfOf)
+          .set('Content-Type', ContentType.FHIR_JSON)
+          .send({ resourceType: 'Basic', code: { text: 'test' } });
+        expect(res2).toHaveStatus(400);
+        expect(res2.body.issue[0].diagnostics).toContain('Forbidden');
+      }
+    }));
+
   test('Forbidden for unknown ProjectMembership reference', () =>
     withTestContext(async () => {
       const adminAccount = await createTestProject({

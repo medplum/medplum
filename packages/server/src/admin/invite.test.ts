@@ -14,6 +14,7 @@ import {
 import type {
   AccessPolicy,
   BundleEntry,
+  DomainConfiguration,
   Patient,
   Practitioner,
   Project,
@@ -142,6 +143,44 @@ describe('Admin Invite', () => {
     const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(globalPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
+  });
+
+  test('New user on external auth domain gets no set-password link', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Practitioner', firstName: 'Bob', lastName: 'Jones', email: `bob@${domain}` });
+    expect(res).toHaveStatus(200);
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
+    expect(parsed.text).not.toContain('setpassword');
   });
 
   test('Existing user to project', async () => {
