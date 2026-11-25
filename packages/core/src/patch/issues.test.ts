@@ -262,3 +262,13 @@ test('Prototype poisoning', () => {
   const value = {};
   expect(() => applyPatch(value, [{ op: 'add', path: '/toString/call', value: 'x' }])).toThrow();
 });
+
+test('Inherited keys of primitive values', () => {
+  const value = { id: 'abc', active: true, count: 1 };
+  for (const path of ['/id/hasOwnProperty/x', '/id/toString/x', '/active/valueOf/x', '/count/toFixed/x']) {
+    expect(() => applyPatch(value, [{ op: 'add', path, value: 'x' }])).toThrow('Invalid inherited key');
+  }
+  expect(() => applyPatch(value, [{ op: 'copy', from: '/id/toString', path: '/x' }])).toThrow('Invalid inherited key');
+  expect((Object.prototype.hasOwnProperty as any).x).toBeUndefined();
+  expect(value).toStrictEqual({ id: 'abc', active: true, count: 1 });
+});

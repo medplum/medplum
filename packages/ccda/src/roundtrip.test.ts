@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { stringify } from '@medplum/core';
-import type { Bundle, Resource } from '@medplum/fhirtypes';
+import type { Bundle, Procedure, Resource } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';
@@ -78,6 +78,21 @@ describe('convertCcdaToFhir', () => {
     // Or we can ignore it
     const bundle = convertCcdaToFhir(ccda, { ignoreUnsupportedSections: true });
     expect(bundle).toBeDefined();
+  });
+
+  test.each([
+    ['ProcedureSectionActEntry', 'cancelled', 'not-done'],
+    ['ProcedureSectionActEntry', 'active', 'in-progress'],
+    ['ProcedureSectionProcedureEntry', 'cancelled', 'not-done'],
+    ['ProcedureSectionProcedureEntry', 'active', 'in-progress'],
+  ])('maps %s statusCode %s to Procedure status %s', (name, ccdaStatus, fhirStatus) => {
+    const xml = readFileSync(join(testDataFolder, `${name}.xml`), 'utf8').replace(
+      '<statusCode code="completed" />',
+      `<statusCode code="${ccdaStatus}" />`
+    );
+    const bundle = convertCcdaToFhir(convertXmlToCcda(xml));
+    const procedure = bundle.entry?.find((e) => e.resource?.resourceType === 'Procedure')?.resource as Procedure;
+    expect(procedure.status).toBe(fhirStatus);
   });
 });
 

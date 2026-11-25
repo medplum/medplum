@@ -76,10 +76,6 @@ describe('Batch and Transaction processing', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     baseUrl = config.baseUrl;
-    // Async batches throttle by sleeping `points * asyncDelayScaling` ms per DB op in the async
-    // authenticated context (see Repository.recordFhirQuota). These tests exercise behavior, not
-    // throttle timing, so zero the delay to avoid real sleeps that slow the suite down.
-    config.asyncDelayScaling = 0;
     await initApp(app, config);
     const testProject = await createTestProject({
       withAccessToken: true,
@@ -1404,6 +1400,28 @@ describe('Batch and Transaction processing', () => {
     const bundle = res.body as Bundle;
     expect(bundle.entry).toHaveLength(1);
     expect(bundle.entry?.[0]?.response?.status).toStrictEqual('400');
+  });
+
+  test('Batch create as update with client-assigned ID', async () => {
+    const { accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    const id = randomUUID();
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ request: { method: 'PUT', url: 'Patient' }, resource: { resourceType: 'Patient', id } }],
+      });
+    expect(res).toHaveStatus(200);
+    expect((res.body as Bundle).entry?.[0]?.response?.status).toStrictEqual('400');
+
+    const read = await request(app)
+      .get(`/fhir/R4/Patient/${id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(read).toHaveStatus(404);
   });
 
   test('Repeated batch of related upserts', async () => {

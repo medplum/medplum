@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { Operator, badRequest } from '@medplum/core';
-import type { OperationOutcome, Project, User } from '@medplum/fhirtypes';
+import type { DomainConfiguration, OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -19,10 +19,12 @@ const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
 
 async function enableOpenRegistration(project: WithId<Project>): Promise<void> {
-  const patientPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient')?.accessPolicy;
   await withTestContext(async () => {
     const systemRepo = await getProjectSystemRepo(project);
-    await systemRepo.updateResource({ ...project, defaultPatientAccessPolicy: patientPolicy });
+    await systemRepo.updateResource({
+      ...project,
+      setting: [...(project.setting ?? []), { name: 'openPatientRegistration', valueBoolean: true }],
+    });
   });
 }
 
@@ -219,6 +221,39 @@ describe('New user', () => {
     expect(res2.body.issue[0].details.text).toBe('Email already registered');
   });
 
+  test('External auth', async () => {
+    // Create a domain with external auth
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        email: `alice@${domain}`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe(
+      'Cannot register with password for external auth. Contact your system administrator.'
+    );
+  });
+
   test('Custom recaptcha client success', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
@@ -234,8 +269,8 @@ describe('New user', () => {
         email,
         password,
       });
-      // As a super admin, set the recaptcha site key
-      // and the default access policy
+      // As a super admin, set the recaptcha site key and enable open registration.
+      // The project already has a Patient entry in defaultAccessPolicies.
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
@@ -247,9 +282,7 @@ describe('New user', () => {
             recaptchaSecretKey,
           },
         ],
-        defaultPatientAccessPolicy: {
-          reference: 'AccessPolicy/' + randomUUID(),
-        },
+        setting: [{ name: 'openPatientRegistration', valueBoolean: true }],
       });
       return project;
     });
@@ -324,7 +357,7 @@ describe('New user', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSiteKey');
   });
 
-  test('Custom recaptcha client missing access policy', async () => {
+  test('Custom recaptcha client rejects registration when open registration is disabled', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
@@ -339,13 +372,10 @@ describe('New user', () => {
         email,
         password,
       });
-      // As a super admin, set the recaptcha site key
-      // but *not* the access policy (remove the default patient access policy
-      // that is automatically provisioned on project creation)
+      // Recaptcha is configured, but openPatientRegistration is not set.
       const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
-        defaultPatientAccessPolicy: undefined,
         site: [
           {
             name: 'Test Site',

@@ -32,11 +32,6 @@
   text-decoration: underline;
 }
 
-.sectionIcon {
-  background-color: var(--mantine-color-yellow-8);
-  border: none;
-}
-
 .flexOne {
   flex: 1;
 }
@@ -51,6 +46,11 @@
 .card {
   display: flex;
   flex-direction: column;
+}
+
+/* A disabled button swallows hover events, so let them reach the tooltip's wrapper span instead. */
+.importButton:disabled {
+  pointer-events: none;
 }
 
 .integrationsContainer {

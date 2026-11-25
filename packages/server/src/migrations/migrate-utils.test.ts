@@ -198,6 +198,45 @@ describe('migration-utils', () => {
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
     });
 
+    test('parse WITH fastupdate before WHERE', () => {
+      const indexdef =
+        'CREATE INDEX "Task_projectId_status_idx" ON public."Task" USING gin ("projectId", status) WITH (fillfactor=90, fastupdate=off) WHERE (deleted = false)';
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['projectId', 'status'],
+        indexType: 'gin',
+        where: 'deleted = false',
+        fastupdate: false,
+        unique: false,
+        indexdef,
+      };
+      expect(def).toStrictEqual(expected);
+    });
+
+    test('fastupdate only differs when both definitions set it', () => {
+      const base: IndexDefinition = { columns: ['projectId', 'status'], indexType: 'gin' };
+      expect(indexDefinitionsEqual({ ...base, fastupdate: false }, base)).toBe(true);
+      expect(indexDefinitionsEqual({ ...base, fastupdate: false }, { ...base, fastupdate: false })).toBe(true);
+      expect(indexDefinitionsEqual({ ...base, fastupdate: false }, { ...base, fastupdate: true })).toBe(false);
+    });
+
+    test.each([
+      ['ye', true],
+      ['ON', true],
+      ['t', true],
+      ['of', false],
+      ["'false'", false],
+      ['0', false],
+    ])('parse fastupdate=%s', (value, expected) => {
+      const indexdef = `CREATE INDEX "Task_status_idx" ON public."Task" USING gin (status) WITH (fastupdate=${value})`;
+      expect(parseIndexDefinition(indexdef).fastupdate).toBe(expected);
+    });
+
+    test.each(['o', 'maybe', ''])('invalid fastupdate value %j', (value) => {
+      const indexdef = `CREATE INDEX "Task_status_idx" ON public."Task" USING gin (status) WITH (fastupdate=${value})`;
+      expect(() => parseIndexDefinition(indexdef)).toThrow('Could not parse boolean storage parameter value');
+    });
+
     test('missing index type and columns', () => {
       const indexdef = 'CREATE INDEX "DomainConfiguration_compartments_idx" ON "DomainConfiguration"';
 

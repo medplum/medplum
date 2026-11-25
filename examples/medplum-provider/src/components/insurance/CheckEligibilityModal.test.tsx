@@ -6,12 +6,21 @@ import { badRequest, createReference, OperationOutcomeError } from '@medplum/cor
 import type { Coverage, Organization, PractitionerRole } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient, TestOrganization } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { within } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { RenderResult } from '../../test-utils/render';
 import { render, screen, userEvent, waitFor } from '../../test-utils/render';
 import { BILLING_ORGANIZATION_IDENTIFIER_VALUE, MEDPLUM_PROVIDER_IDENTIFIER_SYSTEM } from '../../utils/billing';
+import type { ServiceType } from '../../utils/eligibility';
+import {
+  buildEligibilityServiceTypesValueSet,
+  DEFAULT_ELIGIBILITY_SERVICE_TYPE,
+  X12_SERVICE_TYPE_CODE_SYSTEM,
+} from '../../utils/eligibility';
 import type { CheckEligibilityModalProps } from './CheckEligibilityModal';
 import { CheckEligibilityModal } from './CheckEligibilityModal';
+
+const MENTAL_HEALTH: ServiceType = { code: 'MH', display: 'Mental Health' };
 
 function mockSubmit(medplum: MockClient, result: () => Promise<unknown>): ReturnType<typeof vi.spyOn> {
   const original = medplum.post.bind(medplum);
@@ -152,9 +161,59 @@ describe('CheckEligibilityModal', () => {
       patient: createReference(HomerSimpson),
       provider: createReference(TestOrganization),
       insurance: [{ focal: true, coverage: createReference(bcbs) }],
+      item: [
+        {
+          category: {
+            coding: [{ system: X12_SERVICE_TYPE_CODE_SYSTEM, code: '30', display: 'Health Benefit Plan Coverage' }],
+          },
+        },
+      ],
     });
     expect(postSpy).toHaveBeenCalledWith(medplum.fhirUrl('CoverageEligibilityRequest', saved.id, '$submit'));
     expect(props.onClose).toHaveBeenCalled();
+  });
+
+  test('Asks about the service types saved in Billing Settings', async () => {
+    const user = userEvent.setup();
+    await medplum.createResource(
+      buildEligibilityServiceTypesValueSet([DEFAULT_ELIGIBILITY_SERVICE_TYPE, MENTAL_HEALTH])
+    );
+    mockSubmit(medplum, () => Promise.resolve({}));
+    const { props } = setup({ defaultCoverageId: uhc.id });
+
+    await user.click(await screen.findByRole('button', { name: 'Check Eligibility' }));
+
+    await waitFor(() => expect(props.onCreated).toHaveBeenCalled());
+    const saved = vi.mocked(props.onCreated).mock.calls[0][0];
+    expect(saved.item?.map((item) => item.category?.coding?.[0]?.code)).toEqual(['30', 'MH']);
+  });
+
+  test('Sends only the service types kept for this check', async () => {
+    const user = userEvent.setup();
+    await medplum.createResource(
+      buildEligibilityServiceTypesValueSet([DEFAULT_ELIGIBILITY_SERVICE_TYPE, MENTAL_HEALTH])
+    );
+    mockSubmit(medplum, () => Promise.resolve({}));
+    const { props } = setup({ defaultCoverageId: uhc.id });
+
+    const pill = (await screen.findByText('Mental Health (MH)')).parentElement as HTMLElement;
+    await user.click(within(pill).getByRole('button', { hidden: true }));
+    await user.click(screen.getByRole('button', { name: 'Check Eligibility' }));
+
+    await waitFor(() => expect(props.onCreated).toHaveBeenCalled());
+    const saved = vi.mocked(props.onCreated).mock.calls[0][0];
+    expect(saved.item?.map((item) => item.category?.coding?.[0]?.code)).toEqual(['30']);
+  });
+
+  test('Disables the submit button with no service types', async () => {
+    const user = userEvent.setup();
+    setup({ defaultCoverageId: uhc.id });
+
+    const pill = (await screen.findByText('Health Benefit Plan Coverage (30)')).parentElement as HTMLElement;
+    await user.click(within(pill).getByRole('button', { hidden: true }));
+
+    expect(screen.getByText('Pick at least one service type')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check Eligibility' })).toBeDisabled();
   });
 
   test('Reports the request even when $submit fails', async () => {

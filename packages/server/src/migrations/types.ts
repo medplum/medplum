@@ -41,6 +41,11 @@ export interface IndexDefinition {
   primaryKey?: boolean;
   include?: string[];
   where?: string;
+  /**
+   * GIN `fastupdate` storage parameter. Only valid for GIN indexes.
+   * When unset, the server default applies and an existing index's setting is not compared.
+   */
+  fastupdate?: boolean;
   indexNameSuffix?: string;
   indexNameOverride?: string;
   indexdef?: string;

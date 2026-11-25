@@ -6,9 +6,9 @@ import {
   StartDocumentTextDetectionCommand,
   TextractClient,
 } from '@aws-sdk/client-textract';
-import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
+import { ContentType, allOk, badRequest, createReference, getReferenceString, sleep } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Binary, DocumentReference, Media, Resource } from '@medplum/fhirtypes';
+import type { Binary, DocumentReference, Media, Reference, Resource } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
@@ -37,11 +37,13 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
 
   let inputBinary: Binary;
   let subject: any;
+  let source: Reference<Media | DocumentReference>;
 
   if (resourceType === 'Media') {
     const inputMedia = await repo.readResource<Media>('Media', id);
     inputBinary = await repo.readReference<Binary>({ reference: inputMedia.content.url });
     subject = inputMedia.subject;
+    source = createReference(inputMedia);
   } else {
     // DocumentReference
     const inputDocRef = await repo.readResource<DocumentReference>('DocumentReference', id);
@@ -56,7 +58,11 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
 
     inputBinary = await repo.readReference<Binary>({ reference: attachment.url });
     subject = inputDocRef.subject;
+    source = createReference(inputDocRef);
   }
+
+  // Output files share the input file's securityContext, or else reference the source resource
+  const securityContext = inputBinary.securityContext ?? source;
 
   const { awsRegion } = getConfig();
   const bucket = storage.bucket;
@@ -122,12 +128,13 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     JSON.stringify(textractResult, null, 2),
     ContentType.JSON,
     'textract.json',
-    mediaProps
+    mediaProps,
+    securityContext
   );
 
   const options = req.body as undefined | { comprehend?: boolean };
   if (options?.comprehend && textractResult?.Blocks) {
-    const lines = textractResult.Blocks.map((b) => b.Text ?? '');
+    const lines = textractResult.Blocks.filter((b) => b.BlockType === 'LINE').map((b) => b.Text ?? '');
     const text = lines.join('\n');
     const comprehendMedicalClient = new ComprehendMedicalClient({ region: awsRegion });
     const comprehendResult = await comprehendMedicalClient.send(new DetectEntitiesV2Command({ Text: text }));
@@ -136,7 +143,8 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
       JSON.stringify(comprehendResult, null, 2),
       ContentType.JSON,
       'comprehend.json',
-      mediaProps
+      mediaProps,
+      securityContext
     );
   }
 
@@ -148,11 +156,13 @@ async function createBinaryAndMedia(
   content: string,
   contentType: string,
   filename: string,
-  mediaProps: Partial<Media>
+  mediaProps: Partial<Media>,
+  securityContext: Reference
 ): Promise<Media> {
   const binary = await repo.createResource<Binary>({
     resourceType: 'Binary',
     contentType,
+    securityContext,
   });
 
   await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(content));

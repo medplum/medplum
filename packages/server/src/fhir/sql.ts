@@ -204,6 +204,14 @@ export const Operator = {
       sql.append('::' + paramType);
     }
   },
+  RANGE_CONTAINED_BY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' <@ ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
   RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.appendColumn(column);
     sql.append(' >> ');
@@ -576,6 +584,9 @@ export class SqlBuilder {
   }
 
   appendIdentifier(str: string): this {
+    if (str.includes('"')) {
+      throw new Error('Invalid identifier: ' + str);
+    }
     this.sql.push('"', str, '"');
     return this;
   }

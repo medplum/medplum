@@ -1,0 +1,6 @@
+{{- /* A FHIR type name, linked to its reference page if it has one. Params: name, idx (fhir/index.html), text (optional) */ -}}
+{{- $text := .text | default .name -}}
+{{- with index .idx.types (lower .name) -}}
+  {{- $text = printf `<a href="/docs/api/fhir/%s/%s">%s</a>` .location (lower .name) $text -}}
+{{- end -}}
+{{- return $text -}}

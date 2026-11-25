@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import {
   ContentType,
+  Logger,
   Operator,
   badRequest,
   createReference,
@@ -13,6 +14,7 @@ import {
 import type {
   AsyncJob,
   AuditEvent,
+  Binary,
   Bot,
   Parameters,
   ParametersParameter,
@@ -30,7 +32,13 @@ import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import {
+  addTestUser,
+  createBotMembership,
+  createTestProject,
+  waitForAsyncJob,
+  withTestContext,
+} from '../../test.setup';
 import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
@@ -136,16 +144,64 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  const { input, responseStream } = event;
+  responseStream.startStreaming(input.statusCode, input.headers);
+  responseStream.write('data: Hello\\n\\n');
+  responseStream.end();
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  const { input, responseStream } = event;
+  responseStream.startStreaming(input.statusCode, input.headers);
+  responseStream.write('data: Hello\\n\\n');
+  responseStream.end();
+};
+`,
+  ],
+  [
+    `
+export async function handler(medplum, event) {
+  return event.headers;
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  return event.headers;
+};
+`,
+  ],
 ] as [string, string][];
 
-type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
-const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
+type BotName =
+  | 'echoBot'
+  | 'systemEchoBot'
+  | 'rawBodyEchoBot'
+  | 'booleanBot'
+  | 'binaryBot'
+  | 'streamingBot'
+  | 'streamingErrorBot'
+  | 'streamingHeadersBot'
+  | 'headersBot';
+const botDefinitions: {
+  name: BotName;
+  system: boolean;
+  code: [string, string];
+  streaming?: boolean;
+  rawBody?: boolean;
+}[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
+  { name: 'rawBodyEchoBot', system: false, code: botCodes[0], rawBody: true },
   { name: 'echoBot', system: false, code: botCodes[0] },
   { name: 'booleanBot', system: false, code: botCodes[1] },
   { name: 'binaryBot', system: false, code: botCodes[2] },
   { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
   { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
+  { name: 'streamingHeadersBot', system: false, code: botCodes[5], streaming: true },
+  { name: 'headersBot', system: false, code: botCodes[6] },
 ];
 
 describe('Execute', () => {
@@ -182,7 +238,8 @@ describe('Execute', () => {
       system: boolean,
       esmCode: string,
       cjsCode: string,
-      streaming?: boolean
+      streaming?: boolean,
+      rawBody?: boolean
     ): Promise<WithId<Bot>> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
@@ -194,12 +251,18 @@ describe('Execute', () => {
           name: `${name} Test Bot`,
           runtimeVersion: 'vmcontext',
           code: esmCode,
-          system,
           ...(streaming && { streamingEnabled: true }),
+          ...(rawBody && { rawBody: true }),
         });
 
       expect(res1).toHaveStatus(201);
       const bot = res1.body as WithId<Bot>;
+
+      if (system) {
+        // Only super admins can set Bot.system
+        const systemRepo = await getProjectSystemRepo(project1);
+        await systemRepo.patchResource('Bot', bot.id, [{ op: 'add', path: '/system', value: true }]);
+      }
 
       const res2 = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -214,8 +277,9 @@ describe('Execute', () => {
       return bot;
     }
 
-    for (const { name, system, code, streaming } of botDefinitions) {
-      bots[name] = await setupBot(name, system, code[0], code[1], streaming);
+    for (const { name, system, code, streaming, rawBody } of botDefinitions) {
+      bots[name] = await setupBot(name, system, code[0], code[1], streaming, rawBody);
+      await createBotMembership(project1, bots[name]);
     }
   });
 
@@ -232,6 +296,20 @@ describe('Execute', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
+  });
+
+  test('Request headers passed to bot without Authorization', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.headersBot.id}/$execute`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .set('Cookie', 'session=abc')
+      .set('X-Test', 'test')
+      .send({});
+    expect(res).toHaveStatus(200);
+    expect(res.body['x-test']).toBe('test');
+    expect(res.body.authorization).toBeUndefined();
+    expect(res.body.cookie).toBe('session=abc');
   });
 
   test('Submit FHIR with content type returns non-FHIR JSON', async () => {
@@ -259,6 +337,33 @@ describe('Execute', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.body.identifier).toStrictEqual([]);
+  });
+
+  test('Bot.rawBody selects raw or parsed JSON input', async () => {
+    const rawBody = '{ "value": 1.00 }\n';
+    for (const [botName, output] of [
+      ['echoBot', '{"value":1}'],
+      ['rawBodyEchoBot', rawBody],
+    ] as const) {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots[botName].id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send(rawBody);
+      expect(res).toHaveStatus(200);
+      // Check the wire text: superagent re-parses JSON responses, so res.body can't tell raw from parsed
+      expect(res.text).toStrictEqual(output);
+    }
+  });
+
+  test('Falls back to parsed body when rawBody is enabled but content type is not JSON', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.rawBodyEchoBot.id}/$execute`)
+      .set('Content-Type', ContentType.FORM_URL_ENCODED)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send('value=1.00');
+    expect(res).toHaveStatus(200);
+    expect(res.body).toEqual({ value: '1.00' });
   });
 
   test('Return non-Resource JSON response', async () => {
@@ -330,7 +435,8 @@ describe('Execute', () => {
         code: '',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Execute the bot
     const res2 = await request(app)
@@ -352,7 +458,8 @@ describe('Execute', () => {
         runtimeVersion: 'unsupported',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Step 2: Publish the bot
     const res2 = await request(app)
@@ -413,6 +520,42 @@ describe('Execute', () => {
       .send({});
     expect(res3).toHaveStatus(400);
     expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
+  });
+
+  test('VM context bot code must be in the bot project', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext' });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
+
+    const { project: otherProject } = await createTestProject();
+    const systemRepo = await getProjectSystemRepo(otherProject);
+    const code = await withTestContext(() =>
+      systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.JAVASCRIPT,
+        meta: { project: otherProject.id },
+      })
+    );
+
+    const res2 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ ...bot, executableCode: { contentType: ContentType.JAVASCRIPT, url: `Binary/${code.id}` } });
+    expect(res2).toHaveStatus(200);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({});
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue[0].details.text).toStrictEqual('Executable code is not in the bot project');
   });
 
   test('VM context bot success', async () => {
@@ -527,7 +670,8 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Deploy the bot
     const res5 = await request(app)
@@ -583,6 +727,21 @@ describe('Execute', () => {
     expect(res).toHaveStatus(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('Hello, world!');
+  });
+
+  test('Binary response without data', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots.echoBot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        id: randomUUID(),
+        meta: { versionId: randomUUID() },
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toStrictEqual('Bot returned a Binary without data');
   });
 
   test('runAsUser respects onBehalfOf', async () => {
@@ -655,6 +814,68 @@ describe('Execute', () => {
     expect(profileToken.profile).toEqual(getReferenceString(profile));
   });
 
+  test.each<[string, Partial<Bot>, boolean]>([
+    ['runAsUser', { runAsUser: true }, false],
+    ['with its own membership', {}, true],
+  ])('Bot %s and a caller with SMART scopes', async (_name, botProps, withMembership) => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ resourceType: 'Bot', name: 'Test Bot', runtimeVersion: 'vmcontext', ...botProps });
+    expect(res1).toHaveStatus(201);
+    const bot = res1.body as WithId<Bot>;
+
+    if (withMembership) {
+      await createBotMembership(project1, bot);
+    }
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({ code: `exports.handler = async (medplum) => ({ token: medplum.getAccessToken() });` });
+    expect(res2).toHaveStatus(200);
+
+    const scope = 'openid user/Bot.rs';
+    const user = await withTestContext(() => addTestUser(project1, { scope }));
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+    try {
+      const res3 = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + user.accessToken)
+        .send({});
+      expect(res3).toHaveStatus(200);
+      expect(parseJWTPayload(res3.body.token).scope).toBe('openid');
+
+      const res4 = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + res3.body.token);
+      expect(res4).toHaveStatus(200);
+
+      const calls = warnSpy.mock.calls.filter(([msg]) => msg === 'Bot ran as a caller with SMART scopes');
+      expect(calls.map(([, data]) => data)).toStrictEqual(
+        withMembership
+          ? []
+          : [
+              {
+                botId: bot.id,
+                runAsProject: project1.id,
+                callerMembership: getReferenceString(user.membership),
+                callerProfile: getReferenceString(user.profile),
+                scope,
+                launch: undefined,
+                entryPoint: 'execute',
+                suppressed: 0,
+              },
+            ]
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   test('Propagates trace ID', async () => {
     // Create a bot with empty code
     const res1 = await request(app)
@@ -667,7 +888,8 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     // Deploy the bot
     const res5 = await request(app)
@@ -707,7 +929,8 @@ describe('Execute', () => {
         runtimeVersion: 'vmcontext',
       });
     expect(res1).toHaveStatus(201);
-    const bot = res1.body as Bot;
+    const bot = res1.body as WithId<Bot>;
+    await createBotMembership(project1, bot);
 
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -905,6 +1128,18 @@ describe('Execute', () => {
       expect(authState?.project?.id).toBeDefined();
       expect(authState?.project?.id).toBe(expectedProject.id);
     });
+
+    test('Bot without a membership in the calling project is rejected', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.booleanBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken2)
+        .send('input: true');
+      expect(res).toHaveStatus(400);
+      expect(res.body).toMatchObject(
+        badRequest('Bot does not have a ProjectMembership in this project; create one or set Bot.runAsUser')
+      );
+    });
   });
 
   describe('Prefer: respond-async', () => {
@@ -1055,6 +1290,38 @@ describe('Execute', () => {
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('input');
+      expect(res).toHaveStatus(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    });
+
+    test.each([{ 'Content-Length': '0' }, { 'content-length': '0' }, { 'Transfer-Encoding': 'identity' }])(
+      'Streaming bot cannot set message framing header %j',
+      async (framingHeaders) => {
+        const res = await request(app)
+          .post(`/fhir/R4/Bot/${bots.streamingHeadersBot.id}/$execute`)
+          .set('Content-Type', ContentType.JSON)
+          .set('Accept', 'text/event-stream')
+          .set('Authorization', 'Bearer ' + accessToken1)
+          .send({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/event-stream', 'X-Test': 'test', ...framingHeaders },
+          });
+        expect(res).toHaveStatus(200);
+        expect(res.headers['content-type']).toBe('text/event-stream');
+        expect(res.headers['x-test']).toBe('test');
+        expect(res.headers['content-length']).toBeUndefined();
+        expect(res.headers['transfer-encoding']).toBe('chunked');
+        expect(res.text).toBe('data: Hello\n\n');
+      }
+    );
+
+    test.each([100, 101, 103, 600, '200'])('Streaming bot cannot set status code %j', async (statusCode) => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingHeadersBot.id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({ statusCode, headers: { 'Content-Type': 'text/event-stream' } });
       expect(res).toHaveStatus(400);
       expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });

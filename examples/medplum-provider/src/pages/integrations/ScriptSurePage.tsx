@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, useComputedColorScheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 import { applyDarkmode } from '../../components/meds/applyDarkmode';
+import { getBotErrorMessage } from '../../utils/errors';
 import classes from './EPrescribingPage.module.css';
 
 export function ScriptSurePage(): JSX.Element {
@@ -18,7 +18,8 @@ export function ScriptSurePage(): JSX.Element {
         title: 'Successfully connected to ScriptSure',
         message: '',
       }),
-    onError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
+    onError: (err) =>
+      showNotification({ color: 'red', title: 'Error', message: getBotErrorMessage(err), autoClose: false }),
   });
 
   // The bot returns a UI-agnostic URL; the app appends `darkmode=on|off` once

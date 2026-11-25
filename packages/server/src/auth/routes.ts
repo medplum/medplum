@@ -28,6 +28,7 @@ export const authRouter = Router();
 authRouter.use('/mfa', mfaRouter);
 authRouter.post('/method', methodValidator, methodHandler);
 authRouter.get('/external', externalCallbackHandler);
+authRouter.get('/external/:clientId', externalCallbackHandler);
 authRouter.get('/me', authenticateRequest, meHandler);
 authRouter.post('/newuser', newUserValidator, validateRecaptcha(projectRegistrationAllowed), newUserHandler);
 authRouter.post('/newproject', newProjectValidator, newProjectHandler);

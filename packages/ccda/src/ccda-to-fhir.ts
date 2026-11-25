@@ -64,14 +64,16 @@ import {
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
+  OID_SNOMED_CT_CODE_SYSTEM,
 } from './oids';
 import { sanitizeNullFlavors } from './sanitize';
 import {
-  ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
+  ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM,
+  ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
   CLINICAL_CONDITION_CODE_SYSTEM,
@@ -84,6 +86,8 @@ import {
   IMMUNIZATION_STATUS_MAPPER,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   mapCcdaCodeToCodeableConcept,
+  mapCcdaEncounterClass,
+  mapCcdaNoKnownAllergyCode,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
@@ -124,6 +128,7 @@ import type {
   CcdaTelecom,
   CcdaTemplateId,
   CcdaText,
+  CcdaValue,
 } from './types';
 import { convertToCompactXml } from './xml';
 
@@ -488,14 +493,20 @@ class CcdaToFhirConverter {
 
     allergy.extension = this.mapTextReference(observation.text);
 
+    const negated = observation['@_negationInd'] === 'true';
     const allergenCode = observation.participant?.[0]?.participantRole?.playingEntity?.code;
-    if (allergenCode) {
-      allergy.code = this.mapCode(allergenCode);
+    // A denial keeps the scope of whatever names its substance; the generic "Substance" names none
+    const allergen = this.mapCode(negated ? withoutGenericSubstance(allergenCode) : allergenCode);
 
-      // Add allergen reference
-      if (allergy.code && allergenCode.originalText?.reference?.['@_value']) {
-        allergy.code.extension = this.mapTextReference(allergenCode.originalText);
-      }
+    // Add allergen reference
+    if (allergen && allergenCode?.originalText?.reference?.['@_value']) {
+      allergen.extension = this.mapTextReference(allergenCode.originalText);
+    }
+
+    if (negated) {
+      this.mapNegatedAllergen(allergy, observation.value, allergen);
+    } else {
+      allergy.code = allergen;
     }
 
     const reactionObservations = observation.entryRelationship?.find(
@@ -585,7 +596,10 @@ class CcdaToFhirConverter {
       resourceType: 'Procedure',
       id: this.mapId(act.id),
       identifier: this.mapIdentifiers(act.id),
-      status: 'completed',
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
+        act.statusCode?.['@_code'] as CcdaProcedure['statusCode']['@_code'],
+        'completed'
+      ),
       code: this.mapCode(act.code),
       subject: createReference(this.patient as Patient),
       performedDateTime: mapCcdaToFhirDateTime(act.effectiveTime?.[0]?.['@_value']),
@@ -929,15 +943,51 @@ class CcdaToFhirConverter {
     };
   }
 
-  private createVerificationStatus(): CodeableConcept {
+  private createVerificationStatus(code = 'confirmed'): CodeableConcept {
     return {
       coding: [
         {
           system: ALLERGY_VERIFICATION_CODE_SYSTEM,
-          code: 'confirmed',
+          code,
         },
       ],
     };
+  }
+
+  // See https://hl7.org/fhir/us/ccda/CF-allergies.html
+  private mapNegatedAllergen(
+    allergy: AllergyIntolerance,
+    value: CcdaValue | undefined,
+    allergen: CodeableConcept | undefined
+  ): void {
+    if (isNamedAllergen(allergen)) {
+      // No negated concept exists for an arbitrary substance, so use the extension, which prohibits code
+      allergy.extension = append(allergy.extension, {
+        url: ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
+        extension: [
+          { url: 'substance', valueCodeableConcept: allergen },
+          {
+            url: 'exposureRisk',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM,
+                  code: 'no-known-reaction-risk',
+                  display: 'No Known Reaction Risk',
+                },
+              ],
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    allergy.code = mapCcdaNoKnownAllergyCode(value);
+    if (!allergy.code) {
+      // No "no known" concept for this value: refute rather than confirm an allergy to nothing
+      allergy.verificationStatus = this.createVerificationStatus('refuted');
+    }
   }
 
   private mapAuthorToReference(author: CcdaAuthor | undefined): Reference<Practitioner> | undefined {
@@ -1379,11 +1429,7 @@ class CcdaToFhirConverter {
       id: this.mapId(encounter.id),
       identifier: this.mapIdentifiers(encounter.id),
       status: ENCOUNTER_STATUS_MAPPER.mapCcdaToFhirWithDefault(encounter.statusCode?.['@_code'], 'unknown'),
-      class: {
-        system: ACT_CODE_SYSTEM,
-        code: encounter.code?.['@_code'] ?? 'AMB',
-        display: encounter.code?.['@_displayName'] ?? 'Ambulatory',
-      },
+      class: mapCcdaEncounterClass(encounter.code),
       type: encounter.code ? [this.mapCode(encounter.code) as CodeableConcept] : undefined,
       subject: createReference(this.patient as Patient),
       period: this.mapEffectiveTimeToPeriod(encounter.effectiveTime?.[0]),
@@ -1476,10 +1522,7 @@ class CcdaToFhirConverter {
       resourceType: 'Procedure',
       id: this.mapId(procedure.id),
       identifier: this.mapIdentifiers(procedure.id),
-      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
-        procedure.statusCode?.['@_code'],
-        'completed'
-      ) as Procedure['status'],
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
       performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),
@@ -1506,6 +1549,23 @@ class CcdaToFhirConverter {
       },
     ];
   }
+}
+
+// SNOMED CT 105590001 "Substance", which the ONC (b)(1) samples suggest for "no known allergies", names no substance
+function isGenericSubstance(code: CcdaCode): boolean {
+  return code['@_codeSystem'] === OID_SNOMED_CT_CODE_SYSTEM && code['@_code'] === '105590001';
+}
+
+function withoutGenericSubstance(code: CcdaCode | undefined): CcdaCode | undefined {
+  if (!code) {
+    return undefined;
+  }
+  const translation = [code.translation ?? []].flat().filter((t) => !isGenericSubstance(t));
+  return isGenericSubstance(code) ? { originalText: code.originalText, translation } : { ...code, translation };
+}
+
+function isNamedAllergen(allergen: CodeableConcept | undefined): allergen is CodeableConcept {
+  return !!allergen?.text || !!allergen?.coding?.some((coding) => coding.code || coding.display);
 }
 
 function nodeToString(node: CcdaText | string | undefined): string | undefined {

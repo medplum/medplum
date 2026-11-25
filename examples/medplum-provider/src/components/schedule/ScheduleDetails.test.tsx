@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { getQueryString } from '@medplum/core';
@@ -8,10 +7,11 @@ import type { Appointment, ResourceType, Schedule, Slot } from '@medplum/fhirtyp
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import type * as ReactScheduling from '@medplum/react-scheduling';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { ScheduleDetails } from './ScheduleDetails';
 
 /** FullCalendar's pointer gestures do not work in jsdom, so tests invoke the callbacks the component passed to it. */
@@ -100,21 +100,17 @@ describe('ScheduleDetails', () => {
       return Promise.resolve([]);
     });
 
-    const result = render(<ScheduleDetails schedule={schedule} />, {
-      wrapper: ({ children }) => (
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <MantineProvider>
-              <Notifications />
-              <Routes>
-                <Route path="/" element={children} />
-                <Route path="/Encounter/:encounterId" element={<div>Encounter Page</div>} />
-              </Routes>
-            </MantineProvider>
-          </MedplumProvider>
-        </MemoryRouter>
-      ),
-    });
+    const result = render(<ScheduleDetails schedule={schedule} />, ({ children }) => (
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Notifications />
+          <Routes>
+            <Route path="/" element={children} />
+            <Route path="/Encounter/:encounterId" element={<div>Encounter Page</div>} />
+          </Routes>
+        </MedplumProvider>
+      </MemoryRouter>
+    ));
     await waitFor(() => {
       expect(screen.getByText('Today')).toBeInTheDocument();
     });

@@ -572,6 +572,7 @@ describe('Appointment/:id/$reschedule', () => {
     // @see https://www.medplum.com/docs/access/access-policies#patient-access
     const minimalPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
+      compartment: { reference: '%patient' },
       resource: [
         { resourceType: 'Practitioner', interaction: ['read'] },
         { resourceType: 'HealthcareService', interaction: ['read'] },
@@ -621,6 +622,12 @@ describe('Appointment/:id/$reschedule', () => {
     ) as Appointment;
     expect(appointment).toMatchObject({ id: booked.id, status: 'booked', start: newStart, end: newEnd });
     expect(appointment.participant).toContainEqual({ actor: createReference(profile), status: 'accepted' });
+
+    // Slots are visible to other patients, so they must not name the one who rescheduled
+    const slots = await Promise.all((appointment.slot ?? []).map((ref) => systemRepo.readReference<Slot>(ref)));
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toMatchObject({ start: newStart, meta: { author: { reference: 'system' } } });
+    expect(slots[0].meta).not.toHaveProperty('accounts');
   });
 
   test('the start time of a proposed appointment from Appointment/$find can be used for $reschedule', async () => {

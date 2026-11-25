@@ -3,6 +3,7 @@
 import { Title } from '@mantine/core';
 import type { GoogleCredentialResponse } from '@medplum/core';
 import { allOk, badRequest, locationUtils, MedplumClient } from '@medplum/core';
+import { createFakeJwt } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
 import { TextEncoder } from 'util';
@@ -270,6 +271,39 @@ describe('SignInForm', () => {
     await setup();
     const input = screen.getByText('Sign in to Medplum');
     expect(input.innerHTML).toBe('Sign in to Medplum');
+  });
+
+  test('Requests login status only for a login ID', async () => {
+    const getSpy = vi.spyOn(medplum, 'get');
+    try {
+      await setup({ login: '../../fhir/R4/Patient' });
+      expect(getSpy).not.toHaveBeenCalled();
+
+      const loginId = crypto.randomUUID();
+      await setup({ login: loginId });
+      expect(getSpy).toHaveBeenCalledWith('auth/login/' + loginId);
+    } finally {
+      getSpy.mockRestore();
+    }
+  });
+
+  test('Does not request login status for the login it is already signed in with', async () => {
+    const loginId = crypto.randomUUID();
+    await medplum.signOut();
+    medplum.setAccessToken(createFakeJwt({ login_id: loginId }));
+    const getSpy = vi.spyOn(medplum, 'get');
+    try {
+      await act(async () => {
+        render(
+          <MedplumProvider medplum={medplum}>
+            <SignInForm login={loginId} projectId="new" />
+          </MedplumProvider>
+        );
+      });
+      expect(getSpy).not.toHaveBeenCalledWith('auth/login/' + loginId);
+    } finally {
+      getSpy.mockRestore();
+    }
   });
 
   test('Submit success', async () => {

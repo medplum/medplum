@@ -41,6 +41,8 @@ export interface OfferingFields {
 /** What the page holds for an actor's Schedule. */
 export interface ScheduleFields {
   readonly active: boolean;
+  /** `Schedule.comment`, or empty when it has none. */
+  readonly comment: string;
   /** Whether `Schedule.serviceType` carries the marker for offering every active visit type. */
   readonly allServices: boolean;
   /** Keyed by visit type id, for each one offered: every active one when it offers all of them. */
@@ -63,6 +65,7 @@ export function scheduleFieldsOf(
   );
   return {
     active: schedule?.active !== false,
+    comment: schedule?.comment ?? '',
     allServices,
     offerings: allServices ? withCoveredOfferings(named, servicesById.values(), schedule) : named,
   };
@@ -151,6 +154,14 @@ export function buildScheduleDraft(
 
   if (stored && fields.active !== initial.active) {
     draft.active = fields.active;
+  }
+  const comment = fields.comment.trim();
+  if (comment !== initial.comment.trim()) {
+    if (comment) {
+      draft.comment = comment;
+    } else {
+      delete draft.comment;
+    }
   }
   if (fields.allServices !== serviceTypeIncludesAllServices(draft.serviceType)) {
     draft.serviceType = fields.allServices

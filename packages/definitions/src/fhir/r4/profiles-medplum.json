@@ -1275,6 +1275,12 @@
             "type" : [{
               "code" : "uri"
             }],
+            "constraint" : [{
+              "key" : "clapp-2",
+              "severity" : "error",
+              "human" : "Launch URI must use the http: or https: scheme",
+              "expression" : "$this.lower().matches('^https?://')"
+            }],
             "base": {
               "path" : "ClientApplication.launchUri",
               "min" : 0,
@@ -1461,7 +1467,7 @@
           {
             "id" : "ClientApplication.certificateTrustStore",
             "path" : "ClientApplication.certificateTrustStore",
-            "definition" : "Optional PEM-formatted certificates that are allowed to authenticate to this service via mutual TLS. Supports both Certificate Authorities (CAs) and self-signed certificates. Multiple certificates can be included.",
+            "definition" : "Optional PEM-formatted client certificates that are allowed to authenticate to this service via mutual TLS. The presented certificate must exactly match one of these certificates. Certificates issued by a CA in this list are not accepted. Multiple certificates can be included.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -2531,7 +2537,7 @@
           {
             "id": "Bot.cron[x]",
             "path": "Bot.cron[x]",
-            "definition": "A schedule for the bot to be executed.",
+            "definition": "A schedule for the bot to be executed. A string schedule is a five-field cron expression; bots run at most once a minute, so a seconds field is not supported.",
             "min": 0,
             "max": "1",
             "type": [{
@@ -2543,7 +2549,13 @@
               "path": "Bot.cron[x]",
               "min": 0,
               "max": "1"
-            }
+            },
+            "constraint": [{
+              "key": "bot-1",
+              "severity": "error",
+              "human": "cronString must be a valid five-field cron expression; seconds are not supported",
+              "expression": "ofType(string).all(isValidCron())"
+            }]
           },
           {
             "id" : "Bot.category",
@@ -2610,7 +2622,7 @@
           {
             "id" : "Bot.rawBody",
             "path" : "Bot.rawBody",
-            "definition" : "Whether public webhooks provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
+            "definition" : "Whether public webhooks, $execute, and custom operations provide the original UTF-8 JSON text in BotEvent.input instead of parsed JSON. Defaults to false. Set to true for webhook signature verification.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -5872,6 +5884,21 @@
             }
           },
           {
+            "id" : "SmartHealthLink.passcodeFailures",
+            "path" : "SmartHealthLink.passcodeFailures",
+            "definition" : "Number of incorrect passcodes submitted for the SMART Health Link.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "SmartHealthLink.passcodeFailures",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "SmartHealthLink.file",
             "path" : "SmartHealthLink.file",
             "definition" : "Encrypted file available from the SMART Health Link.",
@@ -6624,6 +6651,26 @@
             "base" : {
               "path" : "AsyncJob.request",
               "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "AsyncJob.requester",
+            "path" : "AsyncJob.requester",
+            "definition" : "The user or client application that started the job. Assigned by the server when the job is created.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
+                "https://medplum.com/fhir/StructureDefinition/ClientApplication",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
+            }],
+            "base" : {
+              "path" : "AsyncJob.requester",
+              "min" : 0,
               "max" : "1"
             }
           },
@@ -11310,7 +11357,7 @@
             "id" : "Cron.cronString",
             "path" : "Cron.cronString",
             "short" : "The schedule on which the job runs",
-            "definition" : "A schedule for the job to be executed, as a cron expression. An expression that is not a valid five-field cron expression is rejected on write.",
+            "definition" : "A schedule for the job to be executed, as a five-field cron expression. Jobs run at most once a minute, so a seconds field is not supported. An expression that is not a valid cron expression is rejected on write.",
             "min" : 1,
             "max" : "1",
             "base" : {
@@ -11320,6 +11367,12 @@
             },
             "type" : [{
               "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "cron-4",
+              "severity" : "error",
+              "human" : "cronString must be a valid five-field cron expression; seconds are not supported",
+              "expression" : "isValidCron()"
             }]
           },
           {

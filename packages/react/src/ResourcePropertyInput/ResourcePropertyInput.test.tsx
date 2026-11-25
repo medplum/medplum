@@ -73,6 +73,42 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith(true, 'active');
   });
 
+  test('boolean property outlines a missing value that means true', async () => {
+    const onChange = vi.fn();
+    await setup({
+      ...defaultProps,
+      path: 'Patient.active',
+      name: 'active',
+      property: { ...baseProperty, path: 'Patient.active', type: [{ code: 'boolean' }] },
+      onChange,
+    });
+    const checkbox = screen.getByTestId<HTMLInputElement>('active');
+    const tooltip = 'Not set, so treated as true. A search for active=true will not match it.';
+    expect(checkbox.checked).toBe(true);
+    expect(checkbox.closest('[data-variant]')).toHaveAttribute('data-variant', 'outline');
+    fireEvent.mouseEnter(checkbox);
+    expect(screen.getByText(tooltip)).toBeVisible();
+
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
+    expect(onChange).toHaveBeenCalledWith(false, 'active');
+    expect(checkbox.closest('[data-variant]')).not.toHaveAttribute('data-variant', 'outline');
+    fireEvent.mouseEnter(checkbox);
+    expect(screen.getByText(tooltip)).not.toBeVisible();
+  });
+
+  test('boolean property with explicit false overrides missing-means-true default', async () => {
+    await setup({
+      ...defaultProps,
+      path: 'Patient.active',
+      name: 'active',
+      property: { ...baseProperty, path: 'Patient.active', type: [{ code: 'boolean' }] },
+      defaultValue: false,
+    });
+    expect(screen.getByTestId<HTMLInputElement>('active').checked).toBe(false);
+  });
+
   test('Date property', async () => {
     const onChange = vi.fn();
 

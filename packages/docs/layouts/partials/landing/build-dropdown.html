@@ -1,0 +1,36 @@
+{{- /*
+  "Build on the Platform" dropdown. Opens on hover or keyboard focus (CSS), or on click/tap (build-dropdown.mjs).
+  Params:
+    label        - trigger label (default "Build on the Platform")
+    triggerClass - trigger classes (default the white landing button)
+*/ -}}
+{{- $label := .label | default "Build on the Platform" -}}
+{{- $triggerClass := .triggerClass | default "landing-button landing-button-white" -}}
+<div class="build-dropdown">
+  <button type="button" class="build-dropdown-trigger {{ $triggerClass }}" aria-haspopup="true" aria-expanded="false">
+    {{ $label }}
+    <span class="build-dropdown-chevron">{{ partial "icon" "outline/chevron-down" }}</span>
+  </button>
+  <div class="build-dropdown-menu">
+    <div class="build-dropdown-copy-item">
+      <div class="build-dropdown-item-header">
+        {{ partial "icon" "outline/terminal-2" }}
+        <span>Start from CLI or GitHub</span>
+      </div>
+      {{ range slice "npm init medplum" "git clone https://github.com/medplum/medplum.git" }}
+        <button type="button" class="build-dropdown-copy" data-copy="{{ . }}" aria-label="Copy &quot;{{ . }}&quot; to clipboard">
+          <code>{{ . }}</code>
+          <span class="build-dropdown-copy-icon">{{ partial "icon" "outline/copy" }}</span>
+        </button>
+      {{ end }}
+    </div>
+    <div class="build-dropdown-divider"></div>
+    <a class="build-dropdown-item" href="/docs">
+      <div class="build-dropdown-item-header">
+        {{ partial "icon" "outline/book" }}
+        <span>View Our Docs</span>
+      </div>
+      <p class="build-dropdown-item-description">Learn the fundamentals of building with Medplum</p>
+    </a>
+  </div>
+</div>

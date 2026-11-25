@@ -8,11 +8,13 @@ import type {
   AppointmentParticipant,
   AuditEvent,
   Binary,
+  Bot,
   Bundle,
   CarePlan,
   CodeSystem,
   Condition,
   Consent,
+  Cron,
   DiagnosticReport,
   DocumentReference,
   ElementDefinition,
@@ -1104,7 +1106,13 @@ describe('FHIR resource validation', () => {
     patient.birthDate = 'x';
     expect(() => validateResource(patient)).toThrow('Invalid date format');
 
+    patient.birthDate = '2023-02-29';
+    expect(() => validateResource(patient)).toThrow('Invalid date value');
+
     patient.birthDate = '2000-01-01';
+    expect(() => validateResource(patient)).not.toThrow();
+
+    patient.birthDate = '2024-02-29';
     expect(() => validateResource(patient)).not.toThrow();
   });
 
@@ -1778,6 +1786,27 @@ describe('FHIR resource validation', () => {
     expect(() => validateTypedValue({ type: 'Address', value: { foo: 'bar' } })).toThrow(
       'Invalid additional property "foo" (Address.foo)'
     );
+  });
+
+  test('Cron schedules must be valid cron expressions', () => {
+    const cron: Cron = {
+      resourceType: 'Cron',
+      active: true,
+      cronString: '*/5 * * * *',
+      targetReference: { reference: 'Bot/123' },
+      onBehalfOf: { reference: 'ProjectMembership/456' },
+    };
+    expect(() => validateResource(cron)).not.toThrow();
+    expect(() => validateResource({ ...cron, cronString: '10-2 * * * *' })).toThrow('cron-4');
+    expect(() => validateResource({ ...cron, cronString: '0 */5 * * * *' })).toThrow('cron-4');
+
+    const bot: Bot = { resourceType: 'Bot', cronString: '0 0 * * MON-FRI' };
+    expect(() => validateResource(bot)).not.toThrow();
+    expect(() => validateResource({ ...bot, cronString: 'not a cron' })).toThrow('bot-1');
+    expect(() => validateResource({ ...bot, cronString: '30 0 0 * * MON-FRI' })).toThrow('bot-1');
+    expect(() =>
+      validateResource({ resourceType: 'Bot', cronTiming: { repeat: { period: 1, periodUnit: 'h' } } })
+    ).not.toThrow();
   });
 
   describe('Value collection', () => {

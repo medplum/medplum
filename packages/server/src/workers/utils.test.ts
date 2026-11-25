@@ -350,6 +350,22 @@ describe('worker utils', () => {
       // Restore the spy
       loggerInfoSpy.mockRestore();
     });
+
+    test('logs only the given events', () => {
+      const queue = { name: 'TestLoggingQueue' } as Queue;
+      const worker = new EventEmitter() as unknown as Worker;
+      const loggerInfoSpy = vi.spyOn(globalLogger, 'info').mockImplementation(() => undefined);
+
+      addVerboseQueueLogging(queue, worker, undefined, ['failed']);
+
+      const job = { id: '123', timestamp: Date.now(), attemptsMade: 0, data: {} } as Job;
+      worker.emit('active', job, 'waiting');
+      worker.emit('completed', job, undefined, 'active');
+      expect(loggerInfoSpy).not.toHaveBeenCalled();
+
+      worker.emit('failed', job, new Error('boom'), 'active');
+      expect(loggerInfoSpy).toHaveBeenCalledWith('TestLoggingQueue worker: failed', expect.anything());
+    });
   });
 
   describe('trackJobMetrics', () => {
@@ -478,7 +494,7 @@ describe('worker utils', () => {
       } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
-      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq, autorun: false });
     });
 
     test('returns default options plus global bullmq config when workers config exists but no bullmq overrides for this worker', () => {
@@ -488,7 +504,7 @@ describe('worker utils', () => {
       } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'subscription', defaultOptions);
-      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq, autorun: false });
     });
 
     test('merges per-worker bullmq overrides on top of global config', () => {
@@ -507,6 +523,7 @@ describe('worker utils', () => {
         concurrency: 50,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
+        autorun: false,
       });
     });
 
@@ -521,6 +538,7 @@ describe('worker utils', () => {
         concurrency: 1,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
+        autorun: false,
       });
     });
 
@@ -540,6 +558,7 @@ describe('worker utils', () => {
         concurrency: 5,
         removeOnComplete: { count: 1 },
         removeOnFail: { count: 1 },
+        autorun: false,
       });
     });
 
@@ -554,7 +573,7 @@ describe('worker utils', () => {
       } as ServerConfig;
 
       const result = getWorkerBullmqConfig(config, 'download', defaultOptions);
-      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq });
+      expect(result).toStrictEqual({ ...defaultOptions, ...config.bullmq, autorun: false });
     });
   });
 });

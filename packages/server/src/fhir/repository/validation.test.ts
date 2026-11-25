@@ -1,15 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ElementDefinition, Observation, Patient, StructureDefinition, ValueSet } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import type {
+  ElementDefinition,
+  Observation,
+  Patient,
+  ProjectMembership,
+  StructureDefinition,
+  ValueSet,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import assert from 'node:assert';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, withTestContext } from '../../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 
 describe('Repository validation', () => {
   const rawUsCorePatientProfile = readFileSync(resolve(__dirname, '../__test__/us-core-patient.json'), 'utf8');
@@ -26,7 +35,14 @@ describe('Repository validation', () => {
 
   test('Profile validation', async () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ withRepo: true });
+      const { project, repo } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+        withRepo: true,
+      });
+      const { repo: linkingRepo } = await createTestProject({
+        project: { link: [{ project: createReference(project) }] },
+        withRepo: true,
+      });
 
       const profile = { ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() };
       const patient: Patient = {
@@ -52,6 +68,7 @@ describe('Repository validation', () => {
       await expect(repo.createResource(patient)).resolves.toBeTruthy();
       await repo.createResource(profile);
       await expect(repo.createResource(patient)).rejects.toThrow('Missing required property (Patient.gender)');
+      await expect(linkingRepo.createResource(patient)).resolves.toBeTruthy();
     }));
 
   test('Profile update', async () =>
@@ -194,6 +211,52 @@ describe('Repository validation', () => {
         );
       }));
   });
+
+  test('ProjectMembership user must be readable by the author', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true, membership: { admin: true } });
+      const own = await addTestUser(project, {
+        resourceType: 'Patient',
+        accessPolicy: { resourceType: 'AccessPolicy' },
+      });
+      expect(own.user.project?.reference).toBe(`Project/${project.id}`);
+
+      const { project: otherProject } = await createTestProject();
+      const otherPatient = await addTestUser(otherProject, {
+        resourceType: 'Patient',
+        accessPolicy: { resourceType: 'AccessPolicy' },
+      });
+      expect(otherPatient.user.project?.reference).toBe(`Project/${otherProject.id}`);
+      const otherPractitioner = await addTestUser(otherProject);
+      expect(otherPractitioner.user.project).toBeUndefined();
+
+      const membership = {
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        profile: createReference(own.profile),
+      } satisfies Partial<ProjectMembership>;
+
+      // A project admin cannot name a User of another project, or a server-scoped User, by id
+      for (const user of [otherPatient.user, otherPractitioner.user]) {
+        await expect(
+          repo.createResource<ProjectMembership>({ ...membership, user: createReference(user) })
+        ).rejects.toThrow(`Cannot resolve 'User/${user.id}'`);
+      }
+
+      // A User of the admin's own project is allowed, and an unchanged user is not checked again
+      const created = await repo.createResource<ProjectMembership>({ ...membership, user: createReference(own.user) });
+      expect(created.user?.reference).toBe(`User/${own.user.id}`);
+      const updated = await repo.updateResource<ProjectMembership>({ ...created, active: false });
+      expect(updated.active).toBe(false);
+
+      // The system repository, used by invite, is not restricted
+      const systemRepo = await getProjectSystemRepo(project);
+      const invited = await systemRepo.createResource<ProjectMembership>({
+        ...membership,
+        user: createReference(otherPractitioner.user),
+      });
+      expect((await repo.updateResource<ProjectMembership>({ ...invited, active: false })).active).toBe(false);
+    }));
 
   test('Project default profiles', async () =>
     withTestContext(async () => {

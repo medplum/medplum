@@ -7,7 +7,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { createBotMembership, createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
 
 const app = express();
@@ -66,6 +66,7 @@ async function setEligibilitySubmitOperation(
 
 // Creates a custom eligibility-submit OperationDefinition backed by a deployed Bot.
 async function deployEligibilityOperation(
+  project: WithId<Project>,
   accessToken: string,
   code = SUB_OPERATION_CODE,
   insurerDisplay = 'Test Payer'
@@ -77,6 +78,7 @@ async function deployEligibilityOperation(
     .send({ resourceType: 'Bot', name: 'Eligibility Submit Bot', runtimeVersion: 'vmcontext' });
   expect(res1).toHaveStatus(201);
   const bot = res1.body as WithId<Bot>;
+  await createBotMembership(project, bot);
 
   const res2 = await request(app)
     .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
@@ -154,8 +156,12 @@ describe('CoverageEligibilityRequest $submit', () => {
   });
 
   test('Dispatches to the operation named by the ELIGIBILITY_SUBMIT_OPERATION project setting', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployEligibilityOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -170,8 +176,12 @@ describe('CoverageEligibilityRequest $submit', () => {
   });
 
   test('Dispatches a raw CoverageEligibilityRequest body to the configured operation', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployEligibilityOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -185,8 +195,12 @@ describe('CoverageEligibilityRequest $submit', () => {
   });
 
   test('Dispatches Bundles containing a CoverageEligibilityRequest to the configured operation', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployEligibilityOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const bundle: Bundle = {
@@ -206,8 +220,12 @@ describe('CoverageEligibilityRequest $submit', () => {
   });
 
   test('Returns 400 when a Bundle does not contain a CoverageEligibilityRequest', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployEligibilityOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)
@@ -228,8 +246,12 @@ describe('CoverageEligibilityRequest $submit', () => {
   });
 
   test('Reads the CoverageEligibilityRequest from the URL on the instance route', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployEligibilityOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const createRes = await request(app)
@@ -251,8 +273,12 @@ describe('CoverageEligibilityRequest $submit', () => {
   });
 
   test('Returns 400 when no CoverageEligibilityRequest payload is provided', async () => {
-    const { project, accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true });
-    await deployEligibilityOperation(accessToken);
+    const { project, accessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      membership: { admin: true },
+    });
+    await deployEligibilityOperation(project, accessToken);
     await setEligibilitySubmitOperation(repo, project, SUB_OPERATION_CODE);
 
     const res = await request(app)

@@ -36,8 +36,6 @@ interface TestReport {
 const testsDir = __dirname + '/tests';
 const files = readdirSync(testsDir);
 const report: TestReport = {};
-let totalCount = 0;
-let passedCount = 0;
 
 describe('SQL on FHIR', () => {
   beforeAll(() => {
@@ -69,17 +67,12 @@ describe('SQL on FHIR', () => {
           passed = false;
         }
         report[file].tests.push({ name: title, result: { passed } });
-        totalCount++;
-        if (passed) {
-          passedCount++;
-        }
       }
     );
   });
 
   afterAll(() => {
     writeFileSync(__dirname + '/test_report.json', JSON.stringify(report, null, 2) + '\n', 'utf8');
-    console.log(`Passed ${passedCount} of ${totalCount} tests`);
   });
 
   test('column is null when its path resolves to nothing', () => {

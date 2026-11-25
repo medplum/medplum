@@ -1,0 +1,40 @@
+/* A shared frame for the tenancy figures. Preserve readable resource labels on narrow screens. */
+.tenancy-diagram {
+  display: block;
+  container-type: inline-size;
+  max-width: 760px;
+  margin: 1.25rem auto;
+}
+
+.tenancy-diagram-scroll {
+  display: block;
+  overflow-x: auto;
+  background: rgb(246, 247, 248);
+  border-radius: 6px;
+}
+
+.tenancy-diagram-scroll:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+.tenancy-diagram img {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  max-width: none;
+  height: auto;
+}
+
+.tenancy-diagram-hint {
+  display: none;
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+@container (max-width: 719px) {
+  .tenancy-diagram-hint {
+    display: block;
+  }
+}

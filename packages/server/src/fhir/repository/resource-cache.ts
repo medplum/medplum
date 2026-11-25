@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { stringify, tryParseReference } from '@medplum/core';
-import type { Reference, Resource } from '@medplum/fhirtypes';
+import type { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getCacheRedis } from '../../redis';
 import { GLOBAL_SHARD_ID, normalizeShardId } from '../sharding';
@@ -77,47 +77,79 @@ function parseCacheEntry<T extends Resource>(cachedValue: string): CacheEntry<T>
 }
 
 /**
- * Writes a cache entry to Redis.
- * If the `cacheResourcesOnWrite` server config is disabled, does not create a new cache entry unless `force` is set.
+ * A resource cache write, built when the write is requested and applied by {@link writeResourceCache}.
+ * Without `force`, a `set` does not create a missing entry when the `cacheResourcesOnWrite` server config is disabled.
+ */
+export type ResourceCacheWrite =
+  | {
+      readonly kind: 'set';
+      readonly resourceType: ResourceType;
+      readonly key: string;
+      readonly value: string;
+      readonly force: boolean;
+    }
+  | { readonly kind: 'delete'; readonly resourceType: ResourceType; readonly keys: readonly string[] };
+
+/**
+ * Builds a cache entry write. The resource is serialized now, so later mutations do not affect the entry.
  * @param resource - The resource to cache.
  * @param shardId - The shard holding the resource.
  * @param options - Optional write options.
  * @param options.force - Create the entry even if it does not already exist.
+ * @returns The cache write.
  */
-export async function setResourceCacheEntry(
+export function buildResourceCacheSet(
   resource: WithId<Resource>,
   shardId: string,
   options?: { force?: boolean }
-): Promise<void> {
-  const key = getResourceCacheKey(resource.resourceType, resource.id);
-  const value = stringify({ resource, projectId: resource.meta?.project, shardId: normalizeShardId(shardId) });
-  if (!options?.force && getConfig().cacheResourcesOnWrite === false) {
-    await getCacheRedis().set(key, value, 'EX', RESOURCE_CACHE_EX_SECONDS, 'XX');
-  } else {
-    await getCacheRedis().set(key, value, 'EX', RESOURCE_CACHE_EX_SECONDS);
-  }
+): ResourceCacheWrite {
+  return {
+    kind: 'set',
+    resourceType: resource.resourceType,
+    key: getResourceCacheKey(resource.resourceType, resource.id),
+    value: stringify({ resource, projectId: resource.meta?.project, shardId: normalizeShardId(shardId) }),
+    force: options?.force ?? false,
+  };
 }
 
 /**
- * Deletes a cache entry from Redis.
- * @param resourceType - The resource type.
- * @param id - The resource ID.
- */
-export async function deleteResourceCacheEntry(resourceType: string, id: string): Promise<void> {
-  await getCacheRedis().del(getResourceCacheKey(resourceType, id));
-}
-
-/**
- * Deletes cache entries from Redis.
+ * Builds a cache entry deletion.
  * @param resourceType - The resource type.
  * @param ids - The resource IDs.
+ * @returns The cache write.
  */
-export async function deleteResourceCacheEntries(resourceType: string, ids: string[]): Promise<void> {
-  const cacheKeys = ids.map((id) => {
-    return getResourceCacheKey(resourceType, id);
-  });
+export function buildResourceCacheDelete(resourceType: ResourceType, ids: readonly string[]): ResourceCacheWrite {
+  return { kind: 'delete', resourceType, keys: ids.map((id) => getResourceCacheKey(resourceType, id)) };
+}
 
-  await getCacheRedis().del(cacheKeys);
+/**
+ * Applies cache writes, in order, in one Redis round trip.
+ * The pipeline is sent synchronously, before this function first yields.
+ * @param writes - The cache writes, in the order they must be applied.
+ */
+export async function writeResourceCache(writes: readonly ResourceCacheWrite[]): Promise<void> {
+  const updateOnly = getConfig().cacheResourcesOnWrite === false;
+  const pipeline = getCacheRedis().pipeline();
+  for (const write of writes) {
+    if (write.kind === 'delete') {
+      if (write.keys.length > 0) {
+        pipeline.del(...write.keys);
+      }
+    } else if (updateOnly && !write.force) {
+      pipeline.set(write.key, write.value, 'EX', RESOURCE_CACHE_EX_SECONDS, 'XX');
+    } else {
+      pipeline.set(write.key, write.value, 'EX', RESOURCE_CACHE_EX_SECONDS);
+    }
+  }
+  if (pipeline.length === 0) {
+    return;
+  }
+  const results = await pipeline.exec();
+  // Per-command failures are reported in the results rather than rejecting exec; a rejected XX is a null reply
+  const failed = results?.find(([err]) => err);
+  if (failed?.[0]) {
+    throw failed[0];
+  }
 }
 
 /**
@@ -127,5 +159,5 @@ export async function deleteResourceCacheEntries(resourceType: string, ids: stri
  * @returns The Redis cache key.
  */
 export function getResourceCacheKey(resourceType: string, id: string): string {
-  return `${resourceType}/${id}`;
+  return `${resourceType}/${id.toLowerCase()}`;
 }

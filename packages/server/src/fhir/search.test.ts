@@ -14,6 +14,7 @@ import {
   UCUM,
 } from '@medplum/core';
 import type {
+  AccessPolicyResource,
   ActivityDefinition,
   AllergyIntolerance,
   Appointment,
@@ -21,6 +22,7 @@ import type {
   Binary,
   Bundle,
   BundleEntry,
+  CarePlan,
   CareTeam,
   Coding,
   Communication,
@@ -2655,6 +2657,50 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
     }));
 
+  test.each<[string, AccessPolicyResource[]]>([
+    ['default', []],
+    ['read interaction', [{ resourceType: 'Questionnaire', interaction: ['read'] }]],
+  ])('Include canonical with access policy (%s)', (_, questionnairePolicy) =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resource: [{ resourceType: 'CarePlan' }, { resourceType: 'PlanDefinition' }, ...questionnairePolicy],
+        },
+      });
+
+      const canonicalURL = 'http://example.com/fhir/definition/' + randomUUID();
+      const questionnaire = await repo.getSystemRepo().createResource<Questionnaire>({
+        resourceType: 'Questionnaire',
+        meta: { project: project.id },
+        status: 'active',
+        url: canonicalURL,
+      });
+      const planDefinition = await repo.createResource<PlanDefinition>({
+        resourceType: 'PlanDefinition',
+        status: 'active',
+        url: canonicalURL,
+      });
+      const carePlan = await repo.createResource<CarePlan>({
+        resourceType: 'CarePlan',
+        status: 'active',
+        intent: 'plan',
+        subject: { reference: 'Patient/' + randomUUID() },
+        instantiatesCanonical: [canonicalURL],
+      });
+
+      const bundle = await repo.search({
+        resourceType: 'CarePlan',
+        include: [{ resourceType: 'CarePlan', searchParam: 'instantiates-canonical' }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: carePlan.id }],
+      });
+      expect(bundle.entry).toHaveLength(2);
+      expect(bundleContains(bundle, carePlan)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
+      expect(bundleContains(bundle, planDefinition)).toMatchObject<BundleEntry>({ search: { mode: 'include' } });
+      expect(bundleContains(bundle, questionnaire)).toBeUndefined();
+    })
+  );
+
   test('Include PlanDefinition mixed types', () =>
     withTestContext(async () => {
       const canonical = 'http://example.com/fhir/R4/ActivityDefinition/' + randomUUID();
@@ -4608,6 +4654,16 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       ).rejects.toThrow(/^Unknown search parameter: xyz$/);
     }));
 
+  test('ValueSet code search parameter is not supported', async () =>
+    withTestContext(async () => {
+      await expect(
+        repo.search({
+          resourceType: 'ValueSet',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'abc' }],
+        })
+      ).rejects.toThrow(/^Unknown search parameter: code$/);
+    }));
+
   test('Date range search', () =>
     withTestContext(async () => {
       const ident = randomUUID();
@@ -5242,6 +5298,24 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
         expectSearchByReferenceResults(patients, observations, count, result);
       }));
 
+    test('Reference values with special characters', async () =>
+      withTestContext(async () => {
+        const patients = await createPatients(repo, 1);
+        const observations = await createObservations(repo, 2, { subject: patients[0] });
+        const patientRef = getReferenceString(patients[0]);
+        const otherRef = "Patient/o'brien";
+
+        const result = await repo.searchByReference<Observation>(
+          { resourceType: 'Observation', count: 10 },
+          'subject',
+          [otherRef, patientRef]
+        );
+
+        expect(Object.keys(result)).toStrictEqual([otherRef, patientRef]);
+        expect(result[otherRef]).toStrictEqual([]);
+        expect(result[patientRef].map((o) => o.id).sort()).toStrictEqual(observations.map((o) => o.id).sort());
+      }));
+
     test('Array reference column', async () =>
       withTestContext(async () => {
         const parentObservations = await createObservations(repo, 3, {});
@@ -5726,8 +5800,19 @@ describe.each<Project['features']>([undefined, ['range-search']])('project-scope
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 2$/), expect.anything());
       querySpy.mockClear();
 
+      // resourceOnly searches skip the extra "next page" row
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 1$/), expect.anything());
+      querySpy.mockClear();
+
       config.fhirSearchMinLimit = 39;
       await repo.search(parseSearchRequest('Patient?identifier=123&_count=1'));
+      expect(querySpy).toHaveBeenCalledTimes(1);
+      expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
+      querySpy.mockClear();
+
+      await repo.searchOne(parseSearchRequest('Patient?identifier=123'));
       expect(querySpy).toHaveBeenCalledTimes(1);
       expect(querySpy).toHaveBeenNthCalledWith(1, expect.stringMatching(/LIMIT 39$/), expect.anything());
     });
@@ -5822,6 +5907,34 @@ describe.each([true, false])('systemRepo', (rangeSearch) => {
       expect(bundleContains(presentBundle, patient1)).toBeDefined();
       expect(bundleContains(presentBundle, patient2)).toBeDefined();
     }));
+
+  test.each([true, false])('Sort by _project; desc=%s', (descending) =>
+    withTestContext(async () => {
+      const idValue = randomUUID();
+      const projectA = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+      const projectB = await systemRepo.createResource<Project>({ resourceType: 'Project' });
+      const [project1, project2] = [projectA.id, projectB.id].sort();
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'id', value: idValue }],
+        meta: { project: project1 },
+      });
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'id', value: idValue }],
+        meta: { project: project2 },
+      });
+
+      const bundle = await systemRepo.search<Patient>({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: idValue }],
+        sortRules: [{ code: '_project', descending }],
+      });
+
+      const expected = descending ? [patient2.id, patient1.id] : [patient1.id, patient2.id];
+      expect(bundle.entry?.map((e) => e.resource?.id)).toStrictEqual(expected);
+    })
+  );
 
   test('Filter by _lastUpdated', () =>
     withTestContext(async () => {

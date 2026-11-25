@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { fhirRequestToolCall } from '../../test-utils/spaces';
 import type { Message } from '../../types/spaces';
 import type { SpacesInboxProps } from './SpacesInbox';
@@ -84,9 +84,7 @@ describe('SpacesInbox', () => {
   const inbox = (props: SpacesInboxProps): JSX.Element => (
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider>
-          <SpacesInbox {...props} />
-        </MantineProvider>
+        <SpacesInbox {...props} />
       </MedplumProvider>
     </MemoryRouter>
   );

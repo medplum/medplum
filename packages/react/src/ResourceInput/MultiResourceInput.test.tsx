@@ -42,8 +42,10 @@ describe('MultiResourceInput', () => {
       resourceType: 'Patient',
       name: 'foo',
       placeholder: 'Test',
+      'aria-label': 'Patients',
     });
     expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Patients' })).toBeInTheDocument();
   });
 
   test('Renders default value from reference', async () => {
@@ -93,6 +95,22 @@ describe('MultiResourceInput', () => {
     const input = screen.getByPlaceholderText('Test');
     await typeInAutocomplete(input, 'Simpson');
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('Searches with searchParam in place of the default parameter', async () => {
+    const searchResources = vi.spyOn(medplum, 'searchResources');
+    setup({
+      resourceType: 'Patient',
+      name: 'foo',
+      placeholder: 'Test',
+      searchParam: 'name:contains',
+    });
+
+    await typeInAutocomplete(screen.getByPlaceholderText('Test'), 'imps');
+    const params = searchResources.mock.calls.at(-1)?.[1] as URLSearchParams;
+    expect(params.get('name:contains')).toBe('imps');
+    expect(params.has('name')).toBe(false);
+    searchResources.mockRestore();
   });
 
   test('Call onChange with array when item is selected', async () => {

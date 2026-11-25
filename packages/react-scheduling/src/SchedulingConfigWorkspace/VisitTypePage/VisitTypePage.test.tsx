@@ -445,10 +445,14 @@ describe('VisitTypePage', () => {
     });
 
     test('a new visit type is created at its service facilities without asking', async () => {
-      const { onSynced } = await setup(null);
+      const { onSynced, medplum } = await setup(null);
+      const searchResources = vi.spyOn(medplum, 'searchResources');
 
       fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Consult' } });
       await pick('Downtown Clinic');
+      // Matched anywhere in the name, as the site pickers elsewhere are.
+      const criteria = searchResources.mock.calls.find(([resourceType]) => resourceType === 'Location')?.[1];
+      expect((criteria as URLSearchParams).get('name:contains')).toBe('Downtown');
       await save();
 
       await waitFor(() => expect(onSynced).toHaveBeenCalled());

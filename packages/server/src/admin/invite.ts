@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { InviteRequest, ProfileResource, SearchRequest, WithId } from '@medplum/core';
 import {
+  AccessPolicyInteraction,
   allOk,
   badRequest,
   conflict,
   createReference,
+  escapeSearchValue,
   getReferenceString,
   isCreated,
   isNotFound,
@@ -27,19 +29,24 @@ import type {
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
-import { authenticator } from 'otplib';
+import { hasExternalAuth } from '../auth/method';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
+import { getAllowedProjects, getRepoForProjects } from '../fhir/accesspolicy';
+import { getDefaultAccessPolicy, getDefaultPatientAccessPolicy } from '../fhir/default-access-policies';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
+import { LogThrottle } from '../util/logthrottle';
 import { makeValidationMiddleware } from '../util/validator';
+
+const unverifiedEmailMatchLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 export const inviteValidator = makeValidationMiddleware([
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -132,7 +139,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
-          { code: 'user:User.email', operator: Operator.EXACT, value: email },
+          { code: 'user:User.email', operator: Operator.EXACT, value: escapeSearchValue(email) },
           { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
           projectFilter,
         ],
@@ -149,7 +156,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
         {
           code: 'email',
           operator: Operator.EXACT,
-          value: email,
+          value: escapeSearchValue(email),
         },
         userResource.project
           ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
@@ -165,7 +172,8 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   logger.info('User created', { id: user.id, email });
-  if (!existingUser) {
+  // Users on a domain with an external identity provider cannot set a password, so they get no link
+  if (!existingUser && !(email && (await hasExternalAuth(email)))) {
     passwordResetUrl = await resetPassword(systemRepo, user, 'invite');
   }
 
@@ -175,11 +183,46 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
   const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
 
+  if (existingUser) {
+    logUnverifiedEmailMatch(user, membership, 'invite');
+  }
+
   if (email && request.sendEmail !== false) {
     await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
   }
 
   return { user, profile, membership };
+}
+
+/**
+ * Diagnostic logging for a membership granted to an existing User that was matched by email address
+ * but has not verified that address.
+ * @param user - The existing User matched by email address.
+ * @param membership - The ProjectMembership granted to the User.
+ * @param source - The operation that granted the membership.
+ */
+export function logUnverifiedEmailMatch(
+  user: WithId<User>,
+  membership: WithId<ProjectMembership>,
+  source: 'invite' | 'project-init'
+): void {
+  if (user.emailVerified) {
+    return;
+  }
+  const projectId = resolveId(membership.project);
+  unverifiedEmailMatchLogThrottle.maybeLog([projectId, user.id].join('|'), (suppressed) => {
+    getLogger().warn('Membership granted to existing user with unverified email', {
+      source,
+      userId: user.id,
+      userProject: user.project?.reference,
+      projectId,
+      membershipId: membership.id,
+      profile: membership.profile.reference,
+      admin: membership.admin,
+      invitedBy: membership.invitedBy?.reference,
+      suppressed,
+    });
+  });
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
@@ -196,11 +239,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     project = createReference(request.project);
   }
 
-  let mfaSecret: string | undefined = undefined;
-  if (mfaRequired) {
-    mfaSecret = authenticator.generateSecret();
-  }
-
   return {
     resourceType: 'User',
     meta: project ? { project: resolveId(project) } : undefined,
@@ -210,7 +248,6 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
     passwordHash,
     project,
     mfaRequired,
-    mfaSecret,
   };
 }
 
@@ -274,7 +311,7 @@ async function upsertProfileResource(
         {
           code: 'email',
           operator: Operator.EQUALS,
-          value: email,
+          value: escapeSearchValue(email),
         },
       ];
 
@@ -352,6 +389,10 @@ async function validateAccessPolicies(
     }
   }
 
+  if (request.membership?.accessPolicy) {
+    references.push(request.membership.accessPolicy);
+  }
+
   if (Array.isArray(request.membership?.access)) {
     for (const access of request.membership.access) {
       if (access.policy) {
@@ -367,6 +408,7 @@ async function validateAccessPolicies(
 
   // Batch read all access policies at once
   const results = await systemRepo.readReferences<AccessPolicy>(references);
+  const projectRepo = getRepoForProjects(await getAllowedProjects(project, systemRepo));
 
   // Validate each result
   for (let i = 0; i < results.length; i++) {
@@ -383,8 +425,7 @@ async function validateAccessPolicies(
       throw result;
     }
 
-    // Check if the access policy belongs to the project
-    if (result.meta?.project && result.meta.project !== project.id) {
+    if (!projectRepo.canPerformInteraction(AccessPolicyInteraction.READ, result)) {
       throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
     }
   }
@@ -411,29 +452,27 @@ async function upsertProjectMembership(
 
   // Patients only. RelatedPerson and Practitioner invites are unchanged.
   // Also applies on upsert when no policy is provided in the request.
-  // Prefers defaultAccessPolicies over the legacy defaultPatientAccessPolicy field.
   if (request.resourceType === 'Patient' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'Patient');
+    const defaultPolicy = getDefaultPatientAccessPolicy(project);
     if (defaultPolicy) {
-      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
-    } else if (project.defaultPatientAccessPolicy) {
-      // Fallback to legacy field for backwards compatibility
-      partialMembership.accessPolicy = project.defaultPatientAccessPolicy;
+      partialMembership.accessPolicy = defaultPolicy;
     }
   }
 
-  // Apply default membership policy for RelatedPerson invites, with patient as a parameter.
+  // RelatedPerson's profile is not the patient. Put the associated Patient on
+  // ProjectMembership.access.parameter so login substitutes it for %patient in the policy
+  // criteria. Without that parameter, login would substitute the RelatedPerson profile.
   if (
     request.resourceType === 'RelatedPerson' &&
     !partialMembership.accessPolicy &&
     !partialMembership.access?.length
   ) {
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === 'RelatedPerson');
+    const defaultPolicy = getDefaultAccessPolicy(project, 'RelatedPerson');
     const patientRef = (profile as RelatedPerson).patient;
     if (defaultPolicy && patientRef) {
       partialMembership.access = [
         {
-          policy: defaultPolicy.accessPolicy,
+          policy: defaultPolicy,
           parameter: [{ name: 'patient', valueReference: patientRef }],
         },
       ];
@@ -443,10 +482,9 @@ async function upsertProjectMembership(
   // Apply default membership policy for Practitioner invites, based on whether the member is
   // an admin. Admins get the Admin default policy; everyone else gets the Practitioner default.
   if (request.resourceType === 'Practitioner' && !partialMembership.accessPolicy && !partialMembership.access?.length) {
-    const profileType = partialMembership.admin ? 'Admin' : 'Practitioner';
-    const defaultPolicy = project.defaultAccessPolicies?.find((p) => p.profileType === profileType);
+    const defaultPolicy = getDefaultAccessPolicy(project, partialMembership.admin ? 'Admin' : 'Practitioner');
     if (defaultPolicy) {
-      partialMembership.accessPolicy = defaultPolicy.accessPolicy;
+      partialMembership.accessPolicy = defaultPolicy;
     }
   }
 
@@ -545,8 +583,8 @@ async function sendInviteEmail(
   resetPasswordUrl: string | undefined
 ): Promise<void> {
   const options: Mail.Options = { to: user.email };
-  if (existing) {
-    // Existing user
+  if (existing || !resetPasswordUrl) {
+    // Existing user, or a user who signs in through an external identity provider
     options.subject = `Medplum: Welcome to ${request.project.name}`;
     options.text = [
       `You were invited to ${request.project.name}`,
@@ -574,9 +612,12 @@ async function sendInviteEmail(
       '',
     ].join('\n');
   }
+  // A server-scoped user is shared with other projects, so their mail must not go through this project's SMTP
+  const emailProject = user.project?.reference === getReferenceString(request.project) ? request.project : undefined;
   try {
-    await sendEmail(systemRepo, options, request.project);
+    await sendEmail(systemRepo, options, emailProject);
   } catch (err) {
+    getLogger().warn('Invite email failed', { projectId: request.project.id, err: normalizeErrorString(err) });
     // A common error for new self-hosted Medplum servers is that SES is not configured.
     // A long time ago, we made the mistake of establishing a convention of HTTP 200 + OperationOutcome for this case.
     // To preserve this behavior, we throw an OperationOutcomeError with allOk ID.
@@ -590,7 +631,6 @@ async function sendInviteEmail(
           details: {
             text: 'Could not send email. Make sure you have AWS SES set up.',
           },
-          diagnostics: normalizeErrorString(err),
         },
       ],
     });

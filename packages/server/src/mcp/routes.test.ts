@@ -9,18 +9,19 @@ vi.mock('node-fetch', async () => {
   return { default: actual.default };
 });
 
-import { normalizeOperationOutcome } from '@medplum/core';
+import { getReferenceString, normalizeOperationOutcome } from '@medplum/core';
 import type { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import type { Server } from 'http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { initTestAuth } from '../test.setup';
+import { addTestUser, createTestProject, initTestAuth } from '../test.setup';
 
 describe('MCP Routes', () => {
   const app = express();
@@ -183,6 +184,98 @@ describe('MCP Routes', () => {
       // reach an external host; it is handled as an ordinary same-origin FHIR request.
       const protoRel = await fhirRequest<OperationOutcome>('GET', '//169.254.169.254/latest/meta-data/');
       expect(protoRel.resourceType).toBe('OperationOutcome');
+
+      // 11. Paths that resolve outside /fhir/R4 on the same origin are rejected
+      for (const path of [
+        '../../auth/me',
+        '%2e%2e/%2e%2e/auth/me',
+        `http://localhost:${port}/auth/me`,
+        '../R4x/Patient',
+      ]) {
+        const outside = await fhirRequest<OperationOutcome>('GET', path);
+        expect(outside.issue?.[0].severity).toBe('error');
+      }
+    } finally {
+      await client.close();
+    }
+  });
+
+  test('SSE ignores messages posted by a different membership', async () => {
+    const owner = await createTestProject({ withAccessToken: true });
+    const other = await createTestProject({ withAccessToken: true });
+
+    const transport = new SSEClientTransport(new URL(`http://localhost:${port}/mcp/sse`), {
+      requestInit: { headers: { Authorization: `Bearer ${owner.accessToken}` } },
+    });
+    const client = new Client({ name: 'example-client', version: '1.0.0' });
+    await client.connect(transport);
+
+    try {
+      const family = randomUUID();
+      const sessionId = (transport as any)._endpoint.searchParams.get('sessionId');
+      const res = await request(app)
+        .post(`/mcp/sse?sessionId=${sessionId}`)
+        .set('Authorization', 'Bearer ' + other.accessToken)
+        .send({
+          jsonrpc: '2.0',
+          id: 999,
+          method: 'tools/call',
+          params: {
+            name: 'fhir-request',
+            arguments: { method: 'POST', path: 'Patient', body: { resourceType: 'Patient', name: [{ family }] } },
+          },
+        });
+      expect(res).toHaveStatus(202);
+
+      // Messages on a session are delivered in order, so this runs after the other membership's message
+      const search = (await client.callTool({
+        name: 'fhir-request',
+        arguments: { method: 'GET', path: `Patient?name=${family}` },
+      })) as CallToolResult;
+      const bundle = JSON.parse((search.content[0] as { text: string }).text) as Bundle;
+      expect(bundle.entry ?? []).toHaveLength(0);
+    } finally {
+      await client.close();
+    }
+  });
+
+  test.each<string>(['stream', 'sse'])('MCP with %s transport On-Behalf-Of', async (transportType: string) => {
+    const TransportClass = transportType === 'stream' ? StreamableHTTPClientTransport : SSEClientTransport;
+    const admin = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+    const member = await addTestUser(admin.project, {
+      accessPolicy: { resourceType: 'AccessPolicy', resource: [{ resourceType: 'Observation' }] },
+    });
+
+    const transport = new TransportClass(new URL(`http://localhost:${port}/mcp/${transportType}`), {
+      requestInit: {
+        headers: {
+          Authorization: `Bearer ${admin.accessToken}`,
+          'X-Medplum-On-Behalf-Of': getReferenceString(member.membership),
+        },
+      },
+    });
+    const client = new Client({ name: 'example-client', version: '1.0.0' });
+    await client.connect(transport);
+
+    try {
+      // The delegated member's policy allows Observation
+      const created = (await client.callTool({
+        name: 'fhir-request',
+        arguments: {
+          method: 'POST',
+          path: 'Observation',
+          body: { resourceType: 'Observation', status: 'final', code: { text: 'test' } },
+        },
+      })) as CallToolResult;
+      expect(created.isError).toBeFalsy();
+      expect(created.content[0]).toMatchObject({ type: 'text', text: expect.stringContaining('"Observation"') });
+
+      // The admin caller could search Patient; the delegated member cannot
+      const denied = (await client.callTool({
+        name: 'fhir-request',
+        arguments: { method: 'GET', path: 'Patient' },
+      })) as CallToolResult;
+      expect(denied.isError).toBe(true);
     } finally {
       await client.close();
     }

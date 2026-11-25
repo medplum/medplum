@@ -112,9 +112,16 @@ describe('MemoryRepository _include/_revinclude', () => {
       });
     }
 
-    const bundle = await repo.search(parseSearchRequest('Observation?_include=Observation:subject'));
-    expect(refs(bundle, 'match')).toHaveLength(3);
-    expect(refs(bundle, 'include')).toStrictEqual([getReferenceString(patient)]);
+    const readReferences = vi.spyOn(repo, 'readReferences');
+    try {
+      const bundle = await repo.search(parseSearchRequest('Observation?_include=Observation:subject'));
+      expect(refs(bundle, 'match')).toHaveLength(3);
+      expect(refs(bundle, 'include')).toStrictEqual([getReferenceString(patient)]);
+      // The shared patient is read once, not once per observation
+      expect(readReferences).toHaveBeenCalledExactlyOnceWith([{ reference: getReferenceString(patient) }]);
+    } finally {
+      readReferences.mockRestore();
+    }
   });
 
   test('_include does not re-include a resource already in the match set', async () => {

@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { NavigateFunction } from 'react-router';
 import * as reactRouter from 'react-router';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { TasksTab } from './TasksTab';
 
 describe('TasksTab', () => {
@@ -25,14 +25,12 @@ describe('TasksTab', () => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Routes>
-              <Route path="/Patient/:patientId/Task" element={<TasksTab />} />
-              <Route path="/Patient/:patientId/Task/new" element={<TasksTab />} />
-              <Route path="/Patient/:patientId/Task/:taskId" element={<TasksTab />} />
-              <Route path="/Patient/:patientId/Task/:taskId/new" element={<TasksTab />} />
-            </Routes>
-          </MantineProvider>
+          <Routes>
+            <Route path="/Patient/:patientId/Task" element={<TasksTab />} />
+            <Route path="/Patient/:patientId/Task/new" element={<TasksTab />} />
+            <Route path="/Patient/:patientId/Task/:taskId" element={<TasksTab />} />
+            <Route path="/Patient/:patientId/Task/:taskId/new" element={<TasksTab />} />
+          </Routes>
         </MedplumProvider>
       </MemoryRouter>
     );

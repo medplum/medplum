@@ -1,10 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Reference, Resource } from '@medplum/fhirtypes';
+import { isValidCronString } from '../cron';
 import type { Atom, AtomContext } from '../fhirlexer/parse';
 import type { TypedValue } from '../types';
 import { PropertyType, isResource } from '../types';
-import { calculateAge, getExtension, isEmpty, resolveId } from '../utils';
+import { calculateAge, getExtensions, isEmpty, resolveId } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import {
@@ -216,7 +217,8 @@ export const functions: Record<string, FhirPathFunction> = {
       return booleanToTypedValue(false);
     }
 
-    return booleanToTypedValue(input.every((e) => otherArray.some((o) => o.value === e.value)));
+    const otherValues = new Set(otherArray.map((o) => o.value));
+    return booleanToTypedValue(input.every((e) => hasRawValue(otherValues, e.value)));
   },
 
   /**
@@ -244,7 +246,8 @@ export const functions: Record<string, FhirPathFunction> = {
       return booleanToTypedValue(false);
     }
 
-    return booleanToTypedValue(otherArray.every((e) => input.some((o) => o.value === e.value)));
+    const inputValues = new Set(input.map((o) => o.value));
+    return booleanToTypedValue(otherArray.every((e) => hasRawValue(inputValues, e.value)));
   },
 
   /**
@@ -277,9 +280,12 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   distinct: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     const result: TypedValue[] = [];
-    for (const value of input) {
-      if (!result.some((e) => e.value === value.value)) {
-        result.push(value);
+    const seen = new Set<unknown>();
+    for (const typedValue of input) {
+      const value = typedValue.value;
+      if (!hasRawValue(seen, value)) {
+        seen.add(value);
+        result.push(typedValue);
       }
     }
     return result;
@@ -500,9 +506,12 @@ export const functions: Record<string, FhirPathFunction> = {
       return input;
     }
     const otherArray = other.eval(context, getRootInput(context));
+    const otherValues = new Set(otherArray.map((e) => e.value));
+    const seen = new Set<unknown>();
     const result: TypedValue[] = [];
     for (const value of input) {
-      if (!result.some((e) => e.value === value.value) && otherArray.some((e) => e.value === value.value)) {
+      if (hasRawValue(otherValues, value.value) && !seen.has(value.value)) {
+        seen.add(value.value);
         result.push(value);
       }
     }
@@ -526,9 +535,10 @@ export const functions: Record<string, FhirPathFunction> = {
       return input;
     }
     const otherArray = other.eval(context, getRootInput(context));
+    const otherValues = new Set(otherArray.map((e) => e.value));
     const result: TypedValue[] = [];
     for (const value of input) {
-      if (!otherArray.some((e) => e.value === value.value)) {
+      if (!hasRawValue(otherValues, value.value)) {
         result.push(value);
       }
     }
@@ -1912,16 +1922,39 @@ export const functions: Record<string, FhirPathFunction> = {
     return [{ type: PropertyType.id, value: resolveId(reference) }];
   },
 
+  /**
+   * Returns true if the input string is a cron expression the Medplum job scheduler can run.
+   *
+   * This is a Medplum extension, not part of the FHIRPath specification.
+   *
+   * If the input collection is empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @returns True if the input string is a valid cron expression.
+   */
+  isValidCron: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+    return applyStringFunc(isValidCronString, context, input);
+  },
+
+  /**
+   * Returns every extension with the given URL on every item in the input collection.
+   *
+   * Equivalent to `.extension.where(url = string)`.
+   *
+   * See: https://hl7.org/fhir/fhirpath.html#functions
+   *
+   * @param context - The evaluation context.
+   * @param input - The input collection.
+   * @param urlAtom - The extension URL.
+   * @returns All matching extensions.
+   */
   extension: (context: AtomContext, input: TypedValue[], urlAtom: Atom): TypedValue[] => {
     const url = urlAtom.eval(context, input)[0].value as string;
-    const resource = input?.[0]?.value;
-    if (resource) {
-      const extension = getExtension(resource, url);
-      if (extension) {
-        return [{ type: PropertyType.Extension, value: extension }];
-      }
-    }
-    return [];
+    return input.flatMap((e) =>
+      getExtensions(e.value, url).map((extension) => ({ type: PropertyType.Extension, value: extension }))
+    );
   },
 };
 
@@ -1993,4 +2026,15 @@ function getRootInput(context: AtomContext): [TypedValue] {
     last = last.parent;
   }
   return [last.variables.$this];
+}
+
+/**
+ * Returns true if the set contains a value that is `===` to the given value.
+ * Same as `Set.has`, except NaN never matches, as with `===`.
+ * @param values - The set of raw values.
+ * @param value - The raw value to look up.
+ * @returns True if the value is in the set.
+ */
+function hasRawValue(values: Set<unknown>, value: unknown): boolean {
+  return !Number.isNaN(value) && values.has(value);
 }

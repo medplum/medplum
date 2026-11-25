@@ -112,6 +112,9 @@ playwright/.cache/
 !.claude/skills/
 CLAUDE.md
 AGENTS.md
+# Share root guidance while keeping local instructions in subdirectories ignored.
+!/AGENTS.md
+!/CLAUDE.md
 
 # 0x profiling data
 *.0x

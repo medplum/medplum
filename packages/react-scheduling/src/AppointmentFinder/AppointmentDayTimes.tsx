@@ -3,8 +3,8 @@
 import { Stack, Text, Title } from '@mantine/core';
 import type { Appointment } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
+import { formatDayHeading } from '../timezones';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
-import { formatDayHeading } from './AppointmentFinder.times';
 import { AppointmentSlotGroupCard } from './AppointmentSlotGroupCard';
 
 export interface AppointmentDayTimesProps {
@@ -33,7 +33,9 @@ export function AppointmentDayTimes(props: AppointmentDayTimesProps): JSX.Elemen
 
   return (
     <Stack gap="xs">
-      <Title order={4}>{formatDayHeading(date)}</Title>
+      <Title order={6} size="h4">
+        {formatDayHeading(date)}
+      </Title>
       {groups.length === 0 && <Text c="dimmed">No times are offered on this day.</Text>}
       {groups.map((group) => (
         <AppointmentSlotGroupCard

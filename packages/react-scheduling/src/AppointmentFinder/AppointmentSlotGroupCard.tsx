@@ -7,9 +7,10 @@ import { ResourceName } from '@medplum/react';
 import type { JSX } from 'react';
 import type { SchedulingActorValue } from '../actors';
 import { getActorType, getActorTypeLabel } from '../actors';
+import { formatZonedTime, isViewerTimezone } from '../timezones';
 import classes from './AppointmentFinder.module.css';
 import type { AppointmentSlotGroup } from './AppointmentFinder.times';
-import { formatZonedTime, isViewerTimezone } from './AppointmentFinder.times';
+import { getAppointmentKey } from './AppointmentFinder.times';
 
 export interface AppointmentSlotGroupCardProps {
   readonly group: AppointmentSlotGroup;
@@ -46,6 +47,9 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
 
   // Times are written with their zone only when that is not the zone the viewer is reading them in.
   const withTimezone = !isViewerTimezone(timezone, viewerTimezone);
+  // Matched by value, since a refetch, as reopening the search makes, offers the same time
+  // as a new object.
+  const selectedKey = selected && getAppointmentKey(selected);
 
   return (
     <Paper withBorder p="md" data-testid={`slot-group-${group.key}`}>
@@ -63,12 +67,13 @@ export function AppointmentSlotGroupCard(props: AppointmentSlotGroupCardProps): 
       </Group>
       <Group gap="xs" className={classes.timeGrid}>
         {group.appointments.map((appointment) => {
-          const isSelected = selected === appointment;
+          const isSelected = getAppointmentKey(appointment) === selectedKey;
           return (
             <Button
               key={appointment.start}
               variant={isSelected ? 'filled' : 'outline'}
               size="sm"
+              px="sm"
               disabled={disabled}
               onClick={() => onSelectAppointment(appointment)}
             >

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
-import type { ClientApplication, Project, User } from '@medplum/fhirtypes';
+import type { ClientApplication, IdentityProvider, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { createClient } from '../admin/client';
@@ -281,6 +282,69 @@ describe('Token Exchange', () => {
     expect(res.body.access_token).toBeTruthy();
   });
 
+  test('Identity source and mapping mode are honored without useSubject', async () => {
+    const systemRepo = await getProjectSystemRepo(project);
+    const client = await withTestContext(() =>
+      createClient(systemRepo, {
+        project,
+        name: 'Identity Source Client',
+        redirectUri,
+        identityProvider: {
+          ...identityProvider,
+          identitySource: 'subject',
+          identityMappingMode: 'project-membership-external-id',
+        },
+      })
+    );
+
+    // The subject and email claims name different users; the subject is used
+    fetchMock.mockImplementation(() => mockFetchJson({ email, sub: externalId }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: client.id,
+    });
+    expect(res).toHaveStatus(200);
+    expect(res.body.profile.reference).toMatch(/^Patient\//);
+
+    // No subject claim
+    fetchMock.mockImplementation(() => mockFetchJson({ email }));
+
+    const res2 = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: client.id,
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('External token does not contain subject');
+  });
+
+  test.each<Partial<IdentityProvider>>([
+    { identitySource: 'fhir-user' },
+    { identitySource: 'subject', identityMappingMode: 'user-email' },
+    { identitySource: 'email', identityMappingMode: 'project-membership-external-id' },
+  ])('Unsupported identity provider configuration %j', async (identityMapping) => {
+    const systemRepo = await getProjectSystemRepo(project);
+    const client = await withTestContext(() =>
+      createClient(systemRepo, {
+        project,
+        name: 'Unsupported Identity Mapping Client',
+        redirectUri,
+        identityProvider: { ...identityProvider, ...identityMapping },
+      })
+    );
+
+    fetchMock.mockImplementation(() => mockFetchJson({ email, sub: externalId }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      clientId: client.id,
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Unsupported identity provider configuration');
+  });
+
   test('GCIP subject auth success', async () => {
     fetchMock.mockImplementation(() => mockFetchJson({ users: [{ email: '', localId: externalId }] }));
 
@@ -301,5 +365,68 @@ describe('Token Exchange', () => {
     });
     expect(res).toHaveStatus(400);
     expect(res.body.error_description).toBe('Failed to verify code - missing localId in user info response');
+  });
+
+  describe('Identity provider with audience', () => {
+    const audience = 'https://medplum.example.com/api';
+    const jwksUrl = 'https://example.com/.well-known/jwks.json';
+    let audienceClient: ClientApplication;
+    let signToken: (aud: string) => Promise<string>;
+
+    beforeAll(async () => {
+      audienceClient = await withTestContext(async () =>
+        createClient(await getProjectSystemRepo(project), {
+          project,
+          name: 'Audience Client',
+          redirectUri,
+          identityProvider: { ...identityProvider, issuer: externalAuthIssuer, audience, jwksUrl },
+        })
+      );
+      const { publicKey, privateKey } = await generateKeyPair('ES256');
+      const jwk = await exportJWK(publicKey);
+      signToken = (aud) =>
+        new SignJWT({ email })
+          .setProtectedHeader({ alg: 'ES256' })
+          .setIssuer(externalAuthIssuer)
+          .setAudience(aud)
+          .setIssuedAt()
+          .setExpirationTime('2h')
+          .sign(privateKey);
+      // The user info endpoint answers for any token of the provider
+      fetchMock.mockImplementation((url) => mockFetchJson(url === jwksUrl ? { keys: [jwk] } : { email }));
+    });
+
+    test('Accepts token with configured audience', async () => {
+      const res = await request(app)
+        .post('/auth/exchange')
+        .type('json')
+        .send({ externalAccessToken: await signToken(audience), clientId: audienceClient.id });
+      expect(res).toHaveStatus(200);
+      expect(res.body.access_token).toBeTruthy();
+    });
+
+    test('Rejects token issued to another application', async () => {
+      const res = await request(app)
+        .post('/auth/exchange')
+        .type('json')
+        .send({ externalAccessToken: await signToken('https://other.example.com/api'), clientId: audienceClient.id });
+      expect(res).toHaveStatus(400);
+      expect(res.body.access_token).toBeUndefined();
+    });
+
+    test('Server external auth provider uses top-level issuer', async () => {
+      config.externalAuthProviders = [
+        {
+          issuer: externalAuthIssuer,
+          clientId: externalAuthConfigClientId,
+          identityProvider: { ...identityProvider, audience, jwksUrl },
+        },
+      ];
+      const res = await request(app)
+        .post('/auth/exchange')
+        .type('json')
+        .send({ externalAccessToken: await signToken(audience), clientId: externalAuthConfigClientId });
+      expect(res).toHaveStatus(200);
+    });
   });
 });

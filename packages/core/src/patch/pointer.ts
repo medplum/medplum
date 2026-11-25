@@ -108,13 +108,8 @@ export class Pointer {
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         throw new Error('Invalid path: ' + this.toString());
       }
-      if (
-        parent !== null &&
-        parent !== undefined &&
-        (typeof parent === 'object' || typeof parent === 'function') &&
-        !Object.hasOwn(parent, key) &&
-        key in parent
-      ) {
+      // Object(parent) boxes primitives so their inherited keys are checked too
+      if (parent !== null && parent !== undefined && !Object.hasOwn(parent, key) && key in Object(parent)) {
         throw new Error('Invalid inherited key: ' + key);
       }
       value = parent?.[key];

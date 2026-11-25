@@ -1,0 +1,14 @@
+.responsive-iframe-wrapper {
+  width: 100%;
+  padding-bottom: 56.25%;
+  position: relative;
+  overflow: hidden;
+}
+
+.responsive-iframe-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}

@@ -277,6 +277,32 @@ describe('ConceptMap/$import', () => {
     });
   });
 
+  test('Imports by ID without extended mode', async () => {
+    const conceptMap = await repo.createResource<ConceptMap>({
+      resourceType: 'ConceptMap',
+      status: 'draft',
+      name: 'Test Imported ConceptMap',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ConceptMap/${conceptMap.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'mapping',
+            part: [
+              { name: 'source', valueCoding: { system: SNOMED, code: '10347006' } },
+              { name: 'target', valueCoding: { system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'T50.905' } },
+            ],
+          },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+  });
+
   test('Requires admin privileges', async () => {
     const { accessToken, repo } = await createTestProject({
       withAccessToken: true,

@@ -1,0 +1,3 @@
+{{- /* A pricing page link; other sites and email open in a new tab, as Docusaurus's <Link> did. Params: text, href, class */ -}}
+<a href="{{ .href }}"{{ with .class }} class="{{ . }}"{{ end }}{{ if or (hasPrefix .href "http") (hasPrefix .href "mailto:") }} target="_blank" rel="noopener noreferrer"{{ end }}>{{ .text }}</a>
+{{- /**/ -}}

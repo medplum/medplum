@@ -8,6 +8,7 @@ import {
   TextractClient,
 } from '@aws-sdk/client-textract';
 import { ContentType } from '@medplum/core';
+import type { Binary, Media } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import express from 'express';
@@ -56,14 +57,39 @@ describe('AWS Textract', () => {
     mockComprehendClient.restore();
   });
 
+  async function getOutputBinary(accessToken: string): Promise<Binary> {
+    const searchRes = await request(app)
+      .get('/fhir/R4/Media?_sort=-_lastUpdated&_count=1')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(searchRes).toHaveStatus(200);
+    const output = searchRes.body.entry[0].resource as Media;
+    // content.url is a presigned storage URL of the form /storage/<id>/<versionId>
+    const binaryId = new URL(output.content.url as string).pathname.split('/').filter(Boolean)[1];
+    const binaryRes = await request(app)
+      .get(`/fhir/R4/Binary/${binaryId}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', ContentType.FHIR_JSON);
+    expect(binaryRes).toHaveStatus(200);
+    return binaryRes.body as Binary;
+  }
+
   test('Happy path', async () => {
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
+
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient' });
+    expect(patientRes).toHaveStatus(201);
+    const patientRef = 'Patient/' + patientRes.body.id;
 
     // Step 1: Create a PDF Binary
     const res1 = await request(app)
       .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.TEXT)
+      .set('X-Security-Context', patientRef)
       .send('Hello world');
     expect(res1).toHaveStatus(201);
 
@@ -88,6 +114,9 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
+
+    const output = await getOutputBinary(accessToken);
+    expect(output.securityContext?.reference).toStrictEqual(patientRef);
   });
 
   test('Paginated results', async () => {
@@ -137,6 +166,24 @@ describe('AWS Textract', () => {
   });
 
   test('Comprehend', async () => {
+    // Textract returns PAGE, LINE, and WORD blocks; only LINE text should be sent to Comprehend
+    mockTextractClient.reset();
+    mockTextractClient.on(StartDocumentTextDetectionCommand).resolves({ JobId: 'job-1' });
+    mockTextractClient.on(GetDocumentTextDetectionCommand).resolves({
+      JobStatus: 'SUCCEEDED',
+      Blocks: [
+        { BlockType: 'PAGE' },
+        { BlockType: 'LINE', Text: 'Patient: Jane Doe' },
+        { BlockType: 'WORD', Text: 'Patient:' },
+        { BlockType: 'WORD', Text: 'Jane' },
+        { BlockType: 'WORD', Text: 'Doe' },
+        { BlockType: 'LINE', Text: 'Metformin 500 mg' },
+        { BlockType: 'WORD', Text: 'Metformin' },
+        { BlockType: 'WORD', Text: '500' },
+        { BlockType: 'WORD', Text: 'mg' },
+      ],
+    });
+
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
 
     // Step 1: Create a PDF Binary
@@ -169,6 +216,10 @@ describe('AWS Textract', () => {
       .send({ comprehend: true });
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
+
+    const comprehendCalls = mockComprehendClient.commandCalls(DetectEntitiesV2Command);
+    expect(comprehendCalls).toHaveLength(1);
+    expect(comprehendCalls[0].args[0].input.Text).toBe('Patient: Jane Doe\nMetformin 500 mg');
   });
 
   test('DocumentReference happy path', async () => {
@@ -211,6 +262,9 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
+
+    const output = await getOutputBinary(accessToken);
+    expect(output.securityContext?.reference).toStrictEqual('DocumentReference/' + res2.body.id);
   });
 
   test('DocumentReference with Comprehend', async () => {

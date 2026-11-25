@@ -13,7 +13,12 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import type { MockAgentResponseHandle } from './utils/agenttestutils';
-import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
+import {
+  cleanupMockAgents,
+  configMockAgents,
+  createAgentAccessFixture,
+  mockAgentResponse,
+} from './utils/agenttestutils';
 
 const NUM_DEFAULT_AGENTS = 2;
 
@@ -134,6 +139,39 @@ describe('Agent/$stats', () => {
     });
 
     cleanup();
+  });
+
+  test('Read access to the Agent is sufficient', async () => {
+    const { adminToken, writableAgent, readonlyAgent, readonlyTokens, linkedProjectToken } =
+      await createAgentAccessFixture();
+    const stats = makeStats();
+    const handles = await Promise.all(
+      [writableAgent, readonlyAgent].map((agent) =>
+        mockAgentResponse<AgentStatsRequest, AgentStatsResponse>(agent, adminToken, 'agent:stats:request', {
+          type: 'agent:stats:response',
+          statusCode: 200,
+          stats,
+        })
+      )
+    );
+
+    for (const token of [...readonlyTokens, linkedProjectToken]) {
+      let res = await request(app)
+        .get(`/fhir/R4/Agent/${readonlyAgent.id}/$stats`)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res).toHaveStatus(200);
+
+      res = await request(app)
+        .get('/fhir/R4/Agent/$stats')
+        .set('Authorization', 'Bearer ' + token);
+      expect(res).toHaveStatus(200);
+      expectBundleToContainStatsEntry(res.body as Bundle<Parameters>, writableAgent, stats);
+      expectBundleToContainStatsEntry(res.body as Bundle<Parameters>, readonlyAgent, stats);
+    }
+
+    for (const handle of handles) {
+      handle.cleanup();
+    }
   });
 });
 

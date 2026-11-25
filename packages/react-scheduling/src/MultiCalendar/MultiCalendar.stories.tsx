@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { useMantineTheme } from '@mantine/core';
-import { createReference, ServiceTypeReferenceURI } from '@medplum/core';
+import { createReference, RecurrenceIdExtensionURI, ServiceTypeReferenceURI } from '@medplum/core';
 import type {
   Appointment,
   Device,
@@ -453,3 +453,82 @@ export const ThemeColors = (): JSX.Element => {
   );
 };
 ThemeColors.decorators = [withFixtures([bookedVisit, pendingVisit])];
+
+const followUpVisit = {
+  resourceType: 'HealthcareService',
+  id: 'follow-up-visit',
+  name: 'Medication management follow-up',
+} satisfies HealthcareService;
+
+/**
+ * An appointment for the follow-up visit on Tuesday, May 5.
+ * @param hour - The hour it starts at.
+ * @param minutes - How long it lasts.
+ * @param options - How it differs from a single booked visit.
+ * @param options.recurring - Whether it is an occurrence of a recurring series.
+ * @param options.status - The appointment's status.
+ * @returns The appointment.
+ */
+function followUpAppointment(
+  hour: number,
+  minutes: number,
+  { recurring = false, status = 'booked' }: { recurring?: boolean; status?: Appointment['status'] } = {}
+): Appointment {
+  const start = new Date(2020, 4, 5, hour);
+  return {
+    resourceType: 'Appointment',
+    id: `follow-up-${hour}`,
+    status,
+    start: start.toISOString(),
+    end: new Date(start.getTime() + minutes * 60_000).toISOString(),
+    extension: recurring ? [{ url: RecurrenceIdExtensionURI, valueDateTime: start.toISOString() }] : undefined,
+    serviceType: [
+      {
+        extension: [{ url: ServiceTypeReferenceURI, valueReference: createReference(followUpVisit) }],
+      },
+    ],
+    participant: [{ status: 'accepted', actor: createReference(HomerSimpson) }],
+  };
+}
+
+/**
+ * A quarter-hour of blocked time on Tuesday, May 5.
+ * @param hour - The hour it starts at.
+ * @returns The slot.
+ */
+function shortBlockedSlot(hour: number): Slot {
+  const start = new Date(2020, 4, 5, hour);
+  return {
+    resourceType: 'Slot',
+    id: `short-blocked-${hour}`,
+    status: 'busy-unavailable',
+    start: start.toISOString(),
+    end: new Date(start.getTime() + 15 * 60_000).toISOString(),
+    schedule: createReference(DrAliceSmithSchedule),
+  };
+}
+
+export const ShortAppointments = (): JSX.Element => {
+  const sources: MultiCalendarSource[] = [
+    {
+      schedule: DrAliceSmithSchedule,
+      slots: [shortBlockedSlot(15)],
+      appointments: [
+        followUpAppointment(9, 15, { recurring: true }),
+        followUpAppointment(10, 20),
+        followUpAppointment(11, 25),
+        followUpAppointment(13, 30),
+        followUpAppointment(14, 15, { status: 'pending' }),
+      ],
+    },
+    // A source naming no schedule has no one to name beside blocked time, so its time goes there.
+    { slots: [shortBlockedSlot(16)], appointments: [] },
+  ];
+
+  return (
+    <div style={{ height: 700, padding: '1em' }}>
+      <MultiCalendar sources={sources} />
+    </div>
+  );
+};
+ShortAppointments.decorators = [withFixtures([followUpVisit])];

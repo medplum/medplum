@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, Operator, badRequest } from '@medplum/core';
+import { OperationOutcomeError, Operator, badRequest, escapeSearchValue } from '@medplum/core';
 import type { DomainConfiguration } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -40,7 +40,7 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
  * @returns External auth url if available. Otherwise undefined.
  */
 export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
-  const domain = email.split('@')[1];
+  const domain = getEmailDomain(email);
   const domainConfig = await getDomainConfiguration(domain);
   if (!domainConfig) {
     return undefined;
@@ -65,6 +65,22 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
 }
 
 /**
+ * Returns true if the email address's domain signs in through an external identity provider.
+ * Unlike isExternalAuth, this does not build the authorize URL, so a malformed URL does not throw.
+ * @param email - The user email address.
+ * @returns True if password sign-in is not allowed for the email address.
+ */
+export async function hasExternalAuth(email: string): Promise<boolean> {
+  const idp = (await getDomainConfiguration(getEmailDomain(email)))?.identityProvider;
+  return Boolean(idp?.authorizeUrl && idp.clientId);
+}
+
+function getEmailDomain(email: string): string {
+  // The local part of an email address can contain a quoted "@", so the domain starts after the last one
+  return email.slice(email.lastIndexOf('@') + 1);
+}
+
+/**
  * Returns the domain configuration for the given domain name.
  * @param domain - The domain name.
  * @returns The domain configuration for the domain name if available.
@@ -77,7 +93,7 @@ export async function getDomainConfiguration(domain: string): Promise<DomainConf
       {
         code: 'domain',
         operator: Operator.EQUALS,
-        value: domain.toLowerCase(),
+        value: escapeSearchValue(domain.toLowerCase()),
       },
     ],
   });

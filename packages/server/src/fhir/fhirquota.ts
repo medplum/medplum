@@ -250,20 +250,8 @@ export class FhirRateLimiter {
     throw new OperationOutcomeError(outcome);
   }
 
-  async recordRead(num = 1): Promise<void> {
-    return this.consume(Math.max(num, 1));
-  }
-
-  async recordHistory(): Promise<void> {
-    return this.consume(10);
-  }
-
   async recordSearch(num = 1): Promise<void> {
     return this.consume(20 * Math.max(num, 1));
-  }
-
-  async recordWrite(): Promise<void> {
-    return this.consume(100);
   }
 
   get unitsConsumed(): number {

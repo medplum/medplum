@@ -748,26 +748,47 @@ export type MailDestination = string | MailAddress | string[] | MailAddress[];
 /**
  * Email attachment definition.
  * Compatible with nodemailer Mail.Options.
+ * Other nodemailer attachment options are ignored by the Medplum server.
  */
 export interface MailAttachment {
-  /** String, Buffer or a Stream contents for the attachment */
+  /** String contents for the attachment */
   readonly content?: string;
-  /** path to a file or an URL (data uris are allowed as well) if you want to stream the file instead of including it (better for larger attachments) */
+  /** A `Binary/{id}` reference, an HTTPS URL, or a data URI, if you want to stream the file instead of including it (better for larger attachments). Local file paths are not allowed. */
   readonly path?: string;
   /** filename to be reported as the name of the attached file, use of unicode is allowed. If you do not want to use a filename, set this value as false, otherwise a filename is generated automatically */
   readonly filename?: string | false;
   /** optional content type for the attachment, if not set will be derived from the filename property */
   readonly contentType?: string;
+  /** optional content disposition type for the attachment, defaults to 'attachment' */
+  readonly contentDisposition?: string;
+  /** optional content id for using inline images in HTML message source */
+  readonly cid?: string;
+  /** If set and content is string, then encodes the content to a Buffer using the specified encoding. Example values: 'base64', 'hex', 'binary' etc. */
+  readonly encoding?: string;
+}
+
+/**
+ * Email calendar event definition.
+ * Compatible with nodemailer Mail.IcalAttachment.
+ */
+export interface MailIcalEvent {
+  /** Method of the calendar event, for example 'REQUEST' or 'CANCEL' */
+  readonly method?: string;
+  /** Filename of the calendar event attachment */
+  readonly filename?: string;
+  /** iCalendar contents of the event */
+  readonly content: string;
 }
 
 /**
  * Email message definition.
  * Compatible with nodemailer Mail.Options.
+ * Other nodemailer message options are ignored by the Medplum server.
  */
 export interface MailOptions {
-  /** The e-mail address of the sender. All e-mail addresses can be plain `sender@server.com` or formatted `Sender Name <sender@server.com>` */
+  /** The e-mail address of the sender. All e-mail addresses can be plain `sender@server.com` or formatted `Sender Name <sender@server.com>`. Must be an approved sender, otherwise the default sender address is used. */
   readonly from?: string | MailAddress;
-  /** An e-mail address that will appear on the Sender: field */
+  /** Ignored by the Medplum server. The Sender: field is set to the from address. */
   readonly sender?: string | MailAddress;
   /** Comma separated list or an array of recipients e-mail addresses that will appear on the To: field */
   readonly to?: MailDestination;
@@ -785,6 +806,8 @@ export interface MailOptions {
   readonly html?: string;
   /** An array of attachment objects */
   readonly attachments?: MailAttachment[];
+  /** iCalendar event to use as an alternative, for example an appointment invitation */
+  readonly icalEvent?: string | MailIcalEvent;
 }
 
 interface SchemaGraphQLResponse {
@@ -1334,7 +1357,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (event.operation !== 'delete' && event.resource) {
       this.cacheResource(event.resource, undefined);
     } else if (event.id) {
-      this.deleteCacheEntry(this.fhirUrl(event.resourceType, event.id).toString());
+      this.deleteCacheEntry(this.fhirResourceUrl(event.resourceType, event.id).toString());
     }
     this.invalidateSearches(event.resourceType);
     this.dispatchResourceModified(event);
@@ -1360,7 +1383,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue && !options.disableAutoBatch) {
+    if (
+      url.startsWith(this.fhirBaseUrl) &&
+      this.autoBatchQueue &&
+      !options.disableAutoBatch &&
+      !this.getRequestHeader(options, 'x-medplum-on-behalf-of')
+    ) {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
@@ -1734,6 +1762,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Builds the FHIR URL of a resource, or of a path below the resource such as `_history` or an operation.
+   * The resource type and ID are each encoded as exactly one path segment.
+   * @param resourceType - The FHIR resource type.
+   * @param id - The resource ID.
+   * @param path - Optional path components below the resource.
+   * @returns The well-formed FHIR URL.
+   */
+  private fhirResourceUrl(resourceType: string, id: string, ...path: string[]): URL {
+    return this.fhirUrl(encodePathSegment(resourceType), encodePathSegment(id), ...path);
+  }
+
+  /**
    * Builds a FHIR search URL from a search query or structured query object.
    * @category HTTP
    * @category Search
@@ -1966,7 +2006,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<RT extends ResourceType>(resourceType: RT, id: string): WithId<ExtractResource<RT>> | undefined {
-    const cached = this.requestCache?.get(this.fhirUrl(resourceType, id).toString())?.value;
+    const cached = this.requestCache?.get(this.fhirResourceUrl(resourceType, id).toString())?.value;
     return cached?.isOk() ? (cached.read() as WithId<ExtractResource<RT>>) : undefined;
   }
 
@@ -1985,7 +2025,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return system as WithId<T>;
     }
     const [resourceType, id] = refString.split('/');
-    if (!resourceType || !id) {
+    if (!resourceType || !id || isDotSegment(resourceType) || isDotSegment(id)) {
       return undefined;
     }
     return this.getCached(resourceType as ResourceType, id) as WithId<T> | undefined;
@@ -2017,7 +2057,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!id) {
       throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
     }
-    return this.get<WithId<ExtractResource<RT>>>(this.fhirUrl(resourceType, id), options);
+    return this.get<WithId<ExtractResource<RT>>>(this.fhirResourceUrl(resourceType, id), options);
   }
 
   /**
@@ -2052,7 +2092,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return new ReadablePromise(Promise.resolve(system as unknown as WithId<T>));
     }
     const [resourceType, id] = refString.split('/');
-    if (!resourceType || !id) {
+    if (!resourceType || !id || isDotSegment(resourceType) || isDotSegment(id)) {
       return new ReadablePromise(Promise.reject(new Error('Invalid reference')));
     }
     return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<WithId<T>>;
@@ -2220,7 +2260,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     options?: ReadHistoryOptions,
     requestOptions?: MedplumRequestOptions
   ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
-    const url = this.fhirUrl(resourceType, id, '_history');
+    const url = this.fhirResourceUrl(resourceType, id, '_history');
     if (options?.count) {
       url.searchParams.set('_count', options.count.toString());
     }
@@ -2255,7 +2295,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     vid: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<WithId<ExtractResource<RT>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
+    return this.get(this.fhirResourceUrl(resourceType, id, '_history', encodePathSegment(vid)), options);
   }
 
   /**
@@ -2276,7 +2316,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Bundle of all Resources related to the Patient
    */
   readPatientEverything(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
-    return this.getBundle(this.fhirUrl('Patient', id, '$everything'), options);
+    return this.getBundle(this.fhirResourceUrl('Patient', id, '$everything'), options);
   }
 
   /**
@@ -2299,7 +2339,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A patient summary bundle, organized into the patient summary sections.
    */
   readPatientSummary(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
-    return this.getBundle(this.fhirUrl('Patient', id, '$summary'), options);
+    return this.getBundle(this.fhirResourceUrl('Patient', id, '$summary'), options);
   }
 
   /**
@@ -2332,7 +2372,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new Error('Missing resourceType');
     }
     this.invalidateSearches(resource.resourceType);
-    const result = await this.post(this.fhirUrl(resource.resourceType), resource, undefined, options);
+    const url = this.fhirUrl(encodePathSegment(resource.resourceType));
+    const result = await this.post(url, resource, undefined, options);
     this.dispatchResourceModified({
       resourceType: resource.resourceType,
       operation: 'create',
@@ -2388,12 +2429,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     query: string,
     options: MedplumRequestOptions = {}
   ): Promise<WithId<T>> {
-    const url = this.fhirUrl(resource.resourceType);
+    const url = this.fhirUrl(encodePathSegment(resource.resourceType));
     this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post<WithId<T>>(url, resource, undefined, options);
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     this.dispatchResourceModified({
       resourceType: resource.resourceType,
@@ -2428,7 +2469,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       result = resource;
     }
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     if (wasModified) {
       this.dispatchResourceModified({
@@ -2500,7 +2541,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       const fileData = createBinaryOptions.data;
       let fileStr: string;
 
-      if (fileData instanceof Blob) {
+      // Prefer FileReader: readAsText honors a UTF-16 BOM, and React Native's Blob has no text()
+      if (fileData instanceof Blob && typeof FileReader !== 'undefined') {
         fileStr = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
@@ -2510,8 +2552,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
             }
             resolve(reader.result as string);
           };
+          reader.onerror = () => reject(reader.error ?? new Error('Failed to load file'));
           reader.readAsText(fileData, 'utf-8');
         });
+      } else if (fileData instanceof Blob) {
+        // Node has no FileReader
+        fileStr = await fileData.text();
       } else if (ArrayBuffer.isView(fileData)) {
         fileStr = new TextDecoder().decode(fileData);
       } else {
@@ -2806,7 +2852,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!resource.id) {
       throw new Error('Missing id');
     }
-    let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
+    let result = await this.put(this.fhirResourceUrl(resource.resourceType, resource.id), resource, undefined, options);
     const wasModified = result !== undefined;
     if (!result) {
       // On 304 not modified, result will be undefined
@@ -2814,7 +2860,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       result = resource;
     }
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resource.resourceType, resource.id, '_history'));
     this.invalidateSearches(resource.resourceType);
     if (wasModified) {
       this.dispatchResourceModified({
@@ -2858,9 +2904,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     operations: PatchOperation[],
     options?: MedplumRequestOptions
   ): Promise<WithId<ExtractResource<RT>>> {
-    const result = await this.patch(this.fhirUrl(resourceType, id), operations, options);
+    const result = await this.patch(this.fhirResourceUrl(resourceType, id), operations, options);
     this.cacheResource(result, options);
-    this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
+    this.invalidateUrl(this.fhirResourceUrl(resourceType, id, '_history'));
     this.invalidateSearches(resourceType);
     this.dispatchResourceModified({ resourceType, operation: 'patch', id, resource: result });
     return result;
@@ -2884,9 +2930,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The result of the delete operation.
    */
   async deleteResource(resourceType: ResourceType, id: string, options?: MedplumRequestOptions): Promise<any> {
-    this.deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
+    this.deleteCacheEntry(this.fhirResourceUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
-    const result = await this.delete(this.fhirUrl(resourceType, id), options);
+    const result = await this.delete(this.fhirResourceUrl(resourceType, id), options);
     this.dispatchResourceModified({ resourceType, operation: 'delete', id });
     return result;
   }
@@ -2910,7 +2956,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The validate operation outcome.
    */
   validateResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<OperationOutcome> {
-    return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource, undefined, options);
+    return this.post(this.fhirUrl(encodePathSegment(resource.resourceType), '$validate'), resource, undefined, options);
   }
 
   /**
@@ -2930,7 +2976,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     let url: URL;
     if (typeof idOrIdentifier === 'string') {
       const id = idOrIdentifier;
-      url = this.fhirUrl('Bot', id, '$execute');
+      url = this.fhirResourceUrl('Bot', id, '$execute');
     } else {
       const identifier = idOrIdentifier;
       url = this.fhirUrl('Bot', '$execute');
@@ -3026,6 +3072,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * });
    * ```
    *
+   * Only the options in {@link MailOptions} are supported; other nodemailer options are ignored.
    * See the {@link https://nodemailer.com/extras/mailcomposer/ | nodemailer MailComposer options} for full details.
    * @category Media
    * @param email - The MailComposer options.
@@ -3110,7 +3157,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     graphName: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<Bundle> {
-    return this.get<Bundle>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
+    return this.get<Bundle>(`${this.fhirResourceUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
   }
 
   /**
@@ -3134,7 +3181,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   ): Promise<any> {
     const { waitTimeout, returnAck, ...requestOptions } = options ?? {};
     return this.post(
-      this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
+      this.fhirResourceUrl('Agent', resolveId(agent) as string, '$push'),
       {
         destination: typeof destination === 'string' ? destination : getReferenceString(destination),
         body,
@@ -3668,12 +3715,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.isCacheEnabled(options) && !options?.signal?.aborted) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
 
-      // If the request is aborted, remove the abort result from the cache so
-      // later attempts will not re-resolve the abort.
+      // If the request is aborted while in flight, remove the abort result from the cache so
+      // later attempts will not re-resolve the abort. Once settled, an abort cannot change the result.
       if (options?.signal) {
-        options.signal.addEventListener('abort', () => {
-          this.requestCache.delete(key);
-        });
+        const signal = options.signal;
+        const evict = (): void => {
+          // Ensure we don't evict another entry that may have overwritten the
+          // one we set, such as a subsequent request made with `cache: 'reload'`.
+          if (this.requestCache.get(key)?.value === value) {
+            this.requestCache.delete(key);
+          }
+        };
+        const disarm = (): void => signal.removeEventListener('abort', evict);
+        signal.addEventListener('abort', evict, { once: true });
+        value.then(disarm, disarm);
       }
     }
   }
@@ -3688,7 +3743,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private cacheResource(resource: Resource | undefined, options: MedplumRequestOptions | undefined): void {
     if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
       this.setCacheEntry(
-        this.fhirUrl(resource.resourceType, resource.id).toString(),
+        this.fhirResourceUrl(resource.resourceType, resource.id).toString(),
         new ReadablePromise(Promise.resolve(resource)),
         options
       );
@@ -4076,7 +4131,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } else if (headers instanceof Headers) {
       return headers.get(key) ?? undefined;
     } else if (isObject(headers)) {
-      return headers[key] ?? undefined;
+      const lowerKey = key.toLowerCase();
+      const header = Object.entries(headers).find(([k]) => k.toLowerCase() === lowerKey);
+      return header ? header[1] : undefined;
     }
     return undefined;
   }
@@ -4864,6 +4921,29 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   getMasterSubscriptionEmitter(): SubscriptionEmitter {
     return this.getSubscriptionManager().getMasterEmitter();
   }
+}
+
+/**
+ * Encodes a string as exactly one segment of a URL path.
+ * @param segment - The path segment, such as a resource type or a resource ID.
+ * @returns The encoded path segment.
+ * @throws Error if the segment is "." or "..", which the URL parser removes from the path even when encoded.
+ */
+function encodePathSegment(segment: string): string {
+  if (isDotSegment(segment)) {
+    throw new Error('Invalid FHIR URL path');
+  }
+  return encodeURIComponent(segment);
+}
+
+/**
+ * Returns true if the string is a "." or ".." path segment.
+ * The URL parser resolves these against the preceding path, even when they are percent-encoded.
+ * @param segment - The path segment.
+ * @returns True if the segment is "." or "..".
+ */
+function isDotSegment(segment: string): boolean {
+  return segment === '.' || segment === '..';
 }
 
 /**

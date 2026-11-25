@@ -13,6 +13,7 @@ import type { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { getAuthenticatedContext } from '../context';
+import { readAsyncJob } from './operations/utils/asyncjobexecutor';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
 // Bulk Data API
@@ -27,7 +28,7 @@ async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport>
   const { repo } = getAuthenticatedContext();
   let resource: AsyncJob | BulkDataExport;
   try {
-    resource = await repo.readResource<AsyncJob>('AsyncJob', id);
+    resource = await readAsyncJob(id);
   } catch (err: unknown) {
     if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
       resource = await repo.readResource<BulkDataExport>('BulkDataExport', id);
@@ -55,13 +56,15 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
     return;
   }
 
+  const deleted = extractOutputParameters(bulkDataExport, 'deleted');
   const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, {
     transactionTime: bulkDataExport.transactionTime,
     request: bulkDataExport.request,
     requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
     output: extractOutputParameters(bulkDataExport, 'output'),
     error: extractOutputParameters(bulkDataExport, 'error'),
-    deleted: extractOutputParameters(bulkDataExport, 'deleted'),
+    // The IG makes `deleted` optional; omit it when deletions were not exported
+    ...(deleted.length ? { deleted } : undefined),
   });
   res.status(200).type(ContentType.JSON).json(json);
 });
