@@ -1156,6 +1156,9 @@ export class Repository extends FhirRepository implements Disposable {
 
     const projectId = this.getProjectId(existing, updated);
     if (projectId) {
+      if (!isUUID(projectId)) {
+        throw new OperationOutcomeError(badRequest('Invalid meta.project'));
+      }
       resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
