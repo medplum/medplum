@@ -27,35 +27,28 @@ const allergyMappings = [
 ] as const;
 
 describe('C-CDA allergy conversion', () => {
-  test.each(allergyMappings)(
-    'maps SNOMED code %s to category %s and type %s',
-    (code, category, type) => {
-      const xml = readFileSync(
-        join(testDataFolder, 'AllergyNullFlavorReaction.xml'),
-        'utf8'
-      );
+  test.each(allergyMappings)('maps SNOMED code %s to category %s and type %s', (code, category, type) => {
+    const xml = readFileSync(join(testDataFolder, 'AllergyNullFlavorReaction.xml'), 'utf8');
 
-      const ccda = convertXmlToCcda(xml);
+    const ccda = convertXmlToCcda(xml);
 
-      const section = ccda.component?.structuredBody.component[0].section[0];
-      const act = section?.entry?.[0]?.act?.[0];
-      const observation = act?.entryRelationship?.[0]?.observation?.[0];
+    const section = ccda.component?.structuredBody.component[0].section[0];
+    const act = section?.entry?.[0]?.act?.[0];
+    const observation = act?.entryRelationship?.[0]?.observation?.[0];
 
-      if (!observation) {
-        throw new Error('Allergy observation not found in test fixture');
-      }
-
-      (observation.value as { '@_code'?: string })['@_code'] = code;
-
-      const bundle = convertCcdaToFhir(ccda);
-
-      const allergy = bundle.entry?.find(
-        (entry) => entry.resource?.resourceType === 'AllergyIntolerance'
-      )?.resource as AllergyIntolerance | undefined;
-
-      expect(allergy).toBeDefined();
-      expect(allergy?.category).toEqual(category ? [category] : undefined);
-      expect(allergy?.type).toBe(type);
+    if (!observation) {
+      throw new Error('Allergy observation not found in test fixture');
     }
-  );
+
+    (observation.value as { '@_code'?: string })['@_code'] = code;
+
+    const bundle = convertCcdaToFhir(ccda);
+
+    const allergy = bundle.entry?.find((entry) => entry.resource?.resourceType === 'AllergyIntolerance')?.resource as
+      AllergyIntolerance | undefined;
+
+    expect(allergy).toBeDefined();
+    expect(allergy?.category).toEqual(category ? [category] : undefined);
+    expect(allergy?.type).toBe(type);
+  });
 });

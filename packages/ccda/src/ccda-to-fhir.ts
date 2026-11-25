@@ -473,13 +473,9 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
-    
-    const allergyTypeCode = observation.value?.['@_code'];
+    const allergyTypeCode = (observation.value as CcdaCode | undefined)?.['@_code'];
 
-    const allergyTypeMapping: Record<
-      string,
-      Partial<Pick<AllergyIntolerance, 'category' | 'type'>>
-    > = {
+    const allergyTypeMapping: Record<string, Partial<Pick<AllergyIntolerance, 'category' | 'type'>>> = {
       '416098002': { category: ['medication'], type: 'allergy' },
       '59037007': { category: ['medication'], type: 'intolerance' },
       '419511003': { category: ['medication'] },
@@ -504,7 +500,6 @@ class CcdaToFhirConverter {
       recordedDate: this.mapEffectiveTimeToDateTime(act.effectiveTime?.[0]),
       onsetDateTime: this.mapEffectiveTimeToDateTime(observation.effectiveTime?.[0]),
     };
-
 
     allergy.extension = this.mapTextReference(observation.text);
 
