@@ -11,6 +11,7 @@ import type { RegisterResponse } from '../../auth/register';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
 import { addTestUser, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import { getUserFhirQuota } from '../fhirquota';
 
 const fetchMock = vi.spyOn(globalThis, 'fetch');
 const app = express();
@@ -293,5 +294,55 @@ describe('Project $rate-limits operation', () => {
     expect(getPartValue(membershipParams[0], 'membershipId')).toBe(memberMembership.id);
     expect(getPartValue(membershipParams[0], 'limit')).toBe(12345);
     expect(getPartValue(membershipParams[0], 'consumedPoints')).toBeDefined();
+  });
+
+  test('Only uses UserConfiguration from the project', async () => {
+    const member = await withTestContext(() => addTestUser(admin.project));
+    const other = await withTestContext(() =>
+      registerNew({
+        firstName: 'Other',
+        lastName: 'Admin',
+        projectName: 'Other Project',
+        email: `other${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    const otherConfigRes = await request(app)
+      .post('/fhir/R4/UserConfiguration')
+      .set('Authorization', `Bearer ${other.accessToken}`)
+      .send({
+        resourceType: 'UserConfiguration',
+        option: [{ id: 'fhirQuota', valueInteger: 7654321 }],
+      });
+    expect(otherConfigRes.status).toBe(201);
+
+    const membershipsRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .set('X-Medplum', 'extended');
+    const memberships = membershipsRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
+    const memberMembership = memberships.find(
+      (m: ProjectMembership) => m.profile?.reference === getReferenceString(member.profile)
+    ) as ProjectMembership;
+
+    // Generate activity so quota fields are included in the response
+    await request(app).get('/fhir/R4/Patient').set('Authorization', `Bearer ${member.accessToken}`);
+
+    const updateRes = await request(app)
+      .put(`/fhir/R4/ProjectMembership/${memberMembership.id}`)
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .send({
+        ...memberMembership,
+        userConfiguration: { reference: `UserConfiguration/${otherConfigRes.body.id}` },
+      });
+    expect(updateRes.status).toBe(200);
+
+    const res = await request(app)
+      .get(`/fhir/R4/Project/${admin.project.id}/$rate-limits?membershipId=${memberMembership.id}`)
+      .set('Authorization', `Bearer ${admin.accessToken}`);
+    expect(res.status).toBe(200);
+    const membershipParams = getParametersByName(res.body as Parameters, 'membership');
+    expect(getPartValue(membershipParams[0], 'limit')).toBe(getUserFhirQuota(admin.project));
   });
 });
