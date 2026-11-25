@@ -17,6 +17,10 @@ Consider this common Medplum architectural pattern:
 
 Your backend authenticates the person using your application's login system, resolves the corresponding Medplum membership, and attaches that context to outgoing Medplum requests. Derive the delegation header from the verified identity and authorized application context.
 
+{{< warning title="Use On-Behalf-Of for FHIR API requests" >}}
+The safest use of On-Behalf-Of is for FHIR API requests under `/fhir/R4/`, where the delegated membership's access policy controls the response. Endpoints outside the FHIR API, such as `/auth/`, `/oauth2/`, `/admin/`, and `/scim/`, manage sessions, credentials, accounts, and project settings. They do not all handle delegation the same way. If your backend sends delegated requests to these endpoints, test each one with each type of delegated membership you use, and confirm the behavior before you release. See [Security Considerations](#security-considerations).
+{{< /warning >}}
+
 ## How to Use
 
 ### Authenticate the application
@@ -43,6 +47,33 @@ Treat a rejected delegation request as a failure; do not retry it without the he
 ### Live updates
 
 Do not use On-Behalf-Of for WebSocket subscriptions. Use a user-scoped Medplum token, or deliver updates through a backend that enforces each recipient's resource and field-level access. WebSocket notification authorization does not preserve the HTTP request's delegation context.
+
+## Security Considerations
+
+The application credential has Project Admin rights, and the delegated membership's access policy is often the only control on what a delegated request can do. Combined with a backend that forwards requests too freely, this setup can expose that credential to an end user. Review the following before you put a delegating backend in front of end users.
+
+### Forward an allowlist of requests
+
+Do not build a passthrough proxy that forwards any path, method, or body supplied by the browser. Define the specific requests that each handler needs, such as reading `Patient` resources or creating `Observation` resources, and reject everything else.
+
+- Restrict delegated requests to FHIR API paths under `/fhir/R4/`. Within the FHIR API, allow only the resource types and operations your application uses.
+- Do not forward requests from end users to `/auth/`, `/oauth2/`, `/admin/`, `/scim/`, `/email/`, or `/keyvalue/`. These endpoints act on sessions, credentials, accounts, and project configuration. Some reject delegation. Others honor it or act on the application's own login. For example, `/auth/preauthorize` creates a sign-in code for the delegated user, and a logout request can end the application's session instead of a user session.
+- Remove any `Authorization`, `X-Medplum-On-Behalf-Of`, or other `X-Medplum-*` headers that the caller sent before you add your own.
+- Return only the fields your frontend needs, rather than passing Medplum responses through unchanged.
+
+### Give each delegated membership a restrictive access policy
+
+Medplum checks every delegated FHIR request against the delegated membership's access policy. That policy is the main control on what the end user can see and change.
+
+- Assign an explicit [access policy](/docs/access/access-policies) to every membership you delegate to. A `ProjectMembership` without an access policy has full read and write access to the project's resources, including `ClientApplication` resources and their secrets.
+- Exclude `ClientApplication`, `Bot`, and other configuration resources from end-user policies. If a role needs to read `ClientApplication`, add `secret` and `retiringSecret` to [hidden fields](/docs/access/access-policies#hidden-elements).
+- Do not delegate end-user requests to Project Admin memberships. A delegated admin membership has admin rights, including on the `/admin/` endpoints.
+
+### Protect the application credential
+
+- Store the client ID and secret only on the backend, and never return them to the browser.
+- Use a dedicated `ClientApplication` for each delegating backend, so you can identify its traffic and revoke it on its own.
+- If you suspect that a client secret was exposed, rotate it with [`$rotate-secret`](/docs/api/fhir/operations/rotate-client-secret), and review the `AuditEvent` resources and resource history created by that application.
 
 ## How it Works
 
