@@ -1166,7 +1166,7 @@ export class Repository extends FhirRepository implements Disposable {
     resultMeta.compartment = this.getCompartments(result);
 
     // Validate resource after all modifications and touchups above are done
-    await validateRepositoryResource(this, result);
+    await validateRepositoryResource(this, result, existing);
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
       const projectId = result.meta?.project;

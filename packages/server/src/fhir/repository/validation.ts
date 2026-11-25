@@ -15,6 +15,7 @@ import type {
   Coding,
   Cron,
   OperationOutcomeIssue,
+  ProjectMembership,
   Reference,
   Resource,
   StructureDefinition,
@@ -36,11 +37,20 @@ import type { Repository } from '../repo';
  * Returns silently on success.
  * @param repo - The repository to use for validation.
  * @param resource - The candidate resource to validate.
+ * @param existing - On update, the stored version of the resource.
  */
-export async function validateRepositoryResource(repo: Repository, resource: Resource): Promise<void> {
+export async function validateRepositoryResource(
+  repo: Repository,
+  resource: Resource,
+  existing?: Resource
+): Promise<void> {
   if (resource.resourceType === 'Cron') {
     validateCronString(resource);
     await validateCronReferences(repo, resource);
+  }
+
+  if (resource.resourceType === 'ProjectMembership') {
+    await validateProjectMembershipUser(repo, resource, existing as ProjectMembership | undefined);
   }
 
   if (repo.getConfig().strictMode) {
@@ -100,6 +110,32 @@ async function validateCronReferences(repo: Repository, cron: Cron): Promise<voi
       const { reference, path } = checks[i];
       throw new OperationOutcomeError(badRequest(`Cannot resolve '${reference.reference}'`, path));
     }
+  }
+}
+
+/**
+ * Rejects a `ProjectMembership` whose `user` the author cannot read.
+ *
+ * The server follows `ProjectMembership.user` with system access (`/auth/me`, SCIM, MFA, client credentials),
+ * so a membership must not name an account outside its author's reach. Users of other projects and
+ * server-scoped Users join a project by invite, which writes with the system repository.
+ * @param repo - The repository writing the ProjectMembership, carrying the author's access.
+ * @param membership - The ProjectMembership being written.
+ * @param existing - On update, the stored version of the ProjectMembership.
+ */
+async function validateProjectMembershipUser(
+  repo: Repository,
+  membership: ProjectMembership,
+  existing: ProjectMembership | undefined
+): Promise<void> {
+  const reference = membership.user;
+  if (repo.isSuperAdmin() || !reference?.reference || reference.reference === existing?.user?.reference) {
+    return;
+  }
+
+  const [user] = await repo.readReferences([reference]);
+  if (!isResource(user)) {
+    throw new OperationOutcomeError(badRequest(`Cannot resolve '${reference.reference}'`, 'ProjectMembership.user'));
   }
 }
 
