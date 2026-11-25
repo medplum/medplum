@@ -2410,6 +2410,37 @@ describe('AccessPolicy', () => {
       }
     }));
 
+  test('Patch preserves resource type and ID on ProjectMembership', () =>
+    withTestContext(async () => {
+      const { project, membership, repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        membership: { admin: true },
+      });
+
+      const resourceType = ['ProjectMembership'];
+      await expect(
+        repo.patchResource('ProjectMembership', membership.id, [
+          { op: 'replace', path: '/resourceType', value: resourceType },
+        ])
+      ).rejects.toThrow('Patch cannot change resource type');
+
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      await expect(
+        repo.patchResource('Patient', patient.id, [
+          { op: 'replace', path: '/id', value: membership.id },
+          { op: 'add', path: '/user', value: membership.user },
+          { op: 'add', path: '/profile', value: membership.profile },
+          { op: 'add', path: '/project', value: { reference: 'Project/' + randomUUID() } },
+          { op: 'replace', path: '/resourceType', value: resourceType },
+        ])
+      ).rejects.toThrow('Patch cannot change resource type');
+
+      const check = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membership.id);
+      expect(check.project.reference).toStrictEqual(getReferenceString(project));
+      expect(check.meta?.versionId).toStrictEqual(membership.meta?.versionId);
+    }));
+
   test.each([
     ['_project', true],
     ['subject', false],

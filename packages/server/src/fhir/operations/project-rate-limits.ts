@@ -1,12 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, arrayify, badRequest, forbidden, getReferenceString } from '@medplum/core';
+import { allOk, arrayify, badRequest, createReference, forbidden, getReferenceString } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinitionParameter, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
+import type {
+  OperationDefinitionParameter,
+  Project,
+  ProjectMembership,
+  Reference,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getRateLimitRedis } from '../../redis';
 import { getActiveRateLimitKey, getProjectFhirQuota, getUserFhirQuota } from '../fhirquota';
+import { readMembershipReference } from '../projectmembership';
 import type { SystemRepository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -126,7 +133,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
   }
 
   const consumedValues = results[0][1] as (string | null)[];
-  const userConfigsByRef = await loadMembershipUserConfigurations(ctx.repo.getSystemRepo(), memberships);
+  const userConfigsByRef = await loadMembershipUserConfigurations(ctx.repo.getSystemRepo(), project, memberships);
   const projectLimit = getProjectFhirQuota(project);
 
   const membershipResults = memberships.map((membership, i) => {
@@ -157,6 +164,7 @@ export async function projectRateLimitsHandler(req: FhirRequest): Promise<FhirRe
 
 async function loadMembershipUserConfigurations(
   systemRepo: SystemRepository,
+  project: WithId<Project>,
   memberships: WithId<ProjectMembership>[]
 ): Promise<Map<string, UserConfiguration>> {
   const configByRef = new Map<string, Reference<UserConfiguration>>();
@@ -167,18 +175,16 @@ async function loadMembershipUserConfigurations(
     }
   }
 
+  // Read each configuration as login does, so the reported limit matches the enforced one
   const result = new Map<string, UserConfiguration>();
-  if (configByRef.size === 0) {
-    return result;
-  }
-
-  const configRefs = Array.from(configByRef.values());
-  const reads = await systemRepo.readReferences<UserConfiguration>(configRefs);
-  for (let i = 0; i < configRefs.length; i++) {
-    const ref = configRefs[i].reference;
-    const resource = reads[i];
-    if (ref && !(resource instanceof Error)) {
-      result.set(ref, resource);
+  for (const [key, ref] of configByRef) {
+    try {
+      const config = await readMembershipReference(systemRepo, createReference(project), ref, ['UserConfiguration'], {
+        allowLinkedProjects: true,
+      });
+      result.set(key, config);
+    } catch {
+      // Skip references that login would reject
     }
   }
   return result;

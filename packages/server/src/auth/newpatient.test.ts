@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, createReference, Operator, resolveId } from '@medplum/core';
-import type { Login, Patient } from '@medplum/fhirtypes';
+import type { Login, Patient, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -226,6 +226,65 @@ describe('New patient', () => {
     }
     const membership = await getGlobalSystemRepo().readReference(membershipRef);
     expect(membership.accessPolicy?.reference).toBe(legacyPolicy?.reference);
+  });
+
+  test('Requires default patient access policy in the project', async () => {
+    const register = (projectName: string): ReturnType<typeof registerNew> =>
+      withTestContext(() =>
+        registerNew({
+          firstName: 'Owner',
+          lastName: 'Owner',
+          projectName,
+          email: `owner${randomUUID()}@example.com`,
+          password: 'password!@#',
+        })
+      );
+    const { project } = await register('Project A');
+    const { project: otherProject } = await register('Project B');
+    const systemRepo = getGlobalSystemRepo();
+
+    await withTestContext(async () => {
+      const otherPatient = await (
+        await getProjectSystemRepo(otherProject)
+      ).createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Other'], family: 'Patient' }],
+      });
+      await systemRepo.updateResource({
+        ...project,
+        defaultAccessPolicies: project.defaultAccessPolicies?.filter((p) => p.profileType !== 'Patient'),
+        defaultPatientAccessPolicy: { reference: `Patient/${otherPatient.id}` },
+        setting: [{ name: 'openPatientRegistration', valueBoolean: true }],
+      });
+    });
+
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: project.id,
+        firstName: 'Peggy',
+        lastName: 'Patient',
+        email: `peggy${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res1).toHaveStatus(200);
+
+    const res2 = await request(app).post('/auth/newpatient').type('json').send({
+      login: res1.body.login,
+      projectId: project.id,
+    });
+    expect(res2).toHaveStatus(404);
+
+    const memberships = await systemRepo.searchResources<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` },
+        { code: 'profile-type', operator: Operator.EQUALS, value: 'Patient' },
+      ],
+    });
+    expect(memberships).toHaveLength(0);
   });
 
   test('Fails when open registration is not enabled', async () => {

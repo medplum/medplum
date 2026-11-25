@@ -63,7 +63,7 @@ export async function getRepoForLogin(
       const realProjectSystemRepo = await getProjectSystemRepo(realProject);
       profile = await readMembershipReference<ProfileResource | Bot | ClientApplication>(
         realProjectSystemRepo,
-        realMembership,
+        realMembership.project,
         realMembership.profile,
         membershipProfileTypes,
         { allowLinkedProjects: true }
@@ -285,9 +285,15 @@ async function buildAccessPolicyResources(
   let original = accessPolicyMap.get(policyReferenceString);
   if (!original) {
     try {
-      original = await readMembershipReference(systemRepo, membership, accessPolicyReference, ['AccessPolicy'], {
-        allowLinkedProjects: true,
-      });
+      original = await readMembershipReference(
+        systemRepo,
+        membership.project,
+        accessPolicyReference,
+        ['AccessPolicy'],
+        {
+          allowLinkedProjects: true,
+        }
+      );
       accessPolicyMap.set(policyReferenceString, original);
     } catch {
       // Intentionally catch and rethrow with a generic error message for security

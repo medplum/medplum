@@ -134,7 +134,12 @@ async function updateUser(userId: string, params: InputParams, project: WithId<P
         });
 
         if (membership) {
-          const profile = await readMembershipReference(txRepo, membership, membership.profile, membershipProfileTypes);
+          const profile = await readMembershipReference(
+            txRepo,
+            membership.project,
+            membership.profile,
+            membershipProfileTypes
+          );
           if (profileTypesWithTelecom.includes(profile.resourceType)) {
             await updateProfileTelecom(txRepo, profile as WithId<ProfileResource>, oldEmail, newEmail);
           }

@@ -7,16 +7,17 @@ import { useMedplum, useResourceModified } from '@medplum/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DateTimeRange } from '../types';
 
-// Whether an instant falls within the loaded range, matching the inclusive `ge`/`le`
-// bounds of the searches below. Used to keep created resources from a live update out of
-// state when they fall outside the range of the hook — a refetch wouldn't return
-// them, so appending them would drift from what the search reflects.
-function isWithinRange(instant: string | undefined, range: DateTimeRange | undefined): boolean {
-  if (!instant || !range) {
+// Whether a Slot or Appointment overlaps the loaded range, matching the searches below. Used
+// to keep created resources from a live update out of state when they fall outside the range
+// of the hook — a refetch wouldn't return them, so appending them would drift from what the
+// search reflects.
+function overlapsRange(period: { start?: string; end?: string }, range: DateTimeRange | undefined): boolean {
+  if (!period.start || !period.end || !range) {
     return false;
   }
-  const time = new Date(instant).getTime();
-  return time >= range.start.getTime() && time <= range.end.getTime();
+  return (
+    new Date(period.start).getTime() < range.end.getTime() && new Date(period.end).getTime() > range.start.getTime()
+  );
 }
 
 // Returned when an empty status list is given: `status` is required, so no resource can
@@ -53,7 +54,7 @@ export interface UseSchedulingResourcesOptions {
 }
 
 /**
- * Loads the Slots for a set of schedules within a date range and keeps them live.
+ * Loads the Slots for a set of schedules overlapping a date range and keeps them live.
  *
  * Emits one Slot search per schedule so MedplumClient can cache each schedule's results
  * independently, then subscribes via `useResourceModified` so Slots this client creates,
@@ -131,10 +132,10 @@ export function useSchedulingSlots(
     }
 
     setSlots((state) => {
-      // `create` appends the new slot when it lands in hook's `range`; `update`/`patch`
+      // `create` appends the new slot when it overlaps hook's `range`; `update`/`patch`
       // replace it in place and leave an unloaded range untouched.
       if (event.operation === 'create') {
-        if (!isWithinRange(slot.start, range)) {
+        if (!overlapsRange(slot, range)) {
           return state;
         }
         const current = state ?? [];
@@ -161,8 +162,8 @@ export function useSchedulingSlots(
         medplum.searchResources('Slot', [
           ['_count', '1000'],
           ['schedule', scheduleRef],
-          ['start', `ge${rangeStart}`],
-          ['start', `le${rangeEnd}`],
+          ['start', `lt${rangeEnd}`],
+          ['end', `gt${rangeStart}`],
           slotStatusesKey === undefined ? ['status:not', 'entered-in-error'] : ['status', slotStatusesKey],
         ])
       )
@@ -194,7 +195,7 @@ export function useSchedulingSlots(
 }
 
 /**
- * Loads the Appointments for a set of schedules within a date range and keeps them live.
+ * Loads the Appointments for a set of schedules overlapping a date range and keeps them live.
  *
  * Searches by the schedules' actors, deduping shared actors so each is queried once, and
  * merges the per-actor results by id. Subscribes via `useResourceModified` so Appointments
@@ -277,7 +278,7 @@ export function useSchedulingAppointments(
 
     setAppointments((state) => {
       if (event.operation === 'create') {
-        if (!isWithinRange(appointment.start, range)) {
+        if (!overlapsRange(appointment, range)) {
           return state;
         }
         const current = state ?? [];
@@ -305,8 +306,8 @@ export function useSchedulingAppointments(
         medplum.searchResources('Appointment', [
           ['_count', '1000'],
           ['actor', actorRef],
-          ['date', `ge${rangeStart}`],
-          ['date', `le${rangeEnd}`],
+          ['date', `lt${rangeEnd}`],
+          ['end', `gt${rangeStart}`],
           ...(appointmentStatusesKey === undefined ? [] : [['status', appointmentStatusesKey]]),
         ])
       )
@@ -346,7 +347,7 @@ export function useSchedulingAppointments(
 }
 
 /**
- * Loads both the Slots and Appointments for a set of schedules within a date range.
+ * Loads both the Slots and Appointments for a set of schedules overlapping a date range.
  *
  * A thin composition of {@link useSchedulingSlots} and {@link useSchedulingAppointments}
  * for callers that need both; `loading` is true while either underlying fetch is in flight.

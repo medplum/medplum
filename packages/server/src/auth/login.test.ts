@@ -3,7 +3,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { createReference, LOINC } from '@medplum/core';
-import type { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { ClientApplication, DomainConfiguration, Project } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
@@ -463,6 +463,68 @@ describe('Login', () => {
     });
     expect(res3).toHaveStatus(200);
     expect(res3.body.code).toBeDefined();
+  });
+
+  test('External auth', async () => {
+    const domain = randomUUID() + '.example.com';
+    const externalEmail = `alice@${domain}`;
+    const externalPassword = 'password!@#';
+
+    // Register with a password before the domain is configured for external auth
+    await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'External Auth Project',
+        email: externalEmail,
+        password: externalPassword,
+      })
+    );
+
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      email: externalEmail,
+      password: externalPassword,
+      scope: 'openid',
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.code).toBeDefined();
+
+    // Create a domain with external auth
+    await withTestContext(() =>
+      getGlobalSystemRepo().createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    // The existing password can no longer be used
+    const res2 = await request(app).post('/auth/login').type('json').send({
+      email: externalEmail,
+      password: externalPassword,
+      scope: 'openid',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.issue[0].details.text).toBe(
+      'Cannot sign in with password for external auth. Use your identity provider.'
+    );
+    expect(res2.body.login).toBeUndefined();
+    expect(res2.body.code).toBeUndefined();
+
+    // A wrong password gets the same response, so it cannot be used to test guesses
+    const res3 = await request(app).post('/auth/login').type('json').send({
+      email: externalEmail,
+      password: 'wrong-password',
+      scope: 'openid',
+    });
+    expect(res3).toHaveStatus(400);
+    expect(res3.body.issue).toStrictEqual(res2.body.issue);
   });
 
   test('Case insensitive email', async () => {

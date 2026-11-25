@@ -18,3 +18,43 @@
     position: absolute;
   }
 }
+
+.backLinkSection {
+  padding: var(--mantine-spacing-xs);
+  border-bottom: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.backLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+  font-weight: 450;
+  color: var(--mantine-color-text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+
+  &:hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
+    text-decoration: none;
+  }
+
+  & svg {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+  }
+}
+
+.backLinkLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:not([data-opened]) > .backLinkSection .backLinkLabel {
+  display: none;
+}
