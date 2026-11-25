@@ -14,7 +14,7 @@ import {
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
 import { addGuardDutyMalwareProtectionReadGate, buildGuardDutyMalwareProtection } from './guardduty';
-import { grantBucketAccessToOriginAccessIdentity } from './oai';
+import { acknowledgeImportedBucketPolicyWarning, grantBucketAccessToOriginAccessIdentity } from './oai';
 import { buildWaf } from './waf';
 
 /**
@@ -179,6 +179,7 @@ export class Storage extends Construct {
           : undefined,
         logFilePrefix: config.storageLoggingPrefix,
       });
+      acknowledgeImportedBucketPolicyWarning(this.distribution);
 
       // DNS
       if (!config.skipDns) {

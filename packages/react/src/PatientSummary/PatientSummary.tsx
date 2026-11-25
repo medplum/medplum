@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { MedplumClient, WithId } from '@medplum/core';
-import { formatDate, formatHumanName, resolveId } from '@medplum/core';
+import { formatDate, formatHumanName, normalizeErrorString, resolveId } from '@medplum/core';
 import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, usePatientSummaryData, useResource, useResourceModified } from '@medplum/react-hooks';
-import { IconDots } from '@tabler/icons-react';
+import { IconDots, IconReload } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import styles from './PatientSummary.module.css';
@@ -45,7 +46,19 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const sections = props.sections ?? defaultSections;
 
   // Fetch all data for all sections (with search deduplication)
-  const { sectionData, loading, error } = usePatientSummaryData(propsPatient, sections);
+  const { sectionData, loading, error, refresh } = usePatientSummaryData(propsPatient, sections);
+
+  const handleRefresh = useCallback(() => {
+    refresh();
+    const id = resolveId(propsPatient);
+    if (!id) {
+      return;
+    }
+    medplum
+      .readResource('Patient', id, { cache: 'reload' })
+      .then(setModifiedPatient)
+      .catch((err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }));
+  }, [medplum, propsPatient, refresh]);
 
   useEffect(() => {
     const id = resolveId(propsPatient);
@@ -79,7 +92,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   return (
     <Flex direction="column" gap={0} w="100%" h="100%" className={styles.panel}>
       <Box>
-        <Group align="center" gap="sm" wrap="nowrap" py="md" pl="sm" pr={headerMenuItems ? 'xs' : 'xl'}>
+        <Group align="center" gap="sm" wrap="nowrap" py="md" pl="sm" pr="xs">
           {headerLink ? (
             <MedplumLink to={headerLink} className={styles.headerLink} underline="never">
               {headerContent}
@@ -87,22 +100,33 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           ) : (
             headerContent
           )}
-          {headerMenuItems && (
-            <Menu shadow="md" radius="md" width={240} position="bottom-end">
-              <Menu.Target>
-                <ActionIcon
-                  variant="subtle"
-                  size="md"
-                  radius="xl"
-                  aria-label="Patient actions"
-                  className={styles.actionsButton}
-                >
-                  <IconDots size={18} />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>{headerMenuItems}</Menu.Dropdown>
-            </Menu>
-          )}
+          <Menu shadow="md" radius="md" width={240} position="bottom-end">
+            <Menu.Target>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="xl"
+                aria-label="Patient actions"
+                className={styles.actionsButton}
+              >
+                <IconDots size={18} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              {headerMenuItems && (
+                <>
+                  {headerMenuItems}
+                  <Menu.Divider />
+                </>
+              )}
+              <Menu.Item
+                leftSection={<IconReload size={16} color="var(--mantine-color-dimmed)" />}
+                onClick={handleRefresh}
+              >
+                <Text size="sm">Refresh</Text>
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
         <Divider />
       </Box>

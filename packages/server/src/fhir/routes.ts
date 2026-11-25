@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
+import { allOk, badRequest, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { FhirRouter } from '@medplum/fhir-router';
-import type { ResourceType } from '@medplum/fhirtypes';
+import type { Resource, ResourceType } from '@medplum/fhirtypes';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { awsTextractHandler } from '../cloud/aws/textract';
@@ -22,6 +22,7 @@ import { agentStatsHandler } from './operations/agentstats';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
+import { assembleHandler } from './operations/assemble';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { binaryPresignedUrlHandler } from './operations/binary-presigned-url';
 import { binaryScanHandler } from './operations/binary-scan';
@@ -96,6 +97,7 @@ import type { ResendSubscriptionsOptions } from './repo';
 import { validateRepositoryResourceStrictly } from './repository/validation';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { getTerminologyCapabilities } from './terminology-capabilities';
 
 export const fhirRouter = Router();
 
@@ -167,8 +169,9 @@ const publicRoutes = Router();
 fhirRouter.use(publicRoutes);
 
 // Metadata / CapabilityStatement
-publicRoutes.get('/metadata', (_req: Request, res: Response) => {
-  res.status(200).json(getCapabilityStatement());
+publicRoutes.get('/metadata', async (req: Request, res: Response) => {
+  const metadata = req.query.mode === 'terminology' ? await getTerminologyCapabilities() : getCapabilityStatement();
+  res.status(200).json(metadata);
 });
 
 // FHIR Versions
@@ -278,6 +281,8 @@ function initInternalFhirRouter(): FhirRouter {
   // ValueSet $expand operation
   router.add('GET', '/ValueSet/$expand', expandOperator);
   router.add('POST', '/ValueSet/$expand', expandOperator);
+  router.add('GET', '/ValueSet/:id/$expand', expandOperator);
+  router.add('POST', '/ValueSet/:id/$expand', expandOperator);
 
   // CodeSystem $import operation
   router.add('POST', '/CodeSystem/$import', codeSystemImportHandler);
@@ -406,6 +411,11 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Patient/:id/$generate-smart-health-link', generateSmartHealthLinkHandler);
   router.add('POST', '/$resolve-smart-health-link', resolveSmartHealthLinkHandler);
 
+  // Questionnaire $assemble operation
+  router.add('GET', '/Questionnaire/:id/$assemble', assembleHandler);
+  router.add('POST', '/Questionnaire/:id/$assemble', assembleHandler);
+  router.add('POST', '/Questionnaire/$assemble', assembleHandler);
+
   // QuestionnaireResponse $extract operation
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
   router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
@@ -443,7 +453,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await validateRepositoryResourceStrictly(ctx.repo, req.body);
+    await validateRepositoryResourceStrictly(ctx.repo, getValidateInput(req));
     return [allOk];
   });
 
@@ -455,12 +465,22 @@ function initInternalFhirRouter(): FhirRouter {
     return [allOk];
   });
 
-  // Resend subscriptions
+  // Resend subscriptions for the current version
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
     const options = req.body as ResendSubscriptionsOptions | undefined;
-    await ctx.repo.resendSubscriptions(resourceType, id, options);
+    // The version is only specified in the URL, using the versioned route below
+    await ctx.repo.resendSubscriptions(resourceType, id, { ...options, versionId: undefined });
+    return [allOk];
+  });
+
+  // Resend subscriptions for a specific historical version
+  router.add('POST', '/:resourceType/:id/_history/:vid/$resend', async (req: FhirRequest) => {
+    const ctx = getAuthenticatedContext();
+    const { resourceType, id, vid } = req.params as { resourceType: ResourceType; id: string; vid: string };
+    const options = req.body as ResendSubscriptionsOptions | undefined;
+    await ctx.repo.resendSubscriptions(resourceType, id, { ...options, versionId: vid });
     return [allOk];
   });
 
@@ -502,10 +522,12 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     body: req.body ?? {},
     headers: req.headers,
     config: {
+      chainedSearchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'chainedSearchOnReader')?.valueBoolean,
       graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
         ?.valueInteger,
       graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
       graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      readonlyBatchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'readonlyBatchOnReader')?.valueBoolean,
       searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
       transactions: ctx.project.features?.includes('transaction-bundles'),
     },
@@ -514,7 +536,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
   let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
 
   if (isNotFound(result[0])) {
-    const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+    const customOperationResponse = await tryCustomOperation(request, ctx.repo, res.locals.rawBody);
     if (customOperationResponse) {
       result = customOperationResponse;
     }
@@ -533,4 +555,27 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
 
 function stripPrefix(str: string, prefix: string): string {
   return str.substring(str.indexOf(prefix) + prefix.length);
+}
+
+/**
+ * Returns the resource to validate from a $validate request.
+ * The resource can be posted directly, or wrapped in the "resource" parameter of a Parameters body.
+ * See: https://hl7.org/fhir/R4/resource-operation-validate.html
+ * @param req - The FHIR request.
+ * @returns The resource to validate.
+ */
+function getValidateInput(req: FhirRequest): Resource {
+  const body = req.body as Resource;
+  if (body?.resourceType !== 'Parameters') {
+    return body;
+  }
+  const resourceParam = body.parameter?.find((p) => p.name === 'resource');
+  if (resourceParam?.resource) {
+    return resourceParam.resource;
+  }
+  if (req.params.resourceType === 'Parameters') {
+    // Validating a Parameters resource posted directly
+    return body;
+  }
+  throw new OperationOutcomeError(badRequest('Missing resource parameter'));
 }

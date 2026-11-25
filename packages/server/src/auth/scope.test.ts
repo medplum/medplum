@@ -26,7 +26,7 @@ describe('Scope', () => {
     await initApp(app, config);
 
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project, profile } = await registerNew({
         firstName: 'Scope',
         lastName: 'Scope',
         projectName: 'Scope Project',
@@ -39,11 +39,13 @@ describe('Scope', () => {
         resourceType: 'Patient',
         meta: { project: project.id },
       });
-      const launch = await systemRepo.createResource<SmartAppLaunch>({
-        resourceType: 'SmartAppLaunch',
-        meta: { project: project.id },
-        patient: createReference(patient),
-      });
+      const launch = await systemRepo
+        .withOverrideConfig({ author: createReference(profile) })
+        .createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          meta: { project: project.id },
+          patient: createReference(patient),
+        });
       launchId = launch.id;
     });
   });
@@ -231,6 +233,43 @@ describe('Scope', () => {
     });
     expect(res2).toHaveStatus(200);
     expect(res2.body.code).toBeDefined();
+  });
+
+  test('Disallow dropping all restricted scopes', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid profile patient/Condition.rs',
+      email,
+      password,
+      launch: launchId,
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.login).toBeDefined();
+
+    // A login without SMART scopes is unrestricted, so this would broaden access
+    const res2 = await request(app).post('/auth/scope').type('json').send({
+      login: res1.body.login,
+      scope: 'openid profile',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.issue[0].details.text).toBe('Invalid scope');
+  });
+
+  test('Disallow adding non-SMART scopes', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid profile patient/Condition.rs',
+      email,
+      password,
+      launch: launchId,
+    });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.login).toBeDefined();
+
+    const res2 = await request(app).post('/auth/scope').type('json').send({
+      login: res1.body.login,
+      scope: 'openid profile patient/Condition.rs offline_access',
+    });
+    expect(res2).toHaveStatus(400);
+    expect(res2.body.issue[0].details.text).toBe('Invalid scope');
   });
 
   test('Disallow selection of conflicting granular scope', async () => {

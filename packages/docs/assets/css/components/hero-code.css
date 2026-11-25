@@ -1,0 +1,9 @@
+.hero-code {
+  font-size: 2rem;
+  background-color: #faf8ff;
+  border-radius: 2rem;
+  color: #569aff;
+  flex: 1;
+  padding: 1rem;
+  line-height: 1;
+}

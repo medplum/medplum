@@ -9,11 +9,13 @@ import {
   SchedulingColorURI,
   ServiceTypeReferenceURI,
   setPrimaryProvider,
+  TimezoneExtensionURI,
 } from '@medplum/core';
 import type { Appointment, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderWithMedplum, screen, userEvent, waitFor, within } from '../test-utils/render';
+import { formatZonedTimeRange } from '../timezones';
 import type { MultiCalendarSource } from './MultiCalendar';
 import { MultiCalendar } from './MultiCalendar';
 
@@ -108,6 +110,21 @@ describe('MultiCalendar', () => {
     // A week says when a slot is by where it is drawn, so the line under its title names whose time it is.
     const blocked = screen.getByText(/Blocked/).closest<HTMLElement>('.event') as HTMLElement;
     expect(await within(blocked).findByText('Alice Smith')).toBeInTheDocument();
+  });
+
+  test('opens on Weekdays, or on Week when today is on a weekend', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 7, 22, 10, 0, 0) });
+    try {
+      const { unmount } = renderWithMedplum(<MultiCalendar sources={[]} />, medplum);
+      expect(screen.getByLabelText('View')).toHaveValue('timeGridWeek');
+      unmount();
+
+      vi.setSystemTime(new Date(2026, 7, 19, 10, 0, 0));
+      renderWithMedplum(<MultiCalendar sources={[]} />, medplum);
+      expect(screen.getByLabelText('View')).toHaveValue('timeGridWeekdays');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test('draws a source marked not interactive without making its events clickable', async () => {
@@ -249,7 +266,7 @@ describe('MultiCalendar', () => {
 
     // A month has no hours to sit in, so there the event says when it is itself, with room for
     // the service type beside it and not the patient.
-    await userEvent.click(screen.getByText('Month'));
+    await userEvent.selectOptions(screen.getByLabelText('View'), 'Month');
     const monthEvent = within((await screen.findByText('Ultrasound imaging')).closest('.event') as HTMLElement);
     expect(monthEvent.getByText(time)).toBeInTheDocument();
     expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
@@ -272,6 +289,8 @@ describe('MultiCalendar', () => {
       status: 'booked',
       start: new Date(baseDate.getTime()).toISOString(),
       end: new Date(baseDate.getTime() + 30 * 60 * 1000).toISOString(),
+      // Drawn at 10 AM on the viewer's clock, and told on the visit's own.
+      extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Phoenix' }],
       serviceType: [
         {
           // Stale: the event names the service type as its HealthcareService is named now.
@@ -306,8 +325,10 @@ describe('MultiCalendar', () => {
     const card = within(primary.closest('.mantine-Popover-dropdown') as HTMLElement);
     // Its status sits beside the patient it is titled by.
     expect(card.getByText('Homer Simpson').closest('.mantine-Group-root')).toHaveTextContent('booked');
+    // The hours there depend on the runner's own zone, which tests may override.
+    const times = formatZonedTimeRange(baseDate, new Date(baseDate.getTime() + 30 * 60 * 1000), 'America/Phoenix');
     expect((await card.findByText('Ultrasound imaging')).parentElement).toHaveTextContent(
-      /^Ultrasound imaging · 10:00\sAM – 10:30\sAM$/
+      `Ultrasound imaging · ${times.replaceAll(/\s/g, ' ')}`
     );
     expect(screen.getAllByText('Primary')).toHaveLength(1);
     expect(primary.closest('.mantine-Group-root')).toHaveTextContent('Alice Smith');

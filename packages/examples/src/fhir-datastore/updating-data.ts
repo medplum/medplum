@@ -109,23 +109,23 @@ curl -X PUT 'https://api.medplum.com/fhir/R4/Patient/homer-simpson' \
 // end-block safeUpdateCurl
 */
 
-// start-block transactionIfMatchTs
+// start-block batchIfMatchTs
 // Read the current version of resources you want to update
 const patient1 = await medplum.readResource('Patient', 'patient-1');
 const patient2 = await medplum.readResource('Patient', 'patient-2');
 
-// Create a transaction bundle with version checking
+// Create a batch with independent version checks
 // Note: Bundle entry ifMatch uses ETag format W/"versionId" because it becomes an HTTP header
-const transactionBundle: Bundle = {
+const versionCheckedBatch: Bundle = {
   resourceType: 'Bundle',
-  type: 'transaction',
+  type: 'batch',
   entry: [
     {
       request: {
         method: 'PUT',
         url: 'Patient/patient-1',
         // Bundle entries use ETag format: W/"versionId"
-        // This is different from the SDK updateResource method which uses just the versionId string
+        // This is the same format as the If-Match HTTP header.
         ifMatch: patient1.meta?.versionId ? `W/"${patient1.meta.versionId}"` : undefined,
       },
       resource: {
@@ -147,8 +147,11 @@ const transactionBundle: Bundle = {
   ],
 };
 
-await medplum.executeBatch(transactionBundle);
-// If any resource was modified by another user, the transaction will fail with 412 Precondition Failed
-// end-block transactionIfMatchTs
+const versionCheckedResults = await medplum.executeBatch(versionCheckedBatch);
+for (const entry of versionCheckedResults.entry ?? []) {
+  console.log(entry.response?.status, entry.response?.outcome);
+}
+// Inspect every entry. A 412 affects only that entry; reload and review it before retrying.
+// end-block batchIfMatchTs
 
 console.log(updatedPatient, patchedPatient);

@@ -22,6 +22,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getAsyncJobTracking } from '../../workers/base';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import { CancelledError } from '../../workers/utils';
+import { FhirQuotaCost } from '../fhirquota';
 import type { Repository, SystemRepository } from '../repo';
 import { makeOperationDefinition } from './definitions';
 import { searchPatientCompartment } from './patienteverything';
@@ -167,7 +168,8 @@ export async function setResourceAccounts(
   if (!userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, target)) {
     throw new OperationOutcomeError(forbidden);
   }
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
+  // System repo writes skip quota accounting, so charge the user's repo, which also exempts async jobs
+  await userRepo.recordFhirQuota(FhirQuotaCost.WRITE);
   await systemRepo.updateResource(target);
   let count = 1; // Target resource is updated already
 
@@ -190,9 +192,13 @@ export async function setResourceAccounts(
 
       const bundle = await searchPatientCompartment(userRepo, target, search);
       for (const entry of bundle.entry ?? EMPTY) {
-        const resource = entry.resource;
-        if (resource && resource.resourceType !== 'Patient') {
-          await updateCompartmentResource(systemRepo, resource, additions, removals);
+        if (!entry.resource || entry.resource.resourceType === 'Patient') {
+          continue;
+        }
+        // read with system repo to restore hidden fields
+        const resource = await systemRepo.readResource(entry.resource.resourceType, entry.resource.id);
+        if (userRepo.canPerformInteraction(AccessPolicyInteraction.UPDATE, resource)) {
+          await updateCompartmentResource(userRepo, systemRepo, resource, additions, removals);
           count++;
         }
       }
@@ -212,6 +218,7 @@ export async function setResourceAccounts(
 }
 
 async function updateCompartmentResource<T extends Resource>(
+  userRepo: Repository,
   systemRepo: SystemRepository,
   resource: T,
   additions: Reference[],
@@ -236,7 +243,7 @@ async function updateCompartmentResource<T extends Resource>(
     account: accountList?.[0],
   };
   // Use system repo to force update meta.accounts
-  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
+  await userRepo.recordFhirQuota(FhirQuotaCost.WRITE);
   return systemRepo.updateResource(resource);
 }
 

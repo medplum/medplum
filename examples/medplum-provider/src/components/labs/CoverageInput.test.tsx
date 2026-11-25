@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Coverage, Patient } from '@medplum/fhirtypes';
 import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render } from '../../test-utils/render';
 import { CoverageInput } from './CoverageInput';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
@@ -90,11 +90,9 @@ describe('CoverageInput', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <CoverageInput patient={patient} error={props.error} />
-            </HealthGorillaLabOrderProvider>
-          </MantineProvider>
+          <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
+            <CoverageInput patient={patient} error={props.error} />
+          </HealthGorillaLabOrderProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -347,11 +345,9 @@ describe('CoverageInput', () => {
     const { rerender } = render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <CoverageInput patient={mockPatient} />
-            </HealthGorillaLabOrderProvider>
-          </MantineProvider>
+          <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
+            <CoverageInput patient={mockPatient} />
+          </HealthGorillaLabOrderProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -372,11 +368,9 @@ describe('CoverageInput', () => {
     rerender(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
-              <CoverageInput patient={newPatient} />
-            </HealthGorillaLabOrderProvider>
-          </MantineProvider>
+          <HealthGorillaLabOrderProvider {...mockLabOrderReturn}>
+            <CoverageInput patient={newPatient} />
+          </HealthGorillaLabOrderProvider>
         </MedplumProvider>
       </MemoryRouter>
     );

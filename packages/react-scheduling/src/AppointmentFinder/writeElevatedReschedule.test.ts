@@ -10,6 +10,7 @@ import {
   SchedulingBookedByOperationURI,
   SchedulingSlotCapacityURI,
   setScheduleSchedulingParameter,
+  toAppointmentSiteReference,
 } from '@medplum/core';
 import type { Appointment, Schedule } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -18,13 +19,16 @@ import {
   ExamRoomASchedule,
   ExamRoomBSchedule,
   ImagingBenchFixtures,
+  MainClinic,
   RiveraImagingAppointment,
   RiveraImagingHeldSlots,
+  SatelliteClinic,
   SchedulingFixtures,
   UltrasoundImagingService,
 } from '../stories/scheduling';
 import { buildElevatedBooking } from './buildElevatedBooking';
 import {
+  getMovedSupportingInformation,
   getRescheduleDurationMinutes,
   SchedulingRescheduledByOperationURI,
   SchedulingUnvalidatedRescheduleURI,
@@ -205,9 +209,34 @@ describe('writeElevatedReschedule', () => {
   });
 
   test('moves the stored appointment rather than a stale copy', async () => {
-    await medplum.updateResource({ ...existing, comment: 'Edited elsewhere' });
-    const result = await writeElevatedReschedule(medplum, existing, proposal());
+    await medplum.updateResource({
+      ...existing,
+      comment: 'Edited elsewhere',
+      supportingInformation: [toAppointmentSiteReference(SatelliteClinic)],
+    });
+    // Still naming the site the stale copy is at, as a facility field left alone would.
+    const atMain = { ...proposal(), supportingInformation: [toAppointmentSiteReference(MainClinic)] };
+
+    const result = await writeElevatedReschedule(medplum, existing, atMain);
+
     expect(result.appointments[0].comment).toBe('Edited elsewhere');
+    expect(result.appointments[0].supportingInformation).toEqual([toAppointmentSiteReference(SatelliteClinic)]);
+  });
+
+  test('moves the appointment to the site the proposal names, keeping its other supporting information', async () => {
+    const notes = { reference: 'DocumentReference/referral-notes' };
+    existing = await medplum.updateResource({
+      ...existing,
+      supportingInformation: [notes, toAppointmentSiteReference(MainClinic)],
+    });
+    const atSatellite = { ...proposal(), supportingInformation: [toAppointmentSiteReference(SatelliteClinic)] };
+
+    const result = await writeElevatedReschedule(medplum, existing, atSatellite);
+
+    expect(result.appointments[0].supportingInformation).toEqual([notes, toAppointmentSiteReference(SatelliteClinic)]);
+    // Naming the site already on file, or none, leaves the entries as they are.
+    expect(getMovedSupportingInformation(result.appointments[0], atSatellite)).toBeUndefined();
+    expect(getMovedSupportingInformation(result.appointments[0], proposal())).toBeUndefined();
   });
 
   test('refuses a proposal without a valid length', async () => {

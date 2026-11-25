@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
-import type { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
+import { readMembershipReference } from '../fhir/projectmembership';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
-import { createProfile, createProjectMembership, sendLoginResult } from './utils';
+import { createProfile, createProjectMembership, getOpenRegistrationAccessPolicy, sendLoginResult } from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
@@ -32,6 +33,12 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   }
 
   const { projectId } = req.body;
+
+  if (login.project?.reference && login.project.reference !== 'Project/' + projectId) {
+    // The login was started for a different project, so it cannot be used outside of that project
+    sendOutcome(res, badRequest('Invalid project'));
+    return;
+  }
 
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   if (!user.project) {
@@ -66,19 +73,21 @@ async function createPatient(
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
 
-  if (!project.defaultPatientAccessPolicy) {
+  const policyRef = getOpenRegistrationAccessPolicy(project);
+  if (!policyRef) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
+  const policy = await readMembershipReference<AccessPolicy>(
+    systemRepo,
+    createReference(project),
+    policyRef,
+    ['AccessPolicy'],
+    { allowLinkedProjects: true }
+  );
   const profile = (await createProfile(systemRepo, project, 'Patient', firstName, lastName, user.email)) as Patient;
-  const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-  const membership = await createProjectMembership(systemRepo, user, project, profile, {
+  // The caller sets the membership on the login with `setLoginMembership`
+  return createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });
-
-  await systemRepo.updateResource<Login>({
-    ...login,
-    membership: createReference(membership),
-  });
-  return membership;
 }

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
@@ -24,14 +23,12 @@ describe('ConfigureGINIndexesForm', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super/db']} initialIndex={0}>
-          <MantineProvider>
-            <Notifications />
-            <ConfigureGINIndexesForm
-              defaultGinPendingListLimit={defaultGinPendingListLimit}
-              availableTables={availableTables}
-              onResponse={onResponse}
-            />
-          </MantineProvider>
+          <Notifications />
+          <ConfigureGINIndexesForm
+            defaultGinPendingListLimit={defaultGinPendingListLimit}
+            availableTables={availableTables}
+            onResponse={onResponse}
+          />
         </MemoryRouter>
       </MedplumProvider>
     );

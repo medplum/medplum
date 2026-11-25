@@ -35,10 +35,7 @@ const FIXED_ISO = new Date(SOURCE_DATE_EPOCH * 1000).toISOString().replace(/\.\d
 // Rewrites the two wall-clock timestamps pandoc puts in docProps/core.xml.
 // Only the element text is touched; the xsi:type attribute is left alone.
 export function normalizeCoreProps(xml) {
-  return xml.replace(
-    /(<dcterms:(?:created|modified)\b[^>]*>)[^<]*(<\/dcterms:(?:created|modified)>)/g,
-    (_match, open, close) => `${open}${FIXED_ISO}${close}`
-  );
+  return xml.replace(/(<dcterms:(?:created|modified)\b[^>]*>)[^<]*(<\/dcterms:(?:created|modified)>)/g, (_match, open, close) => `${open}${FIXED_ISO}${close}`);
 }
 
 // pandoc records each image's source path as the DrawingML picture description:
@@ -90,12 +87,10 @@ export function setFixedMtimes(dir) {
 export function normalizePdfMetadata(buffer) {
   const fixedDate = `D:${new Date(SOURCE_DATE_EPOCH * 1000).toISOString().replace(/[-:T]/g, '').slice(0, 14)}`;
 
-  const withFixedDates = buffer
-    .toString('latin1')
-    .replace(/\/(CreationDate|ModDate)\s*\(([^)]*)\)/g, (match, key, value) => {
-      const replacement = value.startsWith('D:') ? fixedDate + value.slice(16) : value;
-      return replacement.length === value.length ? `/${key}(${replacement})` : match;
-    });
+  const withFixedDates = buffer.toString('latin1').replace(/\/(CreationDate|ModDate)\s*\(([^)]*)\)/g, (match, key, value) => {
+    const replacement = value.startsWith('D:') ? fixedDate + value.slice(16) : value;
+    return replacement.length === value.length ? `/${key}(${replacement})` : match;
+  });
 
   // Note the [\s\S] in the ID separator: LibreOffice puts a newline between the
   // two hex strings, which is why a same-line-only pattern missed the field on
@@ -110,9 +105,7 @@ export function normalizePdfMetadata(buffer) {
   const blank = (text, fill) =>
     varyingFields.reduce(
       (acc, { pattern }) =>
-        acc.replace(pattern, (_m, open, first, mid = '', second = '', close = '') =>
-          [open, fill(first), mid, fill(second), close].join('')
-        ),
+        acc.replace(pattern, (_m, open, first, mid = '', second = '', close = '') => [open, fill(first), mid, fill(second), close].join('')),
       text
     );
 
@@ -127,13 +120,7 @@ export function normalizePdfMetadata(buffer) {
   const filled = varyingFields.reduce(
     (acc, { pattern, digestOffset }) =>
       acc.replace(pattern, (_m, open, first, mid = '', second = '', close = '') =>
-        [
-          open,
-          digest.slice(digestOffset, digestOffset + first.length),
-          mid,
-          second && digest.slice(digestOffset, digestOffset + second.length),
-          close,
-        ].join('')
+        [open, digest.slice(digestOffset, digestOffset + first.length), mid, second && digest.slice(digestOffset, digestOffset + second.length), close].join('')
       ),
     withFixedDates
   );

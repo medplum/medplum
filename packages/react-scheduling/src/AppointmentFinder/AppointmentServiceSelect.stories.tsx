@@ -52,8 +52,8 @@ export default {
 } as Meta;
 
 /**
- * Visit types are searched on the server, and each is described by its category
- * and how long it takes.
+ * Opening the field lists every visit type, and typing narrows the list. Each is
+ * described by its category and how long it takes.
  *
  * Only services carrying SchedulingParameters appear — "Walk-in Clinic" is in the
  * fixtures and is deliberately never offered, because `$find` could not produce
@@ -86,6 +86,6 @@ export const Basic = (): JSX.Element => {
  */
 export const NarrowedToASite = (): JSX.Element => (
   <Document>
-    <AppointmentServiceSelect onChange={() => undefined} location={MainClinic} />
+    <AppointmentServiceSelect onChange={() => undefined} serviceFacility={MainClinic} />
   </Document>
 );

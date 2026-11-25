@@ -140,8 +140,9 @@ export default {
  * - Cancelling: "Cancel Appointment" turns the view over to a page of its own, which
  *   requires selecting a `cancelationReason` from the `appointment-cancellation-reason`
  *   value set before it can be confirmed, and sends it as part of a `$cancel` request.
- *   "Back" returns to the details without cancelling anything, and without keeping the
- *   reason that was chosen.
+ *   The visit's details stay listed above the reason, which takes the foot of the page.
+ *   "Back to Appointment Details", under the confirmation, returns to the details without
+ *   cancelling anything, and without keeping the reason that was chosen.
  *
  * - Rescheduling: swaps this view for the form that moves the visit, opened on the
  *   visit type and the actors it is held on now — Dr. Rivera, Ultrasound 1 and Exam
@@ -187,7 +188,7 @@ export const Cancelled = (): JSX.Element => (
 
 /**
  * A visit whose visit type asked for procedure codes, diagnosis codes, and a medical
- * necessity attestation when it was booked. All three are editable here beside the patient.
+ * necessity attestation when it was booked. All three are editable here.
  *
  * @returns The story.
  */
@@ -232,6 +233,20 @@ export const Pending = (): JSX.Element => {
 export const ExternalLink = (): JSX.Element => (
   <Paper withBorder p="md" maw={320}>
     <AppointmentDetails appointment={ExternalAppointment} />
+  </Paper>
+);
+
+/**
+ * A visit that ended more than 12 hours ago, which can no longer be changed. Only the link
+ * to it in the external system is left.
+ *
+ * @returns The story.
+ */
+export const PastEditWindow = (): JSX.Element => (
+  <Paper withBorder p="md" maw={320}>
+    <AppointmentDetails
+      appointment={{ ...ExternalAppointment, start: '2020-05-01T14:00:00Z', end: '2020-05-01T15:00:00Z' }}
+    />
   </Paper>
 );
 

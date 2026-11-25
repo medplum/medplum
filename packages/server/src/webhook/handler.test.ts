@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getStatus, OperationOutcomeError } from '@medplum/core';
-import type { Bot, ProjectMembership } from '@medplum/fhirtypes';
+import type { Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { json } from 'body-parser';
-import type { ErrorRequestHandler } from 'express';
+import type { ErrorRequestHandler, Response } from 'express';
 import express from 'express';
 import request from 'supertest';
 import { vi } from 'vitest';
@@ -13,7 +13,8 @@ import { loadTestConfig } from '../config/loader';
 import * as repo from '../fhir/repo';
 import { webhookHandler } from './routes';
 
-const bot: Bot = { resourceType: 'Bot', id: 'test-bot', publicWebhook: true };
+const project: Project = { resourceType: 'Project', id: 'test-project' };
+const bot: Bot = { resourceType: 'Bot', id: 'test-bot', meta: { project: 'test-project' }, publicWebhook: true };
 const membership: ProjectMembership = {
   resourceType: 'ProjectMembership',
   project: { reference: 'Project/test-project' },
@@ -26,8 +27,8 @@ app.use(
   json({
     type: 'application/json',
     limit: '10mb',
-    verify: (req, _res, buf) => {
-      (req as any).rawBody = buf;
+    verify: (_req, res, buf) => {
+      (res as Response).locals.rawBody = buf;
     },
   })
 );
@@ -48,6 +49,7 @@ beforeEach(() => {
   } as unknown as repo.SystemRepository);
   vi.spyOn(repo, 'getProjectSystemRepo').mockResolvedValue({
     readReference: vi.fn().mockResolvedValue(bot),
+    readResource: vi.fn().mockResolvedValue(project),
   } as unknown as repo.SystemRepository);
   vi.spyOn(bots, 'executeBot').mockImplementation(async ({ input }) => ({
     success: true,

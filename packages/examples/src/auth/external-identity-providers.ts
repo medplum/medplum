@@ -44,10 +44,10 @@ const EXTERNAL_CLIENT_ID = 'MY_EXTERNAL_CLIENT_ID';
 /**
  * External OAuth2 redirect URI.
  * This must match the redirect URI configured in your external auth provider.
- * If using Medplum's hosted API server, the redirect URI must be "https://api.medplum.com/auth/external".
- * If using your own Medplum server, the redirect URI must be "https://<your server>/auth/external".
+ * If using Medplum's hosted API server, the redirect URI must be "https://api.medplum.com/auth/external/<client-id>".
+ * If using your own Medplum server, the redirect URI must be "https://<your server>/auth/external/<client-id>".
  */
-const EXTERNAL_REDIRECT_URI = MEDPLUM_BASE_URL + 'auth/external';
+const EXTERNAL_REDIRECT_URI = MEDPLUM_BASE_URL + 'auth/external/' + MEDPLUM_CLIENT_ID;
 
 const medplum = new MedplumClient({
   baseUrl: MEDPLUM_BASE_URL,

@@ -12,12 +12,12 @@ import type { SystemRepository } from '../repo';
 import { getShardSystemRepo } from '../repo';
 import { GLOBAL_SHARD_ID } from '../sharding';
 import {
-  deleteResourceCacheEntries,
-  deleteResourceCacheEntry,
+  buildResourceCacheDelete,
+  buildResourceCacheSet,
   getResourceCacheEntries,
   getResourceCacheEntry,
   getResourceCacheKey,
-  setResourceCacheEntry,
+  writeResourceCache,
 } from './resource-cache';
 
 describe('Repository resource cache', () => {
@@ -32,23 +32,23 @@ describe('Repository resource cache', () => {
   });
 
   test('Returns resource cache key', () => {
-    expect(getResourceCacheKey('Patient', '123')).toStrictEqual('Patient/123');
+    expect(getResourceCacheKey('Patient', 'ABC123')).toStrictEqual('Patient/abc123');
   });
 
   test('Sets, reads, and deletes resource cache entry', async () => {
     const patient = buildPatient();
 
     try {
-      await setResourceCacheEntry(patient, shardId);
+      await writeResourceCache([buildResourceCacheSet(patient, shardId)]);
 
-      const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id);
+      const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id.toUpperCase());
       expect(cacheEntry).toStrictEqual({
         resource: patient,
         projectId: patient.meta?.project,
         shardId: shardId,
       });
     } finally {
-      await deleteResourceCacheEntry('Patient', patient.id);
+      await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
     }
 
     await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toBeUndefined();
@@ -60,8 +60,8 @@ describe('Repository resource cache', () => {
     const missingId = randomUUID();
 
     try {
-      await setResourceCacheEntry(patient1, shardId);
-      await setResourceCacheEntry(patient2, shardId);
+      await writeResourceCache([buildResourceCacheSet(patient1, shardId)]);
+      await writeResourceCache([buildResourceCacheSet(patient2, shardId)]);
 
       const references: Reference[] = [
         { reference: `Patient/${patient1.id}` },
@@ -78,7 +78,7 @@ describe('Repository resource cache', () => {
         { resource: patient2, projectId: patient2.meta?.project, shardId },
       ]);
     } finally {
-      await deleteResourceCacheEntries('Patient', [patient1.id, patient2.id, missingId]);
+      await writeResourceCache([buildResourceCacheDelete('Patient', [patient1.id, patient2.id, missingId])]);
     }
   });
 
@@ -86,13 +86,29 @@ describe('Repository resource cache', () => {
     const patient1 = buildPatient();
     const patient2 = buildPatient();
 
-    await setResourceCacheEntry(patient1, shardId);
-    await setResourceCacheEntry(patient2, shardId);
+    await writeResourceCache([buildResourceCacheSet(patient1, shardId)]);
+    await writeResourceCache([buildResourceCacheSet(patient2, shardId)]);
 
-    await deleteResourceCacheEntries('Patient', [patient1.id, patient2.id]);
+    await writeResourceCache([buildResourceCacheDelete('Patient', [patient1.id, patient2.id])]);
 
     await expect(getResourceCacheEntry<Patient>('Patient', patient1.id)).resolves.toBeUndefined();
     await expect(getResourceCacheEntry<Patient>('Patient', patient2.id)).resolves.toBeUndefined();
+  });
+
+  test('Applies a batch of writes in order', async () => {
+    const patient = buildPatient();
+    const set = buildResourceCacheSet(patient, shardId, { force: true });
+    const del = buildResourceCacheDelete('Patient', [patient.id]);
+
+    try {
+      await writeResourceCache([set, del]);
+      await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toBeUndefined();
+
+      await writeResourceCache([del, set]);
+      await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toMatchObject({ resource: patient });
+    } finally {
+      await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
+    }
   });
 
   describe('cacheResourcesOnWrite disabled', () => {
@@ -110,7 +126,7 @@ describe('Repository resource cache', () => {
     test('Does not create missing cache entry', async () => {
       const patient = buildPatient();
 
-      await setResourceCacheEntry(patient, shardId);
+      await writeResourceCache([buildResourceCacheSet(patient, shardId)]);
 
       await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toBeUndefined();
     });
@@ -119,17 +135,17 @@ describe('Repository resource cache', () => {
       const patient = buildPatient();
 
       try {
-        await setResourceCacheEntry(patient, shardId, { force: true });
+        await writeResourceCache([buildResourceCacheSet(patient, shardId, { force: true })]);
         await expect(getResourceCacheEntry<Patient>('Patient', patient.id)).resolves.toBeDefined();
 
         const updated: WithId<Patient> = { ...patient, active: true };
-        await setResourceCacheEntry(updated, shardId);
+        await writeResourceCache([buildResourceCacheSet(updated, shardId)]);
 
         const cacheEntry = await getResourceCacheEntry<Patient>('Patient', patient.id);
         expect(cacheEntry?.resource).toStrictEqual(updated);
         expect(await getCacheRedis().ttl(getResourceCacheKey('Patient', patient.id))).toBeGreaterThan(0);
       } finally {
-        await deleteResourceCacheEntry('Patient', patient.id);
+        await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
       }
     });
   });
@@ -160,14 +176,14 @@ describe('Repository resource cache', () => {
             shardId: GLOBAL_SHARD_ID,
           });
         } finally {
-          await deleteResourceCacheEntry('Patient', patient.id);
+          await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
         }
       }));
 
     test('Misses an entry cached from another shard', async () => {
       const patient = buildPatient();
       try {
-        await setResourceCacheEntry(patient, otherShardId, { force: true });
+        await writeResourceCache([buildResourceCacheSet(patient, otherShardId, { force: true })]);
         await expect(
           otherShardRepo.readResource('Patient', patient.id, { checkCacheOnly: true })
         ).resolves.toMatchObject({ id: patient.id });
@@ -175,14 +191,14 @@ describe('Repository resource cache', () => {
           'Not found'
         );
       } finally {
-        await deleteResourceCacheEntry('Patient', patient.id);
+        await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
       }
     });
 
     test('Misses an entry cached from another shard in bulk reads', async () => {
       const patient = buildPatient();
       try {
-        await setResourceCacheEntry(patient, otherShardId, { force: true });
+        await writeResourceCache([buildResourceCacheSet(patient, otherShardId, { force: true })]);
         const [fromOtherShard] = await otherShardRepo.readReferences([{ reference: `Patient/${patient.id}` }]);
         expect(fromOtherShard).toMatchObject({ id: patient.id });
 
@@ -190,19 +206,19 @@ describe('Repository resource cache', () => {
         const [fromGlobal] = await globalRepo.readReferences([{ reference: `Patient/${patient.id}` }]);
         expect(fromGlobal).toBeInstanceOf(Error);
       } finally {
-        await deleteResourceCacheEntry('Patient', patient.id);
+        await writeResourceCache([buildResourceCacheDelete('Patient', [patient.id])]);
       }
     });
 
     test('Serves global resource types from any shard', async () => {
       const project: WithId<Project> = { resourceType: 'Project', id: randomUUID(), name: 'Cached project' };
       try {
-        await setResourceCacheEntry(project, GLOBAL_SHARD_ID, { force: true });
+        await writeResourceCache([buildResourceCacheSet(project, GLOBAL_SHARD_ID, { force: true })]);
         await expect(
           otherShardRepo.readResource('Project', project.id, { checkCacheOnly: true })
         ).resolves.toMatchObject({ id: project.id });
       } finally {
-        await deleteResourceCacheEntry('Project', project.id);
+        await writeResourceCache([buildResourceCacheDelete('Project', [project.id])]);
       }
     });
 

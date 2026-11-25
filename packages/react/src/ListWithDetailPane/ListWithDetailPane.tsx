@@ -42,6 +42,8 @@ export interface ListWithDetailPaneDetailContext {
  * @param selected - The resolved selected item, or undefined when nothing is selected.
  * @param renderDetail - Renders the detail pane for the selected item.
  * @param emptyDetail - Shown when nothing is selected. Default: dimmed prompt.
+ * @param listFooter - Pinned below the scrolling list and above the pagination row, e.g. bulk actions
+ * for the current list. Rendered only when the list has finished loading.
  * @param refresh - Optional. Passed through to the detail render context so the detail pane can refetch the list.
  * @param onSelectFirst - Auto-select escape hatch. Fired with the first item when the list has finished loading
  * (`loading` false) with items while nothing is selected (`selectedKey` undefined). The consumer decides how to
@@ -65,6 +67,7 @@ export interface ListWithDetailPanePropsBase<T extends { id?: string } = Resourc
   readonly selected: T | undefined;
   readonly renderDetail: (selected: T, ctx: ListWithDetailPaneDetailContext) => ReactNode;
   readonly emptyDetail?: ReactNode;
+  readonly listFooter?: ReactNode;
   readonly refresh?: () => Promise<void>;
   readonly onSelectFirst?: (item: T) => void;
   readonly page?: number;
@@ -132,6 +135,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
     selected,
     renderDetail,
     emptyDetail,
+    listFooter,
     refresh,
     onSelectFirst,
     page,
@@ -215,6 +219,7 @@ export function ListWithDetailPane<T extends { id?: string } = Resource>(
             </div>
           )}
         </ScrollArea>
+        {!loading && listFooter}
         {onPageChange !== undefined && page !== undefined && pageCount !== undefined && pageCount > 1 && (
           <div className={classes.footer}>
             <Pagination value={page} total={pageCount} onChange={onPageChange} size="sm" siblings={1} boundaries={1} />

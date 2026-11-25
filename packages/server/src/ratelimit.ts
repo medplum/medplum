@@ -8,10 +8,11 @@ import { RateLimiterRedis } from 'rate-limiter-flexible';
 import type { ServerConfig } from './config/utils';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRateLimitRedis } from './redis';
-import { getNormalizedPath } from './util/url';
+import { getNormalizedPath, matchesIpAccessRule } from './util/url';
 
 // There are four separate rate limits:
-// 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints
+// 1. "Login" rate limit - applies only to `/auth/login` and `/auth/register` endpoints;
+//    IPs in `loginRateLimitExemptIps` are counted under the Auth rate limit instead
 // 2. "MFA" rate limit - applies to unauthenticated MFA verification endpoints
 // 3. "Auth" rate limit - applies to all other `/auth/*` and `/oauth2/*` endpoints (e.g., `/auth/me`, `/oauth2/token`)
 // 4. Default rate limit - applies to all other API endpoints (e.g., `/fhir/R4/Patient`)
@@ -27,37 +28,43 @@ interface RateLimitCategoryConfig {
   readonly serverConfigKey: keyof ServerConfig;
   readonly systemSettingName: string;
   readonly defaultLimitPerMinute: number;
-  readonly matchesUrl: (url: string) => boolean;
+  // Request paths are lowercased before matching, so these must be lowercase (enforced in ratelimit.test.ts)
+  readonly paths?: readonly string[];
+  readonly prefixes?: readonly string[];
+  readonly excludedPaths?: readonly string[];
 }
 
-const categories: RateLimitCategoryConfig[] = [
+const loginCategory = 'login';
+const authCategory = 'auth';
+
+export const categories: RateLimitCategoryConfig[] = [
   {
-    name: 'login',
+    name: loginCategory,
     serverConfigKey: 'defaultLoginRateLimit',
     systemSettingName: 'loginRateLimit',
     defaultLimitPerMinute: 5,
-    matchesUrl: (url: string) => url === '/auth/login' || url === '/auth/newuser' || url === '/auth/newproject',
+    paths: ['/auth/login', '/auth/newuser', '/auth/newproject'],
   },
   {
     name: 'mfa',
     serverConfigKey: 'defaultMfaRateLimit',
     systemSettingName: 'mfaRateLimit',
     defaultLimitPerMinute: 10,
-    matchesUrl: (url: string) => url === '/auth/mfa/verify' || url === '/auth/mfa/login-enroll',
+    paths: ['/auth/mfa/verify', '/auth/mfa/login-enroll'],
   },
   {
-    name: 'auth',
+    name: authCategory,
     serverConfigKey: 'defaultAuthRateLimit',
     systemSettingName: 'authRateLimit',
-    defaultLimitPerMinute: 1200,
-    matchesUrl: (url: string) => (url.startsWith('/auth/') || url.startsWith('/oauth2/')) && url !== '/auth/me',
+    defaultLimitPerMinute: 600,
+    prefixes: ['/auth/', '/oauth2/'],
+    excludedPaths: ['/auth/me'],
   },
   {
     name: 'default',
     serverConfigKey: 'defaultRateLimit',
     systemSettingName: 'rateLimit',
-    defaultLimitPerMinute: 60_000,
-    matchesUrl: (_url: string) => true, // Applies to all other paths
+    defaultLimitPerMinute: 60_000, // Applies to all other paths
   },
 ];
 
@@ -74,7 +81,7 @@ export function rateLimitHandler(config: ServerConfig): Handler {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {
-        const key = getRateLimitKey(req);
+        const key = getRateLimitKey(req, config);
         const limit = getRateLimiter(req, config);
 
         const userBlock = blockedUsers.get(key);
@@ -122,8 +129,8 @@ export function getRateLimiter(req: Request, config?: ServerConfig): RateLimiter
   });
 }
 
-function getRateLimitKey(req: Request): string {
-  const category = getRateLimitCategory(req);
+function getRateLimitKey(req: Request, config?: ServerConfig): string {
+  const category = getRateLimitCategory(req, config);
   const categoryKey = category.name;
   return (req.ip as string) + (categoryKey === 'default' ? '' : `:${categoryKey}`);
 }
@@ -138,7 +145,7 @@ export function closeRateLimiter(): void {
 }
 
 function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
-  const category = getRateLimitCategory(req);
+  const category = getRateLimitCategory(req, config);
   let limit: number = category.defaultLimitPerMinute;
 
   const serverConfigKey = category.serverConfigKey;
@@ -158,13 +165,33 @@ function getRateLimitForRequest(req: Request, config?: ServerConfig): number {
   return limit;
 }
 
-function getRateLimitCategory(req: Request): RateLimitCategoryConfig {
-  const url = getNormalizedPath(req.originalUrl);
+function getRateLimitCategory(req: Request, config?: ServerConfig): RateLimitCategoryConfig {
+  // Express routing is case-insensitive and ignores one trailing slash
+  let url = getNormalizedPath(req.originalUrl.toLowerCase());
+  if (url.length > 1 && url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  let category = categories.at(-1) as RateLimitCategoryConfig; // Default category is the last one in the list
   for (let i = 0; i < categories.length - 1; i++) {
-    const category = categories[i];
-    if (category.matchesUrl(url)) {
-      return category;
+    const candidate = categories[i];
+    if (
+      !candidate.excludedPaths?.includes(url) &&
+      (candidate.paths?.includes(url) || candidate.prefixes?.some((prefix) => url.startsWith(prefix)))
+    ) {
+      category = candidate;
+      break;
     }
   }
-  return categories[categories.length - 1]; // Default category is the last one in the list
+
+  // Allowlist specific IP addresses to use the broader auth limit
+  if (category.name === loginCategory && isLoginRateLimitExempt(req, config)) {
+    return categories.find((c) => c.name === authCategory) as RateLimitCategoryConfig;
+  }
+
+  return category;
+}
+
+function isLoginRateLimitExempt(req: Request, config?: ServerConfig): boolean {
+  const ip = req.ip;
+  return Boolean(ip && config?.loginRateLimitExemptIps?.some((value) => matchesIpAccessRule(ip, value)));
 }

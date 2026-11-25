@@ -16,7 +16,7 @@ import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
 import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
-import { capitalize, getExtension, isEmpty } from '../utils';
+import { capitalize, getExtension, isEmpty, isString } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -218,6 +218,9 @@ export function getDataType(type: string, profileUrl?: string): InternalTypeSche
  * @returns True if the resource type is a valid FHIR resource type.
  */
 export function isResourceType(resourceType: string): resourceType is ResourceType {
+  if (!isString(resourceType)) {
+    return false;
+  }
   const typeSchema = DATA_TYPES[resourceType];
   return typeSchema && isResourceTypeSchema(typeSchema);
 }

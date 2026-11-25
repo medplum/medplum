@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    {{- /* Theme, Kapa, and Google Analytics setup that must run before the page renders (see assets/js/head.mjs) */}}
+    {{- $gaId := cond (and hugo.IsProduction (not hugo.IsServer)) "G-SHW0ZNT27G" "" }}
+    {{ $headJs := resources.Get "js/head.mjs" | js.Build (dict "params" (dict "gaId" $gaId)) | minify | fingerprint }}
+    <script src="{{ $headJs.RelPermalink }}" integrity="{{ $headJs.Data.Integrity }}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {{- /* "Medplum" alone on the home page, as on Docusaurus */}}
+    <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ block "title" . }}{{ .Title }}{{ end }} | {{ site.Title }}{{ end }}</title>
+    <meta property="og:title" content="{{ if .IsHome }}{{ site.Title }}{{ else }}{{ template "title" . }} | {{ site.Title }}{{ end }}" data-page-meta />
+    {{ partial "head-meta.html" . }}
+    {{ partial "head-tags.html" (dict "page" . "gaId" $gaId) }}
+    {{ $js := resources.Get "js/main.mjs" | js.Build | minify | fingerprint }}
+    <script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
+    {{- /* Loaded by assets/js/components/search.mjs when search is first opened */}}
+    {{ $docsearchJs := resources.Get "js/docsearch.mjs" | js.Build (dict "format" "esm") | minify | fingerprint }}
+    <meta name="docsearch-bundle" content="{{ $docsearchJs.RelPermalink }}" />
+    {{ $infima := resources.Get "infima.css" }}
+    {{ $openColor := resources.Get "open-color.css" }}
+    {{- /* Bundles main.css's @imports and flattens CSS nesting for older browsers */}}
+    {{ $site := resources.Get "css/main.css" | css.Build (dict "target" (slice "chrome100" "edge100" "firefox100" "safari15") "externals" (slice "/*")) }}
+    {{ $generated := resources.Get "css/generated/landing.css" }}
+    {{ $docsearch := slice (resources.Get "docsearch/_variables.css") (resources.Get "docsearch/modal.css") }}
+    {{ $style := slice $infima $openColor | append $docsearch | append (slice $site $generated) | resources.Concat "css/bundle.css" | minify | fingerprint }}
+    <link
+      rel="stylesheet"
+      href="{{ $style.RelPermalink }}"
+      integrity="{{ $style.Data.Integrity }}"
+    />
+  </head>
+  <body
+    {{ if or (eq .Section "docs") (eq .Type "docs_tags") }}
+      data-sidebar="open"
+    {{ else }}
+      data-sidebar="closed"
+    {{ end }}
+    {{ if .IsHome }}data-page="home"{{ else if and .IsSection (in (slice "products" "solutions") .Section) }}data-page="{{ .Section }}"{{ end }}
+  >
+    {{ partial "navbar" . }}
+    <div class="doc-wrapper">
+      <div class="doc-root">
+        <aside>
+          {{ partial "sidebar" . }}
+        </aside>
+        <main id="swup">
+          {{ block "page" . }}
+            {{- /* Markdown pages outside the docs and blog (Docusaurus src/pages: /security, /careers, /products/bots, ...) */}}
+            {{- $mdPage := and (in (slice "page" "section") .Kind) (not .Params.standalone) (not (in (slice "docs" "blog") .Section)) (ne .Path "/search") }}
+            <div class="main-container container{{ if .Params.standalone }} main-container-standalone{{ end }}{{ if $mdPage }} main-container-page{{ end }}">
+              <div class="row">
+                {{- /* As on Docusaurus, blog pages other than the archive get a "Recent posts" sidebar */}}
+                {{- if and (or (eq .Section "blog") (eq .Type "blog_tags")) (ne .Layout "archive") }}
+                  {{ partial "blog/sidebar.html" . }}
+                {{- end }}
+                <div class="main-content">
+                  {{ partial "breadcrumbs" . }}
+                  {{- /* Mobile copy of the table of contents (shown below 997px); the id is dropped so it stays unique */ -}}
+                  {{- $toc := partial "toc.html" . }}
+                  {{ if findRE "<li>" $toc 1 }}
+                    <details class="toc-mobile">
+                      <summary>On this page</summary>
+                      {{ $toc | replaceRE `id="TableOfContents"` `class="toc-mobile-nav"` | safeHTML }}
+                    </details>
+                  {{ end }}
+                  {{- /* <article> holds the title and content, which Algolia's default Docusaurus crawler template indexes */}}
+                  <article>{{ block "main" . }}{{ end }}</article>
+                  {{ partial "doc-footer" . }}
+                </div>
+                <div class="main-toc">
+                  {{ partial "toc.html" . }}
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </main>
+      </div>
+    </div>
+    {{ partial "footer" . }}
+  </body>
+</html>

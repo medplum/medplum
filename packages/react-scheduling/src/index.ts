@@ -31,3 +31,12 @@ export * from './hooks/useSchedulingResources';
 // Helpers the components are built on, usable without them
 export * from './actors';
 export * from './availability';
+export {
+  formatDayHeading,
+  formatTimezoneLabel,
+  formatZonedTime,
+  formatZonedTimeRange,
+  getBrowserTimezone,
+  isViewerTimezone,
+} from './timezones';
+export type { FormatZonedTimeOptions } from './timezones';

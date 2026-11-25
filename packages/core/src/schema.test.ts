@@ -29,6 +29,7 @@ describe('FHIR schema', () => {
     expect(() => validateResourceType('FakeResource')).toThrow();
     expect(() => validateResourceType('PatientCommunication')).toThrow();
     expect(() => validateResourceType('Patient_Communication')).toThrow();
+    expect(() => validateResourceType(['Patient'] as unknown as string)).toThrow();
   });
 
   test('checkForNull', () => {

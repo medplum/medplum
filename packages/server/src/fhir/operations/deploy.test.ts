@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { Binary, Bot } from '@medplum/fhirtypes';
 import express from 'express';
@@ -16,6 +17,7 @@ import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
 import { createTestProject, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
+import { getProjectSystemRepo } from '../repo';
 
 const deployMocks = vi.hoisted(() => ({
   getLambdaTimeoutForBot: vi.fn(),
@@ -348,5 +350,59 @@ describe('Deploy', () => {
       });
     expect(res3).toHaveStatus(400);
     expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
+  });
+
+  describe('Non-admin caller', () => {
+    async function setupNonAdmin(botPolicy: { readonly?: boolean }): Promise<{ bot: WithId<Bot>; token: string }> {
+      const { project, accessToken } = await createTestProject({
+        withAccessToken: true,
+        accessPolicy: { resource: [{ resourceType: 'Bot', ...botPolicy }, { resourceType: 'Binary' }] },
+      });
+      const systemRepo = await getProjectSystemRepo(project);
+      const binary = await systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        meta: { project: project.id },
+        contentType: ContentType.JAVASCRIPT,
+      });
+      const bot = await systemRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        meta: { project: project.id },
+        name: 'Non-admin Bot',
+        runtimeVersion: 'awslambda',
+        runAsUser: true,
+        timeout: DEFAULT_LAMBDA_TIMEOUT,
+        executableCode: { contentType: ContentType.JAVASCRIPT, url: `Binary/${binary.id}` },
+      });
+
+      // Redeploying already-attached code performs no Bot write, so only the explicit check guards it
+      vi.spyOn(storage, 'getBinaryStorage').mockImplementation(
+        () => new MockBinaryStorage() as unknown as BinaryStorage
+      );
+      vi.spyOn(streamUtils, 'readStreamToString').mockResolvedValue('exports.handler = async function () {};');
+      deployMocks.deployLambda.mockClear();
+      return { bot, token: accessToken };
+    }
+
+    test('Non-admin caller is forbidden', async () => {
+      // Without update permission on Bot -> 403 Forbidden
+      const readonly = await setupNonAdmin({ readonly: true });
+      const res1 = await request(app)
+        .post(`/fhir/R4/Bot/${readonly.bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + readonly.token)
+        .send({});
+      expect(res1).toHaveStatus(403);
+      expect(deployMocks.deployLambda).not.toHaveBeenCalled();
+
+      // Even with update permission on Bot, a non-admin is still 403 Forbidden
+      const writable = await setupNonAdmin({});
+      const res2 = await request(app)
+        .post(`/fhir/R4/Bot/${writable.bot.id}/$deploy`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .set('Authorization', 'Bearer ' + writable.token)
+        .send({});
+      expect(res2).toHaveStatus(403);
+      expect(deployMocks.deployLambda).not.toHaveBeenCalled();
+    });
   });
 });

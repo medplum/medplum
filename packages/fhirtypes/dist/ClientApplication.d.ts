@@ -201,9 +201,10 @@ export interface ClientApplication {
   defaultScope?: string[];
 
   /**
-   * Optional PEM-formatted certificates that are allowed to authenticate
-   * to this service via mutual TLS. Supports both Certificate Authorities
-   * (CAs) and self-signed certificates. Multiple certificates can be
+   * Optional PEM-formatted client certificates that are allowed to
+   * authenticate to this service via mutual TLS. The presented certificate
+   * must exactly match one of these certificates. Certificates issued by a
+   * CA in this list are not accepted. Multiple certificates can be
    * included.
    */
   certificateTrustStore?: string;

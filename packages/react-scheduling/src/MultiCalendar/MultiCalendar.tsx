@@ -5,15 +5,17 @@ import { useMantineTheme } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Appointment, HealthcareServiceAvailableTime, Schedule, Slot } from '@medplum/fhirtypes';
 import cx from 'clsx';
-import type { JSX } from 'react';
-import { useMemo } from 'react';
+import type { ReactNode } from 'react';
+import { forwardRef, useMemo } from 'react';
 import { AppointmentEvent } from '../CalendarBase/AppointmentEvent';
-import type { ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
+import type { CalendarHandle, ExtendedEvent, FhirEventSource } from '../CalendarBase/CalendarBase';
 import { CalendarBase } from '../CalendarBase/CalendarBase';
 import { SlotEvent } from '../CalendarBase/SlotEvent';
 import { getSchedulingColor, resolveThemeColor } from '../colors';
-import type { DateTimeRange } from '../types';
+import type { CalendarSelection, DateTimeRange } from '../types';
 import classes from './MultiCalendar.module.css';
+
+export type { CalendarHandle } from '../CalendarBase/CalendarBase';
 
 export interface MultiCalendarSource {
   schedule?: WithId<Schedule>;
@@ -33,7 +35,7 @@ export interface MultiCalendarSource {
 
 export interface MultiCalendarProps {
   sources: MultiCalendarSource[];
-  onSelectInterval?: (slotInfo: DateTimeRange) => void;
+  onSelectInterval?: (slotInfo: CalendarSelection) => void;
   onSelectSlot?: (slot: Slot, schedule?: WithId<Schedule>) => void;
   onSelectAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
   onDoubleClickAppointment?: (appointment: Appointment, schedule?: WithId<Schedule>) => void;
@@ -43,6 +45,10 @@ export interface MultiCalendarProps {
   className?: string;
   availableTime?: HealthcareServiceAvailableTime[];
   loading?: boolean;
+  /** Placed at the start of the toolbar, before the navigation buttons. */
+  toolbarStart?: ReactNode;
+  /** Placed at the end of the toolbar, after the view toggle. */
+  toolbarEnd?: ReactNode;
 }
 
 /**
@@ -55,9 +61,10 @@ export interface MultiCalendarProps {
  * ("https://medplum.com/fhir/StructureDefinition/SchedulingColor").
  *
  * @param props - Component props
+ * @param ref - Handle for paging the calendar
  * @returns A React Node with the Calendar UI in it
  */
-export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
+export const MultiCalendar = forwardRef<CalendarHandle, MultiCalendarProps>(function MultiCalendar(props, ref) {
   const theme = useMantineTheme();
 
   const { sources, className, ...calendarBaseProps } = props;
@@ -74,8 +81,12 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
     });
   }, [sources, theme]);
 
+  // A weekend today has no column in Weekdays, so open on the whole week.
+  const today = new Date().getDay();
+
   return (
     <CalendarBase
+      ref={ref}
       eventSources={eventSources}
       nowIndicator
       className={cx(className, classes.wrapper)}
@@ -101,6 +112,7 @@ export function MultiCalendar(props: MultiCalendarProps): JSX.Element {
         omitZeroMinute: true,
         meridiem: 'lowercase',
       }}
+      initialView={today === 0 || today === 6 ? 'timeGridWeek' : 'timeGridWeekdays'}
     />
   );
-}
+});

@@ -92,6 +92,32 @@ describe('Method', () => {
     expect(res1).toHaveStatus(200);
   });
 
+  test('Domain config quoted local part', async () => {
+    const domain = randomUUID() + '.example.com';
+    await withTestContext(() =>
+      systemRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain,
+        identityProvider: {
+          authorizeUrl: 'https://example.com/oauth2/authorize',
+          tokenUrl: 'https://example.com/oauth2/token',
+          userInfoUrl: 'https://example.com/oauth2/userinfo',
+          clientId: '123',
+          clientSecret: '456',
+        },
+      })
+    );
+
+    // Domain config found
+    const res1 = await request(app)
+      .post('/auth/method')
+      .type('json')
+      .send({ email: '"alice@example.com"@' + domain });
+    expect(res1).toHaveStatus(200);
+    expect(res1.body.domain).toBe(domain);
+    expect(res1.body.authorizeUrl).toBeDefined();
+  });
+
   test('Domain config authorize url without protocol', async () => {
     const domain = randomUUID() + '.example.com';
     await withTestContext(() =>

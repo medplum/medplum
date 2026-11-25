@@ -100,6 +100,15 @@ describe('Reset Password', () => {
     expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
   });
 
+  test('Email with comma is not a list of users', async () => {
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email: '"x,other@example.com,y"@example.com',
+      recaptchaToken: 'xyz',
+    });
+    expect(res).toHaveStatus(200);
+    expect(mockSESv2Client.commandCalls(SendEmailCommand)).toHaveLength(0);
+  });
+
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 

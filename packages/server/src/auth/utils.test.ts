@@ -1,9 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError } from '@medplum/core';
-import type { Project, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { MAX_PASSWORD_LENGTH } from '../constants';
-import { bcryptHashPassword, isMfaRequired, isPractitionerEmailDomainAllowed } from './utils';
+import type { AuthenticatedRequestContext } from '../context';
+import {
+  bcryptHashPassword,
+  getCallerUserReference,
+  getOpenRegistrationAccessPolicy,
+  hasSmartResourceScopes,
+  isMfaRequired,
+  isPractitionerEmailDomainAllowed,
+} from './utils';
 
 describe('isMfaRequired', () => {
   function createMfaTestUser(mfaRequired?: boolean): User {
@@ -40,6 +48,51 @@ describe('isMfaRequired', () => {
     expect(isMfaRequired(createMfaTestUser(true), undefined)).toBe(true);
     // A project that does not require MFA leaves an unset user unaffected.
     expect(isMfaRequired(createMfaTestUser(), projectWithSetting(false))).toBe(false);
+  });
+});
+
+describe('getOpenRegistrationAccessPolicy', () => {
+  const patientPolicy: Reference<AccessPolicy> = { reference: 'AccessPolicy/patient' };
+  const legacyPolicy: Reference<AccessPolicy> = { reference: 'AccessPolicy/legacy' };
+  const enabled: Project['setting'] = [{ name: 'openPatientRegistration', valueBoolean: true }];
+
+  function project(overrides: Partial<Project> = {}): Project {
+    return { resourceType: 'Project', ...overrides };
+  }
+
+  test('Requires openPatientRegistration to be true', () => {
+    const policies = {
+      defaultAccessPolicies: [{ profileType: 'Patient' as const, accessPolicy: patientPolicy }],
+      defaultPatientAccessPolicy: legacyPolicy,
+    };
+    expect(getOpenRegistrationAccessPolicy(project(policies))).toBeUndefined();
+    expect(
+      getOpenRegistrationAccessPolicy(
+        project({ ...policies, setting: [{ name: 'openPatientRegistration', valueBoolean: false }] })
+      )
+    ).toBeUndefined();
+  });
+
+  test('Prefers the Patient defaultAccessPolicies entry, then defaultPatientAccessPolicy', () => {
+    expect(
+      getOpenRegistrationAccessPolicy(
+        project({
+          setting: enabled,
+          defaultAccessPolicies: [{ profileType: 'Patient', accessPolicy: patientPolicy }],
+          defaultPatientAccessPolicy: legacyPolicy,
+        })
+      )
+    ).toEqual(patientPolicy);
+    expect(
+      getOpenRegistrationAccessPolicy(
+        project({
+          setting: enabled,
+          defaultAccessPolicies: [{ profileType: 'Practitioner', accessPolicy: { reference: 'AccessPolicy/pract' } }],
+          defaultPatientAccessPolicy: legacyPolicy,
+        })
+      )
+    ).toEqual(legacyPolicy);
+    expect(getOpenRegistrationAccessPolicy(project({ setting: enabled }))).toBeUndefined();
   });
 });
 
@@ -139,5 +192,43 @@ describe('bcryptHashPassword', () => {
     expect(multibyte.length).toBeLessThanOrEqual(MAX_PASSWORD_LENGTH);
     expect(Buffer.byteLength(multibyte, 'utf8')).toBeGreaterThan(MAX_PASSWORD_LENGTH);
     expect(() => bcryptHashPassword(multibyte)).toThrow(OperationOutcomeError);
+  });
+});
+
+function makeLogin(scope: string | undefined): Login {
+  return { resourceType: 'Login', user: { reference: 'User/123' }, authMethod: 'password', authTime: '', scope };
+}
+
+describe('hasSmartResourceScopes', () => {
+  test.each([
+    [undefined, false],
+    ['openid', false],
+    ['openid profile email fhirUser launch/patient offline_access', false],
+    ['openid user/Observation.rs', true],
+    ['openid patient/*.rs', true],
+    ['openid user/*.*', true],
+  ])('%s', (scope, expected) => {
+    expect(hasSmartResourceScopes(makeLogin(scope))).toBe(expected);
+  });
+});
+
+describe('getCallerUserReference', () => {
+  const membership: ProjectMembership = {
+    resourceType: 'ProjectMembership',
+    project: { reference: 'Project/123' },
+    user: { reference: 'User/123' },
+    profile: { reference: 'Practitioner/123' },
+  };
+
+  function getContext(scope: string): AuthenticatedRequestContext {
+    return { authState: { login: makeLogin(scope), membership } } as unknown as AuthenticatedRequestContext;
+  }
+
+  test('Returns the user for a login without SMART resource scopes', () => {
+    expect(getCallerUserReference(getContext('openid offline_access'))).toStrictEqual({ reference: 'User/123' });
+  });
+
+  test('Rejects a login with SMART resource scopes', () => {
+    expect(() => getCallerUserReference(getContext('openid user/Observation.rs'))).toThrow(OperationOutcomeError);
   });
 });

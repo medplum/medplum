@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, isDefined, isResource, toServiceTypeCodeableConcepts } from '@medplum/core';
+import {
+  createReference,
+  isDefined,
+  isResource,
+  RecurringAppointmentSeriesIdentifierSystem,
+  toServiceTypeCodeableConcepts,
+} from '@medplum/core';
 import type {
   Appointment,
   Bundle,
@@ -18,6 +24,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { SystemRepository } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import { MAX_OCCURRENCE_COUNT } from './utils/recurrence';
 
 const app = express();
 const request = supertest(app);
@@ -448,5 +455,128 @@ describe('Appointment/:id/$confirm', () => {
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', details: { text: 'Loading slots failed' } }],
     });
+  });
+
+  test('Returns 400 for occurrences=all on an appointment outside a series', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'all' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toEqual('Appointment is not part of a recurring series');
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Returns 400 for an unknown occurrences', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'every-other' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Returns 400 for occurrences=this-and-following on an appointment without a start', async () => {
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'proposed',
+      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'no-start-series' }],
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'this-and-following' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+  });
+
+  test('Returns 400 for occurrences=all on a series identifier the search would misread', async () => {
+    const appointment = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'pending',
+      start: '2026-05-15T14:00:00Z',
+      end: '2026-05-15T15:00:00Z',
+      identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'one,two' }],
+      participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+      slot: [createReference(await makeSlot('busy-tentative'))],
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: 'all' }] });
+
+    expect(response).toHaveStatus(400);
+    expect(response.body.issue[0].details.text).toContain('cannot be searched');
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('pending');
+  });
+
+  test('Refuses to confirm more occurrences of a series than $book creates', async () => {
+    const occurrences: WithId<Appointment>[] = [];
+    for (let week = 0; week <= MAX_OCCURRENCE_COUNT; week++) {
+      occurrences.push(
+        await systemRepo.createResource<Appointment>({
+          resourceType: 'Appointment',
+          status: 'proposed',
+          start: new Date(Date.UTC(2026, 4, 15 + 7 * week, 14)).toISOString(),
+          end: new Date(Date.UTC(2026, 4, 15 + 7 * week, 15)).toISOString(),
+          identifier: [{ system: RecurringAppointmentSeriesIdentifierSystem, value: 'oversized-series' }],
+          participant: [{ actor: createReference(practitioner), status: 'accepted' }],
+          meta: { project: project.project.id },
+        })
+      );
+    }
+    const confirm = (appointment: WithId<Appointment>, occurrences: string): ReturnType<typeof request.post> =>
+      request
+        .post(`/fhir/R4/Appointment/${appointment.id}/$confirm`)
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'occurrences', valueCode: occurrences }] });
+    const readStatuses = (): Promise<Appointment['status'][]> =>
+      Promise.all(
+        occurrences.map(async (a) => (await systemRepo.readResource<Appointment>('Appointment', a.id)).status)
+      );
+
+    const refused = await confirm(occurrences[0], 'all');
+    expect(refused).toHaveStatus(400);
+    expect(refused.body.issue[0].details.text).toEqual(
+      `At most ${MAX_OCCURRENCE_COUNT} occurrences of a series can be confirmed at once`
+    );
+    expect(refused.body.issue[0].expression).toEqual(['Parameters.occurrences']);
+    expect(await readStatuses()).toEqual(occurrences.map(() => 'proposed'));
+
+    // The limit counts the occurrences found, so the ones following the first still fit.
+    const confirmed = await confirm(occurrences[1], 'this-and-following');
+    expect(confirmed).toHaveStatus(200);
+    expect(await readStatuses()).toEqual(['proposed', ...occurrences.slice(1).map(() => 'booked')]);
+  });
+
+  test('Succeeds as a batch entry without a resource', async () => {
+    const appointment = await makeAppointment('pending', [await makeSlot('busy-tentative')]);
+
+    const response = await request
+      .post('/fhir/R4')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [{ request: { method: 'POST', url: `Appointment/${appointment.id}/$confirm` } }],
+      });
+
+    expect(response).toHaveStatus(200);
+    expect((response.body as Bundle).entry?.[0]?.response?.status).toBe('200');
+    expect((await systemRepo.readResource<Appointment>('Appointment', appointment.id)).status).toBe('booked');
   });
 });

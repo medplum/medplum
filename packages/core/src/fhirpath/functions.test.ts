@@ -759,6 +759,12 @@ describe('FHIRPath functions', () => {
     expect(functions.getReferenceKey(context, [], undefined as unknown as Atom)).toStrictEqual([]);
   });
 
+  test('isValidCron', () => {
+    expect(functions.isValidCron(context, [toTypedValue('*/5 * * * *')])).toStrictEqual([TYPED_TRUE]);
+    expect(functions.isValidCron(context, [toTypedValue('0 0 31 2 *')])).toStrictEqual([TYPED_FALSE]);
+    expect(functions.isValidCron(context, [])).toStrictEqual([]);
+  });
+
   // 12. Formal Specifications
 
   test('type', () => {

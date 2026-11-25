@@ -28,6 +28,11 @@ export interface RepositoryAccessOptions {
 
 export interface ExecuteSqlOptions extends RepositoryAccessOptions {
   readonly operation: RepositoryAccessOperation;
+  /**
+   * The lowest database role this statement may run on. `READER` permits the reader pool but does
+   * not select it: the statement runs on the writer unless the repository was put in reader mode
+   * via `setMode(RepositoryMode.READER)`. See `RepositoryConnection.getDatabaseClient`.
+   */
   readonly mode: DatabaseMode;
 }
 

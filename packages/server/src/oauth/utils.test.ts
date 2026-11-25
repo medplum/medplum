@@ -3,6 +3,7 @@
 import type { OperationOutcomeError, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -10,9 +11,11 @@ import type { Repository, SystemRepository } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
+  checkIpAccessRules,
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
+  isSmartScopeSubset,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -20,6 +23,44 @@ import {
 } from './utils';
 
 let client: ClientApplication;
+
+describe('IP access rules', () => {
+  test.each([
+    ['1.2.3.4', '1.2.3.4', true],
+    ['1.2.3.4', '1.2.3.44', false],
+    ['1.2.3', '1.2.3.44', true],
+    ['1.2.3', '1.2.30.44', false],
+    ['8.8.', '8.8.8.8', true],
+    ['8.8.', '8.80.8.8', false],
+    ['*', '1.2.3.44', true],
+  ])('rule %s against %s matches: %s', async (value, remoteAddress, matches) => {
+    const login: Login = {
+      resourceType: 'Login',
+      user: { reference: 'ClientApplication/test' },
+      authMethod: 'client',
+      authTime: '2026-11-10T00:00:00Z',
+      remoteAddress,
+    };
+    const blocked = checkIpAccessRules(login, {
+      resourceType: 'AccessPolicy',
+      ipAccessRule: [{ value, action: 'block' }],
+    });
+    const allowed = checkIpAccessRules(login, {
+      resourceType: 'AccessPolicy',
+      ipAccessRule: [
+        { value, action: 'allow' },
+        { value: '*', action: 'block' },
+      ],
+    });
+    if (matches) {
+      await expect(blocked).rejects.toThrow('IP address not allowed');
+      await expect(allowed).resolves.toBeUndefined();
+    } else {
+      await expect(blocked).resolves.toBeUndefined();
+      await expect(allowed).rejects.toThrow('IP address not allowed');
+    }
+  });
+});
 
 describe('OAuth utils', () => {
   beforeAll(async () => {
@@ -86,21 +127,26 @@ describe('OAuth utils', () => {
     }
   });
 
-  test('User not found', async () => {
+  test.each([
+    ['user-not-found@example.com', 'medplum_admin'],
+    ['admin@example.com', 'wrong_password'],
+  ])('Unknown email and wrong password are indistinguishable (%s)', async (email, password) => {
+    const bcryptSpy = vi.spyOn(bcrypt, 'compare');
     try {
-      await tryLogin({
-        clientId: client.id,
-        authMethod: 'password',
-        email: 'user-not-found@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-      });
-      expect.fail('Expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User not found');
+      await expect(
+        tryLogin({
+          clientId: client.id,
+          authMethod: 'password',
+          email,
+          password,
+          scope: 'openid',
+          nonce: 'nonce',
+        })
+      ).rejects.toThrow('Email or password is invalid');
+      expect(bcryptSpy).toHaveBeenCalledTimes(1);
+      expect(bcryptSpy).toHaveBeenCalledWith(password, expect.stringMatching(/^\$2b\$\d{2}\$.{53}$/));
+    } finally {
+      bcryptSpy.mockRestore();
     }
   });
 
@@ -207,6 +253,19 @@ describe('OAuth utils', () => {
     }
   });
 
+  test('Invalid projectId', async () => {
+    await expect(
+      tryLogin({
+        authMethod: 'password',
+        projectId: 'not-a-project-id',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+      })
+    ).rejects.toThrow('Invalid projectId');
+  });
+
   test('Login successfully', async () => {
     const login = await tryLogin({
       clientId: client.id,
@@ -217,6 +276,33 @@ describe('OAuth utils', () => {
       nonce: 'nonce',
     });
     expect(login).toBeDefined();
+  });
+
+  test('Login with registered redirect URI', async () => {
+    const login = await tryLogin({
+      clientId: client.id,
+      authMethod: 'password',
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+      nonce: 'nonce',
+      redirectUri: 'https://example.com/',
+    });
+    expect(login).toBeDefined();
+  });
+
+  test('Login with unregistered redirect URI', async () => {
+    await expect(
+      tryLogin({
+        clientId: client.id,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        redirectUri: 'https://example.com/other',
+      })
+    ).rejects.toThrow('Invalid redirect URI');
   });
 
   test('External auth without email or externalId', () => {
@@ -743,5 +829,22 @@ describe('OAuth utils', () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toStrictEqual('medplum-cli');
+  });
+});
+
+describe('isSmartScopeSubset', () => {
+  test.each([
+    ['system/*.rs', 'user/Patient.rs', false, true],
+    ['system/*.rs', 'patient/*.rs', true, true],
+    ['user/*.rs', 'patient/Observation.r', true, true],
+    ['system/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'patient/*.rs', false, false],
+    ['user/*.rs', 'system/Patient.rs', true, false],
+    ['patient/*.rs', 'user/Patient.rs', true, false],
+    ['user/Patient.rs', 'patient/Patient.cruds', true, false],
+    ['user/Patient.rs', 'user/Patient.', false, false],
+    ['user/*.rs', 'user/*.', false, false],
+  ])('%s covers %s (patient context: %s) -> %s', (existing, requested, hasPatientContext, expected) => {
+    expect(isSmartScopeSubset(existing, requested, hasPatientContext)).toBe(expected);
   });
 });

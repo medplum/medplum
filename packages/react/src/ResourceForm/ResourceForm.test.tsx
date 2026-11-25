@@ -275,8 +275,12 @@ describe('ResourceForm', () => {
 
     expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
+    // A missing Patient.active means active, so the checkbox starts checked
+    const checkbox = screen.getByLabelText<HTMLInputElement>('Active');
+    expect(checkbox.checked).toBe(true);
+
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Active'));
+      fireEvent.click(checkbox);
     });
 
     await act(async () => {
@@ -287,7 +291,7 @@ describe('ResourceForm', () => {
 
     const patient = onSubmit.mock.calls[0][0] as Patient;
     expect(patient.resourceType).toBe('Patient');
-    expect(patient.active).toBe(true);
+    expect(patient.active).toBe(false);
   });
 
   test('Clear choice-of-type string', async () => {

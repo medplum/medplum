@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { GraphiQLPlugin } from '@graphiql/react';
+import '@graphiql/react/setup-workers/vite';
 import type { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, Title, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
-import type { ProfileResource } from '@medplum/core';
 import { MedplumClient, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import '@medplum/react/styles.css';
@@ -80,7 +80,7 @@ const medplumPlugin: GraphiQLPlugin = {
   content: () => (
     <div>
       <p>Medplum GraphiQL</p>
-      <p>User: {getDisplayString(medplum.getProfile() as ProfileResource)}</p>
+      <p>User: {getDisplayString(medplum.getProfile())}</p>
       <p>Project: {medplum.getActiveLogin()?.project.display}</p>
       <p>
         <a href="#" onClick={() => medplum.signOut().then(() => window.location.reload())}>
@@ -152,7 +152,6 @@ export function App(): JSX.Element {
       defaultQuery={HELP_TEXT}
       initialQuery={parameters.query || undefined}
       initialVariables={parameters.variables || undefined}
-      operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}
       onEditVariables={onEditVariables}

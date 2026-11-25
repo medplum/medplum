@@ -334,6 +334,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
     // chunks persisted by previous runs are read back; this run's results are merged from memory.
     const { binary, bundle: resultBundle } = await assembleResultBundle(
       userRepo.clone(),
+      asyncJob,
       store,
       initialState,
       priorChunkSeq,
@@ -374,6 +375,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
         // attach whatever partial results were persisted and fail the job
         const { binary, bundle } = await assembleResultBundle(
           userRepo.clone(),
+          asyncJob,
           store,
           initialState,
           chunkSeq,
@@ -435,7 +437,14 @@ async function finalizeInterrupted(
       status: asyncJob.status,
     });
     const initialState = await store.loadInitialState();
-    const { binary, bundle } = await assembleResultBundle(userRepo, store, initialState, chunkSeq, inMemoryResults);
+    const { binary, bundle } = await assembleResultBundle(
+      userRepo,
+      asyncJob,
+      store,
+      initialState,
+      chunkSeq,
+      inMemoryResults
+    );
     // Cancellation is terminal, so close out the pre-event dispatched when the bundle was
     // preprocessed, possibly by an earlier run of this job.
     dispatchBatchCompleted(router, initialState.bundle.type, countBundleErrors(bundle));
@@ -462,6 +471,7 @@ async function finalizeInterrupted(
  * for async retrieval. Used for the final (complete) result as well as partial results when a job
  * is cancelled or fails; in the partial case, entries not yet processed are absent from the bundle.
  * @param repo - The user's repository (used to create the Binary).
+ * @param asyncJob - The AsyncJob the results belong to.
  * @param store - The checkpoint store.
  * @param initialState - The preprocessed initial state.
  * @param chunkSeq - The number of result chunks to read back from durable storage (chunks `0`
@@ -471,6 +481,7 @@ async function finalizeInterrupted(
  */
 async function assembleResultBundle(
   repo: Repository,
+  asyncJob: WithId<AsyncJob>,
   store: BatchCheckpointStore,
   initialState: BatchInitialState,
   chunkSeq: number,
@@ -482,7 +493,10 @@ async function assembleResultBundle(
   Object.assign(results, initialState.preprocessResults);
   const entryCount = initialState.bundle.entry?.length ?? 0;
   const bundle = buildBatchResponseBundle(initialState.bundle.type, entryCount, results);
-  const binary = await uploadBinaryData(repo, JSON.stringify(bundle), { contentType: ContentType.FHIR_JSON });
+  const binary = await uploadBinaryData(repo, JSON.stringify(bundle), {
+    contentType: ContentType.FHIR_JSON,
+    securityContext: getReferenceString(asyncJob),
+  });
   return { binary, bundle };
 }
 

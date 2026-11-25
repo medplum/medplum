@@ -1,0 +1,16 @@
+{{- /* TypeScript SDK reference: one page per API Documenter file, at /docs/sdk/<file name> */ -}}
+{{- range resources.Match "sdk/*.md" }}
+  {{- $name := path.BaseName .Name }}
+  {{- if ne $name "index" }}
+    {{- /* API Documenter links are relative .md files; resolve to absolute URLs as Docusaurus did */ -}}
+    {{- $md := .Content
+      | replaceRE `\]\(\./index\.md\)` "](/docs/sdk)"
+      | replaceRE `\]\(\./([^)#]+)\.md(#[^)]*)?\)` "](/docs/sdk/$1$2)"
+    }}
+    {{- $.AddPage (dict
+      "path" $name
+      "title" $name
+      "content" (dict "mediaType" "text/markdown" "value" $md)
+    ) }}
+  {{- end }}
+{{- end }}

@@ -1,22 +1,29 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Alert, Button, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Alert, Button, Divider, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { getStatus, isGone, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useState } from 'react';
 import {
   formatZonedDateTimeInput,
   getNativeInputType,
   parseZonedDateTimeInput,
 } from '../AppointmentFinder/AppointmentFinder.times';
+import classes from './SlotDetails.module.css';
 
 export interface SlotDetailsFormProps {
   readonly slot: WithId<Slot>;
+  /** Called once a reload has discarded the edits made here. */
   readonly onCancel: () => void;
   readonly onUpdated: () => void;
+  /**
+   * Controls of the host's own, such as the way back to where the form was opened from.
+   * Listed under the save button.
+   */
+  readonly children?: ReactNode;
 }
 
 /**
@@ -25,11 +32,14 @@ export interface SlotDetailsFormProps {
  * Times are typed on the browser's clock, as the calendar draws them. Saving is a plain update,
  * made only if no one else has changed the slot since it was loaded.
  *
+ * Renders as the details' own children rather than in a box of its own, so its controls
+ * take the foot of the details the way theirs do.
+ *
  * @param props - The React props.
- * @returns The fields and the button saving them.
+ * @returns The fields and the buttons saving or leaving them.
  */
 export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
-  const { slot, onCancel, onUpdated } = props;
+  const { slot, onCancel, onUpdated, children } = props;
   const medplum = useMedplum();
 
   const [startInput, setStartInput] = useState(() => formatZonedDateTimeInput(new Date(slot.start)));
@@ -93,7 +103,7 @@ export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
   const conflict = saveError instanceof OperationOutcomeError && getStatus(saveError.outcome) === 412;
 
   return (
-    <Stack gap="sm">
+    <>
       <TextInput
         label="Starts"
         type={getNativeInputType('datetime-local')}
@@ -114,30 +124,31 @@ export function SlotDetailsForm(props: SlotDetailsFormProps): JSX.Element {
         value={comment}
         onChange={(e) => setComment(e.currentTarget.value)}
       />
-      {conflict && (
-        <Alert color="orange" title="This blocked time changed since you opened it">
-          <Stack gap="sm" align="flex-start">
-            <Text size="sm">
-              A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
-              version. Your changes here will be discarded.
-            </Text>
-            <Button size="xs" variant="light" color="orange" loading={reloading} onClick={reload}>
-              Reload
-            </Button>
-          </Stack>
-        </Alert>
-      )}
-      {saveError !== undefined && !conflict && (
-        <Alert color="red" title="Could not save this slot">
-          {normalizeErrorString(saveError)}
-        </Alert>
-      )}
-      <Button variant="outline" loading={saving} disabled={!valid || !edited} onClick={save}>
-        Save Changes
-      </Button>
-      <Button variant="subtle" disabled={saving} onClick={onCancel}>
-        Cancel
-      </Button>
-    </Stack>
+      <Stack gap="sm" className={classes.actions}>
+        <Divider />
+        {conflict && (
+          <Alert color="orange" title="This blocked time changed since you opened it">
+            <Stack gap="sm" align="flex-start">
+              <Text size="sm">
+                A newer version was saved somewhere else, so nothing here was written over it. Reload to see the latest
+                version. Your changes here will be discarded.
+              </Text>
+              <Button size="xs" variant="light" color="orange" loading={reloading} onClick={reload}>
+                Reload
+              </Button>
+            </Stack>
+          </Alert>
+        )}
+        {saveError !== undefined && !conflict && (
+          <Alert color="red" title="Could not save this slot">
+            {normalizeErrorString(saveError)}
+          </Alert>
+        )}
+        <Button variant="outline" loading={saving} disabled={!valid || !edited} onClick={save}>
+          Save Changes
+        </Button>
+        {children}
+      </Stack>
+    </>
   );
 }
