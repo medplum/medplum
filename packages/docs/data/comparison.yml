@@ -12,7 +12,7 @@ groups:
       - id: elation
         name: Elation
         slug: elation
-        summary: Full application source, reusable healthcare UI, and read/write FHIR APIs are three reasons to choose Medplum over Elation. Your engineers can shape the entire clinical experience as your care model evolves.
+        summary: Elation lets you configure its EHR and connect custom apps. Medplum puts the full clinical application in your hands, so you can redesign its screens and workflows and build directly on read/write FHIR APIs.
       - id: epic
         name: Epic
         slug: epic
@@ -169,7 +169,7 @@ groups:
       - id: firely
         name: Firely Server
         slug: firely
-        summary: A ready-to-use clinical app, reusable healthcare UI, and an open-source backend are three reasons to choose Medplum over Firely Server. Your team can customize the full application and run workflows on the managed platform.
+        summary: With Firely Server, your team builds the clinical application around the FHIR backend. Medplum gives you a working app and reusable healthcare UI from the start, with our team operating the hosted platform underneath it.
       - id: aidbox
         name: Aidbox
         slug: aidbox
