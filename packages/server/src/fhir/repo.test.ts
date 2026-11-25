@@ -90,6 +90,19 @@ describe('FHIR Repo', () => {
     stdoutSpy.mockRestore();
   });
 
+  test('Login with membership and Project/new placeholder', () =>
+    withTestContext(async () => {
+      const login = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/new' },
+        membership: { reference: 'ProjectMembership/' + randomUUID() },
+      });
+      expect(login.meta?.project).toBeUndefined();
+    }));
+
   test('getRepoForLogin', async () => {
     await expect(
       getRepoForLogin({
