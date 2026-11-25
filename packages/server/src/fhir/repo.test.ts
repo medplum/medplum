@@ -90,6 +90,13 @@ describe('FHIR Repo', () => {
     stdoutSpy.mockRestore();
   });
 
+  test('Reject non-UUID meta.project', () =>
+    withTestContext(async () => {
+      await expect(
+        systemRepo.createResource<Patient>({ resourceType: 'Patient', meta: { project: 'new' } })
+      ).rejects.toThrow('Invalid meta.project');
+    }));
+
   test('getRepoForLogin', async () => {
     await expect(
       getRepoForLogin({
