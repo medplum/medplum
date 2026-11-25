@@ -24,9 +24,7 @@ This tutorial assumes you already have a Medplum account. (If not, please [regis
 You will need:
 
 1. A [ClientApplication](https://app.medplum.com/ClientApplication) — create one on the [Project Admin page](https://app.medplum.com/admin/clients).
-2. An X.509 client certificate (and its private key). This can be either:
-   - A **self-signed certificate** — the certificate itself is added to the trust store.
-   - A **CA-signed certificate** — the issuing CA certificate (or chain) is added to the trust store.
+2. An X.509 client certificate (and its private key). It can be self-signed or issued by a CA. Either way, the client certificate itself is added to the trust store.
 3. An mTLS-capable load balancer (AWS ALB recommended) or a reverse proxy configured to pass the client certificate to Medplum in the `x-amzn-mtls-clientcert` header (passthrough mode) or `x-amzn-mtls-clientcert-leaf` header (verify mode). See [Infrastructure Setup](#infrastructure-setup) below.
 
 ## Generating a Certificate
@@ -42,14 +40,15 @@ openssl req -new -x509 -key client.key -out client.crt -days 365 \
   -subj "/CN=My Integration Client/O=My Organization"
 ```
 
-For production use, issue the certificate from your organization's internal CA or a trusted third-party CA and add the CA certificate to the trust store rather than the leaf certificate.
+You can also use a certificate issued by your organization's internal CA or a third-party CA. Add the issued client certificate to the trust store, not the CA certificate.
 
 ## Configuring the ClientApplication
 
-Set the `certificateTrustStore` field on the `ClientApplication` to the PEM-encoded certificate(s) that are trusted to authenticate as this client.
+Set the `certificateTrustStore` field on the `ClientApplication` to the PEM-encoded client certificate(s) that are allowed to authenticate as this client, for example the contents of `client.crt`.
 
-- For a **self-signed** certificate: paste the contents of `client.crt`.
-- For a **CA-signed** certificate: paste the CA certificate (or the full chain). Multiple PEM certificates can be concatenated in the same field.
+The presented certificate must exactly match a certificate in the trust store. Certificates issued by a CA in the trust store are **not** accepted, so do not add CA or intermediate certificates.
+
+Multiple PEM certificates can be concatenated in the same field. To rotate a certificate, add the new certificate, switch the client over, then remove the old one.
 
 You can set this via the Medplum App UI (the field is on the ClientApplication edit page) or via the FHIR API:
 
@@ -180,17 +179,14 @@ And in your Medplum server configuration:
 
 ## Certificate Trust Store Options
 
-The `certificateTrustStore` field accepts one or more PEM-encoded certificates concatenated together. Medplum supports:
-
-- **Self-signed certificates** — the exact certificate must be in the trust store.
-- **CA-signed certificates** — any certificate signed by a CA in the trust store is accepted. You can include multiple CA certificates to trust certificates from more than one issuer.
+The `certificateTrustStore` field accepts one or more PEM-encoded client certificates concatenated together. A client certificate is accepted only if it exactly matches one of them, whether it is self-signed or CA-signed. For example, during a rotation:
 
 ```
 -----BEGIN CERTIFICATE-----
-<CA 1 certificate>
+<current client certificate>
 -----END CERTIFICATE-----
 -----BEGIN CERTIFICATE-----
-<CA 2 certificate>
+<new client certificate>
 -----END CERTIFICATE-----
 ```
 
