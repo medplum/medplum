@@ -60,61 +60,32 @@ git commit --signoff -m "Your commit message here"
 
 ### 2\. Fixing Existing Commits (If You Forgot)
 
-It's common to forget the `-s` flag sometimes, especially when you're just getting used to it. Don't worry, you can fix it\!
+It's common to forget the `-s` flag, especially when you're just getting used to it. If the DCO check fails on your pull request, use one of these options.
 
-#### Option A: Amending the Last Commit
+#### Option A: Add a Remediation Commit (No Force Push)
 
-If you only forgot the sign-off on your very last commit and haven't pushed it yet:
-
-```bash
-git commit --amend --signoff
-```
-
-This command will open your commit message in an editor, where you'll see the `Signed-off-by:` line automatically added. Save and close the editor. If you've already pushed this commit, you'll need to force push:
+Add one empty commit that signs off each commit that is missing a sign-off. This doesn't rewrite history, so it works even if a maintainer has already pushed commits to your branch.
 
 ```bash
-git push -f origin your-branch-name
+git commit --allow-empty -s -m "DCO Remediation Commit for Your Name <your.email@example.com>
+
+I, Your Name <your.email@example.com>, hereby add my Signed-off-by to this commit: <commit-sha>
+I, Your Name <your.email@example.com>, hereby add my Signed-off-by to this commit: <another-commit-sha>"
+git push
 ```
 
-**Use `git push -f` with caution\!** Force pushing overwrites history on the remote branch. Only do this if you are sure no one else has based work off your branch.
+Use one `I, ...` line per commit. The name and email must exactly match the author of each commit. The DCO check's details page lists the commits that need a sign-off.
 
-#### Option B: Rebasing to Sign Off Multiple Commits
+#### Option B: Rebase With Sign-Off
 
-If you have multiple commits in your branch that are missing the sign-off, you'll need to perform an interactive rebase. This allows you to rewrite the history of your commits.
-
-Let's say you want to sign off the last 3 commits. Replace `HEAD~3` with the appropriate number of commits you need to rebase:
+To add the sign-off directly to your existing commits, rebase onto the point where your branch started, then force push:
 
 ```bash
-git rebase -i HEAD~3
+git rebase --signoff HEAD~3
+git push --force-with-lease
 ```
 
-This will open an editor showing your last N commits. Change `pick` to `reword` (or `r`) next to each commit you want to modify.
-
-```
-pick a1b2c3d Commit 1 message
-pick e4f5g6h Commit 2 message
-pick i7j8k9l Commit 3 message
-```
-
-Change to:
-
-```
-reword a1b2c3d Commit 1 message
-reword e4f5g6h Commit 2 message
-reword i7j8k9l Commit 3 message
-```
-
-Save and close the editor. Git will then go through each commit one by one, opening your editor for you to modify the commit message. For each one, add the `-s` flag to the `git commit` command that appears:
-
-```bash
-git commit -s --amend
-```
-
-After modifying all the commits, you'll need to force push your branch:
-
-```bash
-git push -f origin your-branch-name
-```
+Replace `3` with the number of commits in your pull request, shown on its "Commits" tab. This rewrites history on your branch, so pull any commits that others have pushed to it first.
 
 ---
 
