@@ -214,7 +214,9 @@ function buildPaths(result: OpenAPIObjectWithPaths, resourceTypes: string[]): vo
   components.headers = { RateLimit: RATE_LIMIT_HEADER };
   components.responses = {
     TooManyRequests: {
-      description: 'Rate limit exceeded; retry after the number of seconds in the RateLimit header t parameter',
+      description:
+        'Rate limit exceeded. Retry after the number of seconds in the RateLimit header t parameter, also in the OperationOutcome ' +
+        'extension https://medplum.com/fhir/StructureDefinition/rate-limit-reset.',
       headers: { RateLimit: { $ref: '#/components/headers/RateLimit' } },
       content: fhirContent('OperationOutcome'),
     },
@@ -251,6 +253,9 @@ function buildPaths(result: OpenAPIObjectWithPaths, resourceTypes: string[]): vo
 
   for (const pathItem of Object.values(result.paths)) {
     for (const operation of Object.values(pathItem) as OperationObject[]) {
+      if (!operation?.responses) {
+        continue;
+      }
       (operation.responses as Record<string, ResponseObject | ReferenceObject>)['429'] = {
         $ref: '#/components/responses/TooManyRequests',
       };
@@ -261,7 +266,7 @@ function buildPaths(result: OpenAPIObjectWithPaths, resourceTypes: string[]): vo
 const RATE_LIMIT_HEADER: HeaderObject = {
   description:
     'Current rate limit state, per draft-ietf-httpapi-ratelimit-headers: "<policy>";r=<remaining>;t=<seconds until reset>. ' +
-    'Sent once per policy, such as "requests" (per IP) and "fhirInteractions" (per user).',
+    'Sent once per policy, such as "requests" (per IP) and "fhirInteractions" (per user and per project).',
   schema: { type: 'string' },
   example: '"requests";r=59999;t=60',
 };
@@ -316,8 +321,7 @@ function buildParameters(resourceTypes: string[]): Record<string, ParameterObjec
     criteria: {
       name: 'criteria',
       in: 'query',
-      description:
-        'FHIR search parameters, such as identifier=http://example.com|123. For conditional update, this is the key to match on, typically an identifier the caller already holds.',
+      description: 'FHIR search parameters, such as identifier=http://example.com|123',
       required: false,
       style: 'form',
       explode: true,
@@ -338,7 +342,12 @@ function parameterRef(name: string): ReferenceObject {
 }
 
 function fhirContent(schemaName: string, example?: unknown): ContentObject {
-  return { [ContentType.FHIR_JSON]: { schema: { $ref: `#/components/schemas/${schemaName}` }, example } };
+  return {
+    [ContentType.FHIR_JSON]: {
+      schema: { $ref: `#/components/schemas/${schemaName}` },
+      ...(example !== undefined && { example }),
+    },
+  };
 }
 
 function fhirResponse(description: string, schemaName: string, example?: unknown): ResponseObject {
@@ -426,7 +435,8 @@ function buildConditionalUpdatePath(): OperationObject {
   return {
     summary: 'Conditional Update (Upsert)',
     description:
-      'Update the resource that matches the search criteria, or create it if there is no match. Also known as upsert.',
+      'Update the resource that matches the search criteria, or create it if there is no match. Also known as upsert. ' +
+      'The criteria are the key to match on, typically an identifier the caller already holds.',
     operationId: 'conditionalUpdate',
     parameters: [parameterRef('resourceType'), parameterRef('criteria'), parameterRef('ifMatch')],
     requestBody: {
@@ -483,7 +493,22 @@ function buildReadHistoryPath(): OperationObject {
       '200': fhirResponse('Success', 'Bundle', {
         resourceType: 'Bundle',
         type: 'history',
-        entry: [{ fullUrl: 'Patient/' + SAVED_PATIENT_EXAMPLE.id, resource: SAVED_PATIENT_EXAMPLE }],
+        entry: [
+          {
+            fullUrl: 'Patient/' + SAVED_PATIENT_EXAMPLE.id,
+            request: { method: 'DELETE', url: 'Patient/' + SAVED_PATIENT_EXAMPLE.id },
+            response: { status: '410' },
+          },
+          {
+            fullUrl: 'Patient/' + SAVED_PATIENT_EXAMPLE.id,
+            request: {
+              method: 'GET',
+              url: `Patient/${SAVED_PATIENT_EXAMPLE.id}/_history/${SAVED_PATIENT_EXAMPLE.meta.versionId}`,
+            },
+            response: { status: '200' },
+            resource: SAVED_PATIENT_EXAMPLE,
+          },
+        ],
       }),
     },
   };
