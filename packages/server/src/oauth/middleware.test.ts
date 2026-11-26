@@ -100,6 +100,17 @@ describe('Auth middleware', () => {
     expect(res).toHaveStatus(401);
   });
 
+  test('No auth header on project-scoped URL', async () => {
+    const { baseUrl } = getConfig();
+    const projectId = randomUUID();
+    const expected = `Bearer realm="${baseUrl}", resource_metadata="${baseUrl}projects/${projectId}/.well-known/oauth-protected-resource"`;
+    for (const prefix of ['', '/api']) {
+      const res = await request(app).get(`${prefix}/projects/${projectId}/fhir/R4/Patient`);
+      expect(res).toHaveStatus(401);
+      expect(res.header['www-authenticate']).toBe(expected);
+    }
+  });
+
   test('No auth header with magic param', async () => {
     const res = await request(app).get(`/fhir/R4/Patient?${PROMPT_BASIC_AUTH_PARAM}=1`);
     expect(res.header['www-authenticate']).toBe(`Basic realm="${getConfig().baseUrl}"`);

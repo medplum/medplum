@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { concatUrls, forbidden, OperationOutcomeError, unauthorized } from '@medplum/core';
+import { concatUrls, forbidden, isUUID, OperationOutcomeError, unauthorized } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -16,7 +16,7 @@ import type { IncomingMessage } from 'node:http';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import type { Repository } from '../fhir/repo';
-import { getProjectIdFromUrl, getProjectScopedUrl } from '../util/url';
+import { getProjectIdFromUrl } from '../util/url';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
 
 export type AuthState = {
@@ -53,14 +53,11 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
     const responseAuthScheme = res.req.query[PROMPT_BASIC_AUTH_PARAM] ? 'Basic' : requestAuthScheme;
     const { baseUrl } = getConfig();
     let challenge = `${responseAuthScheme} realm="${baseUrl}"`;
-    if (responseAuthScheme === 'Bearer') {
+    if (responseAuthScheme.toLowerCase() === 'bearer') {
       // RFC 9728 section 5.1: point clients, such as MCP clients, at the protected resource metadata
-      const metadataUrl = getProjectScopedUrl(
-        req.originalUrl,
-        baseUrl,
-        concatUrls(baseUrl, '.well-known/oauth-protected-resource')
-      );
-      challenge += `, resource_metadata="${metadataUrl}"`;
+      const projectId = getProjectIdFromUrl(req.originalUrl);
+      const metadataBaseUrl = projectId && isUUID(projectId) ? concatUrls(baseUrl, `projects/${projectId}/`) : baseUrl;
+      challenge += `, resource_metadata="${concatUrls(metadataBaseUrl, '.well-known/oauth-protected-resource')}"`;
     }
     res.set('WWW-Authenticate', challenge);
     next(new OperationOutcomeError(unauthorized));
