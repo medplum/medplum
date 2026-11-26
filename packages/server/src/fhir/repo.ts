@@ -2371,9 +2371,9 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (updated.resourceType === 'Login') {
       // A Login joins its project once a membership is selected.
-      // Logins from before May 2026 can still hold the "Project/new" placeholder after selecting one.
-      const projectId = resolveId(updated.project);
-      return updated.membership && projectId && isUUID(projectId) ? projectId : undefined;
+      // Logins from before May 2026 (before #9156) can still hold the "Project/new" placeholder after selecting one.
+      const projectId = updated.membership ? resolveId(updated.project) : undefined;
+      return projectId && isUUID(projectId) ? projectId : undefined;
     }
 
     if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {
