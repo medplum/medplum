@@ -4,7 +4,7 @@ import { concatUrls } from '@medplum/core';
 import ipaddr from 'ipaddr.js';
 import dns from 'node:dns';
 import type { Dispatcher } from 'undici';
-import { Agent, buildConnector } from 'undici';
+import { Agent, buildConnector, Dispatcher1Wrapper } from 'undici';
 import { getConfig } from '../config/loader';
 import type { ServerConfig } from '../config/utils';
 
@@ -96,9 +96,14 @@ export function createSafeConnect(connect: buildConnector.connector = connector)
   };
 }
 
-export const safeAgent = new Agent({
-  connect: createSafeConnect(),
-});
+// Node's built-in fetch uses the legacy (v1) dispatcher handler API, so the undici 8 Agent must be wrapped.
+// HTTP/2 is disabled to match the built-in fetch behavior.
+export const safeAgent = new Dispatcher1Wrapper(
+  new Agent({
+    allowH2: false,
+    connect: createSafeConnect(),
+  })
+);
 
 /**
  * Performs an outbound fetch with SSRF-safe connection handling unless unsafe outbound requests are explicitly allowed.

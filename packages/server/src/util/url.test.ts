@@ -451,6 +451,36 @@ describe('safeFetch contract', () => {
     );
   });
 
+  test('completes bodies when the server closes the connection during backpressure', async () => {
+    // undici 7 threw an uncaught `assert(!this.paused)` here, which crashed the background workers
+    await withPublicServer(
+      (req, res) => {
+        const size = Number(req.url?.slice(1));
+        res.writeHead(200, { 'content-length': size, connection: 'close' });
+        res.end(Buffer.alloc(size, 'a'));
+      },
+      async (baseUrl) => {
+        const sizes = Array.from({ length: 200 }, (_, i) => 16384 + i * 10007);
+        const received = await Promise.all(
+          sizes.map(async (size) => {
+            const response = await safeFetch(`${baseUrl}/${size}`);
+            let count = 0;
+            const slowSink = new Writable({
+              highWaterMark: 1,
+              write(chunk: Buffer, _encoding, callback) {
+                count += chunk.length;
+                setTimeout(callback, 1);
+              },
+            });
+            await pipeline(Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]), slowSink);
+            return count;
+          })
+        );
+        expect(received).toEqual(sizes);
+      }
+    );
+  });
+
   test('works as the jose remote JWKS fetch', async () => {
     const { publicKey, privateKey: signingKey } = await generateKeyPair('ES256');
     const jwk = { ...(await exportJWK(publicKey)), kid: 'k1', alg: 'ES256' };
