@@ -15,6 +15,7 @@ import {
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
   resolveId,
 } from '@medplum/core';
 import type {
@@ -520,7 +521,12 @@ async function upsertProjectMembership(
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
   const membership = await systemRepo.withTransaction(
     async (txRepo) => {
-      const existingMembership = await searchForExistingMembership(txRepo, user, project);
+      const existingMembership = await searchForExistingMembership(
+        txRepo,
+        user,
+        project,
+        request.membershipSearchCriteria
+      );
       if (existingMembership) {
         if (existingMembership.profile?.reference !== getReferenceString(profile)) {
           throw new OperationOutcomeError(
@@ -556,9 +562,11 @@ async function upsertProjectMembership(
 async function searchForExistingMembership(
   systemRepo: SystemRepository,
   user: WithId<User>,
-  project: WithId<Project>
+  project: WithId<Project>,
+  membershipSearchCriteria?: Record<string, string | string[]>
 ): Promise<ProjectMembership | undefined> {
-  return systemRepo.searchOne<ProjectMembership>({
+  const searchRequest = parseSearchRequest<ProjectMembership>('ProjectMembership', membershipSearchCriteria);
+  const memberships = await systemRepo.searchResources<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
       {
@@ -571,8 +579,16 @@ async function searchForExistingMembership(
         operator: Operator.EQUALS,
         value: getReferenceString(project),
       },
+      ...(searchRequest.filters ?? []),
     ],
+    count: 2,
   });
+
+  if (memberships.length > 1) {
+    throw new OperationOutcomeError(multipleMatches);
+  }
+
+  return memberships[0];
 }
 
 async function sendInviteEmail(
