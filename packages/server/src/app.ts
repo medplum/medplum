@@ -293,8 +293,7 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
 
   if (config.mcpEnabled) {
     // Registered before mcpRouter, which requires authentication
-    apiRouter.use('/mcp/stream/server-card', discoveryHeaders);
-    apiRouter.get('/mcp/stream/server-card', serverCardHandler);
+    apiRouter.route('/mcp/stream/server-card').options(discoveryHeaders).get(discoveryHeaders, serverCardHandler);
     apiRouter.use('/mcp', mcpRouter);
   }
 

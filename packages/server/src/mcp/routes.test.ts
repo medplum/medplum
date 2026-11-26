@@ -20,7 +20,7 @@ import express from 'express';
 import type { Server } from 'http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { addTestUser, createTestProject, initTestAuth } from '../test.setup';
 
 describe('MCP Routes', () => {
@@ -73,6 +73,41 @@ describe('MCP Routes', () => {
     expect(card.headers['content-type']).toMatch(/^application\/mcp-server-card\+json/);
     expect(card.headers['access-control-allow-origin']).toBe('*');
     expect(JSON.parse(card.text).remotes[0].url).toMatch(/\/mcp\/stream$/);
+
+    const notModified = await request(app).get(new URL(entry.url).pathname).set('If-None-Match', card.headers['etag']);
+    expect(notModified).toHaveStatus(304);
+  });
+
+  test('AI Catalog preflight from any origin', async () => {
+    const res = await request(app)
+      .options('/.well-known/ai-catalog.json')
+      .set('Origin', 'https://not-allowed.example.com')
+      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Headers', 'If-None-Match');
+    expect(res).toHaveStatus(204);
+    expect(res.headers['access-control-allow-origin']).toBe('*');
+  });
+
+  test('Project-scoped Server Card', async () => {
+    const projectId = randomUUID();
+    const catalog = await request(app).get(`/projects/${projectId}/.well-known/ai-catalog.json`);
+    const entryUrl = new URL(JSON.parse(catalog.text).entries[0].url);
+    expect(entryUrl.pathname).toBe(`/projects/${projectId}/mcp/stream/server-card`);
+
+    const card = await request(app).get(entryUrl.pathname);
+    expect(card).toHaveStatus(200);
+    expect(JSON.parse(card.text).remotes[0].url).toMatch(new RegExp(`/projects/${projectId}/mcp/stream$`));
+  });
+
+  test('AI Catalog is empty when MCP is disabled', async () => {
+    const config = getConfig();
+    config.mcpEnabled = false;
+    try {
+      const res = await request(app).get('/.well-known/ai-catalog.json');
+      expect(JSON.parse(res.text).entries).toStrictEqual([]);
+    } finally {
+      config.mcpEnabled = true;
+    }
   });
 
   test('Unauthenticated SSE', async () => {

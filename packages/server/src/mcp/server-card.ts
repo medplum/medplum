@@ -3,6 +3,7 @@
 import { concatUrls } from '@medplum/core';
 import { SUPPORTED_PROTOCOL_VERSIONS } from '@modelcontextprotocol/sdk/types.js';
 import type { NextFunction, Request, Response } from 'express';
+import { createHash } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { getProjectScopedUrl } from '../util/url';
 import { MCP_SERVER_INFO } from './server';
@@ -43,23 +44,40 @@ export function discoveryHeaders(req: Request, res: Response, next: NextFunction
   next();
 }
 
+/**
+ * Sends a discovery document with an ETag, answering If-None-Match with 304.
+ * The app disables Express's automatic ETags, so this computes one.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param contentType - The document media type.
+ * @param document - The document.
+ */
+function sendDiscoveryDocument(req: Request, res: Response, contentType: string, document: object): void {
+  const body = JSON.stringify(document);
+  const etag = `W/"${createHash('sha256').update(body).digest('base64url')}"`;
+  res.set('ETag', etag);
+  if (req.headers['if-none-match'] === etag) {
+    res.status(304).end();
+    return;
+  }
+  res.type(contentType).send(body);
+}
+
 export function serverCardHandler(req: Request, res: Response): void {
   const { title, version, websiteUrl, icons } = MCP_SERVER_INFO;
-  res.type(SERVER_CARD_CONTENT_TYPE).send(
-    JSON.stringify({
-      $schema: SERVER_CARD_SCHEMA,
-      name: 'com.medplum/mcp',
-      title,
-      version,
-      description: 'Read, search, create, update, and delete FHIR R4 resources as the signed-in user.',
-      websiteUrl,
-      icons,
-      repository: { url: 'https://github.com/medplum/medplum', source: 'github', subfolder: 'packages/server' },
-      remotes: [
-        { type: 'streamable-http', url: getStreamUrl(req), supportedProtocolVersions: SUPPORTED_PROTOCOL_VERSIONS },
-      ],
-    })
-  );
+  sendDiscoveryDocument(req, res, SERVER_CARD_CONTENT_TYPE, {
+    $schema: SERVER_CARD_SCHEMA,
+    name: 'com.medplum/mcp',
+    title,
+    version,
+    description: 'Read, search, create, update, and delete FHIR R4 resources as the signed-in user.',
+    websiteUrl,
+    icons,
+    repository: { url: 'https://github.com/medplum/medplum', source: 'github', subfolder: 'packages/server' },
+    remotes: [
+      { type: 'streamable-http', url: getStreamUrl(req), supportedProtocolVersions: SUPPORTED_PROTOCOL_VERSIONS },
+    ],
+  });
 }
 
 export function aiCatalogHandler(req: Request, res: Response): void {
@@ -73,5 +91,5 @@ export function aiCatalogHandler(req: Request, res: Response): void {
         },
       ]
     : [];
-  res.type(AI_CATALOG_CONTENT_TYPE).send(JSON.stringify({ specVersion: '1.0', entries }));
+  sendDiscoveryDocument(req, res, AI_CATALOG_CONTENT_TYPE, { specVersion: '1.0', entries });
 }
