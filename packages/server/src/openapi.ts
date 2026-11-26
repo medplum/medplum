@@ -6,6 +6,7 @@ import type { JSONSchema4 } from 'json-schema';
 import type {
   ComponentsObject,
   ContentObject,
+  HeaderObject,
   OpenAPIObject,
   OperationObject,
   ParameterObject,
@@ -208,7 +209,18 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
  * @param resourceTypes - The FHIR resource type names.
  */
 function buildPaths(result: OpenAPIObjectWithPaths, resourceTypes: string[]): void {
-  (result.components as ComponentsObject).parameters = buildParameters(resourceTypes);
+  const components = result.components as ComponentsObject;
+  components.parameters = buildParameters(resourceTypes);
+  components.headers = { RateLimit: RATE_LIMIT_HEADER };
+  components.responses = {
+    TooManyRequests: {
+      description:
+        'Rate limit exceeded. Retry after the number of seconds in the RateLimit header t parameter, also in the OperationOutcome ' +
+        'extension https://medplum.com/fhir/StructureDefinition/rate-limit-reset.',
+      headers: { RateLimit: { $ref: '#/components/headers/RateLimit' } },
+      content: fhirContent('OperationOutcome'),
+    },
+  };
 
   result.paths[`/fhir/R4`] = {
     post: buildBatchPath(),
@@ -238,7 +250,50 @@ function buildPaths(result: OpenAPIObjectWithPaths, resourceTypes: string[]): vo
   result.paths[`/fhir/R4/{resourceType}/{id}/_history/{versionId}`] = {
     get: buildReadVersionPath(),
   };
+
+  for (const pathItem of Object.values(result.paths)) {
+    for (const operation of Object.values(pathItem) as OperationObject[]) {
+      if (!operation?.responses) {
+        continue;
+      }
+      (operation.responses as Record<string, ResponseObject | ReferenceObject>)['429'] = {
+        $ref: '#/components/responses/TooManyRequests',
+      };
+    }
+  }
 }
+
+const RATE_LIMIT_HEADER: HeaderObject = {
+  description:
+    'Current rate limit state, per draft-ietf-httpapi-ratelimit-headers: "<policy>";r=<remaining>;t=<seconds until reset>. ' +
+    'Sent once per policy, such as "requests" (per IP) and "fhirInteractions" (per user and per project).',
+  schema: { type: 'string' },
+  example: '"requests";r=59999;t=60',
+};
+
+const PATIENT_EXAMPLE = {
+  resourceType: 'Patient',
+  identifier: [{ system: 'https://example.com/mrn', value: '12345' }],
+  name: [{ given: ['Alice'], family: 'Smith' }],
+  birthDate: '1970-01-01',
+};
+
+const SAVED_PATIENT_EXAMPLE = {
+  ...PATIENT_EXAMPLE,
+  id: '0f4a8c9e-1b2d-4e5f-8a7b-6c5d4e3f2a1b',
+  meta: { versionId: '3e1d2c4b-5a6f-4e7d-9c8b-7a6f5e4d3c2b', lastUpdated: '2026-01-01T00:00:00.000Z' },
+};
+
+const OPERATION_OUTCOME_EXAMPLE = {
+  resourceType: 'OperationOutcome',
+  issue: [{ severity: 'information', code: 'informational', details: { text: 'All OK' } }],
+};
+
+const SEARCH_BUNDLE_EXAMPLE = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [{ fullUrl: 'Patient/' + SAVED_PATIENT_EXAMPLE.id, resource: SAVED_PATIENT_EXAMPLE }],
+};
 
 function buildParameters(resourceTypes: string[]): Record<string, ParameterObject> {
   return {
@@ -286,12 +341,21 @@ function parameterRef(name: string): ReferenceObject {
   return { $ref: `#/components/parameters/${name}` };
 }
 
-function fhirContent(schemaName: string): ContentObject {
-  return { [ContentType.FHIR_JSON]: { schema: { $ref: `#/components/schemas/${schemaName}` } } };
+function fhirContent(schemaName: string, example?: unknown): ContentObject {
+  return {
+    [ContentType.FHIR_JSON]: {
+      schema: { $ref: `#/components/schemas/${schemaName}` },
+      ...(example !== undefined && { example }),
+    },
+  };
 }
 
-function fhirResponse(description: string, schemaName: string): ResponseObject {
-  return { description, content: fhirContent(schemaName) };
+function fhirResponse(description: string, schemaName: string, example?: unknown): ResponseObject {
+  return {
+    description,
+    headers: { RateLimit: { $ref: '#/components/headers/RateLimit' } },
+    content: fhirContent(schemaName, example),
+  };
 }
 
 function buildBatchPath(): OperationObject {
@@ -301,11 +365,24 @@ function buildBatchPath(): OperationObject {
     operationId: 'batch',
     requestBody: {
       description: 'Bundle of type batch or transaction',
-      content: fhirContent('Bundle'),
+      content: fhirContent('Bundle', {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ request: { method: 'POST', url: 'Patient' }, resource: PATIENT_EXAMPLE }],
+      }),
       required: true,
     },
     responses: {
-      '200': fhirResponse('Bundle of type batch-response or transaction-response', 'Bundle'),
+      '200': fhirResponse('Bundle of type batch-response or transaction-response', 'Bundle', {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [
+          {
+            response: { status: '201', location: 'Patient/' + SAVED_PATIENT_EXAMPLE.id },
+            resource: SAVED_PATIENT_EXAMPLE,
+          },
+        ],
+      }),
       '400': fhirResponse('Invalid Bundle', 'OperationOutcome'),
     },
   };
@@ -318,7 +395,7 @@ function buildSearchPath(): OperationObject {
     operationId: 'search',
     parameters: [parameterRef('resourceType'), parameterRef('criteria')],
     responses: {
-      '200': fhirResponse('Success', 'Bundle'),
+      '200': fhirResponse('Success', 'Bundle', SEARCH_BUNDLE_EXAMPLE),
     },
   };
 }
@@ -334,19 +411,20 @@ function buildCreatePath(): OperationObject {
       {
         name: 'If-None-Exist',
         in: 'header',
-        description: 'FHIR search query, such as identifier=http://example.com|123',
+        description:
+          'FHIR search query, such as identifier=http://example.com|123. Makes create idempotent: a retry with the same query returns the existing resource instead of creating a duplicate.',
         required: false,
         schema: { type: 'string' },
       },
     ],
     requestBody: {
       description: 'Create Resource',
-      content: fhirContent('ResourceList'),
+      content: fhirContent('ResourceList', PATIENT_EXAMPLE),
       required: true,
     },
     responses: {
       '200': fhirResponse('If-None-Exist matched one resource; it is returned and nothing is created', 'ResourceList'),
-      '201': fhirResponse('Created', 'ResourceList'),
+      '201': fhirResponse('Created', 'ResourceList', SAVED_PATIENT_EXAMPLE),
       '400': fhirResponse('Invalid resource', 'OperationOutcome'),
       '412': fhirResponse('If-None-Exist matched multiple resources; nothing is created', 'OperationOutcome'),
     },
@@ -355,14 +433,15 @@ function buildCreatePath(): OperationObject {
 
 function buildConditionalUpdatePath(): OperationObject {
   return {
-    summary: 'Conditional Update',
+    summary: 'Conditional Update (Upsert)',
     description:
-      'Update the resource that matches the search criteria, or create it if there is no match. Also known as upsert.',
+      'Update the resource that matches the search criteria, or create it if there is no match. Also known as upsert. ' +
+      'The criteria are the key to match on, typically an identifier the caller already holds.',
     operationId: 'conditionalUpdate',
     parameters: [parameterRef('resourceType'), parameterRef('criteria'), parameterRef('ifMatch')],
     requestBody: {
       description: 'Resource to update or create',
-      content: fhirContent('ResourceList'),
+      content: fhirContent('ResourceList', PATIENT_EXAMPLE),
       required: true,
     },
     responses: {
@@ -382,11 +461,11 @@ function buildValidatePath(): OperationObject {
     parameters: [parameterRef('resourceType')],
     requestBody: {
       description: 'Resource to validate',
-      content: fhirContent('ResourceList'),
+      content: fhirContent('ResourceList', PATIENT_EXAMPLE),
       required: true,
     },
     responses: {
-      '200': fhirResponse('Valid', 'OperationOutcome'),
+      '200': fhirResponse('Valid', 'OperationOutcome', OPERATION_OUTCOME_EXAMPLE),
       '400': fhirResponse('Invalid', 'OperationOutcome'),
     },
   };
@@ -399,7 +478,7 @@ function buildReadPath(): OperationObject {
     operationId: 'readResource',
     parameters: [parameterRef('resourceType'), parameterRef('id')],
     responses: {
-      '200': fhirResponse('Success', 'ResourceList'),
+      '200': fhirResponse('Success', 'ResourceList', SAVED_PATIENT_EXAMPLE),
     },
   };
 }
@@ -407,11 +486,30 @@ function buildReadPath(): OperationObject {
 function buildReadHistoryPath(): OperationObject {
   return {
     summary: 'Read Resource History',
-    description: 'Read Resource History',
+    description: 'Read Resource History, newest first, including deletes. Retained until the resource is expunged.',
     operationId: 'readResourceHistory',
     parameters: [parameterRef('resourceType'), parameterRef('id')],
     responses: {
-      '200': fhirResponse('Success', 'Bundle'),
+      '200': fhirResponse('Success', 'Bundle', {
+        resourceType: 'Bundle',
+        type: 'history',
+        entry: [
+          {
+            fullUrl: 'Patient/' + SAVED_PATIENT_EXAMPLE.id,
+            request: { method: 'DELETE', url: 'Patient/' + SAVED_PATIENT_EXAMPLE.id },
+            response: { status: '410' },
+          },
+          {
+            fullUrl: 'Patient/' + SAVED_PATIENT_EXAMPLE.id,
+            request: {
+              method: 'GET',
+              url: `Patient/${SAVED_PATIENT_EXAMPLE.id}/_history/${SAVED_PATIENT_EXAMPLE.meta.versionId}`,
+            },
+            response: { status: '200' },
+            resource: SAVED_PATIENT_EXAMPLE,
+          },
+        ],
+      }),
     },
   };
 }
@@ -419,11 +517,11 @@ function buildReadHistoryPath(): OperationObject {
 function buildReadVersionPath(): OperationObject {
   return {
     summary: 'Read Version',
-    description: 'Read Version',
+    description: 'Read a prior version of a resource. To restore or roll back to it, send it to updateResource.',
     operationId: 'readVersion',
     parameters: [parameterRef('resourceType'), parameterRef('id'), parameterRef('versionId')],
     responses: {
-      '200': fhirResponse('Success', 'ResourceList'),
+      '200': fhirResponse('Success', 'ResourceList', SAVED_PATIENT_EXAMPLE),
     },
   };
 }
@@ -431,12 +529,13 @@ function buildReadVersionPath(): OperationObject {
 function buildUpdatePath(): OperationObject {
   return {
     summary: 'Update Resource',
-    description: 'Update Resource',
+    description:
+      'Update Resource. Also restores a deleted resource or rolls back a change: send a prior version from readVersion as the body.',
     operationId: 'updateResource',
     parameters: [parameterRef('resourceType'), parameterRef('id'), parameterRef('ifMatch')],
     requestBody: {
       description: 'Update Resource',
-      content: fhirContent('ResourceList'),
+      content: fhirContent('ResourceList', SAVED_PATIENT_EXAMPLE),
       required: true,
     },
     responses: {
@@ -450,11 +549,12 @@ function buildUpdatePath(): OperationObject {
 function buildDeletePath(): OperationObject {
   return {
     summary: 'Delete Resource',
-    description: 'Delete Resource',
+    description:
+      'Soft delete. Version history is kept until the resource is expunged, so a delete can be undone: restore it by sending a prior version from readVersion to updateResource.',
     operationId: 'deleteResource',
     parameters: [parameterRef('resourceType'), parameterRef('id'), parameterRef('ifMatch')],
     responses: {
-      '200': fhirResponse('Success', 'OperationOutcome'),
+      '200': fhirResponse('Success', 'OperationOutcome', OPERATION_OUTCOME_EXAMPLE),
       '412': fhirResponse('If-Match failed; nothing is deleted', 'OperationOutcome'),
     },
   };
@@ -483,6 +583,7 @@ function buildPatchPath(): OperationObject {
               },
             },
           },
+          example: [{ op: 'replace', path: '/birthDate', value: '1970-01-02' }],
         },
       },
       required: true,
