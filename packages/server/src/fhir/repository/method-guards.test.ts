@@ -40,6 +40,7 @@ const unguardedMembers = new Set<PropertyKey>([
   'canPerformInteraction',
   'getAuthor',
   'removeHiddenFields',
+  'toCallerView',
   'generateId',
   'addDeletedFilter',
   'addSecurityFilters',

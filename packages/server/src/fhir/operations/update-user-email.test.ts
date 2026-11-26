@@ -23,6 +23,7 @@ import { loadTestConfig } from '../../config/loader';
 import { getAuthTokens, tryLogin } from '../../oauth/utils';
 import { createTestProject, getSuperAdminTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 describe('User/$update-email', () => {
   const app = express();
@@ -112,6 +113,34 @@ describe('User/$update-email', () => {
     expect(res).toHaveStatus(200);
     const updated = res.body as User;
     expect(updated.email).toStrictEqual(newEmail);
+  });
+
+  test('Returns the User as the project admin would read it', async () => {
+    const user = await inviteTestUser();
+    const systemRepo = getGlobalSystemRepo();
+    const stored = await systemRepo.updateResource<User>({ ...user, mfaSecret: randomUUID() });
+    expect(stored.passwordHash).toBeDefined();
+    expect(stored.mfaSecret).toBeDefined();
+
+    const newEmail = `user+${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post(`/fhir/R4/User/${user.id}/$update-email`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'email', valueString: newEmail },
+          { name: 'skipEmailVerification', valueBoolean: true },
+        ],
+      } satisfies Parameters);
+    expect(res).toHaveStatus(200);
+    const updated = res.body as User;
+    expect(updated.id).toStrictEqual(user.id);
+    expect(updated.email).toStrictEqual(newEmail);
+    expect(updated.passwordHash).toBeUndefined();
+    expect(updated.mfaSecret).toBeUndefined();
+    expect(updated.meta?.project).toBeUndefined();
   });
 
   test('Updates profile email if flag set', async () => {
@@ -294,6 +323,7 @@ describe('User/$update-email', () => {
     const updated = res.body as User;
 
     expect(updated.email).toStrictEqual(newEmail);
+    expect(updated.passwordHash).toBeDefined();
 
     const practitioner = await repo.readResource<Practitioner>('Practitioner', profile.id);
     expect(practitioner.telecom).toStrictEqual(

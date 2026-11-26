@@ -4,6 +4,7 @@ import type { SearchRequest, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
   createReference,
+  deepClone,
   encodeBase64,
   getReferenceString,
   LOINC,
@@ -1651,6 +1652,106 @@ describe('AccessPolicy', () => {
         false
       );
     }));
+
+  describe('toCallerView', () => {
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: 'Patient', criteria: 'Patient?gender=female', hiddenFields: ['birthDate'] }],
+    };
+
+    function makePatient(overrides?: Partial<Patient>): WithId<Patient> {
+      return {
+        resourceType: 'Patient',
+        id: randomUUID(),
+        meta: { project: testProject.id, author: { reference: 'Practitioner/123' } },
+        gender: 'female',
+        birthDate: '2000-01-01',
+        ...overrides,
+      };
+    }
+
+    test('Removes hidden fields and meta fields without modifying the input', () => {
+      const patient = makePatient();
+      const original = deepClone(patient);
+      const repo = getRepository({ projects: [testProject], accessPolicy });
+
+      const view = repo.toCallerView(patient);
+      expect(view.id).toStrictEqual(patient.id);
+      expect(view.gender).toStrictEqual('female');
+      expect(view.birthDate).toBeUndefined();
+      expect(view.meta?.project).toBeUndefined();
+      expect(view.meta?.author).toBeUndefined();
+      expect(patient).toStrictEqual(original);
+    });
+
+    test('Keeps meta fields in extended mode', () => {
+      const patient = makePatient();
+      const repo = getRepository({ projects: [testProject], accessPolicy, extendedMode: true });
+
+      const view = repo.toCallerView(patient);
+      expect(view.birthDate).toBeUndefined();
+      expect(view.meta).toStrictEqual(patient.meta);
+    });
+
+    test.each<[string, Partial<Patient>]>([
+      ['outside the access policy', { gender: 'male' }],
+      ['in another project', { meta: { project: randomUUID() } }],
+      ['without a project', { meta: {} }],
+    ])('Returns only the type and id of a resource %s', (_, overrides) => {
+      const patient = makePatient(overrides);
+      const repo = getRepository({ projects: [testProject], accessPolicy });
+
+      expect(repo.toCallerView(patient)).toStrictEqual({ resourceType: 'Patient', id: patient.id });
+    });
+
+    test('Returns the full resource to a super admin', () => {
+      const patient = makePatient({ meta: {} });
+      const repo = getRepository({ superAdmin: true, extendedMode: true });
+
+      const view = repo.toCallerView(patient);
+      expect(view).toStrictEqual(patient);
+      expect(view).not.toBe(patient);
+    });
+
+    test('Matches what the caller reads, including from linked projects', () =>
+      withTestContext(async () => {
+        const { project: exportingProject } = await createTestProject({
+          project: { exportedResourceType: ['ClientApplication'] },
+        });
+        const { project: nonExportingProject } = await createTestProject({
+          project: { exportedResourceType: ['Patient'] },
+        });
+        const { project, repo } = await createTestProject({
+          withRepo: true,
+          project: {
+            link: [{ project: createReference(exportingProject) }, { project: createReference(nonExportingProject) }],
+          },
+          accessPolicy: {
+            resourceType: 'AccessPolicy',
+            resource: [{ resourceType: 'ClientApplication', hiddenFields: ['secret'] }],
+          },
+        });
+
+        const createClient = (projectId: string): Promise<WithId<ClientApplication>> =>
+          systemRepo.createResource<ClientApplication>({
+            resourceType: 'ClientApplication',
+            meta: { project: projectId },
+            name: 'Test Client',
+            secret: randomUUID(),
+          });
+
+        for (const client of [await createClient(project.id), await createClient(exportingProject.id)]) {
+          const view = repo.toCallerView(client);
+          expect(view.name).toStrictEqual('Test Client');
+          expect(view.secret).toBeUndefined();
+          expect(view).toStrictEqual(await repo.readResource<ClientApplication>('ClientApplication', client.id));
+        }
+
+        const unexported = await createClient(nonExportingProject.id);
+        await expect(repo.readResource('ClientApplication', unexported.id)).rejects.toThrow('Not found');
+        expect(repo.toCallerView(unexported)).toStrictEqual({ resourceType: 'ClientApplication', id: unexported.id });
+      }));
+  });
 
   test('Hidden fields on possible missing values', () =>
     withTestContext(async () => {

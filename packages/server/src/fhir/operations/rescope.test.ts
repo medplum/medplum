@@ -89,6 +89,7 @@ describe('User/$rescope', () => {
     const updated = res.body as User;
     expect(updated.project).toBeUndefined();
     expect(updated.meta?.project).toBeUndefined();
+    expect(updated.passwordHash).toBeDefined();
   });
 
   test('Project admin rescopes User in their project to server', async () => {
@@ -104,14 +105,15 @@ describe('User/$rescope', () => {
         parameter: [{ name: 'scope', valueCode: 'server' }],
       } satisfies Parameters);
     expect(res).toHaveStatus(200);
-    const updated = res.body as User;
-    expect(updated.project).toBeUndefined();
+    // The User is no longer in the caller's project, so the caller cannot read it
+    expect(res.body).toStrictEqual({ resourceType: 'User', id: user.id });
 
     // Verify by reading through system repo
     const systemRepo = getGlobalSystemRepo();
     const reread = await systemRepo.readResource<User>('User', user.id);
     expect(reread.project).toBeUndefined();
     expect(reread.meta?.project).toBeUndefined();
+    expect(reread.passwordHash).toBeDefined();
   });
 
   test('Project admin rescopes User in their project to server without extended mode', async () => {

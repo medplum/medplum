@@ -89,7 +89,7 @@ export async function userRescopeOperation(req: FhirRequest): Promise<FhirRespon
     updated = await rescopeUserToServer(ctx, user);
   }
 
-  return [allOk, updated];
+  return [allOk, ctx.repo.toCallerView(updated)];
 }
 
 async function isCallerAllowedToRescopeUser(
