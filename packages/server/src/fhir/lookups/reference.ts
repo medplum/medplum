@@ -9,12 +9,12 @@ import {
   isResource,
   isUUID,
   projectAdminResourceTypes,
-  resolveId,
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
+import { resolveUUID } from '../references';
 import type { Expression, PgQueryable, SqlBuilder } from '../sql';
 import { DeleteQuery, InsertQuery, SelectQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';
@@ -271,8 +271,8 @@ function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resou
       const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
       for (const value of typedValues) {
         if (value.type === PropertyType.Reference && value.value.reference) {
-          const targetId = resolveId(value.value);
-          if (targetId && isUUID(targetId)) {
+          const targetId = resolveUUID(value.value);
+          if (targetId) {
             addSearchReferenceResult(resultMap, resource, searchParam, targetId);
           }
         }
