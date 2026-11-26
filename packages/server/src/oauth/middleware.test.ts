@@ -94,7 +94,9 @@ describe('Auth middleware', () => {
 
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
-    expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
+    expect(res.header['www-authenticate']).toBe(
+      `Bearer realm="${getConfig().baseUrl}", resource_metadata="${getConfig().baseUrl}.well-known/oauth-protected-resource"`
+    );
     expect(res).toHaveStatus(401);
   });
 
@@ -117,7 +119,9 @@ describe('Auth middleware', () => {
   test('Invalid bearer token', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer foo');
     expect(res).toHaveStatus(401);
-    expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
+    expect(res.header['www-authenticate']).toBe(
+      `Bearer realm="${getConfig().baseUrl}", resource_metadata="${getConfig().baseUrl}.well-known/oauth-protected-resource"`
+    );
   });
 
   test('Basic auth empty string', async () => {
