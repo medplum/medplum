@@ -77,14 +77,24 @@ describe('MfaPage', () => {
     expect(screen.getByText('Email')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add email-based MFA' })).not.toBeInTheDocument();
 
-    // Reveal the authenticator enrollment form
     await user.click(screen.getByRole('button', { name: 'Add an authenticator app' }));
 
-    // Enter a code and enroll
+    // Adding a method first proves the enrolled email method with an emailed code
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    // Then the authenticator enrollment form; enter a code and enroll
+    expect(await screen.findByText('Add an authenticator app', { selector: 'h3' })).toBeInTheDocument();
     await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
     await user.click(screen.getByRole('button', { name: 'Enroll' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'totp', token: '123456' });
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', {
+      method: 'totp',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
     await expect(screen.findByText('Authenticator app')).resolves.toBeInTheDocument();
 
     getSpy.mockRestore();
@@ -336,11 +346,146 @@ describe('MfaPage', () => {
     expect(postSpy).toHaveBeenCalledWith('auth/mfa/send-email-challenge', {});
     expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
     await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    // Then a code from the enrolled authenticator
+    expect(await screen.findByText('Enter MFA code')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Get a code by email instead' })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
     await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
 
-    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', { method: 'email', token: '123456' });
+    expect(postSpy).toHaveBeenCalledWith('auth/mfa/enroll', {
+      method: 'email',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
     await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
     expect(screen.getByText('Email')).toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Rejected emailed code when adding an authenticator returns to the email step', async () => {
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['email'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const post = rejectFirstEnroll('Invalid enrolled factor token');
+    const postSpy = vi.spyOn(medplum, 'post').mockImplementation(post);
+    const user = await setup();
+
+    await user.click(screen.getByRole('button', { name: 'Add an authenticator app' }));
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '111111');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Add an authenticator app', { selector: 'h3' })).toBeInTheDocument();
+    await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    // The emailed code was rejected, so the user is sent back to enter it again
+    await expect(screen.findByText(/The emailed code was incorrect or has expired/)).resolves.toBeInTheDocument();
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    expect(screen.queryByText('Add an authenticator app', { selector: 'h3' })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Add an authenticator app', { selector: 'h3' })).toBeInTheDocument();
+    await user.type(await screen.findByLabelText('MFA code', { exact: false }), '123456');
+    await user.click(screen.getByRole('button', { name: 'Enroll' }));
+
+    expect(postSpy).toHaveBeenLastCalledWith('auth/mfa/enroll', {
+      method: 'totp',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
+    await expect(screen.findByText('Authenticator app enabled')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Rejected emailed code when adding email returns to the email step', async () => {
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const post = rejectFirstEnroll('Invalid token');
+    const postSpy = vi.spyOn(medplum, 'post').mockImplementation(post);
+    const user = await setup();
+
+    await user.click(screen.getByRole('button', { name: 'Add email-based MFA' }));
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '111111');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Enter MFA code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    // The emailed code was rejected, so the user is sent back to enter it again
+    await expect(screen.findByText(/The emailed code was incorrect or has expired/)).resolves.toBeInTheDocument();
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    expect(screen.queryByText('Enter MFA code')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Enter MFA code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenLastCalledWith('auth/mfa/enroll', {
+      method: 'email',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
+    await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
+
+    getSpy.mockRestore();
+    postSpy.mockRestore();
+  });
+
+  test('Rejected authenticator code when adding email stays on the authenticator step', async () => {
+    const getSpy = vi.spyOn(medplum, 'get').mockResolvedValue({
+      enrolled: true,
+      enrolledMethods: ['totp'],
+      allowedMethods: ['totp', 'email'],
+      enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      enrollQrCode: 'data:image/png;base64,abc',
+    });
+    const post = rejectFirstEnroll('Invalid enrolled factor token');
+    const postSpy = vi.spyOn(medplum, 'post').mockImplementation(post);
+    const user = await setup();
+
+    await user.click(screen.getByRole('button', { name: 'Add email-based MFA' }));
+    expect(await screen.findByText('Enter verification code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '123456');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(await screen.findByText('Enter MFA code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/mfa code*/i), '111111');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    // Only the authenticator code was wrong, so it can be retried in place
+    await expect(screen.findByText('Invalid enrolled factor token')).resolves.toBeInTheDocument();
+    expect(screen.getByText('Enter MFA code')).toBeInTheDocument();
+    await user.clear(screen.getByLabelText(/mfa code*/i));
+    await user.type(screen.getByLabelText(/mfa code*/i), '654321');
+    await user.click(screen.getByRole('button', { name: 'Verify and enable' }));
+
+    expect(postSpy).toHaveBeenLastCalledWith('auth/mfa/enroll', {
+      method: 'email',
+      token: '123456',
+      enrolledFactorToken: '654321',
+    });
+    await expect(screen.findByText('Email-based MFA enabled')).resolves.toBeInTheDocument();
 
     getSpy.mockRestore();
     postSpy.mockRestore();
@@ -474,3 +619,17 @@ describe('MfaPage', () => {
     postSpy.mockRestore();
   });
 });
+
+// Rejects the first `auth/mfa/enroll` request with `message`; other requests go to the mock client.
+// Call before spying on `post`, so that it captures the mock client's own `post`.
+function rejectFirstEnroll(message: string): MockClient['post'] {
+  const originalPost = medplum.post.bind(medplum);
+  let rejected = false;
+  return (...args) => {
+    if (args[0] === 'auth/mfa/enroll' && !rejected) {
+      rejected = true;
+      return Promise.reject(new Error(message));
+    }
+    return originalPost(...args);
+  };
+}

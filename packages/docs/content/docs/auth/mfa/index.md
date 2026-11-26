@@ -147,7 +147,7 @@ Users can self-enroll in MFA through the Medplum App security settings. The meth
 - Click **"Add email-based MFA"** — a 6-digit code is emailed to your account's address
 - Enter the code to verify control of your email and complete enrollment
 
-Once enrolled, you will be required to provide an MFA code during login. When both methods are allowed, a user can enroll in both and add or remove individual methods from the Security page. You can disable MFA at any time by clicking the "Disable MFA" button (you'll need to provide a current MFA code to disable it).
+Once enrolled, you will be required to provide an MFA code during login. When both methods are allowed, a user can enroll in both and add or remove individual methods from the Security page (adding or removing a method needs a current code from a method you are already enrolled in). You can disable MFA at any time by clicking the "Disable MFA" button (you'll need to provide a current MFA code to disable it).
 
 ## Requiring MFA
 
