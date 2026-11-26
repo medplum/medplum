@@ -61,6 +61,20 @@ describe('MCP Routes', () => {
     expect(res).toHaveStatus(401);
   });
 
+  test('Server Card and AI Catalog', async () => {
+    const catalog = await request(app).get('/.well-known/ai-catalog.json');
+    expect(catalog).toHaveStatus(200);
+    expect(catalog.headers['content-type']).toMatch(/^application\/ai-catalog\+json/);
+    const entry = JSON.parse(catalog.text).entries[0];
+    expect(entry.type).toBe('application/mcp-server-card+json');
+
+    const card = await request(app).get(new URL(entry.url).pathname).set('Origin', 'https://example.com');
+    expect(card).toHaveStatus(200);
+    expect(card.headers['content-type']).toMatch(/^application\/mcp-server-card\+json/);
+    expect(card.headers['access-control-allow-origin']).toBe('*');
+    expect(JSON.parse(card.text).remotes[0].url).toMatch(/\/mcp\/stream$/);
+  });
+
   test('Unauthenticated SSE', async () => {
     const res = await request(app).get('/mcp/sse');
     expect(res).toHaveStatus(401);

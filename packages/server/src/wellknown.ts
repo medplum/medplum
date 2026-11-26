@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { apiCatalogHandler } from './api-catalog';
 import { getConfig } from './config/loader';
 import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
+import { aiCatalogHandler, discoveryHeaders } from './mcp/server-card';
 import { getJwks } from './oauth/keys';
 import { getProjectScopedUrl } from './util/url';
 
@@ -77,6 +78,9 @@ function handleOauthProtectedResource(req: Request, res: Response): void {
 // RFC 9727 API catalog
 // Express routes HEAD requests to the GET handler, which is how HEAD support is provided.
 wellKnownRouter.get('/api-catalog', apiCatalogHandler);
+
+// MCP AI Catalog, which points at the MCP Server Card
+wellKnownRouter.get('/ai-catalog.json', discoveryHeaders, aiCatalogHandler);
 
 wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
 wellKnownRouter.get('/openid-configuration', handleOAuthConfig);
