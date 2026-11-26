@@ -21,7 +21,7 @@ function getStreamUrl(req: Request): string {
 }
 
 /**
- * Sends a cacheable discovery document with an ETag, answering If-None-Match with 304.
+ * Sends a cacheable discovery document with an ETag, answering a matching If-None-Match with 304.
  * The app disables Express's automatic ETags, so this computes one.
  * @param req - The HTTP request.
  * @param res - The HTTP response.
@@ -32,7 +32,7 @@ function sendDiscoveryDocument(req: Request, res: Response, contentType: string,
   const body = JSON.stringify(document);
   const etag = `W/"${createHash('sha256').update(body).digest('base64url')}"`;
   res.set({ 'Cache-Control': 'public, max-age=3600', ETag: etag });
-  if (req.headers['if-none-match'] === etag) {
+  if (req.fresh) {
     res.status(304).end();
     return;
   }

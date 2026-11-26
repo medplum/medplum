@@ -74,7 +74,9 @@ describe('MCP Routes', () => {
     expect(card.headers['access-control-allow-origin']).toBe('http://localhost:3000');
     expect(JSON.parse(card.text).remotes[0].url).toMatch(/\/mcp\/stream$/);
 
-    const notModified = await request(app).get(new URL(entry.url).pathname).set('If-None-Match', card.headers['etag']);
+    const notModified = await request(app)
+      .get(new URL(entry.url).pathname)
+      .set('If-None-Match', `W/"other", ${card.headers['etag']}`);
     expect(notModified).toHaveStatus(304);
   });
 
