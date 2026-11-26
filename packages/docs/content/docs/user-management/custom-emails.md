@@ -56,13 +56,13 @@ Once you have your "Site Key" and "Secret Key", you will need to configure your 
 
 In your custom application, you will need a "Reset Password" page. This will be the page where users go to initiate the reset password flow. For a full example of a "Reset Password" page, check out the source to [`ResetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/ResetPasswordPage.tsx) for the Medplum App.
 
-This page is conceptually simple, as the only input is an email. However, you must also include the `projectId` and `recaptchaToken` in the request body.
+This page is conceptually simple, as the only input is an email. However, you must also include the `projectId` and `recaptchaToken` in the request body. Also send `sendEmail: false`, or Medplum sends its default reset email in addition to the one your Bot sends.
 
 Key functions of the page:
 
 - Initialize reCAPTCHA
 - Prompts the user for `email`
-- Sends the `email`, `projectId`, and `recaptchaToken` to the [/auth/resetpassword](/docs/api/auth/resetpassword) API endpoint
+- Sends the `email`, `projectId`, `recaptchaToken`, and `sendEmail: false` to the [/auth/resetpassword](/docs/api/auth/resetpassword) API endpoint
 
 See the [`ResetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/ResetPasswordPage.tsx) for a full example.
 
