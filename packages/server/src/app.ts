@@ -46,7 +46,6 @@ import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { drainStdout, getLogger, globalLogger } from './logger';
 import { mcpRouter } from './mcp/routes';
-import { discoveryHeaders, serverCardHandler } from './mcp/server-card';
 import { maybeAutoRunPendingPostDeployMigrationOnAllShards } from './migrations/migration-utils';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
@@ -292,8 +291,6 @@ export async function initApp(app: Express, config: ServerConfig): Promise<http.
   apiRouter.use('/webhook/', webhookRouter);
 
   if (config.mcpEnabled) {
-    // Registered before mcpRouter, which requires authentication
-    apiRouter.route('/mcp/stream/server-card').options(discoveryHeaders).get(discoveryHeaders, serverCardHandler);
     apiRouter.use('/mcp', mcpRouter);
   }
 

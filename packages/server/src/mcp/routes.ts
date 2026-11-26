@@ -13,12 +13,25 @@ import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
 import { getPubSubRedisSubscriber } from '../redis';
 import { getMcpServer } from './server';
+import { discoveryHeaders, serverCardHandler } from './server-card';
 
-export const mcpRouter = Router().use(authenticateRequest);
+export const mcpRouter = Router();
+
+// Public routes do not require authentication
+const publicRoutes = Router();
+mcpRouter.use(publicRoutes);
+
+// MCP Server Card (/mcp/stream/server-card)
+// See: https://modelcontextprotocol.io/seps/2127-mcp-server-cards
+publicRoutes.route('/stream/server-card').options(discoveryHeaders).get(discoveryHeaders, serverCardHandler);
+
+// Protected routes require authentication
+const protectedRoutes = Router().use(authenticateRequest);
+mcpRouter.use(protectedRoutes);
 
 // MCP Streamable HTTP endpoint (/mcp/stream)
 // Handles all HTTP methods (GET, POST, etc.)
-mcpRouter.all('/stream', async (req: Request, res: Response) => {
+protectedRoutes.all('/stream', async (req: Request, res: Response) => {
   const server = getMcpServer();
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   res.on('close', async () => {
@@ -32,7 +45,7 @@ mcpRouter.all('/stream', async (req: Request, res: Response) => {
 // MCP SSE GET endpoint (/mcp/sse)
 // This endpoint uses Server-Sent Events (SSE) to stream messages to the client
 // MCP SSE is technically deprecated, but most major LLM clients still use it
-mcpRouter.get('/sse', async (req, res) => {
+protectedRoutes.get('/sse', async (req, res) => {
   const transport = new SSEServerTransport('/mcp/sse', res);
   const membershipId = getAuthenticatedContext().membership.id;
 
@@ -72,7 +85,7 @@ mcpRouter.get('/sse', async (req, res) => {
 
 // MCP SSE POST endpoint
 // This endpoint allows clients to send messages to the server using Server-Sent Events
-mcpRouter.post(
+protectedRoutes.post(
   '/sse',
   query('sessionId').isUUID().withMessage('Invalid sessionId'),
   body('jsonrpc').isString().withMessage('Invalid JSON-RPC body'),
