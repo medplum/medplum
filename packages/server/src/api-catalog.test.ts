@@ -58,6 +58,21 @@ describe('API catalog', () => {
     ]);
   });
 
+  test('Lists MCP when enabled', async () => {
+    const config = getConfig();
+    config.mcpEnabled = true;
+    try {
+      const res = await request(app).get('/.well-known/api-catalog');
+      expect(JSON.parse(res.text).linkset).toContainEqual({
+        anchor: `${config.baseUrl}mcp/stream`,
+        'service-desc': [{ href: `${config.baseUrl}mcp/stream/server-card`, type: 'application/mcp-server-card+json' }],
+        'service-doc': [{ href: 'https://www.medplum.com/docs/ai/mcp', type: ContentType.HTML }],
+      });
+    } finally {
+      config.mcpEnabled = false;
+    }
+  });
+
   test('Head /.well-known/api-catalog', async () => {
     const res = await request(app).head('/.well-known/api-catalog');
     expect(res).toHaveStatus(200);

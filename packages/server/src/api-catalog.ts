@@ -3,6 +3,7 @@
 import { concatUrls, ContentType } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { getConfig } from './config/loader';
+import { SERVER_CARD_CONTENT_TYPE } from './mcp/server-card';
 
 // RFC 9727 API catalog
 // See: https://www.rfc-editor.org/rfc/rfc9727.html
@@ -39,8 +40,8 @@ interface LinksetContext {
  * @returns The link context objects, one per API.
  */
 function buildLinkset(): LinksetContext[] {
-  const { baseUrl, issuer } = getConfig();
-  return [
+  const { baseUrl, issuer, mcpEnabled } = getConfig();
+  const linkset: LinksetContext[] = [
     {
       anchor: concatUrls(baseUrl, 'fhir/R4'),
       'service-desc': [
@@ -72,6 +73,15 @@ function buildLinkset(): LinksetContext[] {
       'service-doc': [{ href: concatUrls(DOCS_URL, 'api/scim/overview'), type: ContentType.HTML }],
     },
   ];
+  if (mcpEnabled) {
+    const mcpUrl = concatUrls(baseUrl, 'mcp/stream');
+    linkset.push({
+      anchor: mcpUrl,
+      'service-desc': [{ href: concatUrls(mcpUrl, 'server-card'), type: SERVER_CARD_CONTENT_TYPE }],
+      'service-doc': [{ href: concatUrls(DOCS_URL, 'ai/mcp'), type: ContentType.HTML }],
+    });
+  }
+  return linkset;
 }
 
 /**

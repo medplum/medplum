@@ -10,7 +10,7 @@ import { MCP_SERVER_INFO } from './server';
 // MCP Server Card and AI Catalog discovery documents
 // See: https://modelcontextprotocol.io/seps/2127-mcp-server-cards
 
-const SERVER_CARD_CONTENT_TYPE = 'application/mcp-server-card+json';
+export const SERVER_CARD_CONTENT_TYPE = 'application/mcp-server-card+json';
 const AI_CATALOG_CONTENT_TYPE = 'application/ai-catalog+json';
 const SERVER_CARD_SCHEMA = 'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json';
 
