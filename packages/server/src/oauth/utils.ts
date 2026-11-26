@@ -64,7 +64,13 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
-import { getProjectIdFromUrl, getProjectScopedUrl, matchesIpAccessRule, safeFetch } from '../util/url';
+import {
+  getNormalizedPath,
+  getProjectIdFromUrl,
+  getProjectScopedUrl,
+  matchesIpAccessRule,
+  safeFetch,
+} from '../util/url';
 import { getClientRedirectUri, getStandardClientById } from './clients';
 import type { MedplumAccessTokenClaims } from './keys';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret, verifyJwt } from './keys';
@@ -1411,6 +1417,17 @@ async function tryAddOnBehalfOf(
   const onBehalfOfHeader = req?.headers?.['x-medplum-on-behalf-of'];
   if (!onBehalfOfHeader || !isString(onBehalfOfHeader)) {
     return;
+  }
+
+  // OAuth routes act on the caller's own login. Log On-Behalf-Of use there before rejecting it.
+  const path = getNormalizedPath(req?.url ?? '').toLowerCase();
+  if (path.startsWith('/oauth2/')) {
+    getLogger().warn('On-Behalf-Of used on OAuth route', {
+      path,
+      project: authState.project.id,
+      membership: authState.membership.id,
+      onBehalfOf: onBehalfOfHeader,
+    });
   }
 
   if (!authState.membership.admin && !authState.project.superAdmin) {
