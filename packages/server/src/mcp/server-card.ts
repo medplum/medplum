@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
 import { SUPPORTED_PROTOCOL_VERSIONS } from '@modelcontextprotocol/sdk/types.js';
-import type { NextFunction, Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { createHash } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { getProjectScopedUrl } from '../util/url';
@@ -21,31 +21,7 @@ function getStreamUrl(req: Request): string {
 }
 
 /**
- * Sets the CORS and caching headers that the Server Card spec requires for public discovery documents.
- * Answers preflight requests directly.
- * @param req - The HTTP request.
- * @param res - The HTTP response.
- * @param next - The next handler.
- */
-export function discoveryHeaders(req: Request, res: Response, next: NextFunction): void {
-  res.set({
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET',
-    'Access-Control-Allow-Headers': 'Content-Type, If-None-Match',
-    'Access-Control-Expose-Headers': 'ETag',
-    'Cache-Control': 'public, max-age=3600',
-  });
-  // The global CORS middleware may have allowed credentials, which browsers reject with a wildcard origin
-  res.removeHeader('Access-Control-Allow-Credentials');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-    return;
-  }
-  next();
-}
-
-/**
- * Sends a discovery document with an ETag, answering If-None-Match with 304.
+ * Sends a cacheable discovery document with an ETag, answering If-None-Match with 304.
  * The app disables Express's automatic ETags, so this computes one.
  * @param req - The HTTP request.
  * @param res - The HTTP response.
@@ -55,7 +31,7 @@ export function discoveryHeaders(req: Request, res: Response, next: NextFunction
 function sendDiscoveryDocument(req: Request, res: Response, contentType: string, document: object): void {
   const body = JSON.stringify(document);
   const etag = `W/"${createHash('sha256').update(body).digest('base64url')}"`;
-  res.set('ETag', etag);
+  res.set({ 'Cache-Control': 'public, max-age=3600', ETag: etag });
   if (req.headers['if-none-match'] === etag) {
     res.status(304).end();
     return;

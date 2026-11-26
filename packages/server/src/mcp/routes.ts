@@ -13,7 +13,7 @@ import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
 import { getPubSubRedisSubscriber } from '../redis';
 import { getMcpServer } from './server';
-import { discoveryHeaders, serverCardHandler } from './server-card';
+import { serverCardHandler } from './server-card';
 
 export const mcpRouter = Router();
 
@@ -23,7 +23,7 @@ mcpRouter.use(publicRoutes);
 
 // MCP Server Card (/mcp/stream/server-card)
 // See: https://modelcontextprotocol.io/seps/2127-mcp-server-cards
-publicRoutes.route('/stream/server-card').options(discoveryHeaders).get(discoveryHeaders, serverCardHandler);
+publicRoutes.get('/stream/server-card', serverCardHandler);
 
 // Protected routes require authentication
 const protectedRoutes = Router().use(authenticateRequest);

@@ -68,24 +68,24 @@ describe('MCP Routes', () => {
     const entry = JSON.parse(catalog.text).entries[0];
     expect(entry.type).toBe('application/mcp-server-card+json');
 
-    const card = await request(app).get(new URL(entry.url).pathname).set('Origin', 'https://example.com');
+    const card = await request(app).get(new URL(entry.url).pathname).set('Origin', 'http://localhost:3000');
     expect(card).toHaveStatus(200);
     expect(card.headers['content-type']).toMatch(/^application\/mcp-server-card\+json/);
-    expect(card.headers['access-control-allow-origin']).toBe('*');
+    expect(card.headers['access-control-allow-origin']).toBe('http://localhost:3000');
     expect(JSON.parse(card.text).remotes[0].url).toMatch(/\/mcp\/stream$/);
 
     const notModified = await request(app).get(new URL(entry.url).pathname).set('If-None-Match', card.headers['etag']);
     expect(notModified).toHaveStatus(304);
   });
 
-  test('AI Catalog preflight from any origin', async () => {
+  test('Server Card preflight', async () => {
     const res = await request(app)
-      .options('/.well-known/ai-catalog.json')
-      .set('Origin', 'https://not-allowed.example.com')
+      .options('/mcp/stream/server-card')
+      .set('Origin', 'http://localhost:3000')
       .set('Access-Control-Request-Method', 'GET')
       .set('Access-Control-Request-Headers', 'If-None-Match');
     expect(res).toHaveStatus(204);
-    expect(res.headers['access-control-allow-origin']).toBe('*');
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:3000');
   });
 
   test('Project-scoped Server Card', async () => {

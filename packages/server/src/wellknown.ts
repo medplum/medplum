@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { apiCatalogHandler } from './api-catalog';
 import { getConfig } from './config/loader';
 import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
-import { aiCatalogHandler, discoveryHeaders } from './mcp/server-card';
+import { aiCatalogHandler } from './mcp/server-card';
 import { getJwks } from './oauth/keys';
 import { getProjectScopedUrl } from './util/url';
 
@@ -81,7 +81,7 @@ wellKnownRouter.get('/api-catalog', apiCatalogHandler);
 
 // MCP AI Catalog, which points at the MCP Server Card.
 // Always served, but lists the card only when MCP is enabled, which is also when app.ts registers the card route.
-wellKnownRouter.route('/ai-catalog.json').options(discoveryHeaders).get(discoveryHeaders, aiCatalogHandler);
+wellKnownRouter.get('/ai-catalog.json', aiCatalogHandler);
 
 wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
 wellKnownRouter.get('/openid-configuration', handleOAuthConfig);
