@@ -1962,6 +1962,25 @@ describe('FHIR Repo', () => {
       expect(bundle.total).toStrictEqual(0);
     }));
 
+  test('Login with membership and Project/new placeholder', () =>
+    withTestContext(async () => {
+      const login = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/new' },
+        membership: { reference: 'ProjectMembership/' + randomUUID() },
+        authMethod: 'password',
+        authTime: new Date().toISOString(),
+      });
+      expect(login.meta?.project).toBeUndefined();
+
+      const revoked = await systemRepo.patchResource<Login>('Login', login.id, [
+        { op: 'add', path: '/revoked', value: true },
+      ]);
+      expect(revoked.revoked).toBe(true);
+      expect(revoked.meta?.project).toBeUndefined();
+    }));
+
   test('Malformed client assigned ID', async () => {
     await expect(systemRepo.updateResource({ resourceType: 'Patient', id: '123' })).rejects.toThrow('Invalid id');
   });

@@ -128,6 +128,16 @@ export function resolveId(input: Reference | Resource | undefined): string | und
 }
 
 /**
+ * Returns the ID portion of a reference, only if it is a UUID.
+ * @param reference - A FHIR reference.
+ * @returns The ID portion of the reference if it is a UUID; otherwise undefined.
+ */
+export function resolveUUID(reference: Reference | undefined): string | undefined {
+  const id = resolveId(reference);
+  return id && isUUID(id) ? id : undefined;
+}
+
+/**
  * Parses a reference and returns a tuple of [ResourceType, ID].
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource.

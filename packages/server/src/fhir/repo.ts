@@ -38,6 +38,7 @@ import {
   protectedResourceTypes,
   readInteractions,
   resolveId,
+  resolveUUID,
   satisfiedAccessPolicies,
   satisfiedAccessPolicy,
   shallowMatchesResourcePolicy,
@@ -2250,28 +2251,25 @@ export class Repository extends FhirRepository implements Disposable {
       compartments.add('Project/' + resource.meta.project);
     }
 
-    if (resource.resourceType === 'User' && resource.project?.reference && isUUID(resolveId(resource.project) ?? '')) {
+    if (resource.resourceType === 'User' && resource.project?.reference && resolveUUID(resource.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add(resource.project.reference);
     }
 
     if (resource.meta?.accounts) {
       for (const account of resource.meta.accounts) {
-        const id = resolveId(account);
-        if (!account.reference?.startsWith('Project/') && id && isUUID(id)) {
+        if (!account.reference?.startsWith('Project/') && resolveUUID(account)) {
           compartments.add(account.reference as string);
         }
       }
     } else if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
-      const id = resolveId(resource.meta.account);
-      if (id && isUUID(id)) {
+      if (resolveUUID(resource.meta.account)) {
         compartments.add(resource.meta.account.reference as string);
       }
     }
 
     for (const patient of getPatients(resource)) {
-      const patientId = resolveId(patient);
-      if (patientId && isUUID(patientId)) {
+      if (resolveUUID(patient)) {
         compartments.add(patient.reference);
       }
     }
@@ -2371,9 +2369,8 @@ export class Repository extends FhirRepository implements Disposable {
 
     if (updated.resourceType === 'Login') {
       // A Login joins its project once a membership is selected.
-      // Logins from before May 2026 can still hold the "Project/new" placeholder after selecting one.
-      const projectId = resolveId(updated.project);
-      return updated.membership && projectId && isUUID(projectId) ? projectId : undefined;
+      // Logins from before May 2026 (before #9156) can still hold the "Project/new" placeholder after selecting one.
+      return updated.membership ? resolveUUID(updated.project) : undefined;
     }
 
     if (this.isSuperAdmin() && SuperAdminProjectIdEditableResourceTypes.includes(updated.resourceType)) {

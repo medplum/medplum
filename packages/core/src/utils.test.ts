@@ -10,6 +10,7 @@ import type {
   Observation,
   ObservationDefinition,
   Patient,
+  Reference,
   Resource,
   Slot,
   User,
@@ -79,6 +80,7 @@ import {
   preciseLessThanOrEquals,
   preciseRound,
   resolveId,
+  resolveUUID,
   setCodeBySystem,
   setIdentifier,
   singularize,
@@ -141,12 +143,31 @@ describe('Core Utils', () => {
     expect(createReference(detectedIssue)).toMatchObject({ reference: 'DetectedIssue/abc' });
   });
 
-  test('resolveId', () => {
-    expect(resolveId(undefined)).toBeUndefined();
-    expect(resolveId({})).toBeUndefined();
-    expect(resolveId({ id: '123' })).toBe('123');
-    expect(resolveId({ reference: 'Patient' })).toBeUndefined();
-    expect(resolveId({ reference: 'Patient/123' })).toBe('123');
+  const uuid1 = 'a7aad351-0626-4995-ac74-10c5ad9dcaa7';
+  const uuid2 = '0c4b5e1f-9d2a-4f63-8b7e-3a1c2d4e5f60';
+  test.each<[Reference | undefined, string | undefined, string | undefined]>([
+    [undefined, undefined, undefined],
+    [{}, undefined, undefined],
+    [{ id: '123' }, '123', undefined],
+    [{ id: uuid1 }, uuid1, uuid1],
+    [{ reference: 'Patient' }, undefined, undefined],
+    [{ reference: 'Project/new' }, 'new', undefined],
+    [{ reference: 'Patient/123' }, '123', undefined],
+    [{ reference: 'Patient/' }, '', undefined],
+    [{ reference: 'http://example.com/fhir/Patient/1' }, '', undefined],
+    [{ reference: `Patient/${uuid1}` }, uuid1, uuid1],
+    [{ reference: `Patient/${uuid1}/_history/${uuid2}` }, uuid1, uuid1],
+    [{ reference: 'Patient/123/_history/1' }, '123', undefined],
+    [{ reference: `Patient/${uuid1.toUpperCase()}` }, uuid1.toUpperCase(), uuid1.toUpperCase()],
+    [{ reference: `Patient/${uuid1.slice(1)}` }, uuid1.slice(1), undefined],
+    [{ reference: 'Patient/123', id: uuid1 }, '123', undefined],
+    [{ reference: '', id: uuid1 }, undefined, undefined],
+    [{ reference: '#contained' }, undefined, undefined],
+    [{ reference: `urn:uuid:${uuid1}` }, undefined, undefined],
+    [{ reference: 'Patient?identifier=http://example.com|123' }, '', undefined],
+  ])('for %j, [resolveId, resolveUUID] should be [%j, %j]', (input, expectedId, expectedUUID) => {
+    expect(resolveId(input)).toBe(expectedId);
+    expect(resolveUUID(input)).toBe(expectedUUID);
   });
 
   test('parseReference and tryParseReference', () => {
