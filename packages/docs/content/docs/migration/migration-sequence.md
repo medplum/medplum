@@ -26,7 +26,7 @@ We generally recommend starting with shared records, then loading the resources 
 | 6     | Longitudinal clinical history       | [`Observation`](/docs/api/fhir/resources/observation), [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport), [`Procedure`](/docs/api/fhir/resources/procedure)                 | Load Observation before DiagnosticReport records that reference it in `result`         |
 | 7     | Documents and workflow history      | [`DocumentReference`](/docs/api/fhir/resources/documentreference), [`Communication`](/docs/api/fhir/resources/communication), [`Task`](/docs/api/fhir/resources/task)                     | These often refer to patients, encounters, authors, or clinical records loaded earlier |
 
-Install required profiles and terminology before validating these stages.
+Install required profiles and terminology before validating these stages. Reference data that clinicians choose from, such as a medication formulary, is loaded separately from patient records. See [Seeding a Formulary from an Existing EHR](/docs/medications/formulary/seeding-from-an-existing-ehr).
 
 ## Check the Order Against Your References
 

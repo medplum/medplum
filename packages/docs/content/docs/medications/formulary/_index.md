@@ -618,6 +618,10 @@ Supplemental images and documentation should be referenced from `MedicationKnowl
 
 For these external files, implementers should create a [`DocumentReference`](/docs/api/fhir/resources/documentreference) resource, and reference it from `MedicationKnowledge.monograph`. For more information on handling external files, consult [External files and Document references](/docs/fhir-datastore/external-documents).
 
+## Seeding from an Existing EHR
+
+If you are moving from another EHR, you can build your formulary from the medications your clinicians already order. See [Seeding a Formulary from an Existing EHR](/docs/medications/formulary/seeding-from-an-existing-ehr) for how to map an order history to RxNorm, load it so reruns are safe, search it, and check it with your e-prescribing vendor.
+
 ## See Also
 
 - Guide on [Medication Code Systems](./medication-codes)
