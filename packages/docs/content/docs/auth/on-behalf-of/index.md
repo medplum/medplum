@@ -15,7 +15,7 @@ Consider this common Medplum architectural pattern:
 
 ![On-Behalf-Of](on-behalf-of.webp)
 
-Your backend authenticates the person using your application's login system, resolves the corresponding Medplum membership, and attaches that context to outgoing Medplum requests. Derive the delegation header from the verified identity and authorized application context.
+Your backend authenticates the person using your application's login system, resolves the corresponding Medplum membership, and attaches that context to outgoing Medplum requests. Derive the delegation header from the verified identity and authorized application context. See [Server-to-Server Communication](/docs/auth/server-to-server-communication) for recommended practices.
 
 {{< warning title="Use On-Behalf-Of for FHIR API requests" >}}
 The safest use of On-Behalf-Of is for FHIR API requests under `/fhir/R4/`, where the delegated membership's access policy controls the response. Endpoints outside the FHIR API, such as `/auth/`, `/oauth2/`, `/admin/`, and `/scim/`, manage sessions, credentials, accounts, and project settings. They do not all handle delegation the same way. If your backend sends delegated requests to these endpoints, test each one with each type of delegated membership you use, and confirm the behavior before you release. See [Security Considerations](#security-considerations).
