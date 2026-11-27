@@ -1165,7 +1165,7 @@ export const functions: Record<string, FhirPathFunction> = {
   /**
    * Returns the part of the string starting at position start (zero-based). If length is given, will return at most length number of characters from the input string.
    *
-   * If start lies outside the length of the string, the function returns empty ({ }). If there are less remaining characters in the string than indicated by length, the function returns just the remaining characters.
+   * If start lies outside the length of the string, the function returns empty ({ }). If a negative or zero length is provided, the function returns an empty string (''). If there are less remaining characters in the string than indicated by length, the function returns just the remaining characters.
    *
    * If the input or start is empty, the result is empty.
    *
@@ -1181,9 +1181,17 @@ export const functions: Record<string, FhirPathFunction> = {
   substring: (context: AtomContext, input: TypedValue[], startAtom: Atom, lengthAtom?: Atom): TypedValue[] => {
     return applyStringFunc(
       (str, start, length) => {
-        const startIndex = start as number;
-        const endIndex = length ? startIndex + (length as number) : str.length;
-        return startIndex < 0 || startIndex >= str.length ? undefined : str.substring(startIndex, endIndex);
+        if (typeof start !== 'number' || start < 0 || start >= str.length) {
+          return undefined;
+        }
+        if (length === undefined) {
+          return str.substring(start);
+        }
+        const len = length as number;
+        if (len <= 0) {
+          return '';
+        }
+        return str.substring(start, start + len);
       },
       context,
       input,

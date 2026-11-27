@@ -509,6 +509,18 @@ describe('FHIRPath functions', () => {
     expect(functions.substring(context, [TYPED_APPLE], new LiteralAtom(toTypedValue(2)))).toStrictEqual([
       toTypedValue('ple'),
     ]);
+    expect(
+      functions.substring(context, [TYPED_APPLE], new LiteralAtom(toTypedValue(2)), new LiteralAtom(toTypedValue(2)))
+    ).toStrictEqual([toTypedValue('pl')]);
+    expect(
+      functions.substring(context, [TYPED_APPLE], new LiteralAtom(toTypedValue(2)), new LiteralAtom(toTypedValue(0)))
+    ).toStrictEqual([toTypedValue('')]);
+    expect(
+      functions.substring(context, [TYPED_APPLE], new LiteralAtom(toTypedValue(3)), new LiteralAtom(toTypedValue(-2)))
+    ).toStrictEqual([toTypedValue('')]);
+    expect(
+      functions.substring(context, [TYPED_APPLE], new LiteralAtom(toTypedValue(-1)), new LiteralAtom(toTypedValue(0)))
+    ).toStrictEqual([]);
   });
 
   test('startsWith', () => {

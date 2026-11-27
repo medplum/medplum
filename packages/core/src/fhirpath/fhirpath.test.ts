@@ -1902,6 +1902,18 @@ describe('FHIRPath Test Suite', () => {
     test('testSubstring5', () => {
       expect(evalFhirPath("'12345'.substring(-1).empty()", patient)).toStrictEqual([true]);
     });
+
+    test('testSubstring6', () => {
+      expect(evalFhirPath("'abcdefg'.substring(2, 0)", patient)).toStrictEqual(['']);
+    });
+
+    test('testSubstring7', () => {
+      expect(evalFhirPath("'abcdefg'.substring(3, -2)", patient)).toStrictEqual(['']);
+    });
+
+    test('testSubstring8', () => {
+      expect(evalFhirPath("'|abc'.substring(0, '|abc'.indexOf('|'))", patient)).toStrictEqual(['']);
+    });
   });
 
   describe('testStartsWith', () => {
