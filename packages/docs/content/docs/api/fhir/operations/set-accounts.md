@@ -46,6 +46,14 @@ Choose [shared or tenant-specific Patient records](/docs/tenancy-design/patient-
 
 `propagate: false` skips updates to existing resources in the Patient's FHIR compartment, such as Observations and Tasks. It does not disable account inheritance on later resource writes. A shared Patient with separate clinical records needs [resource-specific access rules and write handling](/docs/tenancy-design/patient-records#clinical-record-isolation).
 
+## Concurrency and failures
+
+Only one `$set-accounts` operation can run on a given Patient at a time, with or without `propagate`. A second call for the same resource while one is in progress fails with `409 Conflict`; with `Prefer: respond-async`, the second `AsyncJob` ends with status `error`. Retry the call after the first one finishes.
+
+Each resource is updated against its latest version, so edits made to the target or to compartment resources while the operation runs are preserved.
+
+If propagation fails partway through or an async job is cancelled, the target keeps its new accounts. Re-running the operation adds any missing accounts to compartment resources, but does not remove accounts that the interrupted run had not yet removed.
+
 ## Invoke the `$set-accounts` operation
 
 ```
