@@ -284,21 +284,7 @@ async function upsertProfileResource(
     // patient reference when one is provided. The requirement is only enforced
     // below, when a new RelatedPerson would actually be created.
     if (resourceType === 'RelatedPerson' && patient) {
-      let referencedPatient: WithId<Patient>;
-      try {
-        referencedPatient = await systemRepo.readReference<Patient>(patient);
-      } catch (err) {
-        // Convert notFound into a descriptive badRequest, since a bad patient
-        // reference in the request is a client error (consistent with access policies).
-        if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
-          throw new OperationOutcomeError(badRequest(`Patient ${getReferenceString(patient)} does not exist`));
-        }
-        throw err;
-      }
-      if (referencedPatient.meta?.project !== project.id) {
-        throw new OperationOutcomeError(badRequest('Patient does not belong to project'));
-      }
-      (resource as RelatedPerson).patient = createReference(referencedPatient);
+      (resource as RelatedPerson).patient = createReference(await readProjectPatient(systemRepo, patient, project));
     }
 
     if (email) {
@@ -359,6 +345,35 @@ async function upsertProfileResource(
       return profile;
     }
   }
+}
+
+/**
+ * Reads a Patient referenced by an invite, which must belong to the project.
+ * @param systemRepo - The system repository.
+ * @param patient - The Patient reference.
+ * @param project - The project being invited to.
+ * @returns The Patient.
+ */
+async function readProjectPatient(
+  systemRepo: SystemRepository,
+  patient: Reference<Patient>,
+  project: WithId<Project>
+): Promise<WithId<Patient>> {
+  let referencedPatient: WithId<Patient>;
+  try {
+    referencedPatient = await systemRepo.readReference<Patient>(patient);
+  } catch (err) {
+    // Convert notFound into a descriptive badRequest, since a bad patient
+    // reference in the request is a client error (consistent with access policies).
+    if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+      throw new OperationOutcomeError(badRequest(`Patient ${getReferenceString(patient)} does not exist`));
+    }
+    throw err;
+  }
+  if (referencedPatient.meta?.project !== project.id) {
+    throw new OperationOutcomeError(badRequest('Patient does not belong to project'));
+  }
+  return referencedPatient;
 }
 
 /**
@@ -470,6 +485,8 @@ async function upsertProjectMembership(
     const defaultPolicy = getDefaultAccessPolicy(project, 'RelatedPerson');
     const patientRef = (profile as RelatedPerson).patient;
     if (defaultPolicy && patientRef) {
+      // An existing profile's patient was not checked when the profile was written
+      await readProjectPatient(systemRepo, patientRef, project);
       partialMembership.access = [
         {
           policy: defaultPolicy,
