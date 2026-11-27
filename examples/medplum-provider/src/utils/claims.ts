@@ -17,6 +17,11 @@ import type {
 } from '@medplum/fhirtypes';
 import { calculateTotalPrice } from './chargeitems';
 
+const ICD10_CM = `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`;
+
+/** A claim line can point at no more than four diagnoses (CMS-1500 Box 24E). */
+const MAX_DIAGNOSIS_POINTERS = 4;
+
 export interface BuildClaimArgs {
   patient: WithId<Patient>;
   encounter: WithId<Encounter>;
@@ -67,12 +72,27 @@ export function buildClaimFromEncounter(args: BuildClaimArgs): Claim {
     priority: { coding: [{ code: 'normal' }] },
     insurance: (insurance ?? []).map((coverage, index) => ({ sequence: index + 1, focal: index === 0, coverage })),
     ...(conditions?.length ? { diagnosis: createDiagnosisArray(conditions) } : {}),
-    item: getCptChargeItems(chargeItems, createReference(encounter)),
+    item: getCptChargeItems(chargeItems, createReference(encounter), conditions),
     total: { value: calculateTotalPrice(chargeItems) },
   };
 }
 
-export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Reference<Encounter>): ClaimItem[] {
+/**
+ * Builds one claim line per CPT-coded charge item, pointing each at the diagnoses in its `reason`.
+ *
+ * @param chargeItems - The encounter's charge items.
+ * @param encounter - The encounter the lines belong to.
+ * @param conditions - The claim's diagnosis Conditions, in the order passed to {@link createDiagnosisArray}.
+ * @returns One claim line per CPT-coded charge item.
+ */
+export function getCptChargeItems(
+  chargeItems: ChargeItem[],
+  encounter: Reference<Encounter>,
+  conditions?: Condition[]
+): ClaimItem[] {
+  const diagnosisCodes = (conditions ?? []).map(
+    (condition) => condition.code?.coding?.find((c) => c.system === ICD10_CM)?.code
+  );
   const cptChargeItems = chargeItems.filter((item) => item.code?.coding?.some((coding) => coding.system === CPT));
   return cptChargeItems.map((chargeItem: ChargeItem, index: number) => {
     const modifiers = chargeItem.extension
@@ -81,6 +101,7 @@ export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Referenc
         return ext.valueCodeableConcept;
       })
       .filter((modifier) => modifier !== undefined);
+    const diagnosisSequence = getDiagnosisPointers(chargeItem, diagnosisCodes);
 
     return {
       sequence: index + 1,
@@ -91,13 +112,30 @@ export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Referenc
       },
       net: chargeItem.priceOverride,
       ...(modifiers && modifiers.length > 0 ? { modifier: modifiers } : {}),
+      ...(diagnosisSequence.length > 0 ? { diagnosisSequence } : {}),
     };
   });
 }
 
+/**
+ * Maps a charge item's ICD-10-CM `reason` codings to `Claim.item.diagnosisSequence` values.
+ *
+ * @param chargeItem - The charge item, whose `reason` may carry ICD-10-CM codings.
+ * @param diagnosisCodes - ICD-10-CM codes in claim diagnosis order (sequence = index + 1).
+ * @returns 1-based diagnosis pointers for the claim line; empty when none match.
+ */
+function getDiagnosisPointers(chargeItem: ChargeItem, diagnosisCodes: (string | undefined)[]): number[] {
+  const pointers = (chargeItem.reason ?? [])
+    .flatMap((reason) => reason.coding ?? [])
+    .filter((coding) => coding.system === ICD10_CM && coding.code)
+    .map((coding) => diagnosisCodes.indexOf(coding.code) + 1)
+    .filter((pointer) => pointer > 0);
+  return [...new Set(pointers)].slice(0, MAX_DIAGNOSIS_POINTERS);
+}
+
 export function createDiagnosisArray(conditions: Condition[]): ClaimDiagnosis[] {
   return conditions.map((condition, index) => {
-    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`);
+    const icd10Coding = condition.code?.coding?.find((c) => c.system === ICD10_CM);
     return {
       diagnosisCodeableConcept: {
         coding: icd10Coding

@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { ChargeItem, ChargeItemDefinition, Encounter } from '@medplum/fhirtypes';
+import type { ChargeItem, ChargeItemDefinition, Encounter, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as chargeitemsModule from './chargeitems';
 
-const { applyChargeItemDefinition, getChargeItemsForEncounter, calculateTotalPrice } = chargeitemsModule;
+const { applyChargeItemDefinition, getChargeItemsForEncounter, calculateTotalPrice, relinkChargeItemToLabOrder } =
+  chargeitemsModule;
 
 describe('chargeitems utils', () => {
   let medplum: MockClient;
@@ -137,6 +138,69 @@ describe('chargeitems utils', () => {
       ];
 
       expect(calculateTotalPrice(items)).toBe(45.5);
+    });
+  });
+
+  describe('relinkChargeItemToLabOrder', () => {
+    const encounterRef = { reference: 'Encounter/encounter-1' };
+    const diagnosis = { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'E11.9' }] };
+    const labOrder: WithId<ServiceRequest> = {
+      resourceType: 'ServiceRequest',
+      id: 'lab-order-1',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/patient-1' },
+      reasonCode: [diagnosis],
+    };
+
+    async function createChargeItem(fields: Partial<ChargeItem>): Promise<WithId<ChargeItem>> {
+      return medplum.createResource<ChargeItem>({
+        resourceType: 'ChargeItem',
+        status: 'planned',
+        code: { coding: [{ system: 'http://www.ama-assn.org/go/cpt', code: '80053' }] },
+        subject: { reference: 'Patient/patient-1' },
+        context: encounterRef,
+        ...fields,
+      });
+    }
+
+    test('repoints supportingInformation, keeps other entries and copies reasonCode', async () => {
+      const chargeItem = await createChargeItem({
+        supportingInformation: [{ reference: 'DocumentReference/doc-1' }, { reference: 'ServiceRequest/draft-sr-1' }],
+      });
+
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', labOrder);
+
+      expect(result?.id).toBe(chargeItem.id);
+      expect(result?.supportingInformation).toEqual([
+        { reference: 'DocumentReference/doc-1' },
+        { reference: 'ServiceRequest/lab-order-1' },
+      ]);
+      expect(result?.reason).toEqual([diagnosis]);
+    });
+
+    test('clears a leftover reason when the order has no reasonCode', async () => {
+      await createChargeItem({
+        supportingInformation: [{ reference: 'ServiceRequest/draft-sr-1' }],
+        reason: [diagnosis],
+      });
+
+      const result = await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', {
+        ...labOrder,
+        reasonCode: undefined,
+      });
+
+      expect(result?.supportingInformation).toEqual([{ reference: 'ServiceRequest/lab-order-1' }]);
+      expect(result?.reason).toBeUndefined();
+    });
+
+    test('returns undefined when no ChargeItem references the draft order', async () => {
+      await createChargeItem({ supportingInformation: [{ reference: 'ServiceRequest/other-sr' }] });
+
+      expect(
+        await relinkChargeItemToLabOrder(medplum, encounterRef, 'ServiceRequest/draft-sr-1', labOrder)
+      ).toBeUndefined();
+      expect(await relinkChargeItemToLabOrder(medplum, encounterRef, undefined, labOrder)).toBeUndefined();
     });
   });
 });
