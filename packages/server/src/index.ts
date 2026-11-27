@@ -30,6 +30,13 @@ export async function main(configName: string): Promise<void> {
       return;
     }
 
+    if (err.message && typeof err.message === 'string' && err.message.includes('assert(!this.paused)')) {
+      // Workaround for undici 7.x bug: the HTTP/1.1 parser asserts when the peer closes the socket while the parser
+      // is paused for backpressure. The response body still completes. Fixed in undici 8.x.
+      // We do *not* want to exit the process in this case.
+      return;
+    }
+
     await exitAfterStdoutDrain();
   });
 

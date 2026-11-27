@@ -45,6 +45,9 @@ describe('OpenAPI', () => {
     expect(res.body.paths['/fhir/R4'].post.operationId).toBe('batch');
     expect(res.body.paths['/fhir/R4/{resourceType}/$validate'].post.operationId).toBe('validateResource');
 
+    expect(create.responses['201'].headers.RateLimit).toBeDefined();
+    expect(create.responses['429'].$ref).toBe('#/components/responses/TooManyRequests');
+
     const resourceTypeParam = res.body.components.parameters.resourceType;
     expect(resourceTypeParam.schema.enum).toContain('Patient');
     expect(resourceTypeParam.schema.enum).not.toContain('HumanName');
