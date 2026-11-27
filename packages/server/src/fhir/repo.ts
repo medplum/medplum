@@ -38,6 +38,7 @@ import {
   protectedResourceTypes,
   readInteractions,
   resolveId,
+  resolveUUID,
   satisfiedAccessPolicies,
   satisfiedAccessPolicy,
   shallowMatchesResourcePolicy,
@@ -116,12 +117,7 @@ import { logAsyncJobAccess } from './operations/utils/asyncjobexecutor';
 import { clamp, makeOperationDefinitionParameter, parseParametersFromDefinitions } from './operations/utils/parameters';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
-import {
-  getResourceTypesFromReferences,
-  replaceConditionalReferences,
-  resolveUUID,
-  validateResourceReferences,
-} from './references';
+import { getResourceTypesFromReferences, replaceConditionalReferences, validateResourceReferences } from './references';
 import type {
   ExecuteSqlOptions,
   RepositoryAccessOptions,

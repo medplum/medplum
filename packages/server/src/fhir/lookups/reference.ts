@@ -9,12 +9,12 @@ import {
   isResource,
   isUUID,
   projectAdminResourceTypes,
+  resolveUUID,
   toTypedValue,
 } from '@medplum/core';
 import type { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
-import { resolveUUID } from '../references';
 import type { Expression, PgQueryable, SqlBuilder } from '../sql';
 import { DeleteQuery, InsertQuery, SelectQuery } from '../sql';
 import type { LookupTableRow } from './lookuptable';

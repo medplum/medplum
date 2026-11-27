@@ -9,12 +9,10 @@ import {
   createReference,
   createStructureIssue,
   isResourceType,
-  isUUID,
   normalizeErrorString,
   OperationOutcomeError,
   parseSearchRequest,
   PropertyType,
-  resolveId,
   toTypedValue,
 } from '@medplum/core';
 import type { OperationOutcomeIssue, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -196,14 +194,4 @@ export function getResourceTypesFromReferences(references: Iterable<Reference>):
     }
   }
   return Array.from(resourceTypes);
-}
-
-/**
- * Returns the ID of a reference, only if it is a UUID.
- * @param reference - The reference to resolve.
- * @returns The referenced ID if it is a UUID; otherwise undefined.
- */
-export function resolveUUID(reference: Reference | undefined): string | undefined {
-  const id = resolveId(reference);
-  return id && isUUID(id) ? id : undefined;
 }
