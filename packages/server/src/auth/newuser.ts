@@ -61,6 +61,11 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     }
   }
 
+  if (config.newProjectRegistrationEnabled === false && (!projectId || projectId === 'new')) {
+    sendOutcome(res, badRequest('New project registration is disabled'));
+    return;
+  }
+
   // If the user is a practitioner, then projectId should be undefined
   // If the user is a patient, then projectId must be set
   const email = req.body.email.toLowerCase();
@@ -88,8 +93,8 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 
   let existingUser = undefined;
-  if (req.body.projectId && req.body.projectId !== 'new') {
-    existingUser = await getUserByEmailInProject(email, req.body.projectId);
+  if (projectId && projectId !== 'new') {
+    existingUser = await getUserByEmailInProject(email, projectId);
   } else {
     existingUser = await getUserByEmailWithoutProject(email);
   }
@@ -99,7 +104,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 
   try {
-    const user = await createUser({ ...req.body, email } as NewUserRequest);
+    const user = await createUser({ ...req.body, email, projectId } as NewUserRequest);
 
     const login = await tryLogin({
       authMethod: 'password',

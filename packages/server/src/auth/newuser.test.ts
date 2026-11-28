@@ -12,6 +12,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -38,6 +39,7 @@ describe('New user', () => {
 
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
+    getConfig().newProjectRegistrationEnabled = undefined;
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
     getConfig().blockedEmailDomains = undefined;
   });
@@ -88,6 +90,47 @@ describe('New user', () => {
 
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Registration is disabled');
+  });
+
+  test('New project registration disabled', async () => {
+    getConfig().newProjectRegistrationEnabled = false;
+    const email = `alex${randomUUID()}@example.com`;
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+      email,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      projectId: 'new',
+    });
+
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('New project registration is disabled');
+    expect(await getUserByEmailWithoutProject(email)).toBeUndefined();
+
+    // Project-scoped registration is still allowed, including when the project comes from clientId
+    const { project, client } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Owner',
+        lastName: 'Owner',
+        projectName: 'Owner Project',
+        email: `owner${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    await enableOpenRegistration(project);
+    const patientEmail = `patient${randomUUID()}@example.com`;
+    const res2 = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Patient',
+      lastName: 'One',
+      email: patientEmail,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      clientId: client.id,
+    });
+    expect(res2).toHaveStatus(200);
+    expect(await getUserByEmailWithoutProject(patientEmail)).toBeUndefined();
+    expect(await getUserByEmailInProject(patientEmail, project.id)).toBeDefined();
   });
 
   test('Missing recaptcha', async () => {

@@ -128,6 +128,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
+    if (getConfig().newProjectRegistrationEnabled === false && (!projectId || projectId === 'new')) {
+      sendOutcome(res, badRequest('New project registration is disabled'));
+      return;
+    }
     const systemRepo = getGlobalSystemRepo();
     user = await systemRepo.createResource<User>({
       resourceType: 'User',
