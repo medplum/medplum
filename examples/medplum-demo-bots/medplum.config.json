@@ -119,6 +119,12 @@
       "id": "",
       "source": "src/nppes-lookup.ts",
       "dist": "dist/nppes-lookup.js"
+    },
+    {
+      "name": "submit-visit-to-sandata",
+      "id": "",
+      "source": "src/sandata-evv/submit-visit-to-sandata.ts",
+      "dist": "dist/sandata-evv/submit-visit-to-sandata.js"
     }
   ]
 }
