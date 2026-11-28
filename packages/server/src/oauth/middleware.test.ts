@@ -94,8 +94,21 @@ describe('Auth middleware', () => {
 
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
-    expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
+    expect(res.header['www-authenticate']).toBe(
+      `Bearer realm="${getConfig().baseUrl}", resource_metadata="${getConfig().baseUrl}.well-known/oauth-protected-resource"`
+    );
     expect(res).toHaveStatus(401);
+  });
+
+  test('No auth header on project-scoped URL', async () => {
+    const { baseUrl } = getConfig();
+    const projectId = randomUUID();
+    const expected = `Bearer realm="${baseUrl}", resource_metadata="${baseUrl}projects/${projectId}/.well-known/oauth-protected-resource"`;
+    for (const prefix of ['', '/api']) {
+      const res = await request(app).get(`${prefix}/projects/${projectId}/fhir/R4/Patient`);
+      expect(res).toHaveStatus(401);
+      expect(res.header['www-authenticate']).toBe(expected);
+    }
   });
 
   test('No auth header with magic param', async () => {
@@ -117,7 +130,9 @@ describe('Auth middleware', () => {
   test('Invalid bearer token', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer foo');
     expect(res).toHaveStatus(401);
-    expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
+    expect(res.header['www-authenticate']).toBe(
+      `Bearer realm="${getConfig().baseUrl}", resource_metadata="${getConfig().baseUrl}.well-known/oauth-protected-resource"`
+    );
   });
 
   test('Bearer token with invalid JSON payload', async () => {

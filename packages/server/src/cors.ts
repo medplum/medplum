@@ -11,6 +11,8 @@ const exposedHeaders = [
   'Last-Modified',
   'Location',
   'RateLimit',
+  // Lets browser clients read RFC 9728 resource_metadata from 401 challenges
+  'WWW-Authenticate',
   'X-Request-Id',
   'X-Trace-Id',
 ];

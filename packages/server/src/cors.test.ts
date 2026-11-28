@@ -82,7 +82,7 @@ describe('CORS', () => {
     corsOptions(req, callback);
     expect(callback).toHaveBeenCalledWith(
       null,
-      expect.objectContaining({ exposedHeaders: expect.arrayContaining(['RateLimit']) })
+      expect.objectContaining({ exposedHeaders: expect.arrayContaining(['RateLimit', 'WWW-Authenticate']) })
     );
   });
 
