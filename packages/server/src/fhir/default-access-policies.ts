@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
+  getDataType,
   getResourceTypes,
   projectAdminResourceTypes,
   protectedResourceTypes,
+  readInteractions,
 } from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyResource,
+  Expression,
   Project,
   ProjectDefaultAccessPolicies,
   Reference,
@@ -37,13 +40,59 @@ const PRACTITIONER_READONLY_RESOURCE_TYPES: ResourceType[] = [
   'CodeSystem',
 ];
 
+function fhirPath(expression: string): Expression {
+  return { language: 'text/fhirpath', expression };
+}
+
+// Messages the user sends, which may not name any other Patient
+function sentCommunication(criteria: string): AccessPolicyResource {
+  return {
+    resourceType: 'Communication',
+    criteria,
+    writeConstraint: [
+      fhirPath(`(sender | recipient | subject).where(reference.startsWith('Patient/')).all(reference = '%patient')`),
+    ],
+  };
+}
+
+// A recipient may mark a message read or close a thread, but not undo either
+function receivedCommunication(criteria: string, writableFields: string[]): AccessPolicyResource {
+  return {
+    resourceType: 'Communication',
+    criteria,
+    interaction: [...readInteractions, AccessPolicyInteraction.UPDATE],
+    readonlyFields: Object.keys(getDataType('Communication').elements).filter(
+      (field) => field !== 'id' && !writableFields.includes(field)
+    ),
+    writeConstraint: [
+      fhirPath('(%before.sender.empty() and %after.sender.empty()) or %before.sender = %after.sender'),
+      fhirPath(
+        `%before.status = %after.status or (%after.status = 'completed' and %before.status in ('in-progress' | 'on-hold' | 'unknown'))`
+      ),
+      fhirPath('%before.received.empty() or %before.received = %after.received'),
+      fhirPath('%before.sent.empty() or (%after.sent.exists() and %after.sent >= %before.sent)'),
+    ],
+  };
+}
+
+function receivedCommunications(): AccessPolicyResource[] {
+  return [
+    // Thread headers, whose sent time ThreadChat advances on each new message
+    receivedCommunication('Communication?recipient=%patient&part-of:missing=true', ['status', 'received', 'sent']),
+    receivedCommunication('Communication?recipient=%patient&part-of:missing=false', ['status', 'received']),
+  ];
+}
+
 /** The default access policy for each profile type, in the order they are listed on `Project.defaultAccessPolicies`. */
 export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfileType, () => DefaultAccessPolicy>> = {
   Patient: () => ({
     name: 'Default Patient Access Policy',
     // Criteria below limit reads to the patient compartment, which the server assigns from
     // patient references on the resource. A top-level compartment would only tag meta.accounts on create.
-    resource: patientCompartmentResources(),
+    resource: patientCompartmentResources([
+      sentCommunication('Communication?sender=%patient'),
+      ...receivedCommunications(),
+    ]),
   }),
   RelatedPerson: () => ({
     name: 'Default RelatedPerson Access Policy',
@@ -56,7 +105,12 @@ export const DEFAULT_ACCESS_POLICIES: Readonly<Record<DefaultAccessPolicyProfile
         criteria: 'RelatedPerson?_id=%profile.id&patient=%patient',
         interaction: [AccessPolicyInteraction.UPDATE],
       },
-      ...patientCompartmentResources(),
+      ...patientCompartmentResources([
+        // A caregiver sends as themselves, about their patient
+        sentCommunication('Communication?sender=%profile&_compartment=%patient'),
+        { resourceType: 'Communication', criteria: 'Communication?sender=%patient', readonly: true },
+        ...receivedCommunications(),
+      ]),
     ],
   }),
   Admin: () => ({
@@ -177,15 +231,14 @@ function writableExcept(options: {
   ];
 }
 
-function patientCompartmentResources(): AccessPolicyResource[] {
+function patientCompartmentResources(communication: AccessPolicyResource[]): AccessPolicyResource[] {
   return [
     { resourceType: 'Patient', criteria: 'Patient?_id=%patient.id' },
     { resourceType: 'AllergyIntolerance', criteria: 'AllergyIntolerance?_compartment=%patient' },
     { resourceType: 'Appointment', criteria: 'Appointment?_compartment=%patient' },
     { resourceType: 'CarePlan', criteria: 'CarePlan?_compartment=%patient' },
     { resourceType: 'CareTeam', criteria: 'CareTeam?_compartment=%patient' },
-    { resourceType: 'Communication', criteria: 'Communication?sender=%patient' },
-    { resourceType: 'Communication', criteria: 'Communication?recipient=%patient' },
+    ...communication,
     { resourceType: 'Condition', criteria: 'Condition?_compartment=%patient' },
     { resourceType: 'Coverage', criteria: 'Coverage?_compartment=%patient' },
     { resourceType: 'DiagnosticReport', criteria: 'DiagnosticReport?_compartment=%patient' },
