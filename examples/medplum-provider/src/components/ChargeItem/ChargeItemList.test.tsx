@@ -90,7 +90,7 @@ describe('ChargeItemList', () => {
   test('renders charge items list', () => {
     setup({ chargeItems: [mockChargeItem] });
 
-    expect(screen.getByText('Charge Items')).toBeInTheDocument();
+    expect(screen.getByText(/^Charge Items \(/)).toBeInTheDocument();
     expect(screen.getByText('CPT Code')).toBeInTheDocument();
     expect(screen.getByDisplayValue('$100.00')).toBeInTheDocument();
   });

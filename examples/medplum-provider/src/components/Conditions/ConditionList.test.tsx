@@ -77,11 +77,10 @@ function mockValueSetExpand(medplum: MockClient): void {
 
 async function submitCholeraDiagnosis(user: UserEvent): Promise<void> {
   await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+  await user.click(await screen.findByRole('tab', { name: 'New Diagnosis' }));
   await user.type(await screen.findByRole('searchbox', { name: 'ICD-10 Code' }), 'cholera');
   await user.click(await screen.findByText('Cholera, unspecified'));
-  await user.type(await screen.findByRole('searchbox', { name: 'Status' }), 'active');
-  await user.click(await screen.findByText('Active'));
-  await user.click(screen.getByRole('button', { name: 'Save' }));
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' }));
 }
 
 /**
@@ -99,7 +98,7 @@ async function selectRank(user: UserEvent, select: HTMLElement, rank: string): P
 }
 
 function findRemoveButtons(): HTMLElement[] {
-  return screen.getAllByRole('button', { hidden: true }).filter((btn) => btn.querySelector('svg'));
+  return screen.getAllByRole('button', { name: 'Remove diagnosis', hidden: true });
 }
 
 describe('ConditionList', () => {
@@ -129,7 +128,7 @@ describe('ConditionList', () => {
 
   test('renders diagnosis section', () => {
     setup();
-    expect(screen.getByText('Diagnosis')).toBeInTheDocument();
+    expect(screen.getByText(/^Diagnoses \(/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Diagnosis' })).toBeInTheDocument();
   });
 
@@ -165,12 +164,10 @@ describe('ConditionList', () => {
     setup();
 
     await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+    await user.click(await screen.findByRole('tab', { name: 'New Diagnosis' }));
 
-    await waitFor(() => {
-      expect(screen.getByText('ICD-10 Code')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-    });
+    expect(screen.getByText('ICD-10 Code')).toBeInTheDocument();
+    expect(screen.getByText('Status')).toBeInTheDocument();
   });
 
   test('removes condition', async () => {
@@ -178,7 +175,7 @@ describe('ConditionList', () => {
     const onDiagnosisChange = vi.fn();
     const user = userEvent.setup();
 
-    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({});
+    const deleteSpy = vi.spyOn(medplum, 'deleteResource');
 
     setup({
       conditions: [mockCondition],
@@ -189,33 +186,21 @@ describe('ConditionList', () => {
     await user.click(findRemoveButtons()[0]);
 
     await waitFor(() => {
-      expect(medplum.deleteResource).toHaveBeenCalledWith('Condition', 'condition-123');
       expect(setConditions).toHaveBeenCalledWith([]);
       expect(onDiagnosisChange).toHaveBeenCalledWith([]);
     });
+    expect(deleteSpy).not.toHaveBeenCalled();
   });
 
   test('reindexes remaining diagnosis ranks after removing a condition', async () => {
     const setConditions = vi.fn();
     const onDiagnosisChange = vi.fn();
-    vi.spyOn(medplum, 'deleteResource').mockResolvedValue({});
     const conditions = [mockCondition, hypertension, diabetes];
     const diagnosis = conditions.map((c, i) => ({ condition: { reference: `Condition/${c.id}` }, rank: i + 1 }));
     setup({ encounter: { ...mockEncounter, diagnosis }, conditions, setConditions, onDiagnosisChange });
     await userEvent.setup().click(findRemoveButtons()[0]);
     await waitFor(() => expect(setConditions).toHaveBeenCalledWith([hypertension, diabetes]));
     expect(onDiagnosisChange).toHaveBeenCalledWith([diagnosis[1], diagnosis[2]].map((d, i) => ({ ...d, rank: i + 1 })));
-  });
-
-  test('shows an error notification when deleting a condition fails', async () => {
-    const setConditions = vi.fn();
-    const onDiagnosisChange = vi.fn();
-    vi.spyOn(medplum, 'deleteResource').mockRejectedValue(new Error('Delete failed'));
-    setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
-    await userEvent.setup().click(findRemoveButtons()[0]);
-    expect(await screen.findByText('Delete failed')).toBeInTheDocument();
-    expect(setConditions).not.toHaveBeenCalled();
-    expect(onDiagnosisChange).not.toHaveBeenCalled();
   });
 
   test('displays rank selects for multiple conditions', () => {
@@ -273,7 +258,7 @@ describe('ConditionList', () => {
     const show = vi.spyOn(notifications, 'show');
     const setConditions = vi.fn();
     setup({ encounter: undefined as unknown as Encounter, setConditions });
-    expect(screen.getByText('Diagnosis')).toBeInTheDocument();
+    expect(screen.getByText(/^Diagnoses \(/)).toBeInTheDocument();
     await act(() => sleep(0));
     expect(readReference).not.toHaveBeenCalled();
     expect(setConditions).not.toHaveBeenCalled();
@@ -337,6 +322,75 @@ describe('ConditionList', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   }, 15000);
+
+  test('reuses the patient existing condition with the same code and applies the chosen status', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    const existing = await medplum.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: { reference: 'Patient/patient-123' },
+      clinicalStatus: { coding: [{ code: 'resolved' }] },
+      code: { coding: [{ code: 'A00.9', display: 'Cholera, unspecified' }] },
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    mockValueSetExpand(medplum);
+    setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
+    await submitCholeraDiagnosis(userEvent.setup());
+
+    await waitFor(() => expect(setConditions).toHaveBeenCalled(), { timeout: 10000 });
+    const linked = setConditions.mock.calls[0][0][1] as Condition;
+    expect(linked.id).toBe(existing.id);
+    expect(linked.clinicalStatus?.coding?.[0]?.code).toBe('active');
+    expect(onDiagnosisChange).toHaveBeenCalledWith([
+      { condition: { reference: 'Condition/condition-123' }, rank: 1 },
+      { condition: { reference: `Condition/${existing.id}` }, rank: 2 },
+    ]);
+    expect(createSpy).not.toHaveBeenCalled();
+  }, 15000);
+
+  test('does not add a diagnosis code already on the encounter', async () => {
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    const cholera: WithId<Condition> = { ...mockCondition, code: { coding: [{ code: 'A00.9' }] } };
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    mockValueSetExpand(medplum);
+    setup({ conditions: [cholera], setConditions, onDiagnosisChange });
+    await submitCholeraDiagnosis(userEvent.setup());
+
+    expect(
+      await screen.findByText('This diagnosis is already on the encounter', {}, { timeout: 10000 })
+    ).toBeInTheDocument();
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(setConditions).not.toHaveBeenCalled();
+    expect(onDiagnosisChange).not.toHaveBeenCalled();
+  }, 15000);
+
+  test('links an existing patient condition picked from the existing tab', async () => {
+    const user = userEvent.setup();
+    const setConditions = vi.fn();
+    const onDiagnosisChange = vi.fn();
+    medplum = new MockClient({ seedDefaultData: false });
+    const asthma = await medplum.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: { reference: 'Patient/patient-123' },
+      clinicalStatus: { coding: [{ code: 'active' }] },
+      code: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'J45.909', display: 'Asthma' }] },
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+    setup({ conditions: [mockCondition], setConditions, onDiagnosisChange });
+
+    await user.click(screen.getByRole('button', { name: 'Add Diagnosis' }));
+    await user.click(await screen.findByRole('radio', { name: 'J45.909 Asthma' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add Diagnosis' }));
+
+    expect(setConditions).toHaveBeenCalledWith([mockCondition, asthma]);
+    expect(onDiagnosisChange).toHaveBeenCalledWith([
+      { condition: { reference: 'Condition/condition-123' }, rank: 1 },
+      { condition: { reference: `Condition/${asthma.id}` }, rank: 2 },
+    ]);
+    expect(createSpy).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
 
   test('shows an error notification and closes the modal when creating a condition fails', async () => {
     const setConditions = vi.fn();
