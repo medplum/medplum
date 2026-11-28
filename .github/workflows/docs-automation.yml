@@ -1,0 +1,93 @@
+name: Documentation assistant (manual pilot)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number: { description: Merged PR number, required: true, type: string }
+      mode:
+        description: Classify, save a draft, or publish it for review
+        type: choice
+        options: [classify, draft, open-pr]
+        default: draft
+
+concurrency: docs-automation-${{ inputs.pr_number }}
+permissions: { contents: read, pull-requests: read }
+
+env:
+  PR_NUMBER: ${{ inputs.pr_number }}
+  MODE: ${{ inputs.mode }}
+  BASE_BRANCH: ${{ github.event.repository.default_branch }}
+
+jobs:
+  analyze:
+    runs-on: medplum-build-16core
+    timeout-minutes: 120
+    outputs:
+      base: ${{ steps.source.outputs.base }}
+      tree: ${{ steps.review.outputs.tree }}
+      needs_input: ${{ steps.review.outputs.needs_input }}
+      build: ${{ steps.build.outcome }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+          path: repo
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: '22', cache: npm, cache-dependency-path: repo/package-lock.json }
+      - id: source
+        run: node repo/scripts/docs-automation/pilot.mts source
+        env: { GH_TOKEN: '${{ github.token }}' }
+      - name: Install pilot tools
+        run: |
+          jq '{dependencies: (.devDependencies | {zod, "mdast-util-from-markdown", "mdast-util-to-markdown"})}' repo/package.json > package.json
+          npm install --no-save --package-lock=false @anthropic-ai/claude-code@2.1.310
+          echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Classify, draft, and verify
+        id: review
+        run: node repo/scripts/docs-automation/analyze.mts
+        env: { ANTHROPIC_API_KEY: '${{ secrets.ANTHROPIC_API_KEY }}' }
+      - name: Build drafted documentation
+        id: build
+        if: steps.review.outputs.tree != ''
+        working-directory: repo
+        timeout-minutes: 40
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+        run: |
+          corepack enable npm
+          if [ -n "$TURBO_TOKEN" ]; then export TURBO_CACHE=remote:rw; else unset TURBO_TOKEN TURBO_TEAM; fi
+          ./scripts/build-docs.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: docs-review-${{ inputs.pr_number }}
+          path: .docs-run/
+          include-hidden-files: true
+          retention-days: 14
+
+  publish:
+    needs: analyze
+    if: >-
+      ${{ !cancelled() && inputs.mode == 'open-pr' &&
+          ((needs.analyze.result == 'success' && (needs.analyze.outputs.tree != '' || needs.analyze.outputs.needs_input == 'true')) ||
+           needs.analyze.outputs.build == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: write, pull-requests: write, issues: write, actions: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: '${{ needs.analyze.outputs.base }}', path: repo }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: '22', package-manager-cache: false }
+      - name: Publish draft or source PR comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCS_TREE: ${{ needs.analyze.outputs.tree }}
+          NEEDS_INPUT: ${{ needs.analyze.outputs.needs_input }}
+          BUILD: ${{ needs.analyze.outputs.build }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "docs-review-$PR_NUMBER" --dir .docs-run
+          node repo/scripts/docs-automation/pilot.mts publish

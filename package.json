@@ -50,6 +50,8 @@
     "esbuild": "0.28.2",
     "formidable": "3.5.4",
     "jsdom": "29.1.1",
+    "mdast-util-from-markdown": "2.1.0",
+    "mdast-util-to-markdown": "2.2.3",
     "npm-check-updates": "22.2.9",
     "prettier": "3.10.1",
     "prettier-plugin-organize-imports": "4.3.0",
@@ -64,7 +66,8 @@
     "typescript": "6.0.3",
     "vite": "8.3.8",
     "vitest": "4.1.12",
-    "vitest-websocket-mock": "0.5.0"
+    "vitest-websocket-mock": "0.5.0",
+    "zod": "4.6.7"
   },
   "packageManager": "npm@11.21.3+sha512.e427fe8c4f9772d6e11ffce338ea970be8adcbb79e73f4e4938425dfcb5feb0fb586da76c183c7984e1cd51d44b370d8db6ec0735e3e48bae5609c2406271b4e",
   "engines": {

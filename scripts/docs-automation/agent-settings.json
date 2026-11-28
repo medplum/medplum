@@ -1,0 +1,7 @@
+{
+  "disableAllHooks": true,
+  "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "deny": ["Read(//**/.env)", "Read(//**/.env.*)", "Read(//**/.git/**)", "Read(//**/.credentials.json)"]
+  }
+}
