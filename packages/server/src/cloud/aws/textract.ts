@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ComprehendMedicalClient, DetectEntitiesV2Command } from '@aws-sdk/client-comprehendmedical';
+import type { GetDocumentAnalysisCommandOutput, GetDocumentTextDetectionCommandOutput } from '@aws-sdk/client-textract';
 import {
+  GetDocumentAnalysisCommand,
   GetDocumentTextDetectionCommand,
+  StartDocumentAnalysisCommand,
   StartDocumentTextDetectionCommand,
   TextractClient,
 } from '@aws-sdk/client-textract';
@@ -26,6 +29,19 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
   const storage = getBinaryStorage();
   if (!(storage instanceof S3Storage)) {
     return [badRequest('AWS Textract requires S3 storage')];
+  }
+
+  const options = req.body as
+    undefined | { comprehend?: boolean; queries?: { text: string; alias?: string; pages?: string[] }[] };
+  const queries = options?.queries;
+  if (
+    queries !== undefined &&
+    (!Array.isArray(queries) ||
+      queries.length === 0 ||
+      queries.length > 30 ||
+      queries.some((q) => typeof q?.text !== 'string' || !q.text))
+  ) {
+    return [badRequest('queries must be an array of 1 to 30 objects, each with a text string')];
   }
 
   const { resourceType, id } = req.params;
@@ -69,16 +85,22 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
   const key = storage.getKey(inputBinary);
 
   const textractClient = new TextractClient({ region: awsRegion });
-  const startResponse = await textractClient.send(
-    new StartDocumentTextDetectionCommand({
-      DocumentLocation: {
-        S3Object: {
-          Bucket: bucket,
-          Name: key,
-        },
-      },
-    })
-  );
+  const DocumentLocation = { S3Object: { Bucket: bucket, Name: key } };
+  const startResponse = queries
+    ? await textractClient.send(
+        new StartDocumentAnalysisCommand({
+          DocumentLocation,
+          FeatureTypes: ['QUERIES'],
+          QueriesConfig: { Queries: queries.map((q) => ({ Text: q.text, Alias: q.alias, Pages: q.pages })) },
+        })
+      )
+    : await textractClient.send(new StartDocumentTextDetectionCommand({ DocumentLocation }));
+  const getResults = (
+    NextToken?: string
+  ): Promise<GetDocumentAnalysisCommandOutput | GetDocumentTextDetectionCommandOutput> =>
+    queries
+      ? textractClient.send(new GetDocumentAnalysisCommand({ JobId: startResponse.JobId, NextToken }))
+      : textractClient.send(new GetDocumentTextDetectionCommand({ JobId: startResponse.JobId, NextToken }));
 
   let count = 0;
   let textractResult = undefined;
@@ -86,11 +108,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
   try {
     while (!textractResult && count < 120) {
       count++;
-      const response = await textractClient.send(
-        new GetDocumentTextDetectionCommand({
-          JobId: startResponse.JobId,
-        })
-      );
+      const response = await getResults();
       if (response.JobStatus === 'IN_PROGRESS') {
         await sleep(1000);
         continue;
@@ -99,15 +117,10 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
       // Otherwise, we're done
       textractResult = response;
 
-      // Text detection results may be paginated; follow NextToken to gather all blocks
+      // Results may be paginated; follow NextToken to gather all blocks
       let nextToken = response.NextToken;
       while (nextToken) {
-        const nextResponse = await textractClient.send(
-          new GetDocumentTextDetectionCommand({
-            JobId: startResponse.JobId,
-            NextToken: nextToken,
-          })
-        );
+        const nextResponse = await getResults(nextToken);
         if (nextResponse.Blocks) {
           (textractResult.Blocks ??= []).push(...nextResponse.Blocks);
         }
@@ -132,7 +145,6 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     securityContext
   );
 
-  const options = req.body as undefined | { comprehend?: boolean };
   if (options?.comprehend && textractResult?.Blocks) {
     const lines = textractResult.Blocks.filter((b) => b.BlockType === 'LINE').map((b) => b.Text ?? '');
     const text = lines.join('\n');

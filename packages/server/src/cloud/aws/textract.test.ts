@@ -3,7 +3,9 @@
 import { ComprehendMedicalClient, DetectEntitiesV2Command } from '@aws-sdk/client-comprehendmedical';
 import { S3Client } from '@aws-sdk/client-s3';
 import {
+  GetDocumentAnalysisCommand,
   GetDocumentTextDetectionCommand,
+  StartDocumentAnalysisCommand,
   StartDocumentTextDetectionCommand,
   TextractClient,
 } from '@aws-sdk/client-textract';
@@ -73,6 +75,26 @@ describe('AWS Textract', () => {
     return binaryRes.body as Binary;
   }
 
+  async function createMedia(accessToken: string): Promise<string> {
+    const binaryRes = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.TEXT)
+      .send('Hello world');
+    expect(binaryRes).toHaveStatus(201);
+    const mediaRes = await request(app)
+      .post('/fhir/R4/Media')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Media',
+        status: 'completed',
+        content: { contentType: 'application/pdf', url: 'Binary/' + binaryRes.body.id },
+      });
+    expect(mediaRes).toHaveStatus(201);
+    return mediaRes.body.id;
+  }
+
   test('Happy path', async () => {
     const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
 
@@ -114,9 +136,65 @@ describe('AWS Textract', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3).toHaveStatus(200);
     expect(res3.body.Blocks).toBeDefined();
+    expect(mockTextractClient.commandCalls(StartDocumentTextDetectionCommand)).toHaveLength(1);
+    expect(mockTextractClient.commandCalls(StartDocumentAnalysisCommand)).toHaveLength(0);
 
     const output = await getOutputBinary(accessToken);
     expect(output.securityContext?.reference).toStrictEqual(patientRef);
+  });
+
+  test('Queries', async () => {
+    mockTextractClient.on(StartDocumentAnalysisCommand).resolves({ JobId: 'job-2' });
+    mockTextractClient
+      .on(GetDocumentAnalysisCommand)
+      .resolvesOnce({
+        JobStatus: 'SUCCEEDED',
+        NextToken: 'page-2',
+        Blocks: [{ BlockType: 'LINE', Text: 'DOB: 01/02/1980' }],
+      })
+      .resolvesOnce({
+        JobStatus: 'SUCCEEDED',
+        Blocks: [{ BlockType: 'QUERY_RESULT', Text: '01/02/1980', Confidence: 97.5 }],
+      });
+
+    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
+    const mediaId = await createMedia(accessToken);
+
+    const res = await request(app)
+      .post(`/fhir/R4/Media/${mediaId}/$aws-textract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        comprehend: true,
+        queries: [{ text: 'What is the patient date of birth?', alias: 'dob', pages: ['*'] }],
+      });
+    expect(res).toHaveStatus(200);
+
+    expect(mockTextractClient.commandCalls(StartDocumentTextDetectionCommand)).toHaveLength(0);
+    const startCalls = mockTextractClient.commandCalls(StartDocumentAnalysisCommand);
+    expect(startCalls).toHaveLength(1);
+    expect(startCalls[0].args[0].input.FeatureTypes).toStrictEqual(['QUERIES']);
+    expect(startCalls[0].args[0].input.QueriesConfig).toStrictEqual({
+      Queries: [{ Text: 'What is the patient date of birth?', Alias: 'dob', Pages: ['*'] }],
+    });
+
+    expect(res.body.Blocks.map((b: { Text?: string }) => b.Text)).toStrictEqual(['DOB: 01/02/1980', '01/02/1980']);
+    expect(res.body.NextToken).toBeUndefined();
+
+    const comprehendCalls = mockComprehendClient.commandCalls(DetectEntitiesV2Command);
+    expect(comprehendCalls).toHaveLength(1);
+    expect(comprehendCalls[0].args[0].input.Text).toBe('DOB: 01/02/1980');
+  });
+
+  test.each([[[]], [[{ alias: 'dob' }]]])('Invalid queries %j', async (queries) => {
+    const accessToken = await initTestAuth({ project: { features: ['aws-textract'] } });
+    const mediaId = await createMedia(accessToken);
+
+    const res = await request(app)
+      .post(`/fhir/R4/Media/${mediaId}/$aws-textract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ queries });
+    expect(res).toHaveStatus(400);
+    expect(mockTextractClient.commandCalls(StartDocumentAnalysisCommand)).toHaveLength(0);
   });
 
   test('Paginated results', async () => {

@@ -27,6 +27,8 @@ This approach ensures that the original document remains untouched while the pro
 
 To use this feature, your Medplum project must have the `aws-textract` feature flag enabled. This can be configured in your project settings. Additionally, your Medplum server must be configured to use **AWS S3 storage** for binaries, as Textract requires an S3 object location to process documents.
 
+If you self-host Medplum, the server's IAM role needs `textract:StartDocumentTextDetection` and `textract:GetDocumentTextDetection`. To use [Queries](#queries), it also needs `textract:StartDocumentAnalysis` and `textract:GetDocumentAnalysis`. Deployments created with the Medplum CDK stack include all four actions.
+
 ### Usage
 
 The integration is exposed via the `$aws-textract` operation on `Media` and `DocumentReference` resources.
@@ -55,6 +57,25 @@ The request body is optional and can be used to enable the AWS Comprehend Medica
     "comprehend": true
   }
   ```
+
+#### Queries
+
+Instead of parsing values out of the detected text, you can ask Textract natural-language questions with [Queries](https://docs.aws.amazon.com/textract/latest/dg/API_Query.html). Queries are opt-in: add a `queries` array to the request body.
+
+```json
+{
+  "queries": [
+    { "text": "What is the patient's full name?", "alias": "name" },
+    { "text": "What is the patient's date of birth?", "alias": "dob", "pages": ["*"] }
+  ]
+}
+```
+
+Each query needs a `text` question and can have an `alias` and the `pages` to apply it to, such as `["2-4"]` or `["*"]` for all pages. If `pages` is omitted, Textract only applies the query to page 1. A request can include up to 30 queries, and `queries` can be combined with `comprehend: true`.
+
+With `queries`, Medplum runs Textract document analysis instead of plain text detection. The response still includes the `LINE` and `WORD` blocks, plus a `QUERY` block for each question and a `QUERY_RESULT` block for each answer, with the answer's `Text` and `Confidence` (0 to 100). Each `QUERY` block links to its answers through a `Relationships` entry of type `ANSWER`. See [Textract query response objects](https://docs.aws.amazon.com/textract/latest/dg/queryresponse.html) for the full format.
+
+AWS charges a different per-page price for Queries than for plain text detection. See [Amazon Textract pricing](https://aws.amazon.com/textract/pricing/).
 
 #### Response
 
