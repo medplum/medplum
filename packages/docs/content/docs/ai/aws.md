@@ -116,12 +116,9 @@ import { DocumentReference } from '@medplum/fhirtypes';
 export async function processDocumentReference(medplum: MedplumClient, docRefId: string): Promise<string> {
   // Post the DocumentReference to the `$aws-textract` operation.
   // The second argument is the request body, here we enable Comprehend.
-  const textractResponse = await medplum.post(
-    medplum.fhirUrl('DocumentReference', docRefId, '$aws-textract'), 
-    {
-      comprehend: true,
-    }
-  );
+  const textractResponse = await medplum.post(medplum.fhirUrl('DocumentReference', docRefId, '$aws-textract'), {
+    comprehend: true,
+  });
 
   // The response contains the raw AWS Textract output.
   // You can now process this output as needed.
@@ -142,3 +139,7 @@ These examples demonstrate how to call the `$aws-textract` operation on both `Me
 - **Binary**: The actual file data storage (referenced by both Media and DocumentReference)
 
 Both resource types can reference the same `Binary` resource, so you can use either approach depending on your use case. If you're working with documents that need OCR processing, you can now use either `Media` or `DocumentReference` resources directly.
+
+### Matching Documents to Patients
+
+To file a document such as an inbound fax to the right patient, extract the patient's demographics and look the patient up with [Patient $match](/docs/api/fhir/operations/patient-match). [Matching Patients from Extracted Data](/docs/fhir-datastore/patient-deduplication/matching-extracted-data) explains how to combine extraction confidence with match results so that documents are filed automatically only when it's safe.

@@ -12,7 +12,7 @@ We've organized the guide as follows:
 
 - First, we review the [high-level architecture of a patient deduplication pipeline](/docs/fhir-datastore/patient-deduplication/architecture-overview)
 - Then we talk about [ingesting records with either a batch or incremental pipeline](/docs/fhir-datastore/patient-deduplication/ingestion)
-- Next, we discuss how to [match duplicate records](/docs/fhir-datastore/patient-deduplication/matching)
+- Next, we discuss how to [match duplicate records](/docs/fhir-datastore/patient-deduplication/matching), and how to [match documents using extracted demographics](/docs/fhir-datastore/patient-deduplication/matching-extracted-data)
 - Finally, we go into some detail on the specific rules that you can use to perform deduplication by [merging records](/docs/fhir-datastore/patient-deduplication/merging)
 
 While it requires some planning up front, reconciling patient data from multiple sources can create a powerful data asset to power your clinical workflows. This guide may not be exhaustive, but it serves as a starting point for building a production ready deduplication workflow.

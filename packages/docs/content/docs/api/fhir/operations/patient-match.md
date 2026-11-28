@@ -20,6 +20,7 @@ The CMS Patient Matching framework is a draft proposal and is **subject to chang
 - **Patient Reconciliation**: Match incoming demographics from an external system against records in your Medplum project.
 - **Identity Resolution / Discovery**: Find candidate patients when only partial demographics are known (human-reviewed search).
 - **Record Disclosure**: Determine whether incoming demographics unambiguously identify exactly one patient before returning their record (machine-to-machine exchange).
+- **Document Filing**: File faxes, scans, and referrals to the right patient using demographics extracted by OCR or AI. See [Matching Patients from Extracted Data](/docs/fhir-datastore/patient-deduplication/matching-extracted-data).
 
 ## Invocation
 
@@ -234,5 +235,6 @@ Here First Name + Last Name + DOB + Phone match after U.S. phone normalization, 
 ## Related Documentation
 
 - [HL7 FHIR Patient $match operation](https://hl7.org/fhir/R4/patient-operation-match.html)
+- [Matching Patients from Extracted Data](/docs/fhir-datastore/patient-deduplication/matching-extracted-data)
 - [Patient $everything](./patient-everything)
 - [Patient $summary](./patient-summary)
