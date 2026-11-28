@@ -236,7 +236,7 @@ This seed can partially succeed on hosted Medplum. Inspect every response entry 
               }
             ]
           }
-        ]x
+        ]
       },
       "request": { "method": "POST", "url": "Schedule" }
     }
