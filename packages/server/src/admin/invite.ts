@@ -51,13 +51,9 @@ export const inviteValidator = makeValidationMiddleware([
   stringField('resourceType', 'Resource type is required').isIn(['Patient', 'Practitioner', 'RelatedPerson']),
   stringField('firstName', 'First name is required').notEmpty(),
   stringField('lastName', 'Last name is required').notEmpty(),
-  oneOf(
-    [
-      emailField(),
-      stringField('externalId', 'External ID cannot be empty').notEmpty(),
-    ],
-    { message: 'Either email or externalId is required' }
-  ),
+  oneOf([emailField(), stringField('externalId', 'External ID cannot be empty').notEmpty()], {
+    message: 'Either email or externalId is required',
+  }),
   stringField('patient.reference', 'Patient must be a reference to a Patient resource')
     .optional()
     .matches(/^Patient\/[^/]+$/)

@@ -140,21 +140,27 @@ describe('Login', () => {
   });
 
   test('Email array', async () => {
-    const res = await request(app).post('/auth/login').type('json').send({
-      email: [email],
-      password,
-      scope: 'openid',
-    });
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        email: [email],
+        password,
+        scope: 'openid',
+      });
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Valid email address is required');
   });
 
   test('Password array', async () => {
-    const res = await request(app).post('/auth/login').type('json').send({
-      email,
-      password: [password],
-      scope: 'openid',
-    });
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        email,
+        password: [password],
+        scope: 'openid',
+      });
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Invalid password');
   });

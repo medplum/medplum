@@ -337,28 +337,21 @@ superAdminRouter.post(
 
 // POST to /admin/super/setpassword
 // to force set a User password.
-superAdminRouter.post(
-  '/setpassword',
-  [
-    emailField(),
-    passwordField(),
-  ],
-  async (req: Request, res: Response) => {
-    const { repo } = requireSuperAdmin();
-    if (sendValidationErrors(req, res)) {
-      return;
-    }
-
-    const user = await getUserByEmail(req.body.email, req.body.projectId);
-    if (!user) {
-      sendOutcome(res, badRequest('User not found'));
-      return;
-    }
-
-    await setPassword(repo, user, req.body.password as string);
-    sendOutcome(res, allOk);
+superAdminRouter.post('/setpassword', [emailField(), passwordField()], async (req: Request, res: Response) => {
+  const { repo } = requireSuperAdmin();
+  if (sendValidationErrors(req, res)) {
+    return;
   }
-);
+
+  const user = await getUserByEmail(req.body.email, req.body.projectId);
+  if (!user) {
+    sendOutcome(res, badRequest('User not found'));
+    return;
+  }
+
+  await setPassword(repo, user, req.body.password as string);
+  sendOutcome(res, allOk);
+});
 
 // POST to /admin/super/purge
 // to clean up old system generated resources.

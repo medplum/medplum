@@ -11,9 +11,7 @@ import { revokeLogin } from '../oauth/utils';
 import { makeValidationMiddleware, stringField } from '../util/validator';
 import { canManageUserAccount, getCallerUserReference } from './utils';
 
-export const revokeValidator = makeValidationMiddleware([
-  stringField('loginId', 'Login ID is required.').isUUID(),
-]);
+export const revokeValidator = makeValidationMiddleware([stringField('loginId', 'Login ID is required.').isUUID()]);
 
 export async function revokeHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();

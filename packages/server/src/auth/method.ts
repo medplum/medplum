@@ -15,9 +15,7 @@ import { emailField, makeValidationMiddleware } from '../util/validator';
  * For example, an unauthenticated user could determine if "foo.com" has a domain configuration.
  */
 
-export const methodValidator = makeValidationMiddleware([
-  emailField(),
-]);
+export const methodValidator = makeValidationMiddleware([emailField()]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
   const externalAuth = await isExternalAuth(req.body.email);

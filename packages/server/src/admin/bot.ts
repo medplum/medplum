@@ -7,9 +7,7 @@ import { getAuthenticatedContext } from '../context';
 import { createBot } from '../fhir/operations/botinit';
 import { makeValidationMiddleware, stringField } from '../util/validator';
 
-export const createBotValidator = makeValidationMiddleware([
-  stringField('name', 'Bot name is required').notEmpty(),
-]);
+export const createBotValidator = makeValidationMiddleware([stringField('name', 'Bot name is required').notEmpty()]);
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();

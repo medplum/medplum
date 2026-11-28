@@ -26,34 +26,27 @@ projectAdminRouter.use(verifyProjectAdmin);
 
 // POST to /admin/projects/setpassword
 // to force set a User password associated to the project by the project admin.
-projectAdminRouter.post(
-  '/setpassword',
-  [
-    emailField(),
-    passwordField(),
-  ],
-  async (req: Request, res: Response) => {
-    if (sendValidationErrors(req, res)) {
-      return;
-    }
-
-    const ctx = getAuthenticatedContext();
-    const projectId = ctx.project.id;
-    if (!projectId) {
-      sendOutcome(res, badRequest('Project not found'));
-      return;
-    }
-
-    const user = await getUserByEmailInProject(req.body.email, projectId);
-    if (!user) {
-      sendOutcome(res, badRequest('User not found'));
-      return;
-    }
-
-    await setPassword(ctx.systemRepo, user, req.body.password as string);
-    sendOutcome(res, allOk);
+projectAdminRouter.post('/setpassword', [emailField(), passwordField()], async (req: Request, res: Response) => {
+  if (sendValidationErrors(req, res)) {
+    return;
   }
-);
+
+  const ctx = getAuthenticatedContext();
+  const projectId = ctx.project.id;
+  if (!projectId) {
+    sendOutcome(res, badRequest('Project not found'));
+    return;
+  }
+
+  const user = await getUserByEmailInProject(req.body.email, projectId);
+  if (!user) {
+    sendOutcome(res, badRequest('User not found'));
+    return;
+  }
+
+  await setPassword(ctx.systemRepo, user, req.body.password as string);
+  sendOutcome(res, allOk);
+});
 
 projectAdminRouter.post('/:projectId/bot', createBotValidator, createBotHandler);
 projectAdminRouter.post('/:projectId/client', createClientValidator, createClientHandler);
