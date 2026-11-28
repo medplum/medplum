@@ -5,22 +5,16 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, passwordField, stringField } from '../util/validator';
 import { setPassword } from './setpassword';
 import { readUserForAccountManagement } from './utils';
 
 export const changePasswordValidator = makeValidationMiddleware([
-  body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
-  body('newPassword')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-    .isByteLength({ max: MAX_PASSWORD_LENGTH })
-    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
+  stringField('oldPassword', 'Missing oldPassword').notEmpty(),
+  passwordField('newPassword'),
 ]);
 
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {

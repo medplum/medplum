@@ -3,13 +3,12 @@
 import { Operator, badRequest, getReferenceString } from '@medplum/core';
 import type { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 import { sendVerificationEmail } from './newuser';
 import { sendLoginResult } from './utils';
 import { sendWelcomeEmail } from './welcomeemail';
@@ -20,8 +19,8 @@ export interface NewProjectRequest {
 }
 
 export const newProjectValidator = makeValidationMiddleware([
-  body('login').isUUID().withMessage('Login ID is required.'),
-  body('projectName').isLength({ min: 4, max: 72 }).withMessage('Project name must be between 4 and 72 characters'),
+  stringField('login', 'Login ID is required.').isUUID(),
+  stringField('projectName', 'Project name must be between 4 and 72 characters').isLength({ min: 4, max: 72 }),
 ]);
 
 /**

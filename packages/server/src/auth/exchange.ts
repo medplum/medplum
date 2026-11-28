@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OAuthTokenType } from '@medplum/core';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { exchangeExternalAuthToken } from '../oauth/token';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 
 /*
  * Exchange an access token from an external auth provider for a Medplum access token.
@@ -14,8 +13,8 @@ import { makeValidationMiddleware } from '../util/validator';
  */
 
 export const exchangeValidator = makeValidationMiddleware([
-  body('externalAccessToken').notEmpty().withMessage('Missing externalAccessToken'),
-  body('clientId').notEmpty().withMessage('Missing clientId'),
+  stringField('externalAccessToken', 'Missing externalAccessToken').notEmpty(),
+  stringField('clientId', 'Missing clientId').notEmpty(),
 ]);
 
 export const exchangeHandler = async (req: Request, res: Response): Promise<void> => {

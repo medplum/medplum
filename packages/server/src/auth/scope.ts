@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginScope } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 import { sendLoginResult } from './utils';
 
 /*
@@ -14,8 +13,8 @@ import { sendLoginResult } from './utils';
  */
 
 export const scopeValidator = makeValidationMiddleware([
-  body('login').exists().withMessage('Missing login'),
-  body('scope').exists().withMessage('Missing scope'),
+  stringField('login', 'Missing login'),
+  stringField('scope', 'Missing scope'),
 ]);
 
 export async function scopeHandler(req: Request, res: Response): Promise<void> {

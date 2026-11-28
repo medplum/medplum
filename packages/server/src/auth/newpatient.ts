@@ -4,17 +4,16 @@ import type { WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
 import type { AccessPolicy, Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
 import { readMembershipReference } from '../fhir/projectmembership';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 import { createProfile, createProjectMembership, getOpenRegistrationAccessPolicy, sendLoginResult } from './utils';
 
 export const newPatientValidator = makeValidationMiddleware([
-  body('login').notEmpty().withMessage('Missing login'),
-  body('projectId').notEmpty().withMessage('Project ID is required'),
+  stringField('login', 'Missing login').notEmpty(),
+  stringField('projectId', 'Project ID is required').notEmpty(),
 ]);
 
 /**

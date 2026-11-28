@@ -3,13 +3,12 @@
 import { forbidden, OperationOutcomeError, singularize } from '@medplum/core';
 import type { Project } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
 import { createBot } from '../fhir/operations/botinit';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 
 export const createBotValidator = makeValidationMiddleware([
-  body('name').notEmpty().withMessage('Bot name is required'),
+  stringField('name', 'Bot name is required').notEmpty(),
 ]);
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {

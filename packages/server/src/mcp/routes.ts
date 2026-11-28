@@ -74,7 +74,7 @@ mcpRouter.get('/sse', async (req, res) => {
 // This endpoint allows clients to send messages to the server using Server-Sent Events
 mcpRouter.post(
   '/sse',
-  query('sessionId').isUUID().withMessage('Invalid sessionId'),
+  query('sessionId', 'Invalid sessionId').isString().bail().isUUID(),
   body('jsonrpc').isString().withMessage('Invalid JSON-RPC body'),
   async (req, res) => {
     const errors = validationResult(req);

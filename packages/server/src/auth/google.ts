@@ -14,7 +14,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 import { isExternalAuth } from './method';
 import { sendVerificationEmail } from './newuser';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -36,8 +36,8 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
  * These values are obtained from the Google Sign-in button.
  */
 export const googleValidator = makeValidationMiddleware([
-  body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
-  body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
+  stringField('googleClientId', 'Missing googleClientId').notEmpty(),
+  stringField('googleCredential', 'Missing googleCredential').notEmpty(),
   body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
 ]);
 

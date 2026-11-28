@@ -4,23 +4,18 @@ import type { Filter, WithId } from '@medplum/core';
 import { allOk, badRequest, concatUrls, createReference, escapeSearchValue, Operator, resolveId } from '@medplum/core';
 import type { Project, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { makeValidationMiddleware } from '../util/validator';
+import { emailField, makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getSecurityRequestExpiration, supersedePriorSecurityRequests } from './securityrequest';
 
 export const resetPasswordValidator = makeValidationMiddleware([
-  body('email')
-    .isEmail()
-    .withMessage('Valid email address between 3 and 72 characters is required')
-    .isLength({ min: 3, max: 72 })
-    .withMessage('Valid email address between 3 and 72 characters is required'),
+  emailField('Valid email address between 3 and 72 characters is required').isLength({ min: 3, max: 72 }),
 ]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {

@@ -4,34 +4,24 @@ import type { NewUserRequest, WithId } from '@medplum/core';
 import { badRequest, concatUrls, normalizeOperationOutcome } from '@medplum/core';
 import type { ClientApplication, Login, Project, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { emailField, makeValidationMiddleware, passwordField, stringField } from '../util/validator';
 import { hasExternalAuth } from './method';
 import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
 
 export const newUserValidator = makeValidationMiddleware([
-  body('firstName').isLength({ min: 1, max: 128 }).withMessage('First name must be between 1 and 128 characters'),
-  body('lastName').isLength({ min: 1, max: 128 }).withMessage('Last name must be between 1 and 128 characters'),
-  body('email')
-    .isEmail()
-    .withMessage('Valid email address between 3 and 72 characters is required')
-    .isLength({ min: 3, max: 72 })
-    .withMessage('Valid email address between 3 and 72 characters is required'),
-  body('password')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-    .isByteLength({ max: MAX_PASSWORD_LENGTH })
-    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
+  stringField('firstName', 'First name must be between 1 and 128 characters').isLength({ min: 1, max: 128 }),
+  stringField('lastName', 'Last name must be between 1 and 128 characters').isLength({ min: 1, max: 128 }),
+  emailField('Valid email address between 3 and 72 characters is required').isLength({ min: 3, max: 72 }),
+  passwordField(),
 ]);
 
 /**
