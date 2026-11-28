@@ -27,7 +27,8 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { oneOf } from 'express-validator';
+import { body, oneOf } from 'express-validator';
+import { pwnedPassword } from 'hibp';
 import type Mail from 'nodemailer/lib/mailer';
 import { hasExternalAuth } from '../auth/method';
 import { resetPassword } from '../auth/resetpassword';
@@ -218,7 +219,16 @@ export function logUnverifiedEmailMatch(
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
   const { firstName, lastName, externalId, scope, mfaRequired } = request;
   const email = request.email?.toLowerCase();
-  const password = request.password ?? generateSecret(16);
+  let password: string;
+  if (request.password) {
+    const numPwns = await pwnedPassword(request.password);
+    if (numPwns > 0) {
+      throw new OperationOutcomeError(badRequest('Password found in breach database', 'password'));
+    }
+    password = request.password;
+  } else {
+    password = generateSecret(16);
+  }
   const passwordHash = await bcryptHashPassword(password);
 
   // Default scoping: Patients are project-scoped, Practitioners/RelatedPersons are server-scoped.
