@@ -3,6 +3,7 @@
 import type { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 import { act, fireEvent, render, screen, selectAutocompleteOption, within } from '../test-utils/render';
 import type { CodeableConceptInputProps } from './CodeableConceptInput';
@@ -121,5 +122,25 @@ describe('CodeableConceptInput', () => {
     });
 
     expect(await screen.findByText('+ Create XYZ')).toBeInTheDocument();
+  });
+
+  test('Follows controlled value', async () => {
+    const ui = (value: CodeableConcept | null): JSX.Element => (
+      <MedplumProvider medplum={medplum}>
+        <CodeableConceptInput binding={binding} name="test" path="Resource.test" outcome={undefined} value={value} />
+      </MedplumProvider>
+    );
+    let rerender: (ui: JSX.Element) => void = () => undefined;
+    await act(async () => {
+      rerender = render(ui({ coding: [{ code: 'abc' }] })).rerender;
+    });
+    expect(screen.getByText('abc')).toBeInTheDocument();
+
+    await act(async () => rerender(ui({ coding: [{ code: 'xyz' }] })));
+    expect(screen.queryByText('abc')).not.toBeInTheDocument();
+    expect(screen.getByText('xyz')).toBeInTheDocument();
+
+    await act(async () => rerender(ui(null)));
+    expect(screen.queryByText('xyz')).not.toBeInTheDocument();
   });
 });
