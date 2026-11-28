@@ -38,7 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { emailField, passwordField, sendValidationErrors, stringField } from '../util/validator';
+import { emailField, optionalStringFields, passwordField, sendValidationErrors, stringField } from '../util/validator';
 import { getAsyncJobTracking } from '../workers/base';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
@@ -337,21 +337,25 @@ superAdminRouter.post(
 
 // POST to /admin/super/setpassword
 // to force set a User password.
-superAdminRouter.post('/setpassword', [emailField(), passwordField()], async (req: Request, res: Response) => {
-  const { repo } = requireSuperAdmin();
-  if (sendValidationErrors(req, res)) {
-    return;
-  }
+superAdminRouter.post(
+  '/setpassword',
+  [emailField(), passwordField(), ...optionalStringFields(['projectId'])],
+  async (req: Request, res: Response) => {
+    const { repo } = requireSuperAdmin();
+    if (sendValidationErrors(req, res)) {
+      return;
+    }
 
-  const user = await getUserByEmail(req.body.email, req.body.projectId);
-  if (!user) {
-    sendOutcome(res, badRequest('User not found'));
-    return;
-  }
+    const user = await getUserByEmail(req.body.email, req.body.projectId);
+    if (!user) {
+      sendOutcome(res, badRequest('User not found'));
+      return;
+    }
 
-  await setPassword(repo, user, req.body.password as string);
-  sendOutcome(res, allOk);
-});
+    await setPassword(repo, user, req.body.password as string);
+    sendOutcome(res, allOk);
+  }
+);
 
 // POST to /admin/super/purge
 // to clean up old system generated resources.

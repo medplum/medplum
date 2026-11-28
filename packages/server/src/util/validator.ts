@@ -21,6 +21,15 @@ export function stringField(field: string, message: string): ValidationChain {
 }
 
 /**
+ * Validates that each request body field, when present and truthy, is a string.
+ * @param fields - The request body field names.
+ * @returns The validation chains.
+ */
+export function optionalStringFields(fields: string[]): ValidationChain[] {
+  return fields.map((field) => stringField(field, `Invalid ${field}`).optional({ values: 'falsy' }));
+}
+
+/**
  * Validates that a request body field is a string email address.
  * @param message - The error message if the field is not a valid email address.
  * @returns The validation chain.
@@ -35,7 +44,7 @@ export function emailField(message = 'Valid email address is required'): Validat
  * @returns The validation chain.
  */
 export function passwordField(field = 'password'): ValidationChain {
-  return stringField(field, 'Invalid password')
+  return stringField(field, 'Password must be a string')
     .isLength({ min: MIN_PASSWORD_LENGTH })
     .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
     .isByteLength({ max: MAX_PASSWORD_LENGTH })

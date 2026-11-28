@@ -162,7 +162,7 @@ describe('Login', () => {
         scope: 'openid',
       });
     expect(res).toHaveStatus(400);
-    expect(res.body.issue[0].details.text).toBe('Invalid password');
+    expect(res.body.issue[0].details.text).toBe('Password must be a string');
   });
 
   test('Wrong password', async () => {

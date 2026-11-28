@@ -24,7 +24,7 @@ describe('Validator helpers', () => {
 
   test('passwordField', async () => {
     expect(await errors(passwordField(), { password: 'correct horse' })).toEqual([]);
-    expect(await errors(passwordField(), { password: ['correct horse'] })).toEqual(['Invalid password']);
+    expect(await errors(passwordField(), { password: ['correct horse'] })).toEqual(['Password must be a string']);
     expect(await errors(passwordField(), { password: 'short' })).toEqual(['Password must be at least 8 characters']);
     expect(await errors(passwordField().optional(), {})).toEqual([]);
   });

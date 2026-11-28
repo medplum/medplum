@@ -120,6 +120,11 @@ describe('Auth middleware', () => {
     expect(res.header['www-authenticate']).toBe(`Bearer realm="${getConfig().baseUrl}"`);
   });
 
+  test('Bearer token with invalid JSON payload', async () => {
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer eyJhbGciOiJIUzI1NiJ9.dWk.sig');
+    expect(res).toHaveStatus(401);
+  });
+
   test('Basic auth empty string', async () => {
     const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Basic ');
     expect(res).toHaveStatus(401);

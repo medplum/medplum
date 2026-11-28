@@ -12,7 +12,13 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { emailField, makeValidationMiddleware, passwordField, stringField } from '../util/validator';
+import {
+  emailField,
+  makeValidationMiddleware,
+  optionalStringFields,
+  passwordField,
+  stringField,
+} from '../util/validator';
 import { hasExternalAuth } from './method';
 import { bcryptHashPassword, projectRegistrationAllowed } from './utils';
 import { verifyEmail } from './verifyemail';
@@ -22,6 +28,7 @@ export const newUserValidator = makeValidationMiddleware([
   stringField('lastName', 'Last name must be between 1 and 128 characters').isLength({ min: 1, max: 128 }),
   emailField('Valid email address between 3 and 72 characters is required').isLength({ min: 3, max: 72 }),
   passwordField(),
+  ...optionalStringFields(['projectId', 'clientId', 'scope', 'nonce', 'codeChallenge', 'codeChallengeMethod']),
 ]);
 
 /**

@@ -10,12 +10,13 @@ import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { emailField, makeValidationMiddleware } from '../util/validator';
+import { emailField, makeValidationMiddleware, optionalStringFields } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getSecurityRequestExpiration, supersedePriorSecurityRequests } from './securityrequest';
 
 export const resetPasswordValidator = makeValidationMiddleware([
   emailField('Valid email address between 3 and 72 characters is required').isLength({ min: 3, max: 72 }),
+  ...optionalStringFields(['projectId', 'redirectUri']),
 ]);
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
