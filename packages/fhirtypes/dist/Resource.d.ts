@@ -60,6 +60,7 @@ import type { DocumentReference } from './DocumentReference.d.ts';
 import type { DomainConfiguration } from './DomainConfiguration.d.ts';
 import type { EffectEvidenceSynthesis } from './EffectEvidenceSynthesis.d.ts';
 import type { Encounter } from './Encounter.d.ts';
+import type { EncryptedSecret } from './EncryptedSecret.d.ts';
 import type { Endpoint } from './Endpoint.d.ts';
 import type { EnrollmentRequest } from './EnrollmentRequest.d.ts';
 import type { EnrollmentResponse } from './EnrollmentResponse.d.ts';
@@ -232,6 +233,7 @@ export type Resource = AccessPolicy
   | DomainConfiguration
   | EffectEvidenceSynthesis
   | Encounter
+  | EncryptedSecret
   | Endpoint
   | EnrollmentRequest
   | EnrollmentResponse
