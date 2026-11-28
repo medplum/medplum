@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { createRemoteJWKSet, customFetch, exportJWK, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import dns from 'node:dns';
 import { once } from 'node:events';
-import type { Server } from 'node:http';
+import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
+import { Readable, Writable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import tls from 'node:tls';
+import { gzipSync } from 'node:zlib';
 import { vi } from 'vitest';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { generateSelfSignedCert } from '../test.setup';
@@ -260,6 +264,239 @@ describe('safeFetch', () => {
     await expect(safeFetch('https://metadata.example.com/')).rejects.toMatchObject({
       cause: { message: 'Outbound request to unsafe address metadata.example.com is blocked' },
     });
+  });
+});
+
+// Exercises safeFetch end to end through the real dispatcher, as production does, so that a dispatcher or
+// fetch implementation change (such as an undici major upgrade) cannot pass with only mocked fetch tests.
+describe('safeFetch contract', () => {
+  let cert: string;
+  let privateKey: string;
+
+  beforeAll(async () => {
+    await loadTestConfig();
+    ({ cert, privateKey } = generateSelfSignedCert('CN=example.com'));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Serves `handler` as https://example.com:{port}, which resolves to a public address but connects locally.
+  async function withPublicServer(
+    handler: (req: IncomingMessage, res: ServerResponse) => void,
+    fn: (baseUrl: string) => Promise<void>,
+    dnsRecords: Record<string, string> = {}
+  ): Promise<void> {
+    const records: Record<string, string> = { 'example.com': '93.184.216.34', ...dnsRecords };
+    vi.spyOn(dns, 'lookup').mockImplementation(((
+      hostname: string,
+      _options: unknown,
+      callback: (err: Error | null, addresses: dns.LookupAddress[]) => void
+    ) => {
+      callback(null, [{ address: records[hostname], family: 4 }]);
+    }) as any);
+    const tlsConnect = tls.connect;
+    vi.spyOn(tls, 'connect').mockImplementation(((options: tls.ConnectionOptions) =>
+      tlsConnect({ ...options, host: '127.0.0.1', ca: cert })) as typeof tls.connect);
+
+    await withServer(createHttpsServer({ cert, key: privateKey }, handler), (port) =>
+      fn(`https://example.com:${port}`)
+    );
+  }
+
+  test('sends method, headers, and string body', async () => {
+    await withPublicServer(
+      async (req, res) => {
+        let body = '';
+        for await (const chunk of req) {
+          body += chunk;
+        }
+        res.setHeader('content-type', 'application/json');
+        res.end(
+          JSON.stringify({
+            method: req.method,
+            auth: req.headers.authorization,
+            trace: req.headers['x-trace-id'],
+            body,
+          })
+        );
+      },
+      async (baseUrl) => {
+        const response = await safeFetch(`${baseUrl}/hook`, {
+          method: 'POST',
+          headers: new Headers({ Authorization: 'Bearer abc', 'x-trace-id': 't1' }),
+          body: '{"resourceType":"Patient"}',
+        });
+        expect(response.headers.get('content-type')).toBe('application/json');
+        expect(await response.json()).toEqual({
+          method: 'POST',
+          auth: 'Bearer abc',
+          trace: 't1',
+          body: '{"resourceType":"Patient"}',
+        });
+      }
+    );
+  });
+
+  test('returns error statuses without throwing', async () => {
+    await withPublicServer(
+      (_req, res) => {
+        res.statusCode = 503;
+        res.end('unavailable');
+      },
+      async (baseUrl) => {
+        const response = await safeFetch(baseUrl);
+        expect(response.status).toBe(503);
+        expect(await response.text()).toBe('unavailable');
+      }
+    );
+  });
+
+  test('decodes gzip and chunked responses', async () => {
+    await withPublicServer(
+      (req, res) => {
+        if (req.url === '/gzip') {
+          res.setHeader('content-encoding', 'gzip');
+          res.end(gzipSync('compressed'));
+        } else {
+          res.write('chunk1,');
+          res.end('chunk2');
+        }
+      },
+      async (baseUrl) => {
+        expect(await (await safeFetch(`${baseUrl}/gzip`)).text()).toBe('compressed');
+        expect(await (await safeFetch(`${baseUrl}/chunked`)).text()).toBe('chunk1,chunk2');
+      }
+    );
+  });
+
+  test('follows redirects to public hosts', async () => {
+    await withPublicServer(
+      (req, res) => {
+        if (req.url === '/start') {
+          res.writeHead(302, { location: '/final' });
+          res.end();
+        } else {
+          res.end('final');
+        }
+      },
+      async (baseUrl) => {
+        const response = await safeFetch(`${baseUrl}/start`, { redirect: 'follow' });
+        expect(response.url).toBe(`${baseUrl}/final`);
+        expect(await response.text()).toBe('final');
+      }
+    );
+  });
+
+  test('blocks redirects to private addresses', async () => {
+    await withPublicServer(
+      (_req, res) => {
+        res.writeHead(302, { location: 'https://internal.example.com/' });
+        res.end();
+      },
+      async (baseUrl) => {
+        await expect(safeFetch(baseUrl)).rejects.toMatchObject({
+          cause: { message: 'Outbound request to unsafe address internal.example.com is blocked' },
+        });
+      },
+      { 'internal.example.com': '10.0.0.1' }
+    );
+  });
+
+  test('honors manual and error redirect modes', async () => {
+    await withPublicServer(
+      (_req, res) => {
+        res.writeHead(302, { location: '/final' });
+        res.end();
+      },
+      async (baseUrl) => {
+        const response = await safeFetch(baseUrl, { redirect: 'manual' });
+        expect(response.status).toBe(302);
+        expect(response.headers.get('location')).toBe('/final');
+        await expect(safeFetch(baseUrl, { redirect: 'error' })).rejects.toThrow('fetch failed');
+      }
+    );
+  });
+
+  test('aborts a stalled body when the signal times out', async () => {
+    await withPublicServer(
+      (_req, res) => {
+        res.writeHead(200, { 'content-length': '100' });
+        res.write('partial');
+      },
+      async (baseUrl) => {
+        const response = await safeFetch(baseUrl, { signal: AbortSignal.timeout(200) });
+        await expect(response.text()).rejects.toMatchObject({ name: 'TimeoutError' });
+      }
+    );
+  });
+
+  test('streams a large body to a Node.js stream', async () => {
+    const size = 5 * 1024 * 1024;
+    await withPublicServer(
+      (_req, res) => res.end(Buffer.alloc(size, 'a')),
+      async (baseUrl) => {
+        const response = await safeFetch(baseUrl);
+        let received = 0;
+        const sink = new Writable({
+          write(chunk: Buffer, _encoding, callback) {
+            received += chunk.length;
+            callback();
+          },
+        });
+        await pipeline(Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]), sink);
+        expect(received).toBe(size);
+      }
+    );
+  });
+
+  test('completes bodies when the server closes the connection during backpressure', async () => {
+    // undici 7 threw an uncaught `assert(!this.paused)` here, which crashed the background workers
+    await withPublicServer(
+      (req, res) => {
+        const size = Number(req.url?.slice(1));
+        res.writeHead(200, { 'content-length': size, connection: 'close' });
+        res.end(Buffer.alloc(size, 'a'));
+      },
+      async (baseUrl) => {
+        const sizes = Array.from({ length: 200 }, (_, i) => 16384 + i * 10007);
+        const received = await Promise.all(
+          sizes.map(async (size) => {
+            const response = await safeFetch(`${baseUrl}/${size}`);
+            let count = 0;
+            const slowSink = new Writable({
+              highWaterMark: 1,
+              write(chunk: Buffer, _encoding, callback) {
+                count += chunk.length;
+                setTimeout(callback, 1);
+              },
+            });
+            await pipeline(Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]), slowSink);
+            return count;
+          })
+        );
+        expect(received).toEqual(sizes);
+      }
+    );
+  });
+
+  test('works as the jose remote JWKS fetch', async () => {
+    const { publicKey, privateKey: signingKey } = await generateKeyPair('ES256');
+    const jwk = { ...(await exportJWK(publicKey)), kid: 'k1', alg: 'ES256' };
+    const token = await new SignJWT({ sub: 'client' }).setProtectedHeader({ alg: 'ES256', kid: 'k1' }).sign(signingKey);
+
+    await withPublicServer(
+      (_req, res) => {
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ keys: [jwk] }));
+      },
+      async (baseUrl) => {
+        const jwks = createRemoteJWKSet(new URL(`${baseUrl}/jwks`), { [customFetch]: safeFetch });
+        const { payload } = await jwtVerify(token, jwks);
+        expect(payload.sub).toBe('client');
+      }
+    );
   });
 });
 
