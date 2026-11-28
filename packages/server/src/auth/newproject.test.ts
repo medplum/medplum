@@ -526,9 +526,7 @@ describe('New project', () => {
   });
 
   test('New project registration disabled', async () => {
-    getConfig().newProjectRegistrationEnabled = false;
-
-    // New users can still register
+    // Create the user while new project registration is still enabled
     const res1 = await request(app)
       .post('/auth/newuser')
       .type('json')
@@ -542,6 +540,8 @@ describe('New project', () => {
         codeChallengeMethod: 'plain',
       });
     expect(res1).toHaveStatus(200);
+
+    getConfig().newProjectRegistrationEnabled = false;
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,

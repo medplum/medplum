@@ -46,6 +46,7 @@ describe('Google Auth', () => {
 
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
+    getConfig().newProjectRegistrationEnabled = undefined;
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
   });
 
@@ -143,6 +144,22 @@ describe('Google Auth', () => {
 
     const user = await getUserByEmail(email, undefined);
     expect(user).toBeUndefined();
+  });
+
+  test('New project registration disabled', async () => {
+    getConfig().newProjectRegistrationEnabled = false;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+      });
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('New project registration is disabled');
+    expect(await getUserByEmail(email, undefined)).toBeUndefined();
   });
 
   test('Create new user account', async () => {

@@ -12,6 +12,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -38,6 +39,7 @@ describe('New user', () => {
 
   beforeEach(() => {
     getConfig().registerEnabled = undefined;
+    getConfig().newProjectRegistrationEnabled = undefined;
     getConfig().requireVerifiedEmailForProjectCreation = undefined;
     getConfig().blockedEmailDomains = undefined;
   });
@@ -88,6 +90,26 @@ describe('New user', () => {
 
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('Registration is disabled');
+  });
+
+  test('New project registration disabled', async () => {
+    getConfig().newProjectRegistrationEnabled = false;
+    const email = `alex${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        projectId: 'new',
+      });
+
+    expect(res).toHaveStatus(400);
+    expect(res.body.issue[0].details.text).toBe('New project registration is disabled');
+    expect(await getUserByEmailWithoutProject(email)).toBeUndefined();
   });
 
   test('Missing recaptcha', async () => {
