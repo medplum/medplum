@@ -32,6 +32,7 @@ import type {
   Slot,
 } from '@medplum/fhirtypes';
 import assert from 'node:assert';
+import type { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { addMinutes, areIntervalsOverlapping, clamp, earliest, latest } from '../../../util/date';
 import type { LayeredDict } from '../../../util/layereddict';
@@ -48,7 +49,7 @@ import { uniqueOn } from './terminology';
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function hasMatchingServiceType(slot: Slot, concepts: readonly CodeableConcept[]): boolean {
+export function hasMatchingServiceType(slot: Slot, concepts: readonly CodeableConcept[]): boolean {
   const serviceType = slot.serviceType ?? [];
   // Slots without any service type are considered as "wildcard" slots that support
   // any service type codes
@@ -138,24 +139,39 @@ export function resolveAvailability(
   interval: Interval,
   timeZone: string
 ): Interval[] {
-  return eachDayOfInterval(interval, timeZone).flatMap((dayStart) => {
-    const dayOfWeek = dayNames[dayStart.dayOfWeek];
-    return schedulingParameters
-      .get('availability')
-      .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
-      .map((availability) => {
-        const [sH, sM, sS] = availability.availableStartTime.split(':').map(Number);
-        const [eH, eM, eS] = availability.availableEndTime.split(':').map(Number);
-        const start = dayStart.withPlainTime({ hour: sH, minute: sM, second: sS });
-        let end = dayStart.withPlainTime({ hour: eH, minute: eM, second: eS });
-        if (end.epochMilliseconds <= start.epochMilliseconds) {
-          end = end.add({ days: 1 });
-        }
-        const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
-        return intersectIntervals(availableInterval, interval);
-      })
-      .filter(isDefined);
-  });
+  return eachDayOfInterval(interval, timeZone).flatMap((dayStart) =>
+    availabilityOnDay(schedulingParameters, dayStart)
+      .map((availableInterval) => intersectIntervals(availableInterval, interval))
+      .filter(isDefined)
+  );
+}
+
+/**
+ * Returns the recurring hours that start on one local day, unclipped. An entry whose end is at or
+ * before its start ends on the following day.
+ *
+ * @param schedulingParameters - The SchedulingParameters definition to evaluate
+ * @param dayStart - The first instant of the local day
+ * @returns One interval per availability entry that applies to the day
+ */
+export function availabilityOnDay(
+  schedulingParameters: LayeredDict<SchedulingParameters>,
+  dayStart: Temporal.ZonedDateTime
+): Interval[] {
+  const dayOfWeek = dayNames[dayStart.dayOfWeek];
+  return schedulingParameters
+    .get('availability')
+    .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
+    .map((availability) => {
+      const [sH, sM, sS] = availability.availableStartTime.split(':').map(Number);
+      const [eH, eM, eS] = availability.availableEndTime.split(':').map(Number);
+      const start = dayStart.withPlainTime({ hour: sH, minute: sM, second: sS });
+      let end = dayStart.withPlainTime({ hour: eH, minute: eM, second: eS });
+      if (end.epochMilliseconds <= start.epochMilliseconds) {
+        end = end.add({ days: 1 });
+      }
+      return { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
+    });
 }
 
 /**
@@ -268,7 +284,7 @@ function occupiesTime(status: Slot['status']): boolean {
   return !(status === 'free' || status === 'entered-in-error');
 }
 
-function slotToInterval(slot: Slot, path?: string): Interval {
+export function slotToInterval(slot: Slot, path?: string): Interval {
   const start = new Date(slot.start);
   const end = new Date(slot.end);
   // Proposed slots are not persisted yet and have no id; identify those by path instead.
