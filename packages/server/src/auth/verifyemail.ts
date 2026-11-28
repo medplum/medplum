@@ -4,13 +4,12 @@ import type { WithId } from '@medplum/core';
 import { allOk, badRequest, createReference, redirectOk, resolveId } from '@medplum/core';
 import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { timingSafeEqualStr } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 import {
   consumeSecurityRequest,
   getSecurityRequestExpiration,
@@ -19,8 +18,8 @@ import {
 } from './securityrequest';
 
 export const verifyEmailValidator = makeValidationMiddleware([
-  body('id').isUUID().withMessage('Invalid request ID'),
-  body('secret').notEmpty().withMessage('Missing secret'),
+  stringField('id', 'Invalid request ID').isUUID(),
+  stringField('secret', 'Missing secret').notEmpty(),
 ]);
 
 export async function verifyEmailHandler(req: Request, res: Response): Promise<void> {

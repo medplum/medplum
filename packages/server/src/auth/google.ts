@@ -4,7 +4,6 @@ import type { WithId } from '@medplum/core';
 import { badRequest, isString, isUUID, OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { Project, ResourceType, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { randomUUID } from 'node:crypto';
@@ -14,7 +13,7 @@ import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, optionalStringFields, stringField } from '../util/validator';
 import { isExternalAuth } from './method';
 import { sendVerificationEmail } from './newuser';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -36,9 +35,19 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
  * These values are obtained from the Google Sign-in button.
  */
 export const googleValidator = makeValidationMiddleware([
-  body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
-  body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
-  body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
+  stringField('googleClientId', 'Missing googleClientId').notEmpty(),
+  stringField('googleCredential', 'Missing googleCredential').notEmpty(),
+  ...optionalStringFields([
+    'projectId',
+    'redirectUri',
+    'clientId',
+    'scope',
+    'nonce',
+    'codeChallenge',
+    'codeChallengeMethod',
+    'launch',
+    'resourceType',
+  ]),
 ]);
 
 /**

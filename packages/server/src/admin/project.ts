@@ -4,19 +4,17 @@ import { allOk, badRequest, forbidden, getReferenceString, Operator } from '@med
 import type { ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { body } from 'express-validator';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { setPassword } from '../auth/setpassword';
 import type { MfaMethod } from '../auth/utils';
 import { getEnrolledMfaMethods } from '../auth/utils';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
-import { sendValidationErrors } from '../util/validator';
+import { emailField, passwordField, sendValidationErrors, stringField } from '../util/validator';
 import { createBotHandler, createBotValidator } from './bot';
 import { createClientHandler, createClientValidator } from './client';
 import { inviteHandler, inviteValidator } from './invite';
@@ -28,38 +26,27 @@ projectAdminRouter.use(verifyProjectAdmin);
 
 // POST to /admin/projects/setpassword
 // to force set a User password associated to the project by the project admin.
-projectAdminRouter.post(
-  '/setpassword',
-  [
-    body('email').isEmail().withMessage('Valid email address is required'),
-    body('password')
-      .isLength({ min: MIN_PASSWORD_LENGTH })
-      .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-      .isByteLength({ max: MAX_PASSWORD_LENGTH })
-      .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
-  ],
-  async (req: Request, res: Response) => {
-    if (sendValidationErrors(req, res)) {
-      return;
-    }
-
-    const ctx = getAuthenticatedContext();
-    const projectId = ctx.project.id;
-    if (!projectId) {
-      sendOutcome(res, badRequest('Project not found'));
-      return;
-    }
-
-    const user = await getUserByEmailInProject(req.body.email, projectId);
-    if (!user) {
-      sendOutcome(res, badRequest('User not found'));
-      return;
-    }
-
-    await setPassword(ctx.systemRepo, user, req.body.password as string);
-    sendOutcome(res, allOk);
+projectAdminRouter.post('/setpassword', [emailField(), passwordField()], async (req: Request, res: Response) => {
+  if (sendValidationErrors(req, res)) {
+    return;
   }
-);
+
+  const ctx = getAuthenticatedContext();
+  const projectId = ctx.project.id;
+  if (!projectId) {
+    sendOutcome(res, badRequest('Project not found'));
+    return;
+  }
+
+  const user = await getUserByEmailInProject(req.body.email, projectId);
+  if (!user) {
+    sendOutcome(res, badRequest('User not found'));
+    return;
+  }
+
+  await setPassword(ctx.systemRepo, user, req.body.password as string);
+  sendOutcome(res, allOk);
+});
 
 projectAdminRouter.post('/:projectId/bot', createBotValidator, createBotHandler);
 projectAdminRouter.post('/:projectId/client', createClientValidator, createClientHandler);
@@ -205,7 +192,7 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
  */
 projectAdminRouter.post(
   '/:projectId/members/:membershipId/mfa/reset',
-  [body('method').optional().isIn(['totp', 'email']).withMessage('Method must be "totp" or "email"')],
+  [stringField('method', 'Method must be "totp" or "email"').optional().isIn(['totp', 'email'])],
   async (req: Request, res: Response) => {
     if (sendValidationErrors(req, res)) {
       return;

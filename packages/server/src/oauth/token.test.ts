@@ -2128,6 +2128,19 @@ describe('OAuth2 Token', () => {
     });
   });
 
+  test('Client assertion with invalid JSON payload', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
+      client_assertion: 'eyJhbGciOiJIUzI1NiJ9.dWk.sig', // payload base64url-decodes to "ui"
+    });
+    expect(res).toHaveStatus(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion',
+    });
+  });
+
   test('Smart App Launch tokens', async () => {
     // Create a SmartAppLaunch
     const launch = await withTestContext(() =>

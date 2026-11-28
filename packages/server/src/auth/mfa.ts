@@ -13,7 +13,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
-import { sendValidationErrors } from '../util/validator';
+import { sendValidationErrors, stringField } from '../util/validator';
 import { assertMfaLoginActive, verifyTotpToken } from './mfalimit';
 import type { MfaMethod } from './utils';
 import {
@@ -104,7 +104,7 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
 
 mfaRouter.post(
   '/login-enroll',
-  [body('login').notEmpty().withMessage('Missing login')],
+  [stringField('login', 'Missing login').notEmpty()],
   async (req: Request, res: Response) => {
     if (sendValidationErrors(req, res)) {
       return;
@@ -228,7 +228,7 @@ mfaRouter.post('/enroll', authenticateRequest, async (req: Request, res: Respons
 
 mfaRouter.post(
   '/verify',
-  [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
+  [stringField('login', 'Missing login').notEmpty(), stringField('token', 'Missing token').notEmpty()],
   async (req: Request, res: Response) => {
     if (sendValidationErrors(req, res)) {
       return;
@@ -249,7 +249,7 @@ mfaRouter.post(
 
 mfaRouter.post(
   '/send-email',
-  [body('login').notEmpty().withMessage('Missing login')],
+  [stringField('login', 'Missing login').notEmpty()],
   async (req: Request, res: Response) => {
     if (sendValidationErrors(req, res)) {
       return;

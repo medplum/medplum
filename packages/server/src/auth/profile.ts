@@ -4,10 +4,9 @@ import type { WithId } from '@medplum/core';
 import { badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Login, ProjectMembership } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 import { sendLoginResult } from './utils';
 
 /*
@@ -16,8 +15,8 @@ import { sendLoginResult } from './utils';
  */
 
 export const profileValidator = makeValidationMiddleware([
-  body('login').exists().withMessage('Missing login'),
-  body('profile').exists().withMessage('Missing profile'),
+  stringField('login', 'Missing login'),
+  stringField('profile', 'Missing profile'),
 ]);
 
 export async function profileHandler(req: Request, res: Response): Promise<void> {

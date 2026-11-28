@@ -3,11 +3,10 @@
 import { OperationOutcomeError, Operator, badRequest, escapeSearchValue } from '@medplum/core';
 import type { DomainConfiguration } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { makeValidationMiddleware } from '../util/validator';
+import { emailField, makeValidationMiddleware } from '../util/validator';
 
 /*
  * The method handler is used to determine available login methods.
@@ -16,9 +15,7 @@ import { makeValidationMiddleware } from '../util/validator';
  * For example, an unauthenticated user could determine if "foo.com" has a domain configuration.
  */
 
-export const methodValidator = makeValidationMiddleware([
-  body('email').isEmail().withMessage('Valid email address is required'),
-]);
+export const methodValidator = makeValidationMiddleware([emailField()]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
   const externalAuth = await isExternalAuth(req.body.email);

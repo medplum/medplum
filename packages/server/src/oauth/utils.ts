@@ -1512,7 +1512,12 @@ async function tryExternalAuth(
     return undefined;
   }
 
-  const claims = parseJWTPayload(accessToken);
+  let claims: JWTPayload;
+  try {
+    claims = parseJWTPayload(accessToken);
+  } catch {
+    return undefined;
+  }
   if (!hasIssuer(claims)) {
     return undefined;
   }

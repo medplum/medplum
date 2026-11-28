@@ -20,7 +20,6 @@ import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { LAMBDA_NAME_REGEX_PATTERN } from '../cloud/aws/deploy';
 import { getConfig } from '../config/loader';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { requireSuperAdmin } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
@@ -39,7 +38,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { sendValidationErrors } from '../util/validator';
+import { emailField, optionalStringFields, passwordField, sendValidationErrors, stringField } from '../util/validator';
 import { getAsyncJobTracking } from '../workers/base';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import type { LambdaCleanerOptions } from '../workers/lambda-cleaner';
@@ -153,9 +152,11 @@ superAdminRouter.post(
 
   [
     shardIdValidator(),
-    body('reindexType')
-      .isIn(['outdated', 'all', 'specific'])
-      .withMessage('reindexType must be "outdated", "all", or "specific"'),
+    stringField('reindexType', 'reindexType must be "outdated", "all", or "specific"').isIn([
+      'outdated',
+      'all',
+      'specific',
+    ]),
     body('maxResourceVersion')
       .if(body('reindexType').equals('specific'))
       .isInt({ min: 0, max: Repository.VERSION - 1 })
@@ -338,14 +339,7 @@ superAdminRouter.post(
 // to force set a User password.
 superAdminRouter.post(
   '/setpassword',
-  [
-    body('email').isEmail().withMessage('Valid email address is required'),
-    body('password')
-      .isLength({ min: MIN_PASSWORD_LENGTH })
-      .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-      .isByteLength({ max: MAX_PASSWORD_LENGTH })
-      .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
-  ],
+  [emailField(), passwordField(), ...optionalStringFields(['projectId'])],
   async (req: Request, res: Response) => {
     const { repo } = requireSuperAdmin();
     if (sendValidationErrors(req, res)) {
@@ -368,8 +362,8 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/purge',
   [
-    body('resourceType').isIn(['AuditEvent', 'Login']).withMessage('Invalid resource type'),
-    body('before').isISO8601().withMessage('Invalid before date'),
+    stringField('resourceType', 'Invalid resource type').isIn(['AuditEvent', 'Login']),
+    stringField('before', 'Invalid before date').isISO8601(),
   ],
   async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
@@ -386,7 +380,7 @@ superAdminRouter.post(
 // to remove bot id jobs from queue.
 superAdminRouter.post(
   '/removebotidjobsfromqueue',
-  [body('botId').notEmpty().withMessage('Bot ID is required')],
+  [stringField('botId', 'Bot ID is required').notEmpty()],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
     if (sendValidationErrors(req, res)) {

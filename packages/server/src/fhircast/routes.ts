@@ -33,7 +33,7 @@ import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { publish } from '../pubsub';
 import { getCacheRedis } from '../redis';
-import { sendValidationErrors } from '../util/validator';
+import { sendValidationErrors, stringField } from '../util/validator';
 import {
   cleanupContextForResource,
   compareAndSetTopicCurrentContext,
@@ -150,17 +150,17 @@ protectedCommonRoutes.post(
   oneOf(
     [
       [
-        body('id').notEmpty().withMessage('Missing event ID'),
-        body('timestamp').notEmpty().withMessage('Missing event timestamp'),
+        stringField('id', 'Missing event ID').notEmpty(),
+        stringField('timestamp', 'Missing event timestamp').notEmpty(),
         body('event').notEmpty().withMessage('Missing event payload'),
-        body('event["hub.topic"]').notEmpty().withMessage('Missing event["hub.topic"]'),
-        body('event["hub.event"]').notEmpty().withMessage('Missing event["hub.event"]'),
+        stringField('event["hub.topic"]', 'Missing event["hub.topic"]').notEmpty(),
+        stringField('event["hub.event"]', 'Missing event["hub.event"]').notEmpty(),
         body('event.context').notEmpty().withMessage('Missing event.context'),
       ],
       [
-        body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
-        body('hub.mode').notEmpty().withMessage('Missing hub.mode'),
-        body('hub.topic').notEmpty().withMessage('Missing hub.topic'),
+        stringField('hub.channel.type', 'Missing hub.channel.type').notEmpty(),
+        stringField('hub.mode', 'Missing hub.mode').notEmpty(),
+        stringField('hub.topic', 'Missing hub.topic').notEmpty(),
         // `hub.events` is checked in the handler, since only a subscribe request carries it
       ],
     ],
@@ -185,11 +185,11 @@ protectedCommonRoutes.post(
 protectedCommonRoutes.post(
   '/:topic',
   [
-    body('id').notEmpty().withMessage('Missing event ID'),
-    body('timestamp').notEmpty().withMessage('Missing event timestamp'),
+    stringField('id', 'Missing event ID').notEmpty(),
+    stringField('timestamp', 'Missing event timestamp').notEmpty(),
     body('event').notEmpty().withMessage('Missing event payload'),
-    body('event["hub.topic"]').notEmpty().withMessage('Missing event["hub.topic"]'),
-    body('event["hub.event"]').notEmpty().withMessage('Missing event["hub.event"]'),
+    stringField('event["hub.topic"]', 'Missing event["hub.topic"]').notEmpty(),
+    stringField('event["hub.event"]', 'Missing event["hub.event"]').notEmpty(),
     body('event.context').notEmpty().withMessage('Missing event.context'),
   ],
   async (req: Request, res: Response) => {

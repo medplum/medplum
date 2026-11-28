@@ -12,28 +12,22 @@ import {
 } from '@medplum/core';
 import type { Login, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { sendOutcome } from '../fhir/outcomes';
 import type { SuperAdminRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { getLogger } from '../logger';
 import { timingSafeEqualStr } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, passwordField, stringField } from '../util/validator';
 import { hasExternalAuth } from './method';
 import { consumeSecurityRequest, isSecurityRequestExpired, retirePasswordSecurityRequests } from './securityrequest';
 import { bcryptHashPassword } from './utils';
 
 export const setPasswordValidator = makeValidationMiddleware([
-  body('id').isUUID().withMessage('Invalid request ID'),
-  body('secret').notEmpty().withMessage('Missing secret'),
-  body('password')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-    .isByteLength({ max: MAX_PASSWORD_LENGTH })
-    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
+  stringField('id', 'Invalid request ID').isUUID(),
+  stringField('secret', 'Missing secret').notEmpty(),
+  passwordField(),
 ]);
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {

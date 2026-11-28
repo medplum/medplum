@@ -4,15 +4,14 @@ import type { WithId } from '@medplum/core';
 import { createReference, forbidden, OperationOutcomeError, singularize } from '@medplum/core';
 import type { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
 import { getDefaultAccessPolicy } from '../fhir/default-access-policies';
 import type { Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { makeValidationMiddleware } from '../util/validator';
+import { makeValidationMiddleware, stringField } from '../util/validator';
 
 export const createClientValidator = makeValidationMiddleware([
-  body('name').notEmpty().withMessage('Client name is required'),
+  stringField('name', 'Client name is required').notEmpty(),
 ]);
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {

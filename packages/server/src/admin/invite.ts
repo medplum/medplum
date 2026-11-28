@@ -27,13 +27,12 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body, oneOf } from 'express-validator';
+import { oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
 import { hasExternalAuth } from '../auth/method';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership, isPractitionerEmailDomainAllowed } from '../auth/utils';
 import { getConfig } from '../config/loader';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getAllowedProjects, getRepoForProjects } from '../fhir/accesspolicy';
@@ -44,31 +43,22 @@ import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
 import { LogThrottle } from '../util/logthrottle';
-import { makeValidationMiddleware } from '../util/validator';
+import { emailField, makeValidationMiddleware, passwordField, stringField } from '../util/validator';
 
 const unverifiedEmailMatchLogThrottle = new LogThrottle(10 * 60 * 1000); // 10 minute window
 
 export const inviteValidator = makeValidationMiddleware([
-  body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
-  oneOf(
-    [
-      body('email').isEmail().withMessage('Valid email address is required'),
-      body('externalId').notEmpty().withMessage('External ID cannot be empty'),
-    ],
-    { message: 'Either email or externalId is required' }
-  ),
-  body('patient.reference')
+  stringField('resourceType', 'Resource type is required').isIn(['Patient', 'Practitioner', 'RelatedPerson']),
+  stringField('firstName', 'First name is required').notEmpty(),
+  stringField('lastName', 'Last name is required').notEmpty(),
+  oneOf([emailField(), stringField('externalId', 'External ID cannot be empty').notEmpty()], {
+    message: 'Either email or externalId is required',
+  }),
+  stringField('patient.reference', 'Patient must be a reference to a Patient resource')
     .optional()
     .matches(/^Patient\/[^/]+$/)
     .withMessage('Patient must be a reference to a Patient resource'),
-  body('password')
-    .optional()
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-    .isByteLength({ max: MAX_PASSWORD_LENGTH })
-    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
+  passwordField().optional(),
 ]);
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {

@@ -3,26 +3,34 @@
 import { isUUID } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { body } from 'express-validator';
 import { randomUUID } from 'node:crypto';
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '../constants';
 import { getLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
-import { makeValidationMiddleware } from '../util/validator';
+import {
+  emailField,
+  makeValidationMiddleware,
+  optionalStringFields,
+  passwordField,
+  stringField,
+} from '../util/validator';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidator = makeValidationMiddleware([
-  body('email').isEmail().withMessage('Valid email address is required'),
-  body('projectId')
+  emailField(),
+  stringField('projectId', 'Invalid projectId')
     .optional({ values: 'falsy' })
-    .custom((value) => value === 'new' || (typeof value === 'string' && isUUID(value)))
-    .withMessage('Invalid projectId'),
-  body('password')
-    .isLength({ min: MIN_PASSWORD_LENGTH })
-    .withMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
-    .isByteLength({ max: MAX_PASSWORD_LENGTH })
-    .withMessage(`Password must be no more than ${MAX_PASSWORD_LENGTH} characters`),
-  body('redirectUri').optional({ values: 'falsy' }).isString().withMessage('Invalid redirectUri'),
+    .custom((value) => value === 'new' || isUUID(value)),
+  passwordField(),
+  ...optionalStringFields([
+    'redirectUri',
+    'clientId',
+    'scope',
+    'nonce',
+    'codeChallenge',
+    'codeChallengeMethod',
+    'launch',
+    'resourceType',
+  ]),
 ]);
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {

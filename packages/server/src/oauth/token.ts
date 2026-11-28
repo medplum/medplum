@@ -969,7 +969,12 @@ async function parseClientAssertion(
 
   const config = getConfig();
   const tokenUrl = getProjectScopedUrl(req.originalUrl, config.baseUrl, config.tokenUrl);
-  const claims = parseJWTPayload(clientAssertion);
+  let claims: JWTPayload;
+  try {
+    claims = parseJWTPayload(clientAssertion);
+  } catch {
+    return { error: 'Invalid client assertion' };
+  }
 
   if (claims.aud !== tokenUrl) {
     return { error: 'Invalid client assertion audience' };
