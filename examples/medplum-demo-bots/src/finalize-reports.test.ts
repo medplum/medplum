@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+// start-block definitions-import
 import {
   EMPTY,
   LOINC,
@@ -8,11 +9,11 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
 } from '@medplum/core';
-// start-block definitions-import
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-// end-block definitions-import
 import type { Bundle, DiagnosticReport, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { beforeAll } from 'vitest';
+// end-block definitions-import
 import { handler } from './finalize-report';
 
 describe('Finalize Report', async () => {
