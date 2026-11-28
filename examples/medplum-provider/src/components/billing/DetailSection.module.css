@@ -1,0 +1,16 @@
+.card {
+  border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border-radius: calc(var(--mantine-radius-md) * 1.5);
+}
+
+/* A section's closing button, with a little extra space above it. */
+.footer {
+  margin-top: 4px;
+}
+
+/* Two fields side by side, stacking when the section is narrow. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--mantine-spacing-sm);
+}

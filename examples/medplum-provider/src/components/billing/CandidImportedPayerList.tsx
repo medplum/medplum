@@ -23,11 +23,12 @@ const DEFAULT_SEARCH: SearchRequest = {
 
 export interface CandidImportedPayerListProps {
   readonly directory: CandidPayerDirectory;
+  readonly onAddPayers: () => void;
   readonly onSelectPayer: (payer: WithId<Organization>) => void;
 }
 
 export function CandidImportedPayerList(props: CandidImportedPayerListProps): JSX.Element {
-  const { directory, onSelectPayer } = props;
+  const { directory, onAddPayers, onSelectPayer } = props;
   const [search, setSearch] = useState<SearchRequest>(DEFAULT_SEARCH);
 
   const additionalColumns: SearchControlAdditionalColumn[] = [
@@ -43,12 +44,13 @@ export function CandidImportedPayerList(props: CandidImportedPayerListProps): JS
         search={search}
         additionalColumns={additionalColumns}
         hideFilters
+        onNew={onAddPayers}
         onChange={(e) => setSearch(e.definition)}
         onClick={(e) => onSelectPayer(e.resource as WithId<Organization>)}
       />
 
       <Text c="dimmed" size="sm">
-        Import the payers you bill from the Candid payer directory.
+        Add the payers you bill from the Candid payer directory.
       </Text>
     </Stack>
   );

@@ -6,13 +6,17 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import type { CandidPayerDirectory } from '../../hooks/useCandidPayerDirectory';
 import { showErrorNotification } from '../../utils/notifications';
+import { CandidDirectoryPayers } from './CandidDirectoryPayers';
 import { CandidImportedPayerList } from './CandidImportedPayerList';
 import { CandidPayerDetailsModal } from './CandidPayerDetailsModal';
 
+/** The `resourceId` that opens the payer directory modal, to import payers from. */
+const PAYER_DIRECTORY_ID = 'new';
+
 /**
  * Props for the enrolled payers tab. `resourceId` mirrors the URL: the ID of the imported payer whose details
- * modal is open. The tab never navigates itself but calls `onNavigate` with the ID the URL should move to, or
- * none to close the modal. `directory` is shared with the payer directory tab so imports show up here.
+ * modal is open, or `PAYER_DIRECTORY_ID` for the payer directory modal. The tab never navigates itself but calls
+ * `onNavigate` with the ID the URL should move to, or none to close the modal.
  */
 export interface ImportedPayersTabProps {
   readonly directory: CandidPayerDirectory;
@@ -25,15 +29,17 @@ export function CandidImportedPayers(props: ImportedPayersTabProps): JSX.Element
   const medplum = useMedplum();
   const navigate = useStabilizedCallback(onNavigate);
   const [payer, setPayer] = useState<Organization | undefined>(undefined);
-  const open = resourceId !== undefined && payer?.id === resourceId ? payer : undefined;
+  const directoryOpen = resourceId === PAYER_DIRECTORY_ID;
+  const linkedId = directoryOpen ? undefined : resourceId;
+  const open = linkedId !== undefined && payer?.id === linkedId ? payer : undefined;
 
   useEffect(() => {
-    if (!resourceId || open?.id === resourceId) {
+    if (!linkedId || open?.id === linkedId) {
       return undefined;
     }
     let active = true;
     medplum
-      .readResource('Organization', resourceId)
+      .readResource('Organization', linkedId)
       .then((organization) => {
         if (active) {
           setPayer(organization);
@@ -48,12 +54,13 @@ export function CandidImportedPayers(props: ImportedPayersTabProps): JSX.Element
     return () => {
       active = false;
     };
-  }, [medplum, navigate, resourceId, open]);
+  }, [medplum, navigate, linkedId, open]);
 
   return (
     <>
       <CandidImportedPayerList
         directory={directory}
+        onAddPayers={() => onNavigate(PAYER_DIRECTORY_ID)}
         onSelectPayer={(selected) => {
           setPayer(selected);
           onNavigate(selected.id);
@@ -68,6 +75,7 @@ export function CandidImportedPayers(props: ImportedPayersTabProps): JSX.Element
         }}
         onPayerUpdated={setPayer}
       />
+      <CandidDirectoryPayers directory={directory} opened={directoryOpen} onClose={() => onNavigate()} />
     </>
   );
 }

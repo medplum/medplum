@@ -53,7 +53,7 @@ describe('SchedulePage', () => {
   ): ReturnType<typeof render> & { navigate: ReturnType<typeof createMemoryRouter>['navigate'] } => {
     const router = createMemoryRouter(
       [
-        { path: '/Calendar/Schedule/:id/settings', element: <div>Settings Page</div> },
+        { path: '/settings/schedule/visit-service-types', element: <div>Settings Page</div> },
         { path: '/Calendar/Schedule/:id', element: <SchedulePage /> },
         { path: '/Calendar/Schedule', element: <SchedulePage /> },
       ],

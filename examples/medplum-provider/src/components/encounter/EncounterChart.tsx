@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
+import { Stack, Textarea } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
@@ -13,6 +14,8 @@ import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import { updateEncounterStatus } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
+import { DetailSection } from '../billing/DetailSection';
+import { createVisitClaimOnSign } from '../billing/visitClaim';
 import { TaskDetailsModal } from '../tasks/TaskDetailsModal';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
 import { BillingTab } from './BillingTab';
@@ -57,6 +60,8 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
 
   const [chartNote, setChartNote] = useState(clinicalImpression?.note?.[0]?.text);
   const [provenances, setProvenances] = useState<Provenance[]>([]);
+  // Bumped when the visit's claims change outside the Billing tab, e.g. made on signing, so it reloads them.
+  const [claimsKey, setClaimsKey] = useState(0);
   const [chartNoteStatus, setChartNoteStatus] = useState(ChartNoteStatus.Unsigned);
 
   useEffect(() => {
@@ -219,6 +224,23 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
 
     if (lock) {
       setChartNoteStatus(ChartNoteStatus.SignedAndLocked);
+      // The visit's claim is made now, so the visit shows up in Billing; signing doesn't wait on it or fail with it.
+      if (patientResource) {
+        createVisitClaimOnSign(medplum, patientResource, encounter, practitioner)
+          .then((claim) => {
+            if (claim) {
+              setClaimsKey((k) => k + 1);
+              showNotification({ color: 'green', title: 'Claim created', message: 'The visit is ready for billing.' });
+            }
+          })
+          .catch((err) =>
+            showNotification({
+              color: 'red',
+              title: 'Signed, but the claim wasn’t made',
+              message: `${normalizeErrorString(err)}. It’s made when you export or submit it from Billing & Details.`,
+            })
+          );
+      }
     } else {
       setChartNoteStatus(ChartNoteStatus.Signed);
     }
@@ -230,7 +252,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
 
   return (
     <>
-      <Stack justify="space-between" gap={0}>
+      <Stack gap={0} bg="var(--mantine-color-body)" mih="100%">
         <EncounterHeader
           encounter={encounter}
           chartNoteStatus={chartNoteStatus}
@@ -239,14 +261,25 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           onTabChange={handleTabChange}
           onSign={handleSign}
         />
-        <Box p="md">
+        <Stack gap="md" p="md">
+          {activeTab === 'billing' && (
+            <BillingTab
+              encounter={encounter}
+              setEncounter={setEncounter}
+              onEncounterSaved={onEncounterChange}
+              patient={patientResource}
+              practitioner={practitioner}
+              setPractitioner={setPractitioner}
+              chartNoteStatus={chartNoteStatus}
+              claimsKey={claimsKey}
+            />
+          )}
           {activeTab === 'notes' && (
-            <Stack gap="md">
+            <>
               <SignAddendum encounter={encounter} provenances={provenances} chartNoteStatus={chartNoteStatus} />
 
               {clinicalImpression && (
-                <Card withBorder shadow="sm" mt="md">
-                  <Title>Fill chart note</Title>
+                <DetailSection gap="sm" title="Chart Note">
                   <Textarea
                     defaultValue={clinicalImpression.note?.[0]?.text}
                     value={chartNote}
@@ -256,7 +289,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
                     maxRows={8}
                     disabled={chartNoteStatus === ChartNoteStatus.SignedAndLocked}
                   />
-                </Card>
+                </DetailSection>
               )}
               {tasks.map((task) => (
                 <TaskPanel
@@ -266,20 +299,9 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
                   enabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
                 />
               ))}
-            </Stack>
+            </>
           )}
-          {activeTab === 'details' && (
-            <BillingTab
-              encounter={encounter}
-              setEncounter={setEncounter}
-              onEncounterSaved={onEncounterChange}
-              patient={patientResource}
-              practitioner={practitioner}
-              setPractitioner={setPractitioner}
-              chartNoteStatus={chartNoteStatus}
-            />
-          )}
-        </Box>
+        </Stack>
       </Stack>
       {taskProp && (
         <TaskDetailsModal key={getReferenceString(taskProp)} task={taskProp} onUpdateTask={updateTaskList} />

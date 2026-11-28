@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Loader, Paper, ScrollArea } from '@mantine/core';
+import { useElementSize } from '@mantine/hooks';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
@@ -19,6 +20,7 @@ import { OrderLabsModal } from '../../components/labs/OrderLabsModal';
 import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { useDoseSpotAccess } from '../../hooks/useDoseSpotAccess';
 import { usePatient } from '../../hooks/usePatient';
+import { PatientContentWidth } from './PatientContentWidth';
 import classes from './PatientPage.module.css';
 import { getPatientPageTabs, patientPathPrefix } from './PatientPage.utils';
 import { usePatientActionsMenu } from './usePatientActionsMenu';
@@ -30,6 +32,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
+  const { ref: contentRef, width: contentWidth } = useElementSize<HTMLDivElement>();
   const { headerMenuItems, actionsModals, openEditModal } = usePatientActionsMenu(patient);
   const PharmacyDialogComponent = usePharmacyDialog();
   const { hasAccess: hasDoseSpotAccess } = useDoseSpotAccess();
@@ -89,7 +92,7 @@ export function PatientPage(): JSX.Element {
           </ScrollArea>
         </div>
 
-        <div className={classes.content}>
+        <div ref={contentRef} className={classes.content}>
           <Paper w="100%" radius={0} style={{ borderBottom: '1px solid var(--app-shell-border-color)' }}>
             <ScrollArea>
               <LinkTabs
@@ -102,7 +105,9 @@ export function PatientPage(): JSX.Element {
             </ScrollArea>
           </Paper>
           <div className={classes.contentBody}>
-            <Outlet />
+            <PatientContentWidth.Provider value={contentWidth}>
+              <Outlet />
+            </PatientContentWidth.Provider>
           </div>
         </div>
       </div>

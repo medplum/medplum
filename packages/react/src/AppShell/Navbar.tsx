@@ -119,7 +119,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             </UnstyledButton>
           </MantineAppShell.Section>
         )}
-        <ScrollArea px="xs" pb="xs" pt="sm" h="100%">
+        <ScrollArea px="xs" pb="xs" pt={props.logo ? 'sm' : 'xs'} h="100%">
           <MantineAppShell.Section grow>
             {props.spotlightEnabled && !props.searchHidden && (
               <Box mb={2}>

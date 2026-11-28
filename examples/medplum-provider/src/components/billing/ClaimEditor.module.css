@@ -1,0 +1,254 @@
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--mantine-spacing-sm);
+}
+
+/* Read-only fields, two to a row. */
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md) var(--mantine-spacing-xl);
+}
+
+.line {
+  container-type: inline-size;
+  border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.lineFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--mantine-spacing-sm);
+}
+
+.total {
+  padding-top: var(--mantine-spacing-md);
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.removeIcon {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.line :global(.mantine-PillsInputField-field) {
+  min-width: 2rem;
+}
+
+.letter {
+  flex: none;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+  line-height: 36px;
+}
+
+/* Row buttons sit md from their input, though the row's other gaps are sm. */
+.rowActions {
+  flex: none;
+  margin-left: calc(var(--mantine-spacing-md) - var(--mantine-spacing-sm));
+}
+
+/* Keeps the hover background while the button's menu is open. */
+.quietDisabled[data-expanded] {
+  background-color: var(--ai-hover);
+}
+
+.quietDisabled:disabled,
+.quietDisabled[data-disabled] {
+  background-color: transparent;
+
+  & svg {
+    color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+  }
+}
+
+/* Fit code options to the dropdown, so long descriptions cut instead of scrolling sideways. */
+:global(.mantine-ScrollArea-content):has(.codeOption) {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+.codeOption {
+  min-width: 0;
+}
+
+.description {
+  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-1));
+}
+
+.head {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tail {
+  flex: none;
+  white-space: pre;
+}
+
+/* A code already used elsewhere in the section: shown in blue with its check, but not selectable. */
+:global(.mantine-Combobox-option):has(> .codeOption[data-used]) {
+  pointer-events: none;
+}
+
+.codeOption[data-used] {
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
+.codeOption[data-used] p {
+  color: var(--mantine-color-blue-6);
+}
+
+.codeOption[data-used] span {
+  color: var(--mantine-color-blue-6);
+  opacity: 0.6;
+}
+
+/* The unit price's "$" reads as part of the placeholder until the field is focused or filled. */
+.currency {
+  justify-content: flex-start;
+  padding-left: 12px;
+  color: var(--input-placeholder-color, var(--mantine-color-placeholder));
+  font-size: var(--mantine-font-size-sm);
+}
+
+.priceInput:has(input:focus) .currency,
+.priceInput:has(input:not(:placeholder-shown)) .currency {
+  color: var(--mantine-color-text);
+}
+
+.statusSlot {
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
+
+/*
+ * Diagnoses lay out as one grid, so the status column is as wide as the longest status and every row's buttons line
+ * up. Each row's cells sit in the grid directly.
+ */
+.diagnosisGrid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: start;
+  gap: var(--mantine-spacing-sm);
+}
+
+.diagnosisRow {
+  display: contents;
+}
+
+.colLetter {
+  grid-column: 1;
+}
+
+.colInput {
+  grid-column: 2;
+  min-width: 0;
+}
+
+/* The status sits by the code it describes; who added it sits by the row's actions. */
+.colStatus {
+  grid-column: 3;
+}
+
+.colAuthor {
+  grid-column: 4;
+}
+
+.colActions {
+  grid-column: 5;
+  margin-left: calc(8px - var(--mantine-spacing-sm));
+}
+
+.statusBadge {
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.hintLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  & svg {
+    color: var(--mantine-color-dimmed);
+  }
+}
+
+/* The author's avatar, centered on the row's input. Empty rows keep the width so the columns line up. */
+.authorSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 36px;
+}
+
+.authorTip {
+  text-align: left;
+}
+
+.avatarButton {
+  display: flex;
+  border-radius: 50%;
+}
+
+/* Fixed above a dropdown's results, fading into them as they scroll under it. */
+.dropdownHeader {
+  position: relative;
+  z-index: 1;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    height: var(--mantine-spacing-lg);
+    background: linear-gradient(light-dark(var(--mantine-color-white), var(--mantine-color-dark-7)), transparent);
+    pointer-events: none;
+  }
+}
+
+/* The line history popover, padded like the search toolbar's popovers. */
+.historyDropdown {
+  max-width: calc(100vw - 32px);
+}
+
+.historyBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md);
+  padding-right: var(--mantine-spacing-xs);
+}
+
+/* A hover card that looks like Mantine's default tooltip, for tooltips with a link in them. */
+.tooltipCard {
+  padding: calc(0.3125rem * var(--mantine-scale)) calc(0.625rem * var(--mantine-scale));
+  border: 0;
+  border-radius: var(--mantine-radius-sm);
+  background: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-2));
+  color: light-dark(var(--mantine-color-white), var(--mantine-color-black));
+  font-size: var(--mantine-font-size-sm);
+  line-height: var(--mantine-line-height-sm);
+
+  & a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}

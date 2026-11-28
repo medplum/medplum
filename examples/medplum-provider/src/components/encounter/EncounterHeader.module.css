@@ -1,0 +1,14 @@
+/* Stays at the top of the visit while its tabs scroll. */
+.root {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.header {
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+}
+
+.title {
+  min-width: 0;
+}
