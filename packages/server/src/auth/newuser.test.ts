@@ -107,6 +107,30 @@ describe('New user', () => {
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('New project registration is disabled');
     expect(await getUserByEmailWithoutProject(email)).toBeUndefined();
+
+    // Project-scoped registration is still allowed, including when the project comes from clientId
+    const { project, client } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Owner',
+        lastName: 'Owner',
+        projectName: 'Owner Project',
+        email: `owner${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    await enableOpenRegistration(project);
+    const res2 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Patient',
+        lastName: 'One',
+        email: `patient${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        clientId: client.id,
+      });
+    expect(res2).toHaveStatus(200);
   });
 
   test('Missing recaptcha', async () => {
