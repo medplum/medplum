@@ -11,6 +11,7 @@ import { initMermaid } from './components/mermaid.mjs';
 import { initSearch, openSearchFromPage } from './components/search.mjs';
 import { initTabs } from './components/tabs.mjs';
 import { initCopyCode } from './components/copy-code.mjs';
+import { destroyComparisons, initComparisons } from './components/comparison.mjs';
 import { destroyToc, initToc } from './components/toc.mjs';
 
 function setAttribute(key, value) {
@@ -49,7 +50,7 @@ function updateAttributes(newUrl) {
   const showToc = onDocsPage || pathname.startsWith('/blog/');
   setAttribute('toc', showToc ? 'visible' : 'hidden');
 
-  const page = landingPages[pathname];
+  const page = inSection(pathname, '/compare') ? 'compare' : landingPages[pathname];
   if (page) {
     setAttribute('page', page);
   } else {
@@ -152,8 +153,9 @@ export const swup = new Swup({
   animationSelector: false,
   animateHistoryBrowsing: false,
   // Compare URLs without a trailing slash: hugo server serves /docs/api/ while links say /docs/api, which would make a
-  // link to the current page a new visit instead of a scroll (production URLs have no trailing slash)
-  resolveUrl: (url) => url.replace(/(.)\/(?=[?#]|$)/, '$1'),
+  // link to the current page a new visit instead of a scroll (production URLs have no trailing slash).
+  // The comparison hub accepts legacy group queries and handles its own segment history.
+  resolveUrl: (url) => url.replace(/(.)\/(?=[?#]|$)/, '$1').replace(/^\/compare\?.*/, '/compare'),
   // Fetch a page when its link is hovered or touched, so the click renders from swup's cache (as Docusaurus does)
   plugins: [new SwupPreloadPlugin()],
 });
@@ -168,6 +170,7 @@ swup.hooks.before('content:replace', (visit) => {
   destroyCountUps();
   destroyProducts();
   destroySolutions();
+  destroyComparisons();
   destroyToc();
 });
 
@@ -176,6 +179,7 @@ swup.hooks.on('content:replace', (visit) => {
   initCountUps();
   initProducts();
   initSolutions();
+  initComparisons();
   updateNavbarScroll();
   initTabs();
   initCopyCode();
@@ -193,6 +197,7 @@ initAnimatedCircles();
 initCountUps();
 initProducts();
 initSolutions();
+initComparisons();
 initTabs();
 initCopyCode();
 initMermaid();

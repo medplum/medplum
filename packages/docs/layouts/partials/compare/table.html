@@ -1,0 +1,31 @@
+{{- $group := .group -}} {{- $columns := slice (index (where $group.competitors "id" "medplum") 0) .competitor -}}
+<div class="compare-table-wrap" role="region" aria-label="Medplum and {{ .competitor.name }} comparison" tabindex="0">
+  <table class="compare-table">
+    <caption class="compare-sr-only">
+      Medplum compared with {{ .competitor.name }}
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col" class="compare-dimension">Capability</th>
+        {{ range $columns }}
+        <th scope="col" id="{{ $group.id }}-{{ .id }}" data-competitor="{{ .id }}">
+          {{ if eq .id "medplum" }}
+          <span class="compare-medplum-logo" aria-hidden="true">{{ partial "logo.html" (dict "width" "102" "height" "22") }}</span>
+          <span class="compare-sr-only">{{ .name }}</span>
+          {{ else if .tableName }}{{ .tableName | safeHTML }}{{ else }}{{ .name }}{{ end }}
+        </th>
+        {{ end }}
+      </tr>
+    </thead>
+    <tbody>
+      {{ range $group.rows }} {{- $row := . -}}
+      <tr>
+        <th scope="row" id="{{ $group.id }}-{{ .id }}" class="compare-dimension">{{ .label }}</th>
+        {{ range $columns }}
+        <td data-competitor="{{ .id }}" headers="{{ $group.id }}-{{ .id }} {{ $group.id }}-{{ $row.id }}">{{ index $row.cells .id | markdownify }}</td>
+        {{ end }}
+      </tr>
+      {{ end }}
+    </tbody>
+  </table>
+</div>

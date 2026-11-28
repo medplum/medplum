@@ -1,0 +1,404 @@
+/* Comparison page: reuse Products tabs and the shared landing styles. */
+.compare-page {
+  --compare-tint: var(--oc-grape-0);
+  --compare-accent: var(--oc-grape-8);
+  color: var(--landing-color-body);
+  background: var(--landing-surface);
+}
+
+[data-theme='dark'] .compare-page {
+  --compare-tint: #2e203b;
+  --compare-accent: var(--oc-grape-2);
+}
+
+.compare-page [hidden] {
+  display: none !important;
+}
+
+.compare-hero {
+  padding-block: 4rem 2.5rem;
+}
+
+.compare-lead {
+  max-width: 54rem;
+  margin-bottom: 0;
+}
+
+.compare-board {
+  overflow: visible;
+}
+
+.compare-detail-title {
+  max-width: 60rem;
+}
+
+.compare-back {
+  margin-bottom: 1.5rem;
+}
+
+.compare-back svg,
+.compare-card-link svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+.compare-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.compare-card {
+  gap: 0.75rem;
+  padding: 1.5rem;
+  color: var(--landing-color-heading);
+  text-decoration: none !important;
+}
+
+.compare-card h3 {
+  margin: 0;
+  color: var(--landing-color-heading);
+  font: 600 var(--landing-card-title-size)/1.3 var(--landing-font-display);
+}
+
+.compare-card p {
+  font-size: 0.9375rem;
+}
+
+.compare-card:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.compare-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  color: var(--compare-accent);
+  font: 600 0.875rem/1.4 var(--landing-font-display);
+}
+
+.compare-card:hover .compare-card-link {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.compare-tab:focus-visible,
+.compare-card:focus-visible,
+.compare-table-wrap:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 3px;
+}
+
+/* Category switcher: selectable cards on desktop and compact tabs on phones. */
+.compare-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.compare-tab {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--landing-border-strong);
+  border-radius: 0.75rem;
+  background: var(--landing-surface);
+  color: inherit;
+  text-decoration: none !important;
+  transition:
+    border-color var(--landing-transition),
+    background-color var(--landing-transition),
+    box-shadow var(--landing-transition);
+}
+
+.compare-tab:hover {
+  border-color: var(--oc-grape-4);
+}
+
+.compare-tab[aria-selected='true'] {
+  border-color: var(--ifm-color-primary);
+  box-shadow: inset 0 0 0 1px var(--ifm-color-primary);
+  background: var(--compare-tint);
+}
+
+.compare-tab-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  background: var(--compare-tint);
+  color: var(--compare-accent);
+  transition:
+    background-color var(--landing-transition),
+    color var(--landing-transition);
+}
+
+.compare-tab[aria-selected='true'] .compare-tab-icon {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.compare-tab-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.compare-tab-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.compare-tab-question {
+  color: var(--landing-color-heading);
+  font: 600 1.375rem/1.3 var(--landing-font-display);
+}
+
+.compare-tab[aria-selected='true'] .compare-tab-question {
+  color: var(--compare-accent);
+}
+
+.compare-tab-name {
+  color: var(--landing-color-muted);
+  font: 0.9375rem/1.4 var(--landing-font-body);
+}
+
+.compare-section {
+  scroll-margin-top: calc(var(--ifm-navbar-height) + 1rem);
+  padding-top: 0.5rem;
+}
+
+.compare-section + .compare-section {
+  margin-top: 2.5rem;
+}
+
+[data-enhanced='true'] .compare-section {
+  margin-top: 0;
+}
+
+.compare-sr-only,
+[data-enhanced='true'] .compare-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.compare-table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-family: var(--landing-font-body);
+  line-height: 1.5;
+}
+
+.compare-table tr,
+.compare-table th,
+.compare-table td {
+  border: 0;
+  background: var(--landing-surface);
+  text-align: left;
+  vertical-align: top;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: 1.25rem;
+  font-size: 1rem;
+  color: var(--landing-color-body);
+  overflow-wrap: break-word;
+}
+
+.compare-table th {
+  color: var(--landing-color-heading);
+  font-weight: 600;
+}
+
+.compare-table thead {
+  position: sticky;
+  top: var(--ifm-navbar-height);
+  z-index: 2;
+}
+
+.compare-table thead th {
+  padding-block: 1rem;
+  vertical-align: middle;
+  font-family: var(--landing-font-display);
+  font-size: 1.125rem;
+  box-shadow: inset 0 -1px var(--landing-border);
+}
+
+.compare-table thead .compare-dimension {
+  font-size: 0.875rem;
+  width: 23%;
+}
+
+.compare-table tbody tr + tr > * {
+  border-top: 1px solid var(--landing-border);
+}
+
+.compare-table [data-competitor='medplum'] {
+  background: var(--compare-tint);
+}
+
+/* The Medplum column reads as one rounded, tinted band headed by the logo. */
+.compare-table thead [data-competitor='medplum'] {
+  color: var(--compare-accent);
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.compare-table tbody tr:last-child [data-competitor='medplum'] {
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.compare-medplum-logo {
+  display: flex;
+}
+
+.compare-medplum-logo svg {
+  width: auto;
+  max-width: 100%;
+  height: 1.58rem;
+}
+
+.compare-cta {
+  margin-top: 6rem;
+  padding-block: 3rem;
+}
+
+.compare-cta::before {
+  height: 3rem;
+}
+
+.compare-cta-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .compare-table td strong {
+    display: block;
+  }
+}
+
+@media (max-width: 996px) {
+  .compare-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .compare-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compare-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .compare-hero {
+    padding-block: 2.5rem 2rem;
+  }
+
+  .compare-page .compare-board {
+    padding: 1rem;
+  }
+
+  .compare-tabs {
+    gap: 0.75rem;
+  }
+
+  .compare-tab {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .compare-tab-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
+  }
+
+  .compare-tab-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .compare-tab-question {
+    font-size: 1.125rem;
+  }
+
+  .compare-tab-name {
+    font-size: 0.875rem;
+  }
+
+  .compare-table th,
+  .compare-table td {
+    padding: 1rem 0.75rem;
+    font-size: 1rem;
+  }
+
+  .compare-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compare-table tbody .compare-dimension {
+    grid-column: 1 / -1;
+    background: var(--landing-surface-muted);
+    border-top: 1px solid var(--landing-border);
+    padding-block: 0.75rem;
+  }
+
+  .compare-table thead .compare-dimension {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .compare-table tbody td {
+    border-top: 0;
+  }
+
+  .compare-table tbody tr {
+    grid-template-rows: max-content 1fr;
+  }
+
+  .compare-cta-buttons {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .compare-cta {
+    margin-top: 4rem;
+    padding-block: 2.5rem;
+  }
+
+  .compare-cta::before {
+    height: 2rem;
+  }
+}

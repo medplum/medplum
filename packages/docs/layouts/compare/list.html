@@ -1,0 +1,38 @@
+{{ define "page" }} {{- $data := hugo.Data.comparison -}}
+<div class="landing compare-page">
+  <header class="compare-hero landing-container-container">
+    <h1 class="landing-hero-title">{{ .Title }}</h1>
+    <p class="landing-hero-text compare-lead">{{ .Params.lead }}</p>
+  </header>
+
+  <div class="landing-container-container" data-comparisons>
+    <nav class="compare-tabs" aria-label="Choose a comparison" data-comparison-tabs>
+      {{ range $data.groups }}
+      <a class="compare-tab" id="compare-tab-{{ .id }}" href="#{{ .id }}" data-comparison-tab="{{ .id }}">
+        <span class="compare-tab-icon" aria-hidden="true">{{ partial "icon" .icon }}</span>
+        <span class="compare-tab-label">
+          <span class="compare-tab-question">{{ .tagline }}</span>
+          <span class="compare-tab-name">{{ .title }}</span>
+        </span>
+      </a>
+      {{ end }}
+    </nav>
+    {{ range $data.groups }}
+    <section id="{{ .id }}" class="compare-section" aria-labelledby="{{ .id }}-title" data-comparison="{{ .id }}">
+      <h2 id="{{ .id }}-title" class="compare-title">{{ .title }}</h2>
+      <div class="compare-card-grid">
+        {{ range where .competitors "id" "ne" "medplum" }}
+        <a class="landing-card compare-card" href="/compare/{{ .slug }}" aria-labelledby="compare-{{ .id }}-name" aria-describedby="compare-{{ .id }}-summary">
+          <h3 id="compare-{{ .id }}-name">{{ .shortName | default .name }}</h3>
+          <p id="compare-{{ .id }}-summary">{{ .summary }}</p>
+          <span class="compare-card-link">Compare With Medplum {{ partial "icon" "outline/arrow-right" }}</span>
+        </a>
+        {{ end }}
+      </div>
+    </section>
+    {{ end }}
+  </div>
+
+  {{ partial "compare/cta.html" . }}
+</div>
+{{ end }}

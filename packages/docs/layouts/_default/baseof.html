@@ -36,7 +36,7 @@
     {{ else }}
       data-sidebar="closed"
     {{ end }}
-    {{ if .IsHome }}data-page="home"{{ else if and .IsSection (in (slice "products" "solutions") .Section) }}data-page="{{ .Section }}"{{ end }}
+    {{ if .IsHome }}data-page="home"{{ else if or (eq .Section "compare") (and .IsSection (in (slice "products" "solutions") .Section)) }}data-page="{{ .Section }}"{{ end }}
   >
     {{ partial "navbar" . }}
     <div class="doc-wrapper">
