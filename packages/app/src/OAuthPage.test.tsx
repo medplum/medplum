@@ -68,6 +68,18 @@ describe('OAuthPage', () => {
     expect(locationUtils.assign).toHaveBeenCalled();
   });
 
+  test('Passes project to sign in', async () => {
+    const startLogin = vi.spyOn(medplum, 'startLogin');
+    const user = await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback&project=p1');
+
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByLabelText('Password *'), 'password');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    await waitFor(() => expect(startLogin).toHaveBeenCalledWith(expect.objectContaining({ projectId: 'p1' })));
+  });
+
   test('Forgot password', async () => {
     const user = await setup('/oauth?client_id=123&redirect_uri=https://example.com/callback');
 

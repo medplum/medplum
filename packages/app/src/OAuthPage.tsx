@@ -73,6 +73,7 @@ export function OAuthPage(): JSX.Element | null {
       onRegister={() => navigate('/register')?.catch(console.error)}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
+      projectId={params.get('project') || undefined}
       redirectUri={redirectUri}
       scope={scope}
       nonce={params.get('nonce') || undefined}

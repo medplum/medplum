@@ -14,6 +14,10 @@ Medplum's hosted cloud is preconfigured with an OHIF instance at
 **[viewer.medplum.com](https://viewer.medplum.com)**. There is nothing to deploy and nothing to
 configure — sign in with your Medplum account and the studies in your project are there.
 
+[Project-scoped users](/docs/user-management/project-vs-server-scoped-users) add their project's ID to the
+viewer link as `project`, for example
+`https://viewer.medplum.com/viewer?StudyInstanceUIDs={studyUid}&project={projectId}`.
+
 ![An MR brain study stored in Medplum, displayed in the OHIF Viewer at viewer.medplum.com](/img/blog/2026-08-dicom-ohif-viewer.webp)
 
 The viewer authenticates against Medplum with OAuth2 and reads over the same

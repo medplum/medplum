@@ -590,7 +590,11 @@ export async function getProjectIdByClientId(
   // For OAuth2 flow, check the clientId
   if (clientId) {
     const client = await getClientApplication(clientId);
-    const clientProjectId = client.meta?.project as string;
+    const clientProjectId = client.meta?.project;
+    if (!clientProjectId && projectId !== 'new') {
+      // A client without a project (server config `defaultOAuthClients`) can sign users in to any project
+      return projectId;
+    }
     if (projectId !== undefined && projectId !== clientProjectId) {
       throw new OperationOutcomeError(badRequest('Invalid projectId'));
     }
