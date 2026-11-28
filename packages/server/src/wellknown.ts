@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { apiCatalogHandler } from './api-catalog';
 import { getConfig } from './config/loader';
 import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
+import { aiCatalogHandler } from './mcp/server-card';
 import { getJwks } from './oauth/keys';
 import { getProjectScopedUrl } from './util/url';
 
@@ -77,6 +78,10 @@ function handleOauthProtectedResource(req: Request, res: Response): void {
 // RFC 9727 API catalog
 // Express routes HEAD requests to the GET handler, which is how HEAD support is provided.
 wellKnownRouter.get('/api-catalog', apiCatalogHandler);
+
+// MCP AI Catalog, which points at the MCP Server Card.
+// Always served, but lists the card only when MCP is enabled, which is also when app.ts registers the card route.
+wellKnownRouter.get('/ai-catalog.json', aiCatalogHandler);
 
 wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
 wellKnownRouter.get('/openid-configuration', handleOAuthConfig);

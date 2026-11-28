@@ -63,6 +63,7 @@ const prefixes = [
   '/api/hub',
   '/oauth2/',
   '/keyvalue/',
+  '/mcp/',
   '/shl/',
   '/storage/',
 ];

@@ -7,14 +7,16 @@ import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 
+export const MCP_SERVER_INFO = {
+  name: 'medplum',
+  title: 'Medplum',
+  version: MEDPLUM_VERSION,
+  websiteUrl: 'https://www.medplum.com/docs/ai/mcp',
+  icons: [{ src: 'https://www.medplum.com/img/logo-512x512.png', mimeType: 'image/png', sizes: ['512x512'] }],
+};
+
 export function getMcpServer(): McpServer {
-  const server = new McpServer({
-    name: 'medplum',
-    title: 'Medplum',
-    version: MEDPLUM_VERSION,
-    websiteUrl: 'https://www.medplum.com/docs/ai/mcp',
-    icons: [{ src: 'https://www.medplum.com/img/logo-512x512.png', mimeType: 'image/png', sizes: ['512x512'] }],
-  });
+  const server = new McpServer(MCP_SERVER_INFO);
 
   /**
    * Dummy document used for testing purposes.
