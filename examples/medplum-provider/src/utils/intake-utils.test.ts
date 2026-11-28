@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { OperationOutcomeError } from '@medplum/core';
 import type {
   Coding,
   Organization,
@@ -382,6 +383,10 @@ describe('intake utils', () => {
     test('converts date to ISO string', () => {
       expect(convertDateToDateTime('2020-01-01')).toContain('2020-01-01T00:00:00');
       expect(convertDateToDateTime(undefined)).toBeUndefined();
+    });
+
+    test('throws OperationOutcomeError on invalid date', () => {
+      expect(() => convertDateToDateTime('not-a-date')).toThrow(OperationOutcomeError);
     });
   });
 
@@ -1132,6 +1137,34 @@ describe('intake utils', () => {
           field1: {},
         },
       ]);
+    });
+
+    test('returns empty array when groupLinkId does not exist in questionnaire', () => {
+      const questionnaire: Questionnaire = {
+        status: 'active',
+        resourceType: 'Questionnaire',
+      };
+      const response: QuestionnaireResponse = {
+        status: 'completed',
+        resourceType: 'QuestionnaireResponse',
+      };
+
+      expect(getGroupRepeatedAnswers(questionnaire, response, 'coverage-information')).toEqual([]);
+    });
+
+    test('addCoverage throws OperationOutcomeError when required coverage answers are missing', async () => {
+      const createSpy = vi.spyOn(medplum, 'createResource');
+      const upsertSpy = vi.spyOn(medplum, 'upsertResource');
+
+      await expect(
+        addCoverage(medplum, patient, {
+          'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
+          'subscriber-id': { valueString: 'sub-1' },
+        })
+      ).rejects.toThrow(OperationOutcomeError);
+
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(upsertSpy).not.toHaveBeenCalled();
     });
   });
 });
