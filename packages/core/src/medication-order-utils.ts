@@ -700,7 +700,9 @@ export interface MedicationCheckoutItemResult {
    * Vendor per-line reference returned at checkout, for diagnostics/audit. The
    * concrete meaning is vendor-specific: a cart-item id for cart-based vendors
    * (ScriptSure MedCart `rxId`) or a per-prescription id for queue-based ones.
-   * Optional because the vendor may not mint one at add time.
+   * Optional because the vendor may not mint one at add time. On a `failed`
+   * item it names the draft's out-of-date line, still in the vendor's cart, so
+   * the approval widget shows the draft's previous version.
    */
   readonly vendorLineId?: string;
   readonly status: 'queued' | 'failed';
@@ -710,6 +712,14 @@ export interface MedicationCheckoutItemResult {
    * as `status: 'queued'` with this flag set so the caller can surface it.
    */
   readonly duplicate?: boolean;
+  /**
+   * True when the draft changed after an earlier checkout staged it, so its old
+   * line was taken out of the vendor's cart and the draft was staged again.
+   * Only set on `status: 'queued'` items. `vendorLineId` is then the new line;
+   * with `duplicate` also set, the drug is already on another line, no line was
+   * added for this draft and `vendorLineId` is absent.
+   */
+  readonly replaced?: boolean;
   readonly error?: string;
 }
 
@@ -863,6 +873,7 @@ function checkoutItemFromPart(part: ParametersParameter[] | undefined): Medicati
     status,
     vendorLineId: typeof map.vendorLineId === 'string' ? map.vendorLineId : undefined,
     duplicate: map.duplicate === true ? true : undefined,
+    replaced: map.replaced === true ? true : undefined,
     error: typeof map.error === 'string' ? map.error : undefined,
   };
 }

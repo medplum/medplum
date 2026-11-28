@@ -575,6 +575,7 @@ describe('Custom FHIR operation Parameters helpers', () => {
       items: [
         { medicationRequestId: 'mr-1', vendorLineId: 'rx-1', status: 'queued' },
         { medicationRequestId: 'mr-2', status: 'failed', error: 'no rxnorm' },
+        { medicationRequestId: 'mr-3', vendorLineId: 'rx-3', status: 'queued', replaced: true },
       ],
     };
     const params: Parameters = {
@@ -598,9 +599,45 @@ describe('Custom FHIR operation Parameters helpers', () => {
             { name: 'error', valueString: 'no rxnorm' },
           ],
         },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-3' },
+            { name: 'vendorLineId', valueString: 'rx-3' },
+            { name: 'status', valueCode: 'queued' },
+            { name: 'replaced', valueBoolean: true },
+          ],
+        },
       ],
     };
     expect(parametersToMedicationCheckoutResponse(params)).toEqual(expected);
+  });
+
+  test.each([
+    { label: 'valueBoolean true', value: { valueBoolean: true }, expected: true },
+    { label: 'valueBoolean false', value: { valueBoolean: false }, expected: undefined },
+    { label: "valueString 'true'", value: { valueString: 'true' }, expected: undefined },
+    { label: 'valueInteger 1', value: { valueInteger: 1 }, expected: undefined },
+  ])('parametersToMedicationCheckoutResponse sets duplicate and replaced only from $label', ({ value, expected }) => {
+    const params: Parameters = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'approvalUrl', valueUri: 'https://example.com/approve' },
+        { name: 'vendorPatientId', valueInteger: 7 },
+        {
+          name: 'items',
+          part: [
+            { name: 'medicationRequestId', valueId: 'mr-1' },
+            { name: 'status', valueCode: 'queued' },
+            { name: 'duplicate', ...value },
+            { name: 'replaced', ...value },
+          ],
+        },
+      ],
+    };
+    const [item] = parametersToMedicationCheckoutResponse(params).items;
+    expect(item.duplicate).toBe(expected);
+    expect(item.replaced).toBe(expected);
   });
 
   test('parametersToMedicationCheckoutResponse tolerates zero items', () => {
