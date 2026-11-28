@@ -16,7 +16,26 @@ const navigateMock = vi.fn();
 const toggleMock = vi.fn();
 const closeMock = vi.fn();
 
-async function setup(initial = '/'): Promise<void> {
+const defaultMenus: NavbarMenu[] = [
+  {
+    title: 'Menu 1',
+    links: [
+      { label: 'Link 1', href: '/link1' },
+      { label: 'Link 2', href: '/link2' },
+      { label: 'Link 3', href: '/link3' },
+    ],
+  },
+  {
+    title: 'Menu 2',
+    links: [
+      { label: 'Link 4', href: '/link?key=4&_offset=0' },
+      { label: 'Link 5', href: '/link?key=5' },
+      { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
+    ],
+  },
+];
+
+async function setup(initial = '/', menus = defaultMenus): Promise<void> {
   const initialUrl = new URL(initial, 'http://localhost');
   medplum.getUserConfiguration = vi.fn((): WithId<UserConfiguration> | undefined => {
     return {
@@ -51,24 +70,7 @@ async function setup(initial = '/'): Promise<void> {
             searchParams={initialUrl.searchParams}
             navbarToggle={toggleMock}
             closeNavbar={closeMock}
-            menus={[
-              {
-                title: 'Menu 1',
-                links: [
-                  { label: 'Link 1', href: '/link1' },
-                  { label: 'Link 2', href: '/link2' },
-                  { label: 'Link 3', href: '/link3' },
-                ],
-              },
-              {
-                title: 'Menu 2',
-                links: [
-                  { label: 'Link 4', href: '/link?key=4&_offset=0' },
-                  { label: 'Link 5', href: '/link?key=5' },
-                  { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
-                ],
-              },
-            ]}
+            menus={menus}
             displayAddBookmark={true}
           />
         </MantineAppShell>
@@ -246,6 +248,36 @@ describe('Navbar', () => {
     expect(link1.parentElement?.dataset?.['active']).toEqual('true');
     expect(link2.parentElement?.dataset?.['active']).toBeUndefined();
     expect(link3.parentElement?.dataset?.['active']).toBeUndefined();
+  });
+
+  const nestedMenus: NavbarMenu[] = [
+    {
+      title: 'Nested',
+      links: [
+        { label: 'Home', href: '/' },
+        { label: 'Female Patients', href: '/Patient?gender=female' },
+        { label: 'Patients', href: '/Patient' },
+        { label: 'Orders', href: '/ServiceRequest' },
+        { label: 'My Tasks', href: '/Task?owner=Practitioner/123' },
+        { label: 'Super', href: '/admin/super' },
+        { label: 'Super DB', href: '/admin/super/db' },
+      ],
+    },
+  ];
+
+  test.each([
+    ['/ServiceRequest/123', 'Orders'],
+    ['/Task?status=completed', 'My Tasks'],
+    ['/TaskFoo', undefined],
+    ['/admin/super/db/x', 'Super DB'],
+    ['/Patient/123', 'Patients'],
+  ])('Highlighted link for nested route %s', async (url, expected) => {
+    await setup(url, nestedMenus);
+
+    const activeLabels = ['Home', 'Female Patients', 'Patients', 'Orders', 'My Tasks', 'Super', 'Super DB'].filter(
+      (label) => screen.getByText(label).parentElement?.dataset?.['active'] === 'true'
+    );
+    expect(activeLabels).toEqual(expected ? [expected] : []);
   });
 
   test('Click link on desktop', async () => {

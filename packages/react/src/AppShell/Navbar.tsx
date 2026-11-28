@@ -364,10 +364,11 @@ function NavbarLinkWithSubscription(props: NavbarLinkWithSubscriptionProps): JSX
 
 /**
  * Returns the best "active" link for the menu.
- * In most cases, the navbar links are simple, and an exact match can determine which link is active.
- * However, we ignore some search parameters to support pagination.
- * But we cannot ignore all search parameters, to support separate links based on search filters.
- * So in the end, we use a simple scoring system based on the number of matching query search params.
+ * A link is a candidate when its pathname is the current pathname or a parent of it,
+ * so a section stays active on its detail pages (e.g. "/Task" on "/Task/123").
+ * The deepest pathname wins. Between links on the same pathname, search params break the tie,
+ * so separate links can still be distinguished by their search filters.
+ * The first link in menu order wins any remaining tie.
  * @param currentPathname - The web browser current pathname.
  * @param currentSearchParams - The web browser current search parameters.
  * @param menus - Collection of navbar menus and links.
@@ -383,13 +384,13 @@ function getActiveLink(
   }
 
   let bestLink = undefined;
-  let bestScore = 0;
+  let bestScore: LinkScore | undefined = undefined;
 
   for (const menu of menus) {
     if (menu.links) {
       for (const link of menu.links) {
         const score = getLinkScore(currentPathname, currentSearchParams, link.href);
-        if (score > bestScore) {
+        if (score && (!bestScore || compareLinkScores(score, bestScore) > 0)) {
           bestScore = score;
           bestLink = link;
         }
@@ -400,39 +401,55 @@ function getActiveLink(
   return bestLink;
 }
 
+interface LinkScore {
+  /** Length of the link pathname; longer means a deeper, more specific match. */
+  readonly pathLength: number;
+  readonly paramsMatch: boolean;
+  readonly matchedParams: number;
+}
+
+const ignoredParams = ['_count', '_offset'];
+
 /**
- * Calculates a score for a link.
- * Zero means "does not match at all".
- * One means "matches the pathname only".
- * Additional increases for each matching search parameter.
+ * Scores a link against the current location.
  * Ignores pagination parameters "_count" and "_offset".
  * @param currentPathname - The web browser current pathname.
  * @param currentSearchParams - The web browser current search parameters.
  * @param linkHref - A candidate link href.
- * @returns The link score.
+ * @returns The link score, or undefined if the link does not match.
  */
-function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
+function getLinkScore(
+  currentPathname: string,
+  currentSearchParams: URLSearchParams,
+  linkHref: string
+): LinkScore | undefined {
   const linkUrl = new URL(linkHref, 'https://example.com');
-  if (currentPathname !== linkUrl.pathname) {
-    return 0;
+  const linkPathname = linkUrl.pathname;
+  const pathPrefix = linkPathname.endsWith('/') ? linkPathname : linkPathname + '/';
+  const isParentPath = linkPathname !== '/' && currentPathname.startsWith(pathPrefix);
+  if (currentPathname !== linkPathname && !isParentPath) {
+    return undefined;
   }
-  const ignoredParams = ['_count', '_offset'];
+
+  let paramsMatch = true;
   for (const [key, value] of linkUrl.searchParams.entries()) {
-    if (ignoredParams.includes(key)) {
-      continue;
-    }
-    if (currentSearchParams.get(key) !== value) {
-      return 0;
+    if (!ignoredParams.includes(key) && currentSearchParams.get(key) !== value) {
+      paramsMatch = false;
     }
   }
-  let count = 1;
+
+  let matchedParams = 0;
   for (const [key, value] of currentSearchParams.entries()) {
-    if (ignoredParams.includes(key)) {
-      continue;
-    }
-    if (linkUrl.searchParams.get(key) === value) {
-      count++;
+    if (!ignoredParams.includes(key) && linkUrl.searchParams.get(key) === value) {
+      matchedParams++;
     }
   }
-  return count;
+
+  return { pathLength: linkPathname.length, paramsMatch, matchedParams };
+}
+
+function compareLinkScores(a: LinkScore, b: LinkScore): number {
+  return (
+    a.pathLength - b.pathLength || Number(a.paramsMatch) - Number(b.paramsMatch) || a.matchedParams - b.matchedParams
+  );
 }
