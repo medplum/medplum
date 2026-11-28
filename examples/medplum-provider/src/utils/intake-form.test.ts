@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { allOk, badRequest, OperationOutcomeError, validateResource } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -64,21 +65,23 @@ const mockIntakeUtils = vi.hoisted(() => ({
     ethnicity: 'ethnicity-url',
     veteran: 'veteran-url',
   },
-  getGroupRepeatedAnswers: vi.fn((_, __, groupId) => {
-    if (groupId === 'coverage-information') {
-      return [
-        {
-          'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
-          'subscriber-id': { valueString: 'sub-1' },
-          'relationship-to-subscriber': { valueCoding: { code: 'self' } },
-        },
-      ];
+  getGroupRepeatedAnswers: vi.fn(
+    (_: unknown, __: unknown, groupId: string): Record<string, QuestionnaireResponseItemAnswer>[] => {
+      if (groupId === 'coverage-information') {
+        return [
+          {
+            'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
+            'subscriber-id': { valueString: 'sub-1' },
+            'relationship-to-subscriber': { valueCoding: { code: 'self' } },
+          },
+        ];
+      }
+      if (groupId === 'allergies') {
+        return [{ 'allergy-substance': { valueCoding: { code: 'peanut' } } }];
+      }
+      return [];
     }
-    if (groupId === 'allergies') {
-      return [{ 'allergy-substance': { valueCoding: { code: 'peanut' } } }];
-    }
-    return [];
-  }),
+  ),
   getHumanName: vi.fn(() => ({ given: ['Jamie'], family: 'Doe' })),
   getPatientAddress: vi.fn(() => ({ line: ['1 Main St'] })),
   observationCategoryMapping: {
@@ -139,6 +142,122 @@ describe('onboardPatient', () => {
     expect(mockIntakeUtils.addAllergy).toHaveBeenCalled();
     expect(mockIntakeUtils.addConsent).toHaveBeenCalled();
     expect(mockIntakeUtils.addPharmacy).toHaveBeenCalled();
+  });
+
+  test('validates patient and response before creating any resources', async () => {
+    const validateSpy = vi.spyOn(medplum, 'validateResource').mockImplementation(async (resource) => {
+      validateResource(resource);
+      return allOk;
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+      if (resource.resourceType === 'Patient') {
+        return { ...resource, id: 'patient-1' };
+      }
+      return resource;
+    });
+
+    const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+    const response = buildResponseFromAnswers(mockAnswers);
+
+    await onboardPatient(medplum, questionnaire, response);
+
+    expect(validateSpy).toHaveBeenCalledTimes(2);
+    expect(validateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ resourceType: 'Patient' }));
+    expect(validateSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ resourceType: 'QuestionnaireResponse' }));
+    expect(createSpy).toHaveBeenCalled();
+    expect(Math.max(...validateSpy.mock.invocationCallOrder)).toBeLessThan(createSpy.mock.invocationCallOrder[0]);
+  });
+
+  test('does not create patient when QuestionnaireResponse contains an empty non-primitive answer', async () => {
+    const validateSpy = vi.spyOn(medplum, 'validateResource').mockImplementation(async (resource) => {
+      validateResource(resource);
+      return allOk;
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+
+    const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+    const baseResponse = buildResponseFromAnswers(mockAnswers);
+    const invalidResponse: QuestionnaireResponse = {
+      ...baseResponse,
+      item: [
+        ...(baseResponse.item ?? []),
+        {
+          linkId: 'coverage-information',
+          item: [
+            {
+              linkId: 'relationship-to-subscriber',
+              answer: [{}],
+            },
+          ],
+        },
+      ],
+    };
+
+    await expect(onboardPatient(medplum, questionnaire, invalidResponse)).rejects.toThrow(OperationOutcomeError);
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(validateSpy).not.toHaveBeenCalled();
+  });
+
+  test('does not create patient when server $validate rejects patient or response', async () => {
+    vi.spyOn(medplum, 'validateResource').mockImplementation(async (resource) => {
+      if (resource.resourceType === 'QuestionnaireResponse') {
+        throw new OperationOutcomeError(
+          badRequest('Invalid empty non-primitive value (QuestionnaireResponse.item[8].item[2].answer[0])')
+        );
+      }
+      return allOk;
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+
+    const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+    const response = buildResponseFromAnswers(mockAnswers);
+
+    await expect(onboardPatient(medplum, questionnaire, response)).rejects.toThrow('Invalid empty non-primitive value');
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  test('does not create patient when coverage-information group is missing required fields', async () => {
+    const prevImpl = mockIntakeUtils.getGroupRepeatedAnswers.getMockImplementation();
+    mockIntakeUtils.getGroupRepeatedAnswers.mockImplementation((_, __, groupId) => {
+      if (groupId === 'coverage-information') {
+        return [
+          {
+            'insurance-provider': { valueReference: { reference: 'Organization/org-1' } },
+            'subscriber-id': { valueString: 'sub-1' },
+          },
+        ];
+      }
+      return [];
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+
+    try {
+      const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+      const response = buildResponseFromAnswers(mockAnswers);
+
+      await expect(onboardPatient(medplum, questionnaire, response)).rejects.toThrow(OperationOutcomeError);
+      expect(createSpy).not.toHaveBeenCalled();
+    } finally {
+      if (prevImpl) {
+        mockIntakeUtils.getGroupRepeatedAnswers.mockImplementation(prevImpl);
+      }
+    }
+  });
+
+  test('does not create patient when date conversion fails validation', async () => {
+    mockIntakeUtils.convertDateToDateTime.mockImplementationOnce(() => {
+      throw new OperationOutcomeError(badRequest('Invalid date value: not-a-date'));
+    });
+    const createSpy = vi.spyOn(medplum, 'createResource');
+
+    const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
+    const response = buildResponseFromAnswers({
+      ...mockAnswers,
+      'estimated-delivery-date': { valueDate: 'not-a-date' },
+    });
+
+    await expect(onboardPatient(medplum, questionnaire, response)).rejects.toThrow('Invalid date value');
+    expect(createSpy).not.toHaveBeenCalled();
   });
 });
 

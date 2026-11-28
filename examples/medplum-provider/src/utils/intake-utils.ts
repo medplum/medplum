@@ -3,11 +3,13 @@
 import type { MedplumClient } from '@medplum/core';
 import {
   addProfileToResource,
+  badRequest,
   createReference,
   getReferenceString,
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
+  OperationOutcomeError,
   SNOMED,
 } from '@medplum/core';
 import type {
@@ -590,9 +592,15 @@ export async function addCoverage(
   patient: Patient,
   answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
-  const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
-  const subscriberId = answers['subscriber-id'].valueString;
-  const relationshipToSubscriber = answers['relationship-to-subscriber'].valueCoding as Coding;
+  const payor = answers['insurance-provider']?.valueReference as Reference<Organization> | undefined;
+  const subscriberId = answers['subscriber-id']?.valueString;
+  const relationshipToSubscriber = answers['relationship-to-subscriber']?.valueCoding;
+
+  if (!payor || !subscriberId || !relationshipToSubscriber) {
+    throw new OperationOutcomeError(
+      badRequest('Coverage requires an insurance provider, subscriber ID, and relationship to subscriber')
+    );
+  }
 
   // Create RelatedPerson resource depending on the relationship to the subscriber
   const relatedPersonAnswers = answers['related-person'] as Record<string, QuestionnaireResponseItemAnswer>;
@@ -700,9 +708,9 @@ export function getGroupRepeatedAnswers(
   groupLinkId: string
 ): Record<string, QuestionnaireResponseItemAnswer>[] {
   // Find the questionnaire item based on groupLinkId
-  const questionnaireItem = findQuestionnaireItem(questionnaire.item, groupLinkId) as QuestionnaireItem;
+  const questionnaireItem = findQuestionnaireItem<QuestionnaireItem>(questionnaire.item, groupLinkId);
 
-  if (questionnaireItem.type !== 'group' || !questionnaireItem?.item) {
+  if (questionnaireItem?.type !== 'group' || !questionnaireItem.item) {
     return [];
   }
 
@@ -754,7 +762,11 @@ export function convertDateToDateTime(date: string | undefined): string | undefi
   if (!date) {
     return undefined;
   }
-  return new Date(date).toISOString();
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new OperationOutcomeError(badRequest(`Invalid date value: ${date}`));
+  }
+  return parsed.toISOString();
 }
 
 export function getHumanName(

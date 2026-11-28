@@ -1,8 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import { addProfileToResource, append, createReference, EMPTY, getQuestionnaireAnswers } from '@medplum/core';
-import type { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import {
+  addProfileToResource,
+  append,
+  badRequest,
+  createReference,
+  EMPTY,
+  getQuestionnaireAnswers,
+  isNotFound,
+  OperationOutcomeError,
+} from '@medplum/core';
+import type {
+  Organization,
+  Patient,
+  Questionnaire,
+  QuestionnaireResponse,
+  QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
@@ -108,14 +126,38 @@ export async function onboardPatient(
   addLanguage(patient, answers['languages-spoken']?.valueCoding);
   addLanguage(patient, answers['preferred-language']?.valueCoding, true);
 
+  // Prepare and validate all derived data before creating the Patient resource so a failed
+  // submission never leaves behind a partially onboarded patient.
+  const estimatedDeliveryDate = convertDateToDateTime(answers['estimated-delivery-date']?.valueDate);
+  const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
+  const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
+  const medicalHistory = getGroupRepeatedAnswers(questionnaire, response, 'medical-history');
+  const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
+  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
+  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
+  const treatmentConsentDate = convertDateToDateTime(answers['consent-for-treatment-date']?.valueDate);
+  const agreementToPayDate = convertDateToDateTime(answers['agreement-to-pay-for-treatment-date']?.valueDate);
+  const privacyPracticesDate = convertDateToDateTime(answers['notice-of-privacy-practices-date']?.valueDate);
+  const advanceDirectivesDate = convertDateToDateTime(
+    answers['acknowledgement-for-advance-directives-date']?.valueDate
+  );
+
+  assertNoEmptyAnswers(response.item);
+  validateCoverageGroups(insuranceProviders);
+
+  await validateResourceBeforeCreate(medplum, patient);
+  await validateResourceBeforeCreate(medplum, response);
+
   // Create the patient resource
 
   patient = await medplum.createResource(patient);
 
   // NOTE: Updating the questionnaire response does not trigger a loop because the bot subscription
   // is configured for "create"-only event.
-  response.subject = createReference(patient);
-  await medplum.createResource(response);
+  await medplum.createResource({
+    ...response,
+    subject: createReference(patient),
+  });
 
   // Handle observations
 
@@ -166,7 +208,6 @@ export async function onboardPatient(
     answers['pregnancy-status']?.valueCoding
   );
 
-  const estimatedDeliveryDate = convertDateToDateTime(answers['estimated-delivery-date']?.valueDate);
   await upsertObservation(
     medplum,
     patient,
@@ -178,40 +219,34 @@ export async function onboardPatient(
 
   // Handle allergies
 
-  const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
   for (const allergy of allergies) {
     await addAllergy(medplum, patient, allergy);
   }
 
   // Handle medications
 
-  const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
     await addMedication(medplum, patient, medication);
   }
 
   // Handle medical history
 
-  const medicalHistory = getGroupRepeatedAnswers(questionnaire, response, 'medical-history');
   for (const history of medicalHistory) {
     await addCondition(medplum, patient, history);
   }
 
-  const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
   for (const history of familyMemberHistory) {
     await addFamilyMemberHistory(medplum, patient, history);
   }
 
   // Handle vaccination history (immunizations)
 
-  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
   for (const vaccine of vaccinationHistory) {
     await addImmunization(medplum, patient, vaccine);
   }
 
   // Handle coverage
 
-  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
@@ -232,7 +267,7 @@ export async function onboardPatient(
     consentScopeMapping.treatment,
     consentCategoryMapping.med,
     consentPolicyRuleMapping.cric,
-    convertDateToDateTime(answers['consent-for-treatment-date']?.valueDate)
+    treatmentConsentDate
   );
 
   await addConsent(
@@ -242,7 +277,7 @@ export async function onboardPatient(
     consentScopeMapping.treatment,
     consentCategoryMapping.pay,
     consentPolicyRuleMapping.hipaaSelfPay,
-    convertDateToDateTime(answers['agreement-to-pay-for-treatment-date']?.valueDate)
+    agreementToPayDate
   );
 
   await addConsent(
@@ -252,7 +287,7 @@ export async function onboardPatient(
     consentScopeMapping.patientPrivacy,
     consentCategoryMapping.nopp,
     consentPolicyRuleMapping.hipaaNpp,
-    convertDateToDateTime(answers['notice-of-privacy-practices-date']?.valueDate)
+    privacyPracticesDate
   );
 
   await addConsent(
@@ -262,8 +297,79 @@ export async function onboardPatient(
     consentScopeMapping.adr,
     consentCategoryMapping.acd,
     consentPolicyRuleMapping.adr,
-    convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
+    advanceDirectivesDate
   );
 
   return patient;
+}
+
+function isPopulatedValue(value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return value.some(isPopulatedValue);
+  }
+  if (typeof value === 'object') {
+    return Object.values(value).some(isPopulatedValue);
+  }
+  return true;
+}
+
+function assertNoEmptyAnswers(
+  items: QuestionnaireResponseItem[] | undefined,
+  pathPrefix = 'QuestionnaireResponse'
+): void {
+  if (!items) {
+    return;
+  }
+  for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+    const item = items[itemIndex];
+    const itemPath = `${pathPrefix}.item[${itemIndex}]`;
+    for (let ansIndex = 0; ansIndex < (item.answer ?? EMPTY).length; ansIndex++) {
+      const answer = item.answer?.[ansIndex];
+      if (!answer) {
+        continue;
+      }
+      if (answer.item?.length) {
+        assertNoEmptyAnswers(answer.item, `${itemPath}.answer[${ansIndex}]`);
+        continue;
+      }
+      const hasValue = Object.entries(answer).some(([key, val]) => key.startsWith('value') && isPopulatedValue(val));
+      if (!hasValue) {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid empty non-primitive value (${itemPath}.answer[${ansIndex}])`)
+        );
+      }
+    }
+    assertNoEmptyAnswers(item.item, itemPath);
+  }
+}
+
+function validateCoverageGroups(coverageGroups: Record<string, QuestionnaireResponseItemAnswer>[]): void {
+  for (const provider of coverageGroups) {
+    const payor = provider['insurance-provider']?.valueReference;
+    const subscriberId = provider['subscriber-id']?.valueString;
+    const relationship = provider['relationship-to-subscriber']?.valueCoding;
+    if (!payor || !subscriberId || !relationship || !isPopulatedValue(relationship)) {
+      throw new OperationOutcomeError(
+        badRequest('Coverage requires an insurance provider, subscriber ID, and relationship to subscriber')
+      );
+    }
+  }
+}
+
+async function validateResourceBeforeCreate(medplum: MedplumClient, resource: Resource): Promise<void> {
+  try {
+    const outcome = await medplum.validateResource(resource);
+    if (outcome.issue?.some((issue) => issue.severity === 'error' || issue.severity === 'fatal')) {
+      throw new OperationOutcomeError(outcome);
+    }
+  } catch (err) {
+    // MockClient does not register POST /:resourceType/$validate and responds with 404.
+    if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+      return;
+    }
+    throw err;
+  }
 }
