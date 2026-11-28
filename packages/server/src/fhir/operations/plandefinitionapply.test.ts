@@ -4,6 +4,7 @@ import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString, toTypedValue } from '@medplum/core';
 import type {
   ActivityDefinition,
+  Bundle,
   CarePlan,
   Encounter,
   OperationOutcome,
@@ -2063,6 +2064,577 @@ describe('PlanDefinition apply', () => {
       await createQuestionnaire(url, '1', 'active');
 
       expect(await applyAndGetTaskFocus(url)).toMatch(/^ServiceRequest\//);
+    });
+  });
+
+  describe('action.condition applicability', () => {
+    async function createPatient(overrides: Partial<Patient> = {}): Promise<WithId<Patient>> {
+      const res = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Patient',
+          name: [{ given: ['Condition'], family: 'Test' }],
+          ...overrides,
+        });
+      expect(res).toHaveStatus(201);
+      return res.body as WithId<Patient>;
+    }
+
+    async function applyPlanDefinition(
+      planDefinition: WithId<PlanDefinition>,
+      patient: WithId<Patient>,
+      extraParams: { name: string; valueString: string }[] = []
+    ): Promise<WithId<RequestGroup>> {
+      const applyRes = await request(app)
+        .post(`/fhir/R4/PlanDefinition/${planDefinition.id}/$apply`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'subject', valueString: getReferenceString(patient) }, ...extraParams],
+        });
+      expect(applyRes).toHaveStatus(200);
+      const carePlan = applyRes.body as WithId<CarePlan>;
+
+      const rgRes = await request(app)
+        .get(`/fhir/R4/${carePlan.activity?.[0]?.reference?.reference}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(rgRes).toHaveStatus(200);
+      return rgRes.body as WithId<RequestGroup>;
+    }
+
+    async function getTasksForPatient(patient: WithId<Patient>): Promise<WithId<Task>[]> {
+      const taskBundleRes = await request(app)
+        .get(`/fhir/R4/Task?patient=${encodeURIComponent(getReferenceString(patient))}`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(taskBundleRes).toHaveStatus(200);
+      const bundle = taskBundleRes.body as Bundle<WithId<Task>>;
+      return (bundle.entry ?? []).map((e) => e.resource as WithId<Task>);
+    }
+
+    test('Filters actions by %patient, %subject, %encounter, %practitioner, %organization, and input expression', async () => {
+      const patient = await createPatient({ gender: 'female', birthDate: '1980-01-01' });
+
+      const encounterRes = await request(app)
+        .post('/fhir/R4/Encounter')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Encounter',
+          status: 'in-progress',
+          class: { code: 'AMB' },
+          subject: createReference(patient),
+        });
+      expect(encounterRes).toHaveStatus(201);
+      const encounter = encounterRes.body as WithId<Encounter>;
+
+      const practitionerRes = await request(app)
+        .post('/fhir/R4/Practitioner')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Practitioner', name: [{ given: ['Ada'], family: 'Lovelace' }] });
+      expect(practitionerRes).toHaveStatus(201);
+      const practitioner = practitionerRes.body as WithId<Practitioner>;
+
+      const organizationRes = await request(app)
+        .post('/fhir/R4/Organization')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Organization', name: 'Condition Test Clinic' });
+      expect(organizationRes).toHaveStatus(201);
+      const organization = organizationRes.body as WithId<Organization>;
+
+      const planRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Conditional Screening Plan',
+          status: 'active',
+          action: [
+            {
+              title: 'Adult Female Screening',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: {
+                    language: 'text/fhirpath',
+                    expression: "%patient.gender = 'female' and between(%patient.birthDate, today(), 'years') >= 18",
+                  },
+                },
+              ],
+            },
+            {
+              title: 'Male Screening (Excluded)',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: {
+                    language: 'text/fhirpath',
+                    expression: "%patient.gender = 'male'",
+                  },
+                },
+              ],
+            },
+            {
+              title: 'Ambulatory Encounter Task',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: {
+                    language: 'text/fhirpath',
+                    expression: "%encounter.class.code = 'AMB'",
+                  },
+                },
+              ],
+            },
+            {
+              title: 'Inpatient Encounter Task (Excluded)',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: {
+                    language: 'text/fhirpath',
+                    expression: "%encounter.class.code = 'IMP'",
+                  },
+                },
+              ],
+            },
+            {
+              title: 'Subject Direct Input Expression',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: {
+                    language: 'text/fhirpath',
+                    expression: "gender = 'female'",
+                  },
+                },
+              ],
+            },
+            {
+              title: 'Context Variables Present',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: {
+                    language: 'text/fhirpath',
+                    expression: '%subject.exists() and %practitioner.exists() and %organization.exists()',
+                  },
+                },
+              ],
+            },
+          ],
+        });
+      expect(planRes).toHaveStatus(201);
+
+      const requestGroup = await applyPlanDefinition(planRes.body as WithId<PlanDefinition>, patient, [
+        { name: 'encounter', valueString: getReferenceString(encounter) },
+        { name: 'practitioner', valueString: getReferenceString(practitioner) },
+        { name: 'organization', valueString: getReferenceString(organization) },
+      ]);
+
+      expect(requestGroup.action?.map((a) => a.title)).toStrictEqual([
+        'Adult Female Screening',
+        'Ambulatory Encounter Task',
+        'Subject Direct Input Expression',
+        'Context Variables Present',
+      ]);
+
+      const tasks = await getTasksForPatient(patient);
+      expect(tasks.map((t) => t.code?.text)).toStrictEqual(
+        expect.arrayContaining([
+          'Adult Female Screening',
+          'Ambulatory Encounter Task',
+          'Subject Direct Input Expression',
+          'Context Variables Present',
+        ])
+      );
+      expect(tasks).toHaveLength(4);
+    });
+
+    test('Uses AND semantics for multiple applicability conditions, ignores start/stop, and handles omitted %encounter', async () => {
+      const patient = await createPatient({ gender: 'female', birthDate: '1992-05-10' });
+
+      const planRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Multi-Condition Plan',
+          status: 'active',
+          action: [
+            {
+              title: 'All True Applicability',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'female'" },
+                },
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: '%patient.birthDate.exists()' },
+                },
+                {
+                  kind: 'stop',
+                  expression: { language: 'text/fhirpath', expression: 'false' },
+                },
+              ],
+            },
+            {
+              title: 'One False Applicability (Excluded)',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'female'" },
+                },
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: 'false' },
+                },
+              ],
+            },
+            {
+              title: 'Start Condition Ignored At Apply',
+              condition: [
+                {
+                  kind: 'start',
+                  expression: { language: 'text/fhirpath', expression: 'false' },
+                },
+              ],
+            },
+            {
+              title: 'Requires Encounter When Omitted (Excluded)',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: '%encounter.exists()' },
+                },
+              ],
+            },
+          ],
+        });
+      expect(planRes).toHaveStatus(201);
+
+      const requestGroup = await applyPlanDefinition(planRes.body as WithId<PlanDefinition>, patient);
+      expect(requestGroup.action?.map((a) => a.title)).toStrictEqual([
+        'All True Applicability',
+        'Start Condition Ignored At Apply',
+      ]);
+      expect(await getTasksForPatient(patient)).toHaveLength(2);
+    });
+
+    test('Returns empty RequestGroup without creating Tasks when all actions are inapplicable', async () => {
+      const patient = await createPatient({ gender: 'male' });
+
+      const planRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'No Matching Actions Plan',
+          status: 'active',
+          action: [
+            {
+              title: 'Female Only Action',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'female'" },
+                },
+              ],
+            },
+          ],
+        });
+      expect(planRes).toHaveStatus(201);
+
+      const requestGroup = await applyPlanDefinition(planRes.body as WithId<PlanDefinition>, patient);
+      expect(requestGroup.action).toBeUndefined();
+      expect(await getTasksForPatient(patient)).toHaveLength(0);
+    });
+
+    test('Evaluates conditions recursively on nested actions and parent+child actions', async () => {
+      const patient = await createPatient({ gender: 'female' });
+      const questionnaireUrl = 'http://example.com/Questionnaire/nested-' + randomUUID();
+      const questionnaireRes = await request(app)
+        .post('/fhir/R4/Questionnaire')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Questionnaire', url: questionnaireUrl, status: 'active', title: 'Nested Intake' });
+      expect(questionnaireRes).toHaveStatus(201);
+
+      const planRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Nested Conditional Plan',
+          status: 'active',
+          action: [
+            {
+              title: 'Excluded Parent Group',
+              groupingBehavior: 'logical-group',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'male'" },
+                },
+              ],
+              action: [
+                {
+                  title: 'True Child Under Excluded Parent',
+                  condition: [{ kind: 'applicability', expression: { language: 'text/fhirpath', expression: 'true' } }],
+                },
+              ],
+            },
+            {
+              title: 'Active Group',
+              groupingBehavior: 'logical-group',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'female'" },
+                },
+              ],
+              action: [
+                {
+                  title: 'Included Child',
+                  condition: [{ kind: 'applicability', expression: { language: 'text/fhirpath', expression: 'true' } }],
+                },
+                {
+                  title: 'Excluded Child',
+                  condition: [
+                    { kind: 'applicability', expression: { language: 'text/fhirpath', expression: 'false' } },
+                  ],
+                },
+              ],
+            },
+            {
+              title: 'Empty Filtered Group',
+              groupingBehavior: 'logical-group',
+              action: [
+                {
+                  title: 'Excluded Only Child',
+                  condition: [
+                    { kind: 'applicability', expression: { language: 'text/fhirpath', expression: 'false' } },
+                  ],
+                },
+              ],
+            },
+            {
+              title: 'Parent Task With Children',
+              definitionCanonical: questionnaireUrl,
+              action: [
+                {
+                  title: 'Included Subtask',
+                  condition: [{ kind: 'applicability', expression: { language: 'text/fhirpath', expression: 'true' } }],
+                },
+                {
+                  title: 'Excluded Subtask',
+                  condition: [
+                    { kind: 'applicability', expression: { language: 'text/fhirpath', expression: 'false' } },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+      expect(planRes).toHaveStatus(201);
+
+      const requestGroup = await applyPlanDefinition(planRes.body as WithId<PlanDefinition>, patient);
+      expect(requestGroup.action).toHaveLength(2);
+
+      const activeGroup = requestGroup.action?.[0];
+      expect(activeGroup?.title).toBe('Active Group');
+      expect(activeGroup?.resource).toBeUndefined();
+      expect(activeGroup?.groupingBehavior).toBe('logical-group');
+      expect(activeGroup?.action?.map((a) => a.title)).toStrictEqual(['Included Child']);
+      expect(activeGroup?.action?.[0]?.resource?.reference).toMatch(/^Task\//);
+
+      const parentGroupAction = requestGroup.action?.[1];
+      expect(parentGroupAction?.title).toBe('Parent Task With Children');
+      expect(parentGroupAction?.resource).toBeUndefined();
+      expect(parentGroupAction?.action?.map((a) => a.title)).toStrictEqual([
+        'Parent Task With Children',
+        'Included Subtask',
+      ]);
+      expect(parentGroupAction?.action?.[0]?.resource?.reference).toMatch(/^Task\//);
+      expect(parentGroupAction?.action?.[1]?.resource?.reference).toMatch(/^Task\//);
+
+      const tasks = await getTasksForPatient(patient);
+      expect(tasks.map((t) => t.code?.text)).toStrictEqual(
+        expect.arrayContaining(['Included Child', 'Parent Task With Children', 'Included Subtask'])
+      );
+      expect(tasks).toHaveLength(3);
+    });
+
+    test('Expands referenced sub-PlanDefinition actions with conditions and rejects circular references', async () => {
+      const patient = await createPatient({ gender: 'female' });
+      const subPlanUrl = 'http://example.com/PlanDefinition/sub-' + randomUUID();
+
+      const subPlanRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          url: subPlanUrl,
+          title: 'Sub Plan',
+          status: 'active',
+          action: [
+            {
+              title: 'Sub Action Included',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'female'" },
+                },
+              ],
+            },
+            {
+              title: 'Sub Action Excluded',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: "%patient.gender = 'male'" },
+                },
+              ],
+            },
+          ],
+        });
+      expect(subPlanRes).toHaveStatus(201);
+
+      const parentPlanRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Parent Plan',
+          status: 'active',
+          action: [
+            {
+              title: 'Expanded Sub Plan Section',
+              definitionCanonical: subPlanUrl,
+            },
+          ],
+        });
+      expect(parentPlanRes).toHaveStatus(201);
+
+      const requestGroup = await applyPlanDefinition(parentPlanRes.body as WithId<PlanDefinition>, patient);
+      expect(requestGroup.action).toHaveLength(1);
+      expect(requestGroup.action?.[0]?.title).toBe('Expanded Sub Plan Section');
+      expect(requestGroup.action?.[0]?.action?.map((a) => a.title)).toStrictEqual(['Sub Action Included']);
+
+      const tasks = await getTasksForPatient(patient);
+      expect(tasks.map((t) => t.code?.text)).toStrictEqual(['Sub Action Included']);
+
+      // Circular PlanDefinition check
+      const selfRefUrl = 'http://example.com/PlanDefinition/self-' + randomUUID();
+      const circularPlanRes = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          url: selfRefUrl,
+          title: 'Circular Plan',
+          status: 'active',
+          action: [{ title: 'Self Loop', definitionCanonical: selfRefUrl }],
+        });
+      expect(circularPlanRes).toHaveStatus(201);
+
+      const circularApplyRes = await request(app)
+        .post(`/fhir/R4/PlanDefinition/${circularPlanRes.body.id}/$apply`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'subject', valueString: getReferenceString(patient) }],
+        });
+      expect(circularApplyRes).toHaveStatus(400);
+    });
+
+    test('Rejects unsupported condition language and invalid FHIRPath expressions without creating resources', async () => {
+      const patient = await createPatient({ gender: 'female' });
+
+      const unsupportedLangPlan = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Unsupported CQL Plan',
+          status: 'active',
+          action: [
+            { title: 'Unconditional Before Failure' },
+            {
+              title: 'CQL Action',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/cql', expression: 'InInitialPopulation' },
+                },
+              ],
+            },
+          ],
+        });
+      expect(unsupportedLangPlan).toHaveStatus(201);
+
+      const unsupportedRes = await request(app)
+        .post(`/fhir/R4/PlanDefinition/${unsupportedLangPlan.body.id}/$apply`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'subject', valueString: getReferenceString(patient) }],
+        });
+      expect(unsupportedRes).toHaveStatus(400);
+      expect((unsupportedRes.body as OperationOutcome).issue?.[0]?.details?.text).toContain('unsupported language');
+      expect(await getTasksForPatient(patient)).toHaveLength(0);
+
+      const invalidExprPlan = await request(app)
+        .post('/fhir/R4/PlanDefinition')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'PlanDefinition',
+          title: 'Invalid FHIRPath Plan',
+          status: 'active',
+          action: [
+            { title: 'Unconditional Before Syntax Error' },
+            {
+              title: 'Broken FHIRPath Action',
+              condition: [
+                {
+                  kind: 'applicability',
+                  expression: { language: 'text/fhirpath', expression: '%patient.birthDate >' },
+                },
+              ],
+            },
+          ],
+        });
+      expect(invalidExprPlan).toHaveStatus(201);
+
+      const invalidExprRes = await request(app)
+        .post(`/fhir/R4/PlanDefinition/${invalidExprPlan.body.id}/$apply`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [{ name: 'subject', valueString: getReferenceString(patient) }],
+        });
+      expect(invalidExprRes).toHaveStatus(400);
+      expect((invalidExprRes.body as OperationOutcome).issue?.[0]?.details?.text).toContain(
+        'Invalid PlanDefinition.action.condition expression'
+      );
+      expect(await getTasksForPatient(patient)).toHaveLength(0);
     });
   });
 });
