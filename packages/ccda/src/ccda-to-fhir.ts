@@ -74,6 +74,7 @@ import {
   ALLERGY_STATUS_MAPPER,
   ALLERGY_SUBSTANCE_EXPOSURE_RISK_CODE_SYSTEM,
   ALLERGY_SUBSTANCE_EXPOSURE_RISK_URL,
+  ALLERGY_TYPE_MAPPING,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
   CLINICAL_CONDITION_CODE_SYSTEM,
@@ -473,23 +474,19 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
+    const allergyTypeCode = (observation.value as CcdaCode | undefined)?.['@_code'];
+
     const allergy: AllergyIntolerance = {
       resourceType: 'AllergyIntolerance',
       id: this.mapId(act.id),
       clinicalStatus: this.createClinicalStatus(act),
       verificationStatus: this.createVerificationStatus(),
-      type: 'allergy',
-      category: ['food'],
+      ...ALLERGY_TYPE_MAPPING[allergyTypeCode ?? ''],
       patient: createReference(this.patient as Patient),
       recorder: this.mapAuthorToReference(act.author?.[0]),
       recordedDate: this.mapEffectiveTimeToDateTime(act.effectiveTime?.[0]),
       onsetDateTime: this.mapEffectiveTimeToDateTime(observation.effectiveTime?.[0]),
     };
-
-    // Set category based on the observation.value code
-    if ((observation.value as CcdaCode)?.['@_code'] === '414285001') {
-      allergy.category = ['food'];
-    }
 
     allergy.extension = this.mapTextReference(observation.text);
 
