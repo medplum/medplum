@@ -23,7 +23,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [22, 24, 26]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -382,7 +382,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [22, 24, 26]
         pg-version: [14, 18]
         datastore: [valkey, redis]
         include:
@@ -510,7 +510,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [22, 24, 26]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -563,7 +563,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [22, 24, 26]
         pg-version: [14, 18]
         datastore: [valkey, redis]
         include:

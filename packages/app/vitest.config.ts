@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { copyFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { jsdomExecArgv } from '../../vitest.config';
 
 if (!existsSync(resolve(import.meta.dirname, '.env'))) {
   copyFileSync(resolve(import.meta.dirname, '.env.defaults'), resolve(import.meta.dirname, '.env'));
@@ -43,6 +44,7 @@ export default defineConfig({
         url: 'http://localhost/',
       },
     },
+    execArgv: jsdomExecArgv,
     setupFiles: ['./src/test.setup.ts'],
     testTimeout: 120_000,
     pool: 'threads',
