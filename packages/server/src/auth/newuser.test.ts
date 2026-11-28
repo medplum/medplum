@@ -95,17 +95,14 @@ describe('New user', () => {
   test('New project registration disabled', async () => {
     getConfig().newProjectRegistrationEnabled = false;
     const email = `alex${randomUUID()}@example.com`;
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        email,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-        projectId: 'new',
-      });
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+      email,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      projectId: 'new',
+    });
 
     expect(res).toHaveStatus(400);
     expect(res.body.issue[0].details.text).toBe('New project registration is disabled');
