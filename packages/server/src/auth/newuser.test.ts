@@ -12,7 +12,7 @@ import { vi } from 'vitest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-import { getUserByEmailWithoutProject } from '../oauth/utils';
+import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -119,18 +119,18 @@ describe('New user', () => {
       })
     );
     await enableOpenRegistration(project);
-    const res2 = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        firstName: 'Patient',
-        lastName: 'One',
-        email: `patient${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-        clientId: client.id,
-      });
+    const patientEmail = `patient${randomUUID()}@example.com`;
+    const res2 = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'Patient',
+      lastName: 'One',
+      email: patientEmail,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+      clientId: client.id,
+    });
     expect(res2).toHaveStatus(200);
+    expect(await getUserByEmailWithoutProject(patientEmail)).toBeUndefined();
+    expect(await getUserByEmailInProject(patientEmail, project.id)).toBeDefined();
   });
 
   test('Missing recaptcha', async () => {
